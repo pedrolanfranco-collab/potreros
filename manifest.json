@@ -8,5 +8,6 @@
   "short_name": "Potreros",
   "start_url": "/potreros",
   "theme_color": "#1D9E75",
-  "description": "Gestor de tares en potreros"
+  "description": "Descripcion de tareas en potreros",
+  "lang": "es"
 }
