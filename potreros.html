@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Potreros"/>
+<meta name="theme-color" content="#1D9E75"/>
+<title>Potreros</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4ef;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+/* TOPBAR */
+#topbar{padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:#fff;border-bottom:0.5px solid #e0ddd5;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:100}
+#topbar h1{font-size:16px;font-weight:600;color:#1a1a1a;flex:1}
+.tb-btn{font-size:13px;padding:7px 13px;border:0.5px solid #ccc;border-radius:20px;cursor:pointer;background:#f0ede6;color:#1a1a1a;white-space:nowrap}
+.tb-btn:active{opacity:.7}
+
+/* LAYOUT */
+#main{display:flex;flex:1;overflow:hidden;flex-direction:column}
+#map-wrap{flex:1;position:relative;min-height:0}
+#map{width:100%;height:100%}
+
+/* BOTTOM SHEET */
+#sheet{background:#fff;border-top:0.5px solid #e0ddd5;display:flex;flex-direction:column;height:50vh;flex-shrink:0;transition:height .25s ease}
+#sheet.collapsed{height:52px}
+#sheet-handle{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0;border-bottom:0.5px solid #f0ede6}
+.handle-bar{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 0 0}
+#sheet-title{font-size:15px;font-weight:600;color:#1a1a1a;flex:1}
+#sheet-subtitle{font-size:12px;color:#888}
+#sheet-body{flex:1;overflow-y:auto;padding:0 14px 14px}
+#add-form{flex-shrink:0;padding:10px 14px;border-top:0.5px solid #f0ede6}
+#add-form.hidden{display:none}
+
+/* FORM */
+#inp-task{width:100%;padding:9px 11px;border:0.5px solid #ccc;border-radius:10px;font-size:14px;margin-bottom:7px;background:#fff;color:#1a1a1a}
+.form-row{display:flex;gap:7px;margin-bottom:7px}
+.form-row select{flex:1;padding:8px 10px;border:0.5px solid #ccc;border-radius:10px;font-size:13px;background:#fff;color:#1a1a1a}
+#btn-add{width:100%;padding:10px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;background:#1D9E75;color:#fff}
+#btn-add:active{opacity:.8}
+
+/* TASKS */
+.task{display:flex;align-items:flex-start;gap:9px;padding:10px 0;border-bottom:0.5px solid #f0ede6}
+.task:last-child{border-bottom:none}
+.ck{width:20px;height:20px;border-radius:50%;border:1.5px solid #ccc;flex-shrink:0;cursor:pointer;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.ck.done{background:#1D9E75;border-color:#1D9E75}
+.task-info{flex:1;min-width:0}
+.task-name{font-size:14px;color:#1a1a1a;line-height:1.4}
+.task-name.done{text-decoration:line-through;opacity:.45}
+.task-badges{margin-top:4px;display:flex;gap:5px;flex-wrap:wrap}
+.badge{font-size:11px;padding:2px 8px;border-radius:8px}
+.b-alta{background:#FCEBEB;color:#A32D2D}
+.b-media{background:#FAEEDA;color:#854F0B}
+.b-baja{background:#EAF3DE;color:#3B6D11}
+.b-cat{background:#f0ede6;color:#5a5a5a}
+.del-btn{font-size:16px;cursor:pointer;color:#ccc;background:none;border:none;padding:2px 4px;flex-shrink:0}
+.del-btn:active{color:#e24b4a}
+.cal-btn{font-size:13px;cursor:pointer;color:#1D9E75;background:none;border:none;padding:2px 4px;flex-shrink:0}
+.cal-btn:active{opacity:.6}
+
+/* STATS */
+.stats{display:flex;gap:8px;padding:12px 0 8px}
+.stat{flex:1;background:#f5f4ef;border-radius:10px;padding:8px;text-align:center}
+.stat-n{font-size:20px;font-weight:600;color:#1a1a1a}
+.stat-l{font-size:11px;color:#888;margin-top:1px}
+
+/* EMPTY / HINT */
+.empty{font-size:13px;color:#aaa;padding:16px 0}
+#hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:500;background:rgba(255,255,255,.95);border-radius:14px;padding:20px 24px;border:0.5px solid #ddd;text-align:center;pointer-events:none;max-width:240px}
+#hint h2{font-size:15px;font-weight:600;color:#1a1a1a;margin-top:6px}
+#hint p{font-size:12px;color:#888;margin-top:4px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <h1>🌿 Potreros</h1>
+    <button class="tb-btn" onclick="centrar()" id="btn-centrar" style="display:none">Centrar</button>
+    <button class="tb-btn" onclick="document.getElementById('kmz-input').click()">Cargar KMZ</button>
+    <input type="file" id="kmz-input" accept=".kmz,.kml" style="display:none"/>
+  </div>
+  <div id="main">
+    <div id="map-wrap">
+      <div id="map"></div>
+      <div id="hint">
+        <div style="font-size:32px">📍</div>
+        <h2>Cargá tu KMZ</h2>
+        <p>Tocá "Cargar KMZ" arriba para ver tus potreros en el mapa</p>
+      </div>
+    </div>
+    <div id="sheet" class="collapsed">
+      <div id="sheet-handle" onclick="toggleSheet()">
+        <div class="handle-bar"></div>
+        <div id="sheet-title">Seleccioná un potrero</div>
+        <div id="sheet-subtitle">▲</div>
+      </div>
+      <div id="sheet-body"></div>
+      <div id="add-form" class="hidden">
+        <input id="inp-task" placeholder="Nueva tarea para este potrero..."/>
+        <div class="form-row">
+          <select id="inp-cat">
+            <option>Agua</option><option>Alambrado</option><option>Animales</option>
+            <option>Maquinaria</option><option>Instalaciones</option><option>Otro</option>
+          </select>
+          <select id="inp-pri">
+            <option value="alta">Alta</option>
+            <option value="media" selected>Media</option>
+            <option value="baja">Baja</option>
+          </select>
+        </div>
+        <input type="date" id="inp-fecha" style="width:100%;padding:8px 10px;border:0.5px solid #ccc;border-radius:10px;font-size:13px;margin-bottom:7px;background:#fff;color:#1a1a1a"/>
+        <button id="btn-add" onclick="addTask()">+ Agregar tarea</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const map = L.map('map',{zoomControl:false}).setView([-32.5,-56],7);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19}).addTo(map);
+L.control.zoom({position:'topright'}).addTo(map);
+
+let potreros=[], tasks={}, selected=null, sheetOpen=false;
+const COLORS=['#1D9E75','#378ADD','#BA7517','#D4537E','#7F77DD','#D85A30','#639922','#185FA5','#993556'];
+const DB_KEY='potreros-tasks-v2';
+
+async function dbLoad(){try{const r=await window.storage.get(DB_KEY);if(r&&r.value)tasks=JSON.parse(r.value);}catch(e){tasks={};}}
+async function dbSave(){try{await window.storage.set(DB_KEY,JSON.stringify(tasks));}catch(e){}}
+
+document.getElementById('kmz-input').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  let kml;
+  if(f.name.toLowerCase().endsWith('.kmz')){
+    const zip=await JSZip.loadAsync(f);
+    const kf=Object.values(zip.files).find(x=>x.name.toLowerCase().endsWith('.kml'));
+    if(!kf){alert('No se encontró KML en el KMZ');return;}
+    kml=await kf.async('string');
+  } else {kml=await f.text();}
+  parseKML(kml);
+  e.target.value='';
+});
+
+function parseKML(kml){
+  const doc=new DOMParser().parseFromString(kml,'text/xml');
+  potreros.forEach(p=>{map.removeLayer(p.layer);map.removeLayer(p.lbl);});
+  potreros=[];
+  doc.querySelectorAll('Placemark').forEach((pm,i)=>{
+    const name=(pm.querySelector('name')||{textContent:`Potrero ${i+1}`}).textContent.trim();
+    const cEl=pm.querySelector('Polygon outerBoundaryIs LinearRing coordinates,Polygon coordinates');
+    if(!cEl)return;
+    const lls=cEl.textContent.trim().split(/\s+/).filter(Boolean).map(c=>{
+      const p=c.split(',');return[parseFloat(p[1]),parseFloat(p[0])];
+    }).filter(l=>!isNaN(l[0])&&!isNaN(l[1]));
+    if(lls.length<3)return;
+    const col=COLORS[potreros.length%COLORS.length];
+    const poly=L.polygon(lls,{color:col,weight:2,fillColor:col,fillOpacity:0.2});
+    poly.addTo(map);
+    const c=poly.getBounds().getCenter();
+    const lbl=L.marker(c,{icon:L.divIcon({className:'',html:`<div style="font-size:11px;font-weight:600;color:#222;background:rgba(255,255,255,.85);padding:2px 7px;border-radius:5px;border:0.5px solid #ccc;white-space:nowrap">${name}</div>`,iconAnchor:[0,0]})});
+    lbl.addTo(map);
+    const idx=potreros.length;
+    poly.on('click',()=>select(idx));
+    lbl.on('click',()=>select(idx));
+    if(!tasks[name])tasks[name]=[];
+    potreros.push({name,layer:poly,lbl,color:col});
+  });
+  document.getElementById('hint').style.display='none';
+  document.getElementById('btn-centrar').style.display='block';
+  if(potreros.length){
+    map.fitBounds(L.featureGroup(potreros.map(p=>p.layer)).getBounds(),{padding:[20,20]});
+  }
+}
+
+function select(idx){
+  potreros.forEach((p,i)=>p.layer.setStyle({weight:i===idx?3:2,fillOpacity:i===idx?.38:.2}));
+  selected=idx;
+  const p=potreros[idx];
+  const tlist=tasks[p.name]||[];
+  const pend=tlist.filter(t=>!t.done).length;
+  document.getElementById('sheet-title').textContent=p.name;
+  document.getElementById('sheet-subtitle').textContent=`${pend} pendiente${pend!==1?'s':''}`;
+  document.getElementById('add-form').classList.remove('hidden');
+  renderTasks();
+  if(!sheetOpen){sheetOpen=true;document.getElementById('sheet').classList.remove('collapsed');}
+  setTimeout(()=>map.invalidateSize(),260);
+}
+
+function renderTasks(){
+  if(selected===null){document.getElementById('sheet-body').innerHTML='';return;}
+  const p=potreros[selected];
+  const tlist=tasks[p.name]||[];
+  const pend=tlist.filter(t=>!t.done).length;
+  document.getElementById('sheet-subtitle').textContent=`${pend} pendiente${pend!==1?'s':''}`;
+  let html=`<div class="stats">
+    <div class="stat"><div class="stat-n">${tlist.length}</div><div class="stat-l">Total</div></div>
+    <div class="stat"><div class="stat-n">${pend}</div><div class="stat-l">Pendientes</div></div>
+    <div class="stat"><div class="stat-n">${tlist.filter(t=>t.done).length}</div><div class="stat-l">Listas</div></div>
+  </div>`;
+  const sorted=[...tlist.filter(t=>!t.done),...tlist.filter(t=>t.done)];
+  if(!sorted.length){html+='<div class="empty">Sin tareas. Agregá la primera abajo.</div>';}
+  sorted.forEach(t=>{
+    const ri=tlist.indexOf(t);
+    const pc={'alta':'Alta','media':'Media','baja':'Baja'}[t.pri]||t.pri;
+    html+=`<div class="task">
+      <div class="ck${t.done?' done':''}" onclick="toggle(${ri})">${t.done?'✓':''}</div>
+      <div class="task-info">
+        <div class="task-name${t.done?' done':''}">${t.nombre}</div>
+        <div class="task-badges"><span class="badge b-cat">${t.cat}</span><span class="badge b-${t.pri}">${pc}</span>${t.fecha?`<span class="badge" style="background:#e6f1fb;color:#185FA5">${t.fecha}</span>`:''}
+        </div>
+      </div>
+      <button class="cal-btn" onclick="enviarCalendar(${ri})" title="Agregar al calendario">📅</button>
+      <button class="del-btn" onclick="del(${ri})">✕</button>
+    </div>`;
+  });
+  document.getElementById('sheet-body').innerHTML=html;
+}
+
+function addTask(){
+  if(selected===null)return;
+  const nom=document.getElementById('inp-task').value.trim();
+  if(!nom)return;
+  const p=potreros[selected];
+      tasks[p.name].unshift({id:Date.now(),nombre:nom,cat:document.getElementById('inp-cat').value,pri:document.getElementById('inp-pri').value,done:false,fecha:document.getElementById('inp-fecha').value});
+  document.getElementById('inp-task').value='';
+  document.getElementById('inp-fecha').value='';
+  dbSave();renderTasks();
+}
+
+function toggle(i){
+  if(selected===null)return;
+  const p=potreros[selected];
+  tasks[p.name][i].done=!tasks[p.name][i].done;
+  dbSave();renderTasks();
+}
+
+function del(i){
+  if(selected===null)return;
+  const p=potreros[selected];
+  tasks[p.name].splice(i,1);
+  dbSave();renderTasks();
+}
+
+function toggleSheet(){
+  sheetOpen=!sheetOpen;
+  document.getElementById('sheet').classList.toggle('collapsed',!sheetOpen);
+  document.getElementById('sheet-subtitle').textContent=sheetOpen?
+    (selected!==null?(tasks[potreros[selected].name]||[]).filter(t=>!t.done).length+' pendientes':'▲'):'▲';
+  setTimeout(()=>map.invalidateSize(),260);
+}
+
+function enviarCalendar(i){
+  if(selected===null)return;
+  const p=potreros[selected];
+  const t=tasks[p.name][i];
+  const title=encodeURIComponent(`${t.nombre} — ${p.name}`);
+  const details=encodeURIComponent(`Potrero: ${p.name}\nCategoría: ${t.cat}\nPrioridad: ${t.pri}`);
+  let dates='';
+  if(t.fecha){
+    const d=t.fecha.replace(/-/g,'');
+    dates=`&dates=${d}/${d}`;
+  }
+  window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}${dates}`,'_blank');
+}
+
+function centrar(){if(potreros.length){map.fitBounds(L.featureGroup(potreros.map(p=>p.layer)).getBounds(),{padding:[20,20]});}}
+document.getElementById('inp-task').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+dbLoad();
+</script>
+</body>
+</html>
