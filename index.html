@@ -120,8 +120,42 @@ let potreros=[],tasks={},selected=null,sheetOpen=false;
 const COLORS=['#1D9E75','#378ADD','#BA7517','#D4537E','#7F77DD','#D85A30','#639922','#185FA5','#993556'];
 const DB_KEY='potreros-tasks-v2';
 
-async function dbLoad(){try{const r=await window.storage.get(DB_KEY);if(r&&r.value)tasks=JSON.parse(r.value);}catch(e){tasks={};}}
+const KMZ_KEY='potreros-kmz-data-v1';
+
+async function dbLoad(){
+  try{const r=await window.storage.get(DB_KEY);if(r&&r.value)tasks=JSON.parse(r.value);}catch(e){tasks={};}
+  try{
+    const r=await window.storage.get(KMZ_KEY);
+    if(r&&r.value){
+      const saved=JSON.parse(r.value);
+      restorePotreros(saved);
+    }
+  }catch(e){}
+}
 async function dbSave(){try{await window.storage.set(DB_KEY,JSON.stringify(tasks));}catch(e){}}
+async function saveKMZ(data){try{await window.storage.set(KMZ_KEY,JSON.stringify(data));}catch(e){}}
+
+function restorePotreros(saved){
+  if(!saved||!saved.length)return;
+  potreros.forEach(p=>{try{map.removeLayer(p.layer);map.removeLayer(p.lbl);}catch(e){}});
+  potreros=[];
+  saved.forEach((s,i)=>{
+    const col=COLORS[i%COLORS.length];
+    const poly=L.polygon(s.latlngs,{color:col,weight:2,fillColor:col,fillOpacity:0.2});
+    poly.addTo(map);
+    const c=poly.getBounds().getCenter();
+    const lbl=L.marker(c,{icon:L.divIcon({className:'',html:`<div style="font-size:11px;font-weight:600;color:#222;background:rgba(255,255,255,.85);padding:2px 7px;border-radius:5px;border:0.5px solid #ccc;white-space:nowrap">${s.name}</div>`,iconAnchor:[0,0]})});
+    lbl.addTo(map);
+    const idx=potreros.length;
+    poly.on('click',()=>select(idx));
+    lbl.on('click',()=>select(idx));
+    if(!tasks[s.name])tasks[s.name]=[];
+    potreros.push({name:s.name,layer:poly,lbl,color:col,latlngs:s.latlngs});
+  });
+  document.getElementById('hint').style.display='none';
+  document.getElementById('btn-centrar').style.display='block';
+  centrar();
+}
 
 document.getElementById('kmz-input').addEventListener('change',async e=>{
   const f=e.target.files[0];if(!f)return;
@@ -158,10 +192,12 @@ function parseKML(kml){
     poly.on('click',()=>select(idx));
     lbl.on('click',()=>select(idx));
     if(!tasks[name])tasks[name]=[];
-    potreros.push({name,layer:poly,lbl,color:col});
+    potreros.push({name,layer:poly,lbl,color:col,latlngs:lls});
   });
   document.getElementById('hint').style.display='none';
   document.getElementById('btn-centrar').style.display='block';
+  const toSave=potreros.map(p=>({name:p.name,latlngs:p.latlngs}));
+  saveKMZ(toSave);
   centrar();
 }
 
