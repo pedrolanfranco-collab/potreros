@@ -123,17 +123,14 @@ const DB_KEY='potreros-tasks-v2';
 const KMZ_KEY='potreros-kmz-data-v1';
 
 async function dbLoad(){
-  try{const r=await window.storage.get(DB_KEY);if(r&&r.value)tasks=JSON.parse(r.value);}catch(e){tasks={};}
+  try{const r=localStorage.getItem(DB_KEY);if(r)tasks=JSON.parse(r);}catch(e){tasks={};}
   try{
-    const r=await window.storage.get(KMZ_KEY);
-    if(r&&r.value){
-      const saved=JSON.parse(r.value);
-      restorePotreros(saved);
-    }
+    const r=localStorage.getItem(KMZ_KEY);
+    if(r)restorePotreros(JSON.parse(r));
   }catch(e){}
 }
-async function dbSave(){try{await window.storage.set(DB_KEY,JSON.stringify(tasks));}catch(e){}}
-async function saveKMZ(data){try{await window.storage.set(KMZ_KEY,JSON.stringify(data));}catch(e){}}
+async function dbSave(){try{localStorage.setItem(DB_KEY,JSON.stringify(tasks));}catch(e){}}
+async function saveKMZ(data){try{localStorage.setItem(KMZ_KEY,JSON.stringify(data));}catch(e){}}
 
 function restorePotreros(saved){
   if(!saved||!saved.length)return;
