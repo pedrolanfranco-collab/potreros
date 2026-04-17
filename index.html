@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="Potreros"/>
 <meta name="theme-color" content="#1D9E75"/>
+<link rel="manifest" href="manifest.json"/>
 <title>Potreros</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -271,6 +272,7 @@ function toggleSheet(){
   setTimeout(()=>map.invalidateSize(),260);
 }
 
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 document.getElementById('inp-task').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
 const hoy=new Date();
 document.getElementById('inp-fecha').value=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
