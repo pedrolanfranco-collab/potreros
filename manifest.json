@@ -1,27 +1,23 @@
 {
-  "background_color": "#ffffff",
-  "dir": "ltr",
-  "display": "standalone",
   "name": "Potreros",
-  "orientation": "any",
-  "scope": "/",
   "short_name": "Potreros",
-  "start_url": "/potreros",
-  "theme_color": "#1D9E75",
   "description": "Descripcion de tareas en potreros",
-  "lang": "es"
+  "start_url": "/potreros/",
+  "display": "standalone",
+  "background_color": "#f5f4ef",
+  "theme_color": "#1D9E75",
+  "orientation": "portrait",
   "icons": [
-  {
-    "src": "launchericon-192x192.png",
-    "sizes": "192x192",
-    "type": "image/png"
-  },
-  {
-    "src": "launchericon-512x512.png",
-    "sizes": "512x512",
-    "type": "image/png",
-    "purpose": "any maskable"
-  }
-]
-Commit changes y luego volvés a PWA Builder. ¿Pudiste editarlo?
+    {
+      "src": "launchericon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "launchericon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
