@@ -104,7 +104,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
             <option value="baja">Baja</option>
           </select>
         </div>
-        <input type="date" id="inp-fecha"/>
+        <input type="date" id="inp-fecha" style="width:100%;padding:8px 10px;border:0.5px solid #ccc;border-radius:10px;font-size:13px;margin-bottom:7px;background:#fff;color:#1a1a1a"/>
         <button id="btn-add" onclick="addTask()">+ Agregar tarea</button>
       </div>
     </div>
@@ -205,7 +205,7 @@ function renderTasks(){
         <div class="task-badges">
           <span class="badge b-cat">${t.cat}</span>
           <span class="badge b-${t.pri}">${pc}</span>
-          ${t.fecha?`<span class="badge b-fecha">${t.fecha}</span>`:''}
+          ${t.fecha?`<span class="badge b-fecha">${t.fecha.split('-').reverse().join('/')}</span>`:''}
         </div>
       </div>
       <div class="task-actions">
@@ -225,7 +225,8 @@ function addTask(){
   const p=potreros[selected];
   tasks[p.name].unshift({id:Date.now(),nombre:nom,cat:document.getElementById('inp-cat').value,pri:document.getElementById('inp-pri').value,done:false,fecha:document.getElementById('inp-fecha').value});
   document.getElementById('inp-task').value='';
-  document.getElementById('inp-fecha').value='';
+  const hoy2=new Date();
+  document.getElementById('inp-fecha').value=`${hoy2.getFullYear()}-${String(hoy2.getMonth()+1).padStart(2,'0')}-${String(hoy2.getDate()).padStart(2,'0')}`;
   dbSave();renderTasks();
 }
 
@@ -271,6 +272,8 @@ function toggleSheet(){
 }
 
 document.getElementById('inp-task').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+const hoy=new Date();
+document.getElementById('inp-fecha').value=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
 dbLoad();
 </script>
 </body>
