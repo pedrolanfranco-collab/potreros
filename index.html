@@ -216,6 +216,7 @@ function renderTasks(){
         </div>
       </div>
       <button class="cal-btn" onclick="enviarCalendar(${ri})" title="Agregar al calendario">📅</button>
+      <button class="cal-btn" onclick="enviarWhatsApp(${ri})" title="Compartir por WhatsApp">💬</button>
       <button class="del-btn" onclick="del(${ri})">✕</button>
     </div>`;
   });
@@ -253,6 +254,16 @@ function toggleSheet(){
   document.getElementById('sheet-subtitle').textContent=sheetOpen?
     (selected!==null?(tasks[potreros[selected].name]||[]).filter(t=>!t.done).length+' pendientes':'▲'):'▲';
   setTimeout(()=>map.invalidateSize(),260);
+}
+
+function enviarWhatsApp(i){
+  if(selected===null)return;
+  const p=potreros[selected];
+  const t=tasks[p.name][i];
+  const pri={'alta':'🔴 Alta','media':'🟡 Media','baja':'🟢 Baja'}[t.pri]||t.pri;
+  const fecha=t.fecha?`\n📅 Fecha: ${t.fecha}`:'';
+  const msg=`📋 *Tarea de campo*\n\n🌿 Potrero: ${p.name}\n📌 ${t.nombre}\n🏷️ ${t.cat} · ${pri}${fecha}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
 }
 
 function enviarCalendar(i){
