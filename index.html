@@ -298,7 +298,13 @@ function enviarCalendar(i){
   const title=encodeURIComponent(`${t.nombre} - ${p.name}`);
   const details=encodeURIComponent(`Potrero: ${p.name}\nCategoria: ${t.cat}\nPrioridad: ${t.pri}`);
   let dates='';
-  if(t.fecha){const d=t.fecha.replace(/-/g,'');dates=`&dates=${d}/${d}`;}
+  if(t.fecha){
+    const d=t.fecha.replace(/-/g,'');
+    const next=new Date(t.fecha);
+    next.setDate(next.getDate()+1);
+    const nd=next.toISOString().slice(0,10).replace(/-/g,'');
+    dates=`&dates=${d}/${nd}`;
+  }
   window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}${dates}`,'_blank');
 }
 
