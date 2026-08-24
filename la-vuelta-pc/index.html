@@ -1,0 +1,2377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Vuelta — Mapa de Potreros</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="La Vuelta PC">
+<meta name="theme-color" content="#2b3a24">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192x192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --verde-monte:#2b3a24;
+    --verde-campo:#5c7a4a;
+    --verde-claro:#8fae72;
+    --tierra:#7a5236;
+    --crema:#f3ecd9;
+    --crema-alta:#faf6ea;
+    --ocre:#c68a3b;
+    --rojo-hacienda:#a1402e;
+    --texto:#241f16;
+    --texto-suave:#5a5340;
+    --linea:#d8cead;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;font-family:'Inter',sans-serif;color:var(--texto);background:var(--crema);}
+  #app{display:flex;flex-direction:column;height:100vh;}
+
+  /* ---------- HEADER ---------- */
+  header{
+    background:linear-gradient(135deg,var(--verde-monte) 0%,#233019 100%);
+    color:var(--crema-alta);
+    padding:14px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    border-bottom:3px solid var(--ocre);
+    position:relative;
+    overflow:hidden;
+  }
+  header::before{
+    content:"";
+    position:absolute;top:0;left:0;right:0;bottom:0;
+    background-image:radial-gradient(circle at 15% 40%, rgba(255,255,255,0.05) 0, transparent 45%),
+      radial-gradient(circle at 85% 60%, rgba(255,255,255,0.04) 0, transparent 40%);
+    pointer-events:none;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;position:relative;z-index:1;}
+  .brand .mark{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.14em;
+    color:var(--ocre);
+    border:1.5px solid var(--ocre);
+    border-radius:3px;
+    padding:3px 7px;
+    text-transform:uppercase;
+  }
+  header h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:22px;
+    margin:0;
+    letter-spacing:0.01em;
+  }
+  header .sub{font-size:12.5px;color:#cfd8bd;margin-top:2px;}
+  .resumen{display:flex;gap:18px;position:relative;z-index:1;flex-wrap:wrap;}
+  .resumen .stat{text-align:right;}
+  .resumen .stat .num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;color:var(--crema-alta);}
+  .resumen .stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em;color:#b9c4a2;}
+
+  /* ---------- LAYOUT ---------- */
+  #main{flex:1;display:flex;min-height:0;}
+  #map{flex:1;min-width:0;position:relative;background:#dce3d1;}
+  .satelital-off{background:var(--tierra) !important;}
+  #sidebar{
+    width:380px;
+    min-width:320px;
+    background:var(--crema-alta);
+    border-left:1px solid var(--linea);
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  @media (max-width:820px){
+    #main{flex-direction:column;}
+    #map{height:42vh;flex:none;}
+    #sidebar{width:100%;min-width:0;flex:1;border-left:none;border-top:1px solid var(--linea);}
+  }
+
+  .leaflet-popup-content-wrapper{border-radius:6px;font-family:'Inter',sans-serif;}
+
+  /* ---------- LISTA DE POTREROS ---------- */
+  #lista-wrap{flex:1;overflow-y:auto;padding:10px;}
+  #buscador{
+    margin:10px 10px 4px 10px;
+    padding:9px 11px;
+    border:1px solid var(--linea);
+    border-radius:6px;
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    background:#fff;
+    width:calc(100% - 20px);
+  }
+  #buscador:focus{outline:2px solid var(--verde-campo);outline-offset:1px;}
+
+  .potrero-card{
+    border:1px solid var(--linea);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:8px;
+    cursor:pointer;
+    background:#fff;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .potrero-card:hover{border-color:var(--verde-campo);}
+  .potrero-card.activo{
+    border-color:var(--ocre);
+    box-shadow:0 0 0 2px rgba(198,138,59,0.25);
+    background:#fffaf0;
+  }
+  .potrero-card .fila-top{display:flex;justify-content:space-between;align-items:center;}
+  .potrero-card .nombre{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:15.5px;
+    color:var(--verde-monte);
+  }
+  .potrero-card .area{font-size:11.5px;color:var(--texto-suave);}
+  .badge-total{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:13px;
+    background:var(--verde-campo);
+    color:#fff;
+    border-radius:20px;
+    padding:2px 10px;
+    min-width:20px;
+    text-align:center;
+  }
+  .badge-total.vacio{background:#cfc7ab;color:#6b6349;}
+  .mini-cats{margin-top:6px;font-size:11.5px;color:var(--texto-suave);display:flex;flex-wrap:wrap;gap:6px;}
+  .mini-cats span{background:var(--crema);border-radius:4px;padding:1px 6px;}
+  .ocupacion-badge{margin-top:6px;font-size:11.5px;padding:3px 8px;border-radius:5px;display:inline-block;}
+  .ocupacion-ocupado{background:#e4ecdc;color:#3f5a2c;}
+  .ocupacion-descanso{background:#eee6cd;color:#7a5236;}
+  .ocupacion-sin-datos{background:#f0ece0;color:var(--texto-suave);font-style:italic;}
+
+  /* ---------- PANEL DETALLE ---------- */
+  #detalle{
+    position:fixed;inset:0;
+    background:rgba(36,31,22,0.5);
+    display:none;
+    justify-content:flex-end;
+    align-items:stretch;
+    z-index:10000;
+  }
+  #detalle-caja{
+    background:var(--crema-alta);
+    width:100%;max-width:460px;
+    height:100%;
+    overflow-y:auto;
+    padding:16px 18px 20px 18px;
+    box-shadow:-10px 0 28px rgba(0,0,0,0.28);
+    border-left:3px solid var(--ocre);
+  }
+  .detalle-titulo{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .btn-cerrar-detalle{
+    background:none;border:none;cursor:pointer;
+    font-size:22px;line-height:1;color:var(--texto-suave);
+    padding:2px 6px;flex-shrink:0;
+  }
+  .btn-cerrar-detalle:hover{color:var(--rojo-hacienda);}
+  #detalle h2{
+    font-family:'Fraunces',serif;
+    font-size:19px;
+    margin:0 0 2px 0;
+    color:var(--verde-monte);
+  }
+  #detalle .meta{font-size:12px;color:var(--texto-suave);margin-bottom:10px;}
+  .tabla-animales{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
+  .tabla-animales th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--texto-suave);padding:4px 4px;border-bottom:1px solid var(--linea);}
+  .tabla-animales td{padding:5px 4px;border-bottom:1px solid #eee6cd;}
+  .tabla-animales td.num{font-family:'JetBrains Mono',monospace;font-weight:600;text-align:right;}
+  .tabla-animales tr.total td{font-weight:700;border-top:1.5px solid var(--verde-campo);border-bottom:none;}
+
+  .acciones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    border:none;
+    border-radius:6px;
+    padding:9px 10px;
+    cursor:pointer;
+    transition:filter .15s, transform .05s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-agregar{background:var(--verde-campo);color:#fff;}
+  .btn-mover{background:var(--ocre);color:#fff;}
+  .btn-nacimiento{background:#3f6b8f;color:#fff;}
+  .btn-muerte{background:var(--rojo-hacienda);color:#fff;}
+  .btn-compraventa{background:#8a6d1f;color:#fff;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn-full{grid-column:1/-1;}
+  .btn-secundario{background:#e7e0c9;color:var(--texto);}
+
+  /* ---------- FORMULARIO INLINE ---------- */
+  .form-accion{
+    background:#fff;
+    border:1px solid var(--linea);
+    border-radius:8px;
+    padding:12px;
+    margin-top:8px;
+  }
+  .form-accion h3{margin:0 0 8px 0;font-size:13.5px;font-family:'Fraunces',serif;color:var(--verde-monte);}
+  .form-row{margin-bottom:8px;}
+  .form-row label{display:block;font-size:11.5px;color:var(--texto-suave);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em;}
+  .form-row select, .form-row input{
+    width:100%;
+    padding:7px 8px;
+    border:1px solid var(--linea);
+    border-radius:5px;
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    background:#fff;
+  }
+  .form-botones{display:flex;gap:8px;margin-top:10px;}
+  .form-botones .btn{flex:1;}
+
+  /* ---------- HISTORIAL ---------- */
+  #historial{margin-top:14px;}
+  #historial h3{font-size:13px;font-family:'Fraunces',serif;color:var(--verde-monte);margin:0 0 6px 0;}
+  .hist-item{
+    font-size:12px;
+    padding:6px 8px;
+    border-left:3px solid var(--linea);
+    margin-bottom:5px;
+    background:#fffdf6;
+  }
+  .hist-item.ingreso{border-left-color:var(--verde-campo);}
+  .hist-item.movimiento{border-left-color:var(--ocre);}
+  .hist-item.nacimiento{border-left-color:#3f6b8f;}
+  .hist-item.muerte{border-left-color:var(--rojo-hacienda);}
+  .hist-item.compra{border-left-color:#1f7a5c;}
+  .hist-item.venta{border-left-color:#8a6d1f;}
+  .hist-item .fecha{color:var(--texto-suave);font-family:'JetBrains Mono',monospace;font-size:10.5px;}
+  .hist-vacio{font-size:12px;color:var(--texto-suave);font-style:italic;}
+
+  /* ---------- FOOTER / EXPORT ---------- */
+  #footer-tools{
+    border-top:1px solid var(--linea);
+    padding:10px 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#efe7cf;
+  }
+  #estado-compacto{flex:1;min-width:0;font-size:11px;line-height:1.5;}
+  #estado-compacto div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .btn-herramientas{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;
+    background:var(--verde-monte);color:#fff;border:none;border-radius:6px;
+    padding:9px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;
+  }
+  .btn-herramientas:hover{filter:brightness(1.08);}
+  #menu-herramientas .btn{width:100%;margin-bottom:8px;font-size:13px;padding:9px 10px;}
+  #menu-herramientas .btn-kmz{background:var(--verde-monte);color:#fff;}
+  #menu-herramientas .btn-json{background:#fff;color:var(--texto);border:1px solid var(--linea);}
+  .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
+
+  input[type=file]{display:none;}
+
+  /* toast */
+  #toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--verde-monte);color:#fff;padding:10px 18px;border-radius:6px;
+    font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,0.25);
+    opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
+    z-index:9999;
+  }
+  #toast.mostrar{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  .leyenda-cat{font-size:10px;color:var(--texto-suave);}
+
+  /* ---------- MODAL COEFICIENTES UG ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(36,31,22,0.5);
+    display:flex;align-items:center;justify-content:center;
+    z-index:10000;padding:20px;
+  }
+  .modal-box{
+    background:var(--crema-alta);
+    border-radius:10px;
+    padding:20px 22px;
+    max-width:440px;width:100%;
+    max-height:82vh;overflow-y:auto;
+    box-shadow:0 12px 40px rgba(0,0,0,0.3);
+    border-top:3px solid var(--ocre);
+  }
+  .modal-box h3{font-family:'Fraunces',serif;font-size:17px;margin:0 0 6px 0;color:var(--verde-monte);}
+  .modal-info{font-size:12px;color:var(--texto-suave);margin:0 0 12px 0;line-height:1.4;}
+  .coef-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #eee6cd;}
+  .coef-row label{font-size:13px;flex:1;}
+  .coef-row input{
+    width:72px;padding:6px 7px;border:1px solid var(--linea);border-radius:5px;
+    font-family:'JetBrains Mono',monospace;font-size:13px;text-align:right;
+  }
+  .carga-badge{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--texto-suave);
+    background:var(--crema);border-radius:4px;padding:1px 6px;
+  }
+
+  /* ---------- LISTA DE PUNTOS (aguadas/instalaciones) ---------- */
+  #lista-puntos{margin-top:10px;max-height:200px;overflow-y:auto;}
+  .punto-item{
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:12.5px;padding:6px 4px;border-bottom:1px solid #eee6cd;
+  }
+  .punto-item .info{display:flex;align-items:center;gap:6px;}
+  .punto-item .icono{font-size:15px;}
+  .punto-item .txt-sub{color:var(--texto-suave);font-size:11px;}
+  .punto-item button{
+    background:none;border:none;color:var(--rojo-hacienda);cursor:pointer;font-size:12px;
+    font-weight:600;
+  }
+  .puntos-vacio{font-size:12px;color:var(--texto-suave);font-style:italic;padding:6px 0;}
+  .modo-colocar-aviso{
+    position:fixed;top:14px;left:50%;transform:translateX(-50%);
+    background:var(--ocre);color:#fff;padding:8px 16px;border-radius:20px;
+    font-size:13px;font-weight:600;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,0.25);
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <div>
+        <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.1 (completa)</div>
+        <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
+      </div>
+    </div>
+    <div class="resumen">
+      <div class="stat"><div class="num" id="res-potreros">0</div><div class="lbl">Potreros</div></div>
+      <div class="stat"><div class="num" id="res-ha">0</div><div class="lbl">Hectáreas</div></div>
+      <div class="stat"><div class="num" id="res-animales">0</div><div class="lbl">Animales</div></div>
+      <div class="stat"><div class="num" id="res-ug">0</div><div class="lbl">UG totales</div></div>
+      <div class="stat"><div class="num" id="res-dotacion">0</div><div class="lbl">UG / ha</div></div>
+    </div>
+  </header>
+
+  <div id="main">
+    <div id="map">
+      <button id="btn-satelital" style="position:absolute;top:14px;right:14px;z-index:800;background:var(--verde-monte);color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🛰 Satelital: ON</button>
+    </div>
+    <div id="sidebar">
+      <input type="text" id="buscador" placeholder="Buscar potrero...">
+      <div id="lista-wrap">
+        <div id="lista-potreros"></div>
+      </div>
+      <div id="detalle" style="display:none;">
+        <div id="detalle-caja"></div>
+      </div>
+      <div id="footer-tools">
+        <div id="estado-compacto">
+          <div id="estado-backup"></div>
+          <div id="estado-sync"></div>
+        </div>
+        <button class="btn-herramientas" id="btn-herramientas">🛠 Herramientas</button>
+      </div>
+    </div>
+  </div>
+</div>
+<button id="btn-voz" title="Cargar por voz" style="display:none;position:fixed;bottom:22px;right:22px;z-index:900;width:58px;height:58px;border-radius:50%;background:var(--rojo-hacienda);color:#fff;border:none;font-size:24px;box-shadow:0 4px 16px rgba(0,0,0,0.35);cursor:pointer;">🎤</button>
+<div id="modal-herramientas" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🛠 Herramientas</h3>
+    <div id="menu-herramientas">
+      <button class="btn btn-kmz" id="btn-exportar-kmz">⬇ Exportar KMZ</button>
+      <button class="btn btn-kmz" id="btn-exportar-pdf">⬇ Exportar PDF</button>
+      <button class="btn btn-kmz" id="btn-exportar-excel">⬇ Exportar Excel</button>
+      <button class="btn btn-json" id="btn-exportar-md">⬇ Exportar MD</button>
+      <button class="btn btn-json" id="btn-exportar-json">⬇ Backup (JSON)</button>
+      <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
+      <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
+      <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
+      <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
+      <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
+      <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
+      <input type="file" id="input-json" accept=".json">
+    </div>
+    <div class="nota-guardado">Los datos se guardan solos en este navegador. El backup JSON es para pasarlos a otro dispositivo (guardalo en tu carpeta de OneDrive).</div>
+    <div class="form-botones"><button class="btn btn-secundario" id="herramientas-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-voz" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🎤 Carga por voz</h3>
+    <p class="modal-info" id="voz-estado">Tocá el micrófono y decí algo como: "mover 45 vacas del 12 al 15", "agregar 20 ovejas al 8", "nació un ternero en el 9", "vendí 10 novillos del 7".</p>
+    <div id="voz-transcript" style="background:var(--crema);border-radius:6px;padding:10px;font-size:13px;min-height:20px;margin-bottom:10px;color:var(--texto-suave);">—</div>
+    <button class="btn btn-muerte btn-full" id="voz-grabar" style="width:100%;margin-bottom:10px;">🎤 Empezar a hablar</button>
+    <div id="voz-interpretado"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="voz-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-alertas" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🔔 Alertas y umbrales</h3>
+    <p class="modal-info">Se calculan solas con cada movimiento — no hace falta revisarlas a mano.</p>
+    <div class="form-row"><label>Carga máxima recomendada (UG/ha)</label><input type="number" id="al-carga-max" min="0" step="0.05"></div>
+    <div class="form-row"><label>Días máximos de ocupación</label><input type="number" id="al-dias-max" min="1" step="1"></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="al-guardar">Guardar umbrales</button>
+    </div>
+    <div id="alertas-lista"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="alertas-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="modal-coef" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>Coeficientes de Unidad Ganadera (UG)</h3>
+    <p class="modal-info">Valores de referencia habituales en Uruguay (1 UG ≈ 1 vaca de cría). Ajustalos si tu establecimiento usa otros criterios.</p>
+    <div id="coef-lista"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="coef-guardar">Guardar</button>
+      <button class="btn btn-secundario" id="coef-reset">Restablecer</button>
+      <button class="btn btn-secundario" id="coef-cerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div id="modal-puntos" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>Aguadas, instalaciones y caminos</h3>
+    <p class="modal-info">Estos puntos se agregan al mapa y salen como capas aparte en el KMZ exportado.</p>
+    <div class="form-row"><label>Tipo</label><select id="np-tipo"></select></div>
+    <div class="form-row"><label>Subtipo</label><select id="np-subtipo"></select></div>
+    <div class="form-row"><label>Nombre (opcional)</label><input type="text" id="np-nombre" placeholder="Ej: Represa grande"></div>
+    <button class="btn btn-agregar btn-full" id="np-colocar" style="width:100%;margin-bottom:6px;">📍 Elegir ubicación en el mapa</button>
+    <button class="btn btn-json btn-full" id="np-cargar-seed" style="width:100%;margin-bottom:10px;">📥 Cargar bebederos y llaves de referencia</button>
+    <div id="lista-puntos"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="puntos-cerrar">Cerrar</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+/* ======================= DATOS DE POTREROS (del KML) ======================= */
+const POTREROS_GEO = [{"nombre": "CERRO", "area": "42", "coords": [[-31.3832525304926, -55.4257231752813], [-31.3844824063022, -55.4261636506441], [-31.38578089, -55.426384], [-31.388764692918, -55.4273629941945], [-31.3867546932095, -55.4342334171299], [-31.3815787580165, -55.4325234740025], [-31.3832525304926, -55.4257231752813]]}, {"nombre": "14", "area": "48", "coords": [[-31.3904287581061, -55.4220192512738], [-31.3903730237931, -55.4219860170168], [-31.3903426849273, -55.421967926031], [-31.3849655238657, -55.4187617394543], [-31.3849876115164, -55.4186711929254], [-31.3864937213251, -55.4124962913363], [-31.3929108523983, -55.41476151494], [-31.3904287581061, -55.4220192512738]]}, {"nombre": "EMBARCADERO", "area": "42", "coords": [[-31.3881318426669, -55.4058229025073], [-31.3882242508544, -55.4054420242023], [-31.3908047983251, -55.4076751738435], [-31.3921463811933, -55.4088579012118], [-31.393977337083, -55.4104415531117], [-31.3937668645307, -55.4112023074105], [-31.3940064267483, -55.4113426309966], [-31.3938763787632, -55.4117235093016], [-31.3936881510973, -55.4116513428859], [-31.3929934166272, -55.4142373061149], [-31.3929899942772, -55.4142854170587], [-31.3930071060261, -55.4143255095119], [-31.3930276401205, -55.4143535742291], [-31.3929108523983, -55.41476151494], [-31.3864937213251, -55.4124962913363], [-31.3864937213251, -55.4124962913363], [-31.3864937213251, -55.4124962913363], [-31.3881318426669, -55.4058229025073]]}, {"nombre": "CERRITO", "area": "19", "coords": [[-31.3973625412959, -55.4134200547371], [-31.3966790546491, -55.4165822409397], [-31.396153064866, -55.417861554832], [-31.3929108523983, -55.41476151494], [-31.3930276401205, -55.4143535742291], [-31.3930071060261, -55.4143255095119], [-31.3929899942772, -55.4142854170587], [-31.3929934166272, -55.4142373061149], [-31.3936881510973, -55.4116513428859], [-31.3938763787632, -55.4117235093016], [-31.3940064267483, -55.4113426309966], [-31.3937668645307, -55.4112023074105], [-31.393977337083, -55.4104415531117], [-31.3973625412959, -55.4134200547371]]}, {"nombre": "17", "area": "11", "coords": [[-31.3989174244541, -55.4205049154794], [-31.4013430475651, -55.4212894534984], [-31.400810529841, -55.4232114323106], [-31.4001528067025, -55.4255851304614], [-31.4001528067025, -55.4255851304614], [-31.397844579311, -55.423589528601], [-31.3989174244541, -55.4205049154794]]}, {"nombre": "15", "area": "29", "coords": [[-31.3929986231188, -55.4239068046623], [-31.3961603139233, -55.4178684863261], [-31.3989174244541, -55.4205049154794], [-31.397844579311, -55.423589528601], [-31.3974342317843, -55.4247664848511], [-31.397124523252, -55.4256164448599], [-31.3968644357395, -55.4264002523209], [-31.396689047372, -55.4268372600612], [-31.3932188569781, -55.4240819062119], [-31.3929986231188, -55.4239068046623]]}, {"nombre": "18", "area": "23", "coords": [[-31.4001528067025, -55.4255851304614], [-31.3984235771055, -55.4318433552253], [-31.3953304180881, -55.4307993967533], [-31.396689047372, -55.4268372600612], [-31.396689047372, -55.4268372600612], [-31.3968644357395, -55.4264002523209], [-31.397124523252, -55.4256164448599], [-31.3974342317843, -55.4247664848511], [-31.397844579311, -55.423589528601], [-31.397844579311, -55.423589528601], [-31.397844579311, -55.423589528601], [-31.4001528067025, -55.4255851304614]]}, {"nombre": "BOMBA", "area": "47", "coords": [[-31.388764692918, -55.4273629941945], [-31.3916898243375, -55.4291071618768], [-31.3940359000047, -55.430505099991], [-31.3938947399993, -55.4310609799995], [-31.3949405483756, -55.4319013343634], [-31.3933352699992, -55.4364381497247], [-31.3867546932095, -55.4342334171299], [-31.388764692918, -55.4273629941945], [-31.388764692918, -55.4273629941945]]}, {"nombre": "23", "area": "28", "coords": [[-31.3933352699992, -55.4364381497247], [-31.3949405483756, -55.4319013343634], [-31.3953304180881, -55.4307993967533], [-31.3984235771055, -55.4318433552253], [-31.3990366576763, -55.4320502812946], [-31.3991187887523, -55.4320863645025], [-31.3991187887523, -55.4320863645025], [-31.399508910382, -55.4323810440339], [-31.3999489181527, -55.4326905703019], [-31.3996313552807, -55.4332542105743], [-31.3992194648295, -55.4339852597644], [-31.3971275711483, -55.4376978671346], [-31.3933352699992, -55.4364381497247]]}, {"nombre": "7", "area": "22", "coords": [[-31.3971275711483, -55.4376978671346], [-31.3992194648295, -55.4339852597644], [-31.4012116632326, -55.4353122408775], [-31.403956535247, -55.4372306647653], [-31.4034278424381, -55.4397850551928], [-31.3971275711483, -55.4376978671346]]}, {"nombre": "8", "area": "63", "coords": [[-31.4034278424381, -55.4397850551928], [-31.403956535247, -55.4372306647653], [-31.406632034492, -55.4391009777093], [-31.4073557535544, -55.4384394522307], [-31.4077663718172, -55.4370081516498], [-31.4089058280852, -55.4326962083031], [-31.4091624604706, -55.4316798646134], [-31.4095833360633, -55.4300801757288], [-31.4140332100565, -55.4314257786909], [-31.4112385906607, -55.4423725218942], [-31.4034278424381, -55.4397850551928]]}, {"nombre": "9", "area": "53", "coords": [[-31.4022299315718, -55.4334152413943], [-31.4022742038577, -55.4325097783955], [-31.402977424613, -55.4319324470688], [-31.4030492862913, -55.431848252917], [-31.4036909059799, -55.4310965194186], [-31.4037730329834, -55.4310604362107], [-31.4040399452483, -55.4306755486595], [-31.4050988895838, -55.4294550676885], [-31.405615738727, -55.4288593605274], [-31.4095833360633, -55.4300801757288], [-31.4073557535544, -55.4384394522307], [-31.406632034492, -55.4391009777093], [-31.403956535247, -55.4372306647653], [-31.4012116632326, -55.4353122408775], [-31.4021073806425, -55.4336403855771], [-31.4022299315718, -55.4334152413943]]}, {"nombre": "OMBU", "area": "12", "coords": [[-31.4027324849525, -55.4277744211559], [-31.4030775176499, -55.4271893845608], [-31.4030967662986, -55.4270518173306], [-31.403137188448, -55.42695822651], [-31.4038493853674, -55.4279460043269], [-31.4048772492307, -55.4291953854012], [-31.4050988895835, -55.4294550676882], [-31.4050988895836, -55.4294550676883], [-31.4050988895837, -55.4294550676885], [-31.4050988895837, -55.4294550676885], [-31.4050988895838, -55.4294550676885], [-31.4040399452483, -55.4306755486595], [-31.4037730329834, -55.4310604362107], [-31.4036909059799, -55.4310965194186], [-31.4030492862913, -55.431848252917], [-31.402977424613, -55.4319324470688], [-31.4022742038577, -55.4325097783955], [-31.4022960191793, -55.4320064928183], [-31.4017512762489, -55.4318508839842], [-31.4016608062688, -55.4318602806529], [-31.4008229923633, -55.4311061040207], [-31.4027324849525, -55.4277744211559]]}, {"nombre": "10", "area": "12", "coords": [[-31.4050988895837, -55.4294550676885], [-31.4050988895836, -55.4294550676883], [-31.4038493853674, -55.4279460043269], [-31.403137188448, -55.42695822651], [-31.4040447573615, -55.424785904633], [-31.4050206488186, -55.425250475935], [-31.4058425455857, -55.4246776550093], [-31.4060629358836, -55.424571660586], [-31.4061052815584, -55.4245175357741], [-31.4062554160698, -55.4245457257803], [-31.4062380928692, -55.4246099989944], [-31.4062390552693, -55.4246460822023], [-31.4062496416699, -55.4246652514065], [-31.4062891000617, -55.424676527409], [-31.4063150848473, -55.4246539754041], [-31.4071398574502, -55.4248794954536], [-31.405615738727, -55.4288593605274], [-31.4050988895837, -55.4294550676885]]}, {"nombre": "PAST", "area": "10", "coords": [[-31.4046640742705, -55.423296344706], [-31.4059094326522, -55.4202743760426], [-31.4067159233129, -55.4207705201515], [-31.407578225469, -55.4212779402629], [-31.4077822511593, -55.4214222730946], [-31.4083423571415, -55.4217628083693], [-31.4071398574502, -55.4248794954536], [-31.4063150848473, -55.4246539754041], [-31.4063097916508, -55.4245383963787], [-31.4063016112557, -55.424471304164], [-31.4062905436611, -55.4244560815606], [-31.4063030548549, -55.4242649533187], [-31.4063275960378, -55.4242593153174], [-31.4063295208362, -55.4241944783032], [-31.4062765888661, -55.4241933507029], [-31.4062785136656, -55.4240726974764], [-31.4062929496601, -55.4240636766745], [-31.4062895812616, -55.4239937654591], [-31.4062284688675, -55.4239869998576], [-31.4062260628669, -55.4240619852741], [-31.4062583032695, -55.4240687508756], [-31.4062501228699, -55.4241702348979], [-31.4058045306129, -55.4242051905056], [-31.4057852825196, -55.4242593153174], [-31.4046640742705, -55.423296344706]]}, {"nombre": "26", "area": "11", "coords": [[-31.4021338478071, -55.4238251892222], [-31.4029315077833, -55.4219098972456], [-31.4040779609359, -55.4191569241972], [-31.4059094326522, -55.4202743760426], [-31.4046640742705, -55.423296344706], [-31.4040634584718, -55.4247409262725], [-31.4021338478071, -55.4238251892222]]}, {"nombre": "21", "area": "5", "coords": [[-31.4028727599051, -55.4218575267902], [-31.4030748709603, -55.4212982370674], [-31.4031040090312, -55.4211687334322], [-31.4031144993706, -55.421091916923], [-31.4031210677119, -55.421018592206], [-31.403097969339, -55.4208765145748], [-31.402963228717, -55.4206171665179], [-31.4028015397152, -55.4203848808669], [-31.4024935598937, -55.4199473719708], [-31.4023241705611, -55.4196970447159], [-31.4021836541782, -55.4194828006688], [-31.4020912597296, -55.4193565094411], [-31.4020123393994, -55.4191693278], [-31.4019468932216, -55.418928021347], [-31.4017544041988, -55.4180530035549], [-31.4016831831603, -55.4176583434683], [-31.4015840510844, -55.4172851077863], [-31.4015224544019, -55.4171328817529], [-31.4015648021254, -55.4170342167313], [-31.4032579735764, -55.4185277232591], [-31.4038392799084, -55.4190328881701], [-31.4040779609359, -55.4191569241972], [-31.4040779609358, -55.4191569241974], [-31.4029315077833, -55.4219098972456], [-31.4028727599051, -55.4218575267902]]}, {"nombre": "TRI", "area": "4", "coords": [[-31.4023761423206, -55.4258311900626], [-31.4022941216483, -55.4256389982454], [-31.4022818231802, -55.4256101804141], [-31.4022491001909, -55.4253124939487], [-31.4021586306907, -55.4246539754042], [-31.4021182081198, -55.4238714208324], [-31.4021338478071, -55.4238251892222], [-31.4040634584717, -55.4247409262725], [-31.4040447573615, -55.424785904633], [-31.403137188448, -55.42695822651], [-31.4030967662986, -55.4270518173306], [-31.4029718906199, -55.4268719650911], [-31.4029345558304, -55.4268105728316], [-31.4028621731235, -55.4266915490515], [-31.4026844922781, -55.4263715942916], [-31.4026148270691, -55.4262461469537], [-31.4025745265544, -55.4261760836193], [-31.4023761423206, -55.4258311900626]]}, {"nombre": "19", "area": "7", "coords": [[-31.400810529841, -55.4232114323106], [-31.4020736597051, -55.4237688722544], [-31.4020652737745, -55.423933438846], [-31.402087751852, -55.4244165354399], [-31.4021326447543, -55.4249189614624], [-31.4022057903347, -55.4254399127767], [-31.402251025073, -55.425673326028], [-31.402302996873, -55.4258232968609], [-31.402455062345, -55.4260815173176], [-31.4026350382497, -55.4263938625862], [-31.4028053894566, -55.4266859110503], [-31.4028987456366, -55.4268561786877], [-31.402997876324, -55.4269914907174], [-31.4030775176499, -55.4271893845608], [-31.4030775176499, -55.4271893845608], [-31.4027324849525, -55.4277744211559], [-31.4001528067025, -55.4255851304614], [-31.400810529841, -55.4232114323106]]}, {"nombre": "13", "area": "40", "coords": [[-31.388764692918, -55.4273629941945], [-31.38578089, -55.426384], [-31.3844824063022, -55.4261636506441], [-31.3832525304926, -55.4257231752813], [-31.384920356718, -55.4189453175114], [-31.3849655238657, -55.4187617394543], [-31.3903405808876, -55.421975120125], [-31.3903406301464, -55.4219751495753], [-31.3903302999385, -55.4220104698385], [-31.388764692918, -55.4273629941945]]}, {"nombre": "12", "area": "41", "coords": [[-31.3949405483756, -55.4319013343634], [-31.3938947399993, -55.4310609799995], [-31.3940359000047, -55.430505099991], [-31.3916898243375, -55.4291071618768], [-31.388764692918, -55.4273629941945], [-31.3903302999385, -55.4220104698385], [-31.3903406301464, -55.4219751495753], [-31.3903405808876, -55.421975120125], [-31.3903426849273, -55.421967926031], [-31.3903730237931, -55.4219860170168], [-31.3904287581061, -55.4220192512738], [-31.391285213983, -55.4225343375165], [-31.3920792102615, -55.4231758167685], [-31.3929986231188, -55.4239068046623], [-31.3932188569781, -55.4240819062119], [-31.396689047372, -55.4268372600612], [-31.3953304180881, -55.4307993967533], [-31.3949405483756, -55.4319013343634]]}, {"nombre": "CALLE", "area": "17", "coords": [[-31.396153064866, -55.417861554832], [-31.3966790546491, -55.4165822409397], [-31.3973625412959, -55.4134200547371], [-31.3983292433283, -55.4142640239759], [-31.4004697771584, -55.4161147918489], [-31.3989174244541, -55.4205049154794], [-31.3961603139233, -55.4178684863261], [-31.396153064866, -55.417861554832]]}, {"nombre": "TAJAMAR", "area": "28", "coords": [[-31.3961603139233, -55.4178684863261], [-31.3929986231188, -55.4239068046623], [-31.3920792102615, -55.4231758167685], [-31.391285213983, -55.4225343375165], [-31.3904287581061, -55.4220192512738], [-31.3929108523983, -55.41476151494], [-31.396153064866, -55.417861554832], [-31.3961603139233, -55.4178684863261]]}, {"nombre": "16", "area": "10", "coords": [[-31.4013430475651, -55.4212894534984], [-31.3989174244541, -55.4205049154794], [-31.4004697771584, -55.4161147918489], [-31.4013342754846, -55.416845977965], [-31.4013022758607, -55.4169238531355], [-31.4013363701137, -55.4169438254279], [-31.4014069939318, -55.417003340844], [-31.40146859069, -55.417139655185], [-31.40152334333, -55.4172639417901], [-31.4015866510303, -55.4174463624524], [-31.4016482476706, -55.4177931621729], [-31.4019356981243, -55.4191502917153], [-31.4013430475651, -55.4212894534984]]}, {"nombre": "20", "area": "6", "coords": [[-31.4020736597051, -55.4237688722544], [-31.400810529841, -55.4232114323106], [-31.4013430475651, -55.4212894534984], [-31.4019356981243, -55.4191502917153], [-31.4020421751418, -55.4194275482567], [-31.4022038654517, -55.4196440475043], [-31.4023694052423, -55.4198921195587], [-31.4026196392553, -55.42021686843], [-31.4029545668132, -55.420694970935], [-31.4030030394555, -55.4208138411598], [-31.4030354112171, -55.4209204909845], [-31.4030594250761, -55.4211057438947], [-31.402950717078, -55.4214797807073], [-31.4027505306271, -55.4220300496281], [-31.4022038654517, -55.4233155139103], [-31.4020943083852, -55.4236452976878], [-31.4020736597051, -55.4237688722544]]}, {"nombre": "11", "area": "15", "coords": [[-31.4001528067025, -55.4255851304614], [-31.4001528067025, -55.4255851304614], [-31.4027324849525, -55.4277744211559], [-31.4008229923633, -55.4311061040207], [-31.4007305965753, -55.4312865200603], [-31.4006074020498, -55.4318999345949], [-31.399508910382, -55.4323810440339], [-31.3991187887523, -55.4320863645025], [-31.3990366576763, -55.4320502812946], [-31.3984235771055, -55.4318433552253], [-31.4001528067025, -55.4255851304614]]}, {"nombre": "6", "area": "53", "coords": [[-31.4112796595214, -55.4422266525997], [-31.4089737150548, -55.4513252257824], [-31.3933164538007, -55.4508057130539], [-31.3955038314635, -55.4370697773884], [-31.4112261457408, -55.4422785013532], [-31.4112796595214, -55.4422266525997]]}, {"nombre": "1", "area": "5", "coords": [[-31.4050866820016, -55.4661938831126], [-31.4043577890487, -55.4659210253117], [-31.4026808547626, -55.4664673619031], [-31.4022015387981, -55.4664831482702], [-31.4015187867173, -55.4666351177981], [-31.4002768056683, -55.4667164980593], [-31.399366385923, -55.4688896496189], [-31.398806968116, -55.4693266817332], [-31.4038029251791, -55.471134418346], [-31.4051170212433, -55.4662080910201], [-31.4050866820016, -55.4661938831126]]}, {"nombre": "2", "area": "10", "coords": [[-31.4038272530339, -55.4711144388844], [-31.400930796371, -55.470146326202], [-31.3984736497565, -55.4742174944512], [-31.3995888296376, -55.4756497123905], [-31.4008393521767, -55.4793202607549], [-31.4018757070718, -55.4794531620971], [-31.4038233864727, -55.4711574681161], [-31.4038272530339, -55.4711144388844]]}, {"nombre": "3", "area": "27", "coords": [[-31.390568430431, -55.4665657294887], [-31.3873170424389, -55.4856701584164], [-31.3885688908183, -55.4846215251183], [-31.3892188175645, -55.4829682383475], [-31.3905032385804, -55.4824258981148], [-31.3916943875454, -55.4810494243746], [-31.3945480320566, -55.4766778219426], [-31.3957445277016, -55.4745609610131], [-31.3957779407199, -55.4707394098424], [-31.3953846037567, -55.4695707236339], [-31.3951741550169, -55.4681223549083], [-31.3905983512931, -55.466597713447], [-31.390568430431, -55.4665657294887]]}, {"nombre": "5", "area": "70", "coords": [[-31.4089697079437, -55.4512573534476], [-31.4051243967495, -55.4661966192843], [-31.4043353790449, -55.465961144876], [-31.4026263325518, -55.4664399695575], [-31.4022667843063, -55.4664419500766], [-31.4015364885432, -55.466659218785], [-31.4002619044777, -55.4666908812888], [-31.3998716188583, -55.4675612283892], [-31.3993096998838, -55.4690005142156], [-31.3987484654985, -55.4692992473834], [-31.3905742567039, -55.4665455234611], [-31.3933223320913, -55.4508239935416], [-31.4089351139558, -55.4513051594378], [-31.4089697079437, -55.4512573534476]]}];
+
+/* Categorías por especie con coeficiente de Unidad Ganadera (UG) por defecto.
+   Referencia estándar usada en Uruguay (INIA / Plan Agropecuario, base 1 UG = vaca de cría de ~400-450kg).
+   Son valores de referencia habituales — ajustalos en "Coeficientes UG" si tu establecimiento usa otros. */
+const ESPECIES = {
+  bovino: {
+    "Terneros":            0.5,
+    "Terneras":            0.5,
+    "Novillitos 1-2 años": 0.7,
+    "Novillos 2-3 años":   0.9,
+    "Novillos +3 años":    1.1,
+    "Vaquillonas 1-2 años":0.6,
+    "Vaquillonas 2-3 años":0.8,
+    "Vacas":               1.0,
+    "Toros":               1.5,
+    "Bueyes":              1.3,
+    "Otros bovinos":       0.7
+  },
+  ovino: {
+    "Corderos/as":  0.10,
+    "Ovejas":       0.15,
+    "Capones":      0.15,
+    "Carneros":     0.20,
+    "Otros ovinos": 0.15
+  },
+  equino: {
+    "Potros/as":     0.70,
+    "Yeguas":        1.00,
+    "Caballos":      1.00,
+    "Otros equinos": 1.00
+  }
+};
+const ESPECIE_LABEL = {bovino:"Bovinos", ovino:"Ovinos", equino:"Equinos"};
+const UG_DEFAULT = Object.assign({}, ESPECIES.bovino, ESPECIES.ovino, ESPECIES.equino);
+const CATEGORIAS = Object.keys(UG_DEFAULT);
+
+/* Puntos de referencia (bebederos, llaves, tanques) extraídos del monitor hidráulico —
+   se cargan una sola vez con el botón "Cargar puntos de referencia" en el modal de puntos. */
+const PUNTOS_SEED = [{"tipo": "agua", "subtipo": "Tanque", "nombre": "Tanque Cerro Norte", "lat": -31.3875398578274, "lon": -55.428643226623535}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B 1", "lat": -31.38734294294843, "lon": -55.42862176895142}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B 2", "lat": -31.38688957921558, "lon": -55.43143808841705}, {"tipo": "agua", "subtipo": "Tanque", "nombre": "Tanque Casa Sur", "lat": -31.402751428853595, "lon": -55.43163120746613}, {"tipo": "agua", "subtipo": "Tanque", "nombre": "Tanque Cerro Sur", "lat": -31.387523829887574, "lon": -55.42862847447396}, {"tipo": "agua", "subtipo": "Tanque", "nombre": "Tanque Casa Norte", "lat": -31.402751428853595, "lon": -55.43163120746613}, {"tipo": "agua", "subtipo": "Bomba eléctrica", "nombre": "Bomba electrica", "lat": -31.404509621305987, "lon": -55.42891144752503}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B 7", "lat": -31.389985231456645, "lon": -55.42178750038148}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B 6", "lat": -31.391221632086822, "lon": -55.42324662208557}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B 5", "lat": -31.3930075153667, "lon": -55.42522072792054}, {"tipo": "agua", "subtipo": "Distribución T", "nombre": "T 1", "lat": -31.39193031, "lon": -55.42403265}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave 1 Norte", "lat": -31.387524974740508, "lon": -55.42864993214608}, {"tipo": "agua", "subtipo": "Bomba solar", "nombre": "Bomba Lorentz", "lat": -31.39120331515925, "lon": -55.43063879013062}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave 2 Sur", "lat": -31.387523829887574, "lon": -55.42862847447396}, {"tipo": "agua", "subtipo": "Llave en Cruz", "nombre": "Cruz 1", "lat": -31.38852814, "lon": -55.42724016}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B", "lat": -31.39350878, "lon": -55.41531634}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B 3", "lat": -31.38976346, "lon": -55.42793109}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebedero 14 Y Emb 1", "lat": -31.39158625, "lon": -55.41427208}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebedero 14 Y Emb 2", "lat": -31.4030666351318, "lon": -55.42131042480471}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebedero 16", "lat": -31.40181060729831, "lon": -55.4195646260381}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebedero 16 - Calle", "lat": -31.3983058929443, "lon": -55.4222984313965}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebedero 2 Emb Y 14", "lat": -31.3884312726745, "lon": -55.4131973228758}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebedero Calle Y 15-1", "lat": -31.39754711, "lon": -55.41920047}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebedero Emb Cerrito", "lat": -31.39363477, "lon": -55.41189360999999}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebedero Pastoreo", "lat": -31.40482599, "lon": -55.42286485}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebedero Plazoleta", "lat": -31.40456255, "lon": -55.42388014}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebederos", "lat": -31.40196718, "lon": -55.42916192}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Bebederos (1)", "lat": -31.40206907, "lon": -55.42716647}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Paso Zanja Caño", "lat": -31.3836757, "lon": -55.4300295}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Paso Zanja Caño", "lat": -31.3836757, "lon": -55.4300295}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Paso Zanja Caño", "lat": -31.3836757, "lon": -55.4300295}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Paso Zanja Caño", "lat": -31.3836757, "lon": -55.4300295}, {"tipo": "agua", "subtipo": "Distribución Cruz", "nombre": "Cruz 1 (2)", "lat": -31.38852814, "lon": -55.42724016}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave", "lat": -31.39322715, "lon": -55.4163429}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave (2)", "lat": -31.3929103110842, "lon": -55.4147608939796}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave (3)", "lat": -31.3989005, "lon": -55.42051148}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave (4)", "lat": -31.39787169, "lon": -55.42359454}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave Corte 15", "lat": -31.39319231, "lon": -55.41637651}, {"tipo": "agua", "subtipo": "Llave en T", "nombre": "Llave Y T", "lat": -31.39320992, "lon": -55.41504101999999}, {"tipo": "agua", "subtipo": "Llave en T", "nombre": "Llave Y T (2)", "lat": -31.4002060044607, "lon": -55.4255619432811}, {"tipo": "agua", "subtipo": "Llave en T", "nombre": "Llave Y T (3)", "lat": -31.4020874106233, "lon": -55.4271797058359}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Paso Zanja Caño (2)", "lat": -31.3836757, "lon": -55.4300295}, {"tipo": "agua", "subtipo": "Distribución T", "nombre": "T", "lat": -31.3989107196461, "lon": -55.4205177157522}, {"tipo": "agua", "subtipo": "Distribución T", "nombre": "T 1 (2)", "lat": -31.39193031, "lon": -55.42403265}, {"tipo": "agua", "subtipo": "Distribución T", "nombre": "T 12-1", "lat": -31.39123972000001, "lon": -55.42337707}, {"tipo": "agua", "subtipo": "Llave en T", "nombre": "T y Llave", "lat": -31.3975571953239, "lon": -55.4192171830309}, {"tipo": "agua", "subtipo": "Llave en T", "nombre": "T y Llave 12", "lat": -31.39098641, "lon": -55.42306679}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Valvula", "lat": -31.39561079, "lon": -55.41726027}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Válvula Retencion", "lat": -31.393191, "lon": -55.417409}, {"tipo": "agua", "subtipo": "Llave en T", "nombre": "Y y Llave", "lat": -31.3934932332456, "lon": -55.4152839467361}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave B 6", "lat": -31.39145549579817, "lon": -55.423506011297334}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave B 5", "lat": -31.39265203759569, "lon": -55.424828662206764}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave B 3", "lat": -31.3893558044, "lon": -55.4277030831}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B 21 y pastoreo", "lat": -31.4036226645112, "lon": -55.4202564619482}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B calle 16", "lat": -31.3993231524545, "lon": -55.4194123772142}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "B Cerro y 13", "lat": -31.3866421440616, "lon": -55.4266432207078}, {"tipo": "agua", "subtipo": "Bebedero", "nombre": "Beb triangulo", "lat": -31.4033856242895, "lon": -55.4264169093221}, {"tipo": "agua", "subtipo": "Distribución Cruz", "nombre": "Cruz 2 con 2 llaves", "lat": -31.3983207754791, "lon": -55.4222770035267}, {"tipo": "agua", "subtipo": "Llave de agua", "nombre": "Llave pot 10", "lat": -31.4033581316471, "lon": -55.4264977108687}, {"tipo": "agua", "subtipo": "Distribución T", "nombre": "T con 2 llaves ombu", "lat": -31.4027572330087, "lon": -55.4277834948152}];
+const STORAGE_KEY = "la_vuelta_potreros_v1";
+
+/* ======================= SINCRONIZACIÓN (Supabase) ======================= */
+const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
+const ESTABLECIMIENTO = 'la_vuelta';
+/* En La Vuelta no hay dueño — esta función existe igual para que el motor de
+   sincronización sea idéntico al de María Laura (donde sí combina categoría+dueño). */
+function claveAnimal(cat){ return cat; }
+
+/* Tipos de puntos (capas adicionales del KMZ): aguadas/fuentes de agua e instalaciones/caminos */
+const TIPOS_PUNTO = {
+  agua: {
+    etiqueta: "Aguada / fuente de agua",
+    icono: "💧",
+    color: "#3f6b8f",
+    subtipos: ["Bebedero","Represa","Tajamar","Arroyo","Cañada","Pozo","Molino","Tanque","Llave de agua","Llave en T","Llave en Cruz","Distribución T","Distribución Cruz","Bomba solar","Bomba eléctrica","Otro"]
+  },
+  instalacion: {
+    etiqueta: "Instalación / camino",
+    icono: "🚧",
+    color: "#7a5236",
+    subtipos: ["Tranquera","Manga","Corral","Bretes","Embarcadero","Cruce de camino","Alambrado/Portera","Otro"]
+  }
+};
+
+/* ======================= ESTADO ======================= */
+const CONFIG_DEFAULT = { cargaMaxima: 1.3, diasOcupacionMax: 5 };
+/* Carga inicial (de la planilla de animales) — se aplica UNA sola vez, la primera vez
+   que se abre la app sin datos guardados todavía. Si ya hay datos en este navegador
+   (localStorage), esto no se toca ni se pisa. */
+const CARGA_INICIAL_SEED = {"14": {"animales": {"Vaquillonas 1-2 años": 62}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 62 Vaquillonas 1-2 años"}], "fechaIngreso": "2026-08-20"}, "EMBARCADERO": {"animales": {"Vacas": 60}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 60 Vacas"}], "fechaIngreso": "2026-08-20"}, "15": {"animales": {"Terneros": 143, "Novillitos 1-2 años": 6}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 143 Terneros, 6 Novillitos 1-2 años"}], "fechaIngreso": "2026-08-20"}, "BOMBA": {"animales": {"Vacas": 83}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 83 Vacas"}], "fechaIngreso": "2026-08-20"}, "23": {"animales": {"Toros": 15}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 15 Toros"}], "fechaIngreso": "2026-08-20"}, "8": {"animales": {"Terneros": 4}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 4 Terneros"}], "fechaIngreso": "2026-08-20"}, "9": {"animales": {"Vacas": 80}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 80 Vacas"}], "fechaIngreso": "2026-08-20"}, "PAST": {"animales": {"Vaquillonas 1-2 años": 41, "Vacas": 2}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 41 Vaquillonas 1-2 años, 2 Vacas"}], "fechaIngreso": "2026-08-20"}, "TRI": {"animales": {"Vaquillonas 1-2 años": 1, "Novillitos 1-2 años": 1, "Vacas": 1}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 1 Vaquillonas 1-2 años, 1 Novillitos 1-2 años, 1 Vacas"}], "fechaIngreso": "2026-08-20"}, "6": {"animales": {"Terneras": 132}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 132 ternera -> Terneras"}], "fechaIngreso": "2026-08-20"}, "2": {"animales": {"Vaquillonas 1-2 años": 56}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 56 Vaquillonas 1-2 años"}], "fechaIngreso": "2026-08-20"}, "3": {"animales": {"Terneros": 60, "Novillitos 1-2 años": 12}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 60 Terneros, 12 Novillitos 1-2 años"}], "fechaIngreso": "2026-08-20"}, "5": {"animales": {"Vacas": 68}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 68 Vacas"}], "fechaIngreso": "2026-08-20"}};
+let estado = cargarEstado();
+
+function estadoInicial(){
+  const potreros = {};
+  POTREROS_GEO.forEach(p=>{
+    const semilla = CARGA_INICIAL_SEED[p.nombre];
+    potreros[p.nombre] = semilla ? {
+      animales: {...semilla.animales},
+      historial: [...semilla.historial],
+      fechaIngreso: semilla.fechaIngreso,
+      fechaSalida: null
+    } : {
+      animales: {},
+      historial: [],
+      fechaIngreso: null,
+      fechaSalida: null
+    };
+  });
+  return { potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], config: {...CONFIG_DEFAULT}, colaSync: [], ultimaSincronizacion: null };
+}
+
+function cargarEstado(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      // asegurar que todos los potreros del KML existan en el estado
+      const base = estadoInicial();
+      POTREROS_GEO.forEach(p=>{
+        if(!parsed.potreros[p.nombre]) parsed.potreros[p.nombre] = base.potreros[p.nombre];
+        if(!parsed.potreros[p.nombre].animales) parsed.potreros[p.nombre].animales = {};
+        if(!parsed.potreros[p.nombre].historial) parsed.potreros[p.nombre].historial = [];
+        if(parsed.potreros[p.nombre].fechaIngreso === undefined) parsed.potreros[p.nombre].fechaIngreso = null;
+        if(parsed.potreros[p.nombre].fechaSalida === undefined) parsed.potreros[p.nombre].fechaSalida = null;
+      });
+      if(!parsed.ugCoef) parsed.ugCoef = {...UG_DEFAULT};
+      CATEGORIAS.forEach(c=>{ if(parsed.ugCoef[c]===undefined) parsed.ugCoef[c] = UG_DEFAULT[c]; });
+      if(!parsed.puntos) parsed.puntos = [];
+      if(!parsed.transacciones) parsed.transacciones = [];
+      if(!parsed.config) parsed.config = {...CONFIG_DEFAULT};
+      if(parsed.config.cargaMaxima===undefined) parsed.config.cargaMaxima = CONFIG_DEFAULT.cargaMaxima;
+      if(parsed.config.diasOcupacionMax===undefined) parsed.config.diasOcupacionMax = CONFIG_DEFAULT.diasOcupacionMax;
+      if(!parsed.colaSync) parsed.colaSync = [];
+      if(parsed.ultimaSincronizacion===undefined) parsed.ultimaSincronizacion = null;
+      return parsed;
+    }
+  }catch(e){ console.warn("No se pudo leer el estado guardado", e); }
+  return estadoInicial();
+}
+
+function guardarEstado(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+  }catch(e){
+    console.warn("No se pudo guardar en este navegador", e);
+  }
+}
+
+/* ======================= MOTOR DE SINCRONIZACIÓN ======================= */
+/* Cada movimiento se guarda local (como siempre) y ADEMÁS se manda como un
+   "evento" a Supabase. Los demás dispositivos, al sincronizar, bajan esos
+   eventos y los aplican — nunca se pisa el estado completo, solo se suman
+   movimientos, así que no importa el orden en que cada uno tuvo señal. */
+const DISPOSITIVO_KEY = 'dispositivo_id_' + ESTABLECIMIENTO;
+function idDispositivo(){
+  let id = localStorage.getItem(DISPOSITIVO_KEY);
+  if(!id){
+    id = 'disp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem(DISPOSITIVO_KEY, id);
+  }
+  return id;
+}
+
+let supabaseClient = null;
+function clienteSupabase(){
+  if(!supabaseClient && window.supabase && window.supabase.createClient){
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  return supabaseClient;
+}
+
+/* Registra un evento: intenta mandarlo ya mismo si hay señal; si no, lo deja en
+   la cola para mandarlo cuando vuelva. Nunca bloquea ni retrasa la acción local. */
+function enviarEvento(tipo, potrero, detalle){
+  const evento = { tipo, potrero, detalle, fecha_cliente: fechaHoy() };
+  pushEventoRemoto(evento);
+}
+async function pushEventoRemoto(evento){
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine){
+    estado.colaSync.push(evento);
+    guardarEstado();
+    actualizarEstadoSync();
+    return false;
+  }
+  try{
+    const { error } = await client.from('eventos_sync').insert({
+      establecimiento: ESTABLECIMIENTO,
+      dispositivo: idDispositivo(),
+      tipo: evento.tipo,
+      potrero: evento.potrero,
+      detalle: evento.detalle,
+      fecha_cliente: evento.fecha_cliente
+    });
+    if(error){
+      estado.colaSync.push(evento);
+      guardarEstado();
+      actualizarEstadoSync();
+      return false;
+    }
+    return true;
+  }catch(e){
+    estado.colaSync.push(evento);
+    guardarEstado();
+    actualizarEstadoSync();
+    return false;
+  }
+}
+async function vaciarColaSync(){
+  if(!estado.colaSync || !estado.colaSync.length) return;
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine) return;
+  const pendientes = estado.colaSync;
+  estado.colaSync = [];
+  for(const ev of pendientes){
+    const ok = await pushEventoRemoto(ev);
+    if(!ok) break; // pushEventoRemoto ya lo volvió a encolar si falló
+  }
+  guardarEstado();
+  actualizarEstadoSync();
+}
+
+/* Aplica un evento que vino de OTRO dispositivo al estado local.
+   No vuelve a mandar nada (si no, entraría en bucle). */
+function aplicarEventoRemoto(row){
+  const d = row.detalle || {};
+  const potrero = row.potrero;
+  if(!potrero || !estado.potreros[potrero]) return;
+
+  if(row.tipo === 'movimiento'){
+    if(!d.destino || !estado.potreros[d.destino]) return;
+    const key = claveAnimal(d.categoria, d.dueno);
+    const origenAnimales = estado.potreros[potrero].animales;
+    const totalAntesOrigen = totalPotrero(potrero);
+    const totalAntesDestino = totalPotrero(d.destino);
+    origenAnimales[key] = Math.max(0, (origenAnimales[key]||0) - d.cantidad);
+    const destAnimales = estado.potreros[d.destino].animales;
+    destAnimales[key] = (destAnimales[key]||0) + d.cantidad;
+    registrarCambioOcupacion(potrero, totalAntesOrigen);
+    registrarCambioOcupacion(d.destino, totalAntesDestino);
+    registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''} → ${d.destino} (sincronizado)`);
+    registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''} ← ${potrero} (sincronizado)`);
+    return;
+  }
+
+  if(row.tipo === 'movimiento_todo'){
+    if(!d.destino || !estado.potreros[d.destino] || !Array.isArray(d.items)) return;
+    const origenAnimales = estado.potreros[potrero].animales;
+    const destAnimales = estado.potreros[d.destino].animales;
+    const totalAntesOrigen = totalPotrero(potrero);
+    const totalAntesDestino = totalPotrero(d.destino);
+    d.items.forEach(it=>{
+      const key = claveAnimal(it.categoria, it.dueno);
+      origenAnimales[key] = Math.max(0, (origenAnimales[key]||0) - it.cantidad);
+      destAnimales[key] = (destAnimales[key]||0) + it.cantidad;
+    });
+    registrarCambioOcupacion(potrero, totalAntesOrigen);
+    registrarCambioOcupacion(d.destino, totalAntesDestino);
+    registrarHistorial(potrero, 'movimiento', `Potrero vaciado → ${d.destino} (sincronizado)`);
+    registrarHistorial(d.destino, 'movimiento', `Ingreso de potrero completo ← ${potrero} (sincronizado)`);
+    return;
+  }
+
+  const key = claveAnimal(d.categoria, d.dueno);
+  const a = estado.potreros[potrero].animales;
+  const totalAntes = totalPotrero(potrero);
+
+  if(row.tipo==='ingreso' || row.tipo==='nacimiento' || row.tipo==='compra'){
+    a[key] = (a[key]||0) + d.cantidad;
+  } else if(row.tipo==='muerte' || row.tipo==='venta'){
+    a[key] = Math.max(0, (a[key]||0) - d.cantidad);
+  } else {
+    return;
+  }
+  registrarCambioOcupacion(potrero, totalAntes);
+
+  let detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}`;
+  if(d.precio) detalleTxt += ` a USD ${d.precio}/cab`;
+  if(d.contraparte) detalleTxt += ` — ${d.contraparte}`;
+  if(d.obs) detalleTxt += ` (${d.obs})`;
+  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`);
+
+  if(row.tipo==='compra' || row.tipo==='venta'){
+    estado.transacciones = estado.transacciones || [];
+    estado.transacciones.unshift({
+      fecha: row.fecha_cliente || fechaHoy(), potrero, tipo: row.tipo==='venta'?'Venta':'Compra',
+      categoria: d.categoria, dueno: d.dueno, cantidad: d.cantidad,
+      precioUnitario: d.precio||null, total: d.precio ? d.precio*d.cantidad : null,
+      contraparte: d.contraparte||'', notas: 'sincronizado'
+    });
+  }
+}
+
+async function sincronizar(mostrarToast){
+  const client = clienteSupabase();
+  if(!client){ return; }
+  if(!navigator.onLine){ return; }
+  actualizarEstadoSync('sincronizando');
+  await vaciarColaSync();
+  try{
+    let query = client.from('eventos_sync').select('*').eq('establecimiento', ESTABLECIMIENTO).order('creado_en', {ascending:true});
+    if(estado.ultimaSincronizacion) query = query.gt('creado_en', estado.ultimaSincronizacion);
+    const { data, error } = await query;
+    if(error || !data){ actualizarEstadoSync(); return; }
+    let cambios = 0;
+    const miId = idDispositivo();
+    data.forEach(row=>{
+      if(row.dispositivo !== miId){
+        aplicarEventoRemoto(row);
+        cambios++;
+      }
+      estado.ultimaSincronizacion = row.creado_en;
+    });
+    guardarEstado();
+    if(cambios>0){
+      actualizarTodo();
+      if(mostrarToast) toast(`Sincronizado: ${cambios} movimiento${cambios===1?'':'s'} de otro dispositivo`);
+    }
+  }catch(e){
+    console.warn('Error al sincronizar', e);
+  }
+  actualizarEstadoSync();
+}
+function actualizarEstadoSync(estadoTexto){
+  const el = document.getElementById('estado-sync');
+  if(!el) return;
+  if(estadoTexto==='sincronizando'){ el.textContent = '🔄 Sincronizando...'; el.style.color = '#8a8465'; return; }
+  const pendientes = (estado.colaSync||[]).length;
+  if(pendientes>0){
+    el.textContent = `⏳ ${pendientes} movimiento${pendientes===1?'':'s'} sin sincronizar`;
+    el.style.color = '#a1402e';
+  } else if(estado.ultimaSincronizacion){
+    el.textContent = '✅ Sincronizado';
+    el.style.color = '#3f5a2c';
+  } else {
+    el.textContent = '⚪ Todavía no sincronizado';
+    el.style.color = '#8a8465';
+  }
+}
+
+/* ======================= UTILIDADES ======================= */
+function totalPotrero(nombre){
+  const a = estado.potreros[nombre].animales;
+  return Object.values(a).reduce((s,n)=>s+Number(n||0),0);
+}
+function totalUG(nombre){
+  const a = estado.potreros[nombre].animales;
+  let ug = 0;
+  Object.entries(a).forEach(([cat,cant])=>{
+    const coef = estado.ugCoef[cat] !== undefined ? estado.ugCoef[cat] : (UG_DEFAULT[cat] || 1);
+    ug += Number(cant||0) * coef;
+  });
+  return ug;
+}
+function areaHa(nombre){
+  const info = POTREROS_GEO.find(p=>p.nombre===nombre);
+  const areaKml = parseFloat(info.area);
+  if(areaKml && areaKml>0) return areaKml;
+  return AREA_CALCULADA[nombre] || 0;
+}
+function cargaPotrero(nombre){
+  const ha = areaHa(nombre);
+  if(!ha) return 0;
+  return totalUG(nombre) / ha;
+}
+/* Área geométrica aproximada en hectáreas a partir de coordenadas [lat,lon],
+   usando proyección equirectangular simple (suficiente para la escala de un potrero). */
+function calcAreaHa(coords){
+  if(!coords || coords.length<3) return 0;
+  const latRef = coords.reduce((s,c)=>s+c[0],0)/coords.length;
+  const mPerDegLat = 110574;
+  const mPerDegLon = 111320 * Math.cos(latRef * Math.PI/180);
+  const pts = coords.map(c=>[ c[1]*mPerDegLon, c[0]*mPerDegLat ]); // [x,y] en metros
+  let area2 = 0;
+  for(let i=0;i<pts.length;i++){
+    const [x1,y1] = pts[i];
+    const [x2,y2] = pts[(i+1)%pts.length];
+    area2 += (x1*y2 - x2*y1);
+  }
+  return Math.abs(area2/2) / 10000; // m² -> ha
+}
+function fechaHoy(){
+  const d = new Date();
+  return d.toLocaleDateString('es-UY', {day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function fechaISOHoy(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+function diasDesde(fechaISO){
+  if(!fechaISO) return null;
+  const hoy = new Date(fechaISOHoy()+'T00:00:00');
+  const desde = new Date(fechaISO+'T00:00:00');
+  return Math.round((hoy - desde) / 86400000);
+}
+function fechaISOaDisplay(fechaISO){
+  if(!fechaISO) return '';
+  const [y,m,d] = fechaISO.split('-');
+  return `${d}/${m}/${y}`;
+}
+/* Registra el cambio de estado (ocupado/vacío) de un potrero comparando el total
+   de animales antes y después de una operación, para poder contar días de ocupación/descanso. */
+function registrarCambioOcupacion(nombre, totalAntes){
+  const totalDespues = totalPotrero(nombre);
+  const p = estado.potreros[nombre];
+  if(totalAntes===0 && totalDespues>0){
+    p.fechaIngreso = fechaISOHoy();
+    p.fechaSalida = null;
+  }else if(totalAntes>0 && totalDespues===0){
+    p.fechaSalida = fechaISOHoy();
+    p.fechaIngreso = null;
+  }
+}
+/* Info de ocupación/descanso para mostrar en tarjetas y detalle */
+function estadoOcupacion(nombre){
+  const p = estado.potreros[nombre];
+  const total = totalPotrero(nombre);
+  if(total > 0){
+    const dias = diasDesde(p.fechaIngreso);
+    return dias===null
+      ? {tipo:'ocupado', texto:'Ocupado (fecha de ingreso no registrada)'}
+      : {tipo:'ocupado', dias, texto:`Ocupado hace ${dias} día${dias===1?'':'s'} (desde ${fechaISOaDisplay(p.fechaIngreso)})`};
+  }else{
+    const dias = diasDesde(p.fechaSalida);
+    return dias===null
+      ? {tipo:'sin-datos', texto:'Sin uso registrado'}
+      : {tipo:'descanso', dias, texto:`En descanso hace ${dias} día${dias===1?'':'s'} (desde ${fechaISOaDisplay(p.fechaSalida)})`};
+  }
+}
+/* Alertas por reglas simples (sin IA): sobrecarga de UG/ha y ocupación prolongada. */
+function calcularAlertas(nombre){
+  const alertas = [];
+  const cfg = estado.config || CONFIG_DEFAULT;
+  const carga = cargaPotrero(nombre);
+  if(totalPotrero(nombre) > 0 && carga > cfg.cargaMaxima){
+    alertas.push(`Sobrecarga: ${carga.toFixed(2)} UG/ha (máx. recomendado ${cfg.cargaMaxima})`);
+  }
+  const ocup = estadoOcupacion(nombre);
+  if(ocup.tipo==='ocupado' && ocup.dias!=null && ocup.dias > cfg.diasOcupacionMax){
+    alertas.push(`Ocupación prolongada: ${ocup.dias} días (recomendado hasta ${cfg.diasOcupacionMax})`);
+  }
+  return alertas;
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('mostrar');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=>t.classList.remove('mostrar'), 2200);
+}
+function registrarHistorial(nombre, tipo, detalle){
+  estado.potreros[nombre].historial.unshift({fecha: fechaHoy(), tipo, detalle});
+}
+
+/* ======================= MAPA ======================= */
+const map = L.map('map', {zoomControl:true});
+
+// Única capa base: satelital (Esri), se puede prender/apagar con el botón flotante.
+const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom:19,
+  attribution:'Tiles &copy; Esri'
+}).addTo(map);
+
+function actualizarBotonSatelital(){
+  const btn = document.getElementById('btn-satelital');
+  if(!btn) return;
+  const activa = map.hasLayer(satLayer);
+  btn.textContent = activa ? '🛰 Satelital: ON' : '🛰 Satelital: OFF';
+  btn.classList.toggle('satelital-off', !activa);
+}
+document.getElementById('btn-satelital').addEventListener('click', ()=>{
+  if(map.hasLayer(satLayer)) map.removeLayer(satLayer);
+  else map.addLayer(satLayer);
+  actualizarBotonSatelital();
+});
+actualizarBotonSatelital();
+
+const poligonos = {}; // nombre -> layer
+let seleccionActual = null;
+const bounds = [];
+
+// área geométrica calculada por potrero (fallback / verificación del dato del KML)
+const AREA_CALCULADA = {};
+POTREROS_GEO.forEach(p=>{ AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords); });
+
+POTREROS_GEO.forEach(p=>{
+  const latlngs = p.coords; // ya en [lat,lon]
+  bounds.push(...latlngs);
+  const poly = L.polygon(latlngs, {
+    color:'#5c7a4a',
+    weight:2,
+    fillColor:'#8fae72',
+    fillOpacity:0.28
+  }).addTo(map);
+
+  const center = poly.getBounds().getCenter();
+  const label = L.marker(center, {
+    icon: L.divIcon({className:'label-potrero', html:`<div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;color:#2b3a24;text-shadow:0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;pointer-events:none;">${p.nombre}</div>`, iconSize:[0,0]}),
+    interactive:false
+  }).addTo(map);
+
+  poly.on('click', (e)=>{
+    if(modoColocarPunto){ colocarPuntoEn(e.latlng); return; }
+    seleccionarPotrero(p.nombre);
+  });
+  poly.bindTooltip(p.nombre, {sticky:true});
+
+  poligonos[p.nombre] = {layer: poly, label, area: p.area};
+});
+
+if(bounds.length) map.fitBounds(bounds, {padding:[20,20]});
+
+/* ======================= PUNTOS (aguadas / instalaciones) ======================= */
+let modoColocarPunto = null; // {tipo, subtipo, nombre}
+const puntosLayers = {}; // id -> marker
+let avisoModo = null;
+
+function iconoPunto(tipo){
+  const t = TIPOS_PUNTO[tipo];
+  return L.divIcon({
+    className:'icono-punto',
+    html:`<div style="background:${t.color};width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.35);border:2px solid #fff;"><span style="transform:rotate(45deg);font-size:13px;">${t.icono}</span></div>`,
+    iconSize:[26,26],
+    iconAnchor:[13,26]
+  });
+}
+
+function crearMarcadorPunto(punto){
+  const marker = L.marker([punto.lat, punto.lon], {icon: iconoPunto(punto.tipo)}).addTo(map);
+  marker.bindPopup(`<strong>${punto.nombre || punto.subtipo}</strong><br>${punto.subtipo}`);
+  puntosLayers[punto.id] = marker;
+}
+
+function colocarPuntoEn(latlng){
+  const punto = {
+    id: 'pt_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+    tipo: modoColocarPunto.tipo,
+    subtipo: modoColocarPunto.subtipo,
+    nombre: modoColocarPunto.nombre,
+    lat: latlng.lat,
+    lon: latlng.lng
+  };
+  estado.puntos.push(punto);
+  crearMarcadorPunto(punto);
+  guardarEstado();
+  renderListaPuntos();
+  modoColocarPunto = null;
+  ocultarAvisoModo();
+  toast(`${punto.subtipo} agregado al mapa`);
+}
+
+function mostrarAvisoModo(){
+  ocultarAvisoModo();
+  avisoModo = document.createElement('div');
+  avisoModo.className = 'modo-colocar-aviso';
+  avisoModo.textContent = '📍 Tocá el mapa donde está ubicado';
+  document.body.appendChild(avisoModo);
+}
+function ocultarAvisoModo(){
+  if(avisoModo){ avisoModo.remove(); avisoModo = null; }
+}
+
+map.on('click', (e)=>{
+  if(modoColocarPunto) colocarPuntoEn(e.latlng);
+});
+
+// recrear marcadores de puntos guardados
+estado.puntos.forEach(p=> crearMarcadorPunto(p));
+
+function refrescarColoresMapa(){
+  POTREROS_GEO.forEach(p=>{
+    const total = totalPotrero(p.nombre);
+    const item = poligonos[p.nombre];
+    const activo = seleccionActual === p.nombre;
+    item.layer.setStyle({
+      fillColor: total>0 ? '#5c7a4a' : '#8fae72',
+      fillOpacity: activo ? 0.55 : (total>0 ? 0.4 : 0.2),
+      color: activo ? '#c68a3b' : '#5c7a4a',
+      weight: activo ? 3 : 2
+    });
+  });
+}
+
+/* ======================= LISTA LATERAL ======================= */
+function renderLista(filtro=''){
+  const cont = document.getElementById('lista-potreros');
+  cont.innerHTML = '';
+  const f = filtro.trim().toLowerCase();
+  const nombres = POTREROS_GEO.map(p=>p.nombre).filter(n=> n.toLowerCase().includes(f));
+
+  nombres.forEach(nombre=>{
+    const total = totalPotrero(nombre);
+    const info = POTREROS_GEO.find(p=>p.nombre===nombre);
+    const card = document.createElement('div');
+    card.className = 'potrero-card' + (seleccionActual===nombre ? ' activo':'');
+    const animales = estado.potreros[nombre].animales;
+    const catsConAnimales = Object.entries(animales).filter(([k,v])=>v>0);
+
+    const carga = cargaPotrero(nombre);
+    const ocup = estadoOcupacion(nombre);
+    const alertas = calcularAlertas(nombre);
+    card.innerHTML = `
+      <div class="fila-top">
+        <div>
+          <div class="nombre">${nombre} ${alertas.length ? '<span title="'+alertas.join(' · ')+'">⚠️</span>':''}</div>
+          <div class="area">${areaHa(nombre).toFixed(1)} ha ${carga>0 ? `· <span class="carga-badge">${carga.toFixed(2)} UG/ha</span>` : ''}</div>
+        </div>
+        <div class="badge-total ${total===0?'vacio':''}">${total}</div>
+      </div>
+      <div class="ocupacion-badge ocupacion-${ocup.tipo}">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
+      ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span>${k}: ${v}</span>`).join('')}</div>` : ''}
+    `;
+    card.addEventListener('click', ()=> seleccionarPotrero(nombre));
+    cont.appendChild(card);
+  });
+}
+
+document.getElementById('buscador').addEventListener('input', e=> renderLista(e.target.value));
+
+/* ======================= SELECCIÓN Y DETALLE ======================= */
+function seleccionarPotrero(nombre){
+  seleccionActual = nombre;
+  refrescarColoresMapa();
+  renderLista(document.getElementById('buscador').value);
+  renderDetalle(nombre);
+  const item = poligonos[nombre];
+  map.fitBounds(item.layer.getBounds(), {padding:[40,40], maxZoom:16});
+}
+
+function renderDetalle(nombre){
+  document.getElementById('detalle').style.display = 'flex';
+  const det = document.getElementById('detalle-caja');
+  const info = POTREROS_GEO.find(p=>p.nombre===nombre);
+  const animales = estado.potreros[nombre].animales;
+  const total = totalPotrero(nombre);
+  const historial = estado.potreros[nombre].historial;
+
+  const filasCat = CATEGORIAS.map(c=>{
+    const v = animales[c] || 0;
+    if(v===0 && !Object.keys(animales).includes(c)) return '';
+    return `<tr><td>${c}</td><td class="num">${v}</td></tr>`;
+  }).join('');
+
+  const ha = areaHa(nombre);
+  const ug = totalUG(nombre);
+  const carga = cargaPotrero(nombre);
+  const areaCalc = AREA_CALCULADA[nombre];
+  const difiereArea = info.area && Math.abs(parseFloat(info.area) - areaCalc) / parseFloat(info.area) > 0.05;
+  const ocup = estadoOcupacion(nombre);
+  const alertasPotrero = calcularAlertas(nombre);
+
+  det.innerHTML = `
+    <div class="detalle-titulo"><h2>${nombre}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
+    <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong></div>
+    <div class="ocupacion-badge ocupacion-${ocup.tipo}" style="margin-bottom:10px;">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
+    ${alertasPotrero.length ? `<div style="background:#fbe6d9;border-left:3px solid var(--rojo-hacienda);border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a3420;">${alertasPotrero.map(a=>'⚠️ '+a).join('<br>')}</div>` : ''}
+
+    <table class="tabla-animales">
+      <thead><tr><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead>
+      <tbody>
+        ${filasCat || '<tr><td colspan="2" style="color:#8a8465;">Sin animales registrados</td></tr>'}
+        <tr class="total"><td>Total (${ug.toFixed(1)} UG)</td><td class="num">${total}</td></tr>
+      </tbody>
+    </table>
+
+    <div class="acciones">
+      <button class="btn btn-agregar" data-accion="agregar">＋ Agregar animales</button>
+      <button class="btn btn-mover" data-accion="mover">⇄ Mover una categoría</button>
+      <button class="btn btn-nacimiento" data-accion="nacimiento">🐄 Nacimiento</button>
+      <button class="btn btn-muerte" data-accion="muerte">✕ Muerte</button>
+      <button class="btn btn-compraventa btn-full" data-accion="compraventa">💰 Compra / Venta</button>
+      <button class="btn btn-mover btn-full" data-accion="mover-todo" style="filter:brightness(0.9);">⇄⇄ Mover TODO el potrero</button>
+    </div>
+
+    <div id="form-zona"></div>
+
+    <div id="historial">
+      <h3>Historial</h3>
+      ${historial.length ? historial.slice(0,15).map(h=>`
+        <div class="hist-item ${h.tipo}">
+          <span class="fecha">${h.fecha}</span> — ${h.detalle}
+        </div>
+      `).join('') : '<div class="hist-vacio">Todavía no hay movimientos en este potrero.</div>'}
+    </div>
+  `;
+
+  det.querySelectorAll('[data-accion]').forEach(btn=>{
+    btn.addEventListener('click', ()=> mostrarFormulario(nombre, btn.dataset.accion));
+  });
+  document.getElementById('detalle-cerrar').addEventListener('click', cerrarDetalle);
+}
+
+/* ======================= PANEL FLOTANTE Y HERRAMIENTAS ======================= */
+function cerrarDetalle(){
+  document.getElementById('detalle').style.display = 'none';
+  seleccionActual = null;
+  refrescarColoresMapa();
+  renderLista(document.getElementById('buscador').value);
+}
+document.getElementById('detalle').addEventListener('click', (e)=>{
+  if(e.target.id === 'detalle') cerrarDetalle();
+});
+document.getElementById('btn-herramientas').addEventListener('click', ()=>{
+  document.getElementById('modal-herramientas').style.display = 'flex';
+});
+document.getElementById('herramientas-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-herramientas').style.display = 'none';
+});
+document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
+  if(e.target.id === 'modal-herramientas') document.getElementById('modal-herramientas').style.display = 'none';
+});
+document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
+  if(e.target.tagName === 'BUTTON') document.getElementById('modal-herramientas').style.display = 'none';
+});
+
+/* ======================= FORMULARIOS DE ACCIÓN ======================= */
+function opcionesCategorias(seleccionada){
+  return Object.entries(ESPECIES).map(([esp,cats])=>{
+    const opts = Object.keys(cats).map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
+    return `<optgroup label="${ESPECIE_LABEL[esp]}">${opts}</optgroup>`;
+  }).join('');
+}
+function opcionesPotreros(excluir){
+  return POTREROS_GEO.map(p=>p.nombre).filter(n=>n!==excluir).sort().map(n=>`<option value="${n}">${n}</option>`).join('');
+}
+
+function mostrarFormulario(nombre, accion){
+  const zona = document.getElementById('form-zona');
+
+  if(accion==='agregar'){
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Agregar animales a ${nombre}</h3>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
+        <div class="form-botones">
+          <button class="btn btn-agregar" id="f-confirmar">Agregar</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const cat = document.getElementById('f-cat').value;
+      const cant = parseInt(document.getElementById('f-cant').value,10);
+      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      const totalAntes = totalPotrero(nombre);
+      const a = estado.potreros[nombre].animales;
+      a[cat] = (a[cat]||0) + cant;
+      registrarCambioOcupacion(nombre, totalAntes);
+      registrarHistorial(nombre, 'ingreso', `+${cant} ${cat} (ingreso)`);
+      enviarEvento('ingreso', nombre, {categoria: cat, cantidad: cant});
+      guardarEstado(); actualizarTodo(); cerrarDetalle();
+      toast(`Se agregaron ${cant} ${cat} a ${nombre}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
+
+  if(accion==='mover'){
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Mover animales desde ${nombre}</h3>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
+        <div class="form-row"><label>Potrero destino</label><select id="f-destino">${opcionesPotreros(nombre)}</select></div>
+        <div class="form-botones">
+          <button class="btn btn-mover" id="f-confirmar">Mover</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const cat = document.getElementById('f-cat').value;
+      const cant = parseInt(document.getElementById('f-cant').value,10);
+      const destino = document.getElementById('f-destino').value;
+      const origenAnimales = estado.potreros[nombre].animales;
+      const disponibles = origenAnimales[cat] || 0;
+      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} en ${nombre}`); return; }
+      const totalAntesOrigen = totalPotrero(nombre);
+      const totalAntesDestino = totalPotrero(destino);
+      origenAnimales[cat] -= cant;
+      const destAnimales = estado.potreros[destino].animales;
+      destAnimales[cat] = (destAnimales[cat]||0) + cant;
+      registrarCambioOcupacion(nombre, totalAntesOrigen);
+      registrarCambioOcupacion(destino, totalAntesDestino);
+      registrarHistorial(nombre, 'movimiento', `-${cant} ${cat} → ${destino}`);
+      registrarHistorial(destino, 'movimiento', `+${cant} ${cat} ← ${nombre}`);
+      enviarEvento('movimiento', nombre, {categoria: cat, cantidad: cant, destino});
+      guardarEstado(); actualizarTodo(); cerrarDetalle();
+      toast(`Se movieron ${cant} ${cat} de ${nombre} a ${destino}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
+
+  if(accion==='mover-todo'){
+    const total = totalPotrero(nombre);
+    const animales = estado.potreros[nombre].animales;
+    const resumen = Object.entries(animales).filter(([k,v])=>v>0).map(([k,v])=>`${v} ${k}`).join(', ');
+    if(total===0){
+      zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">No hay animales en ${nombre} para mover.</p></div>`;
+      return;
+    }
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Mover TODO el potrero ${nombre}</h3>
+        <p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 8px 0;">Se van a mover ${total} animales: ${resumen}</p>
+        <div class="form-row"><label>Potrero destino</label><select id="f-destino">${opcionesPotreros(nombre)}</select></div>
+        <div class="form-botones">
+          <button class="btn btn-mover" id="f-confirmar">Mover todo (${total})</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const destino = document.getElementById('f-destino').value;
+      const origenAnimales = estado.potreros[nombre].animales;
+      const destAnimales = estado.potreros[destino].animales;
+      const totalAntesOrigen = totalPotrero(nombre);
+      const totalAntesDestino = totalPotrero(destino);
+      const movidos = [];
+      const items = [];
+      Object.entries(origenAnimales).forEach(([cat,cant])=>{
+        if(cant>0){
+          destAnimales[cat] = (destAnimales[cat]||0) + cant;
+          movidos.push(`${cant} ${cat}`);
+          items.push({categoria: cat, cantidad: cant});
+          origenAnimales[cat] = 0;
+        }
+      });
+      registrarCambioOcupacion(nombre, totalAntesOrigen);
+      registrarCambioOcupacion(destino, totalAntesDestino);
+      const detalleMov = movidos.join(', ');
+      registrarHistorial(nombre, 'movimiento', `Potrero vaciado → ${destino}: ${detalleMov}`);
+      registrarHistorial(destino, 'movimiento', `Ingreso de potrero completo ← ${nombre}: ${detalleMov}`);
+      enviarEvento('movimiento_todo', nombre, {destino, items});
+      guardarEstado(); actualizarTodo(); cerrarDetalle();
+      toast(`Se movió todo el rodeo de ${nombre} a ${destino}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
+
+  if(accion==='compraventa'){
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Compra / Venta en ${nombre}</h3>
+        <div class="form-row"><label>Operación</label>
+          <select id="f-tipo-op">
+            <option value="Compra">Compra (ingresan animales)</option>
+            <option value="Venta">Venta (salen animales)</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
+        <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="f-precio" min="0" step="0.01" placeholder="Ej: 850"></div>
+        <div class="form-row"><label>Contraparte (opcional)</label><input type="text" id="f-contraparte" placeholder="Comprador / vendedor / consignatario"></div>
+        <div class="form-row"><label>Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: remate, flete incluido..."></div>
+        <div class="form-botones">
+          <button class="btn btn-compraventa" id="f-confirmar">Registrar</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const tipoOp = document.getElementById('f-tipo-op').value;
+      const cat = document.getElementById('f-cat').value;
+      const cant = parseInt(document.getElementById('f-cant').value,10);
+      const precio = parseFloat(document.getElementById('f-precio').value);
+      const contraparte = document.getElementById('f-contraparte').value.trim();
+      const obs = document.getElementById('f-obs').value.trim();
+      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      const a = estado.potreros[nombre].animales;
+      const totalAntes = totalPotrero(nombre);
+
+      if(tipoOp==='Venta'){
+        const disponibles = a[cat] || 0;
+        if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} en ${nombre}`); return; }
+        a[cat] -= cant;
+      } else {
+        a[cat] = (a[cat]||0) + cant;
+      }
+      registrarCambioOcupacion(nombre, totalAntes);
+
+      const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
+      let detalle = `${tipoOp}: ${tipoOp==='Venta'?'-':'+'}${cant} ${cat}`;
+      if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
+      if(contraparte) detalle += ` — ${contraparte}`;
+      if(obs) detalle += ` (${obs})`;
+      registrarHistorial(nombre, tipoOp==='Venta'?'venta':'compra', detalle);
+
+      estado.transacciones = estado.transacciones || [];
+      estado.transacciones.unshift({
+        fecha: fechaHoy(), potrero: nombre, tipo: tipoOp, categoria: cat, cantidad: cant,
+        precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte, notas: obs
+      });
+      enviarEvento(tipoOp==='Venta'?'venta':'compra', nombre, {categoria: cat, cantidad: cant, precio: (!isNaN(precio)&&precio>0)?precio:null, contraparte: contraparte||null, obs: obs||null});
+
+      guardarEstado(); actualizarTodo(); cerrarDetalle();
+      toast(`${tipoOp} registrada: ${cant} ${cat} en ${nombre}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
+
+  if(accion==='nacimiento'){
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Registrar nacimiento en ${nombre}</h3>
+        <div class="form-row"><label>Categoría de la cría</label><select id="f-cat">${opcionesCategorias('Terneros')}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
+        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: parto sin problemas"></div>
+        <div class="form-botones">
+          <button class="btn btn-nacimiento" id="f-confirmar">Registrar nacimiento</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const cat = document.getElementById('f-cat').value;
+      const cant = parseInt(document.getElementById('f-cant').value,10);
+      const obs = document.getElementById('f-obs').value.trim();
+      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      const totalAntes = totalPotrero(nombre);
+      const a = estado.potreros[nombre].animales;
+      a[cat] = (a[cat]||0) + cant;
+      registrarCambioOcupacion(nombre, totalAntes);
+      registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat}${obs ? ' — '+obs : ''}`);
+      enviarEvento('nacimiento', nombre, {categoria: cat, cantidad: cant, obs: obs||null});
+      guardarEstado(); actualizarTodo(); cerrarDetalle();
+      toast(`Nacimiento registrado en ${nombre}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
+
+  if(accion==='muerte'){
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Registrar muerte en ${nombre}</h3>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
+        <div class="form-row"><label>Causa (opcional)</label><input type="text" id="f-obs" placeholder="Ej: empantanado, enfermedad..."></div>
+        <div class="form-botones">
+          <button class="btn btn-muerte" id="f-confirmar">Registrar muerte</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const cat = document.getElementById('f-cat').value;
+      const cant = parseInt(document.getElementById('f-cant').value,10);
+      const obs = document.getElementById('f-obs').value.trim();
+      const a = estado.potreros[nombre].animales;
+      const disponibles = a[cat] || 0;
+      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} en ${nombre}`); return; }
+      const totalAntes = totalPotrero(nombre);
+      a[cat] -= cant;
+      registrarCambioOcupacion(nombre, totalAntes);
+      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat}${obs ? ' — '+obs : ''}`);
+      enviarEvento('muerte', nombre, {categoria: cat, cantidad: cant, obs: obs||null});
+      guardarEstado(); actualizarTodo(); cerrarDetalle();
+      toast(`Muerte registrada en ${nombre}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
+}
+
+/* ======================= RESUMEN GENERAL ======================= */
+function actualizarResumen(){
+  document.getElementById('res-potreros').textContent = POTREROS_GEO.length;
+  const ha = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  document.getElementById('res-ha').textContent = Math.round(ha);
+  const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
+  document.getElementById('res-animales').textContent = totalAnimales;
+  const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
+  document.getElementById('res-ug').textContent = totalUGCampo.toFixed(1);
+  document.getElementById('res-dotacion').textContent = ha>0 ? (totalUGCampo/ha).toFixed(2) : '0';
+}
+
+function actualizarTodo(){
+  actualizarResumen();
+  refrescarColoresMapa();
+  renderLista(document.getElementById('buscador').value);
+  if(typeof renderEstadoBackup === 'function') renderEstadoBackup();
+  if(typeof actualizarEstadoSync === 'function') actualizarEstadoSync();
+}
+
+/* ======================= EXPORTAR KMZ ======================= */
+function construirKML(){
+  const placemarkPotrero = (p)=>{
+    const animales = estado.potreros[p.nombre].animales;
+    const total = totalPotrero(p.nombre);
+    const ha = areaHa(p.nombre);
+    const ug = totalUG(p.nombre);
+    const carga = cargaPotrero(p.nombre);
+    const ocup = estadoOcupacion(p.nombre);
+    const detalle = Object.entries(animales).filter(([k,v])=>v>0).map(([k,v])=>`${k}: ${v}`).join(', ') || 'Sin animales';
+    const coordsStr = p.coords.map(c=> `${c[1]},${c[0]},0`).join(' ');
+    return `    <Placemark>
+      <name>${escaparXML(p.nombre)}</name>
+      <description><![CDATA[Área: ${ha.toFixed(1)} ha<br/>Total animales: ${total} (${ug.toFixed(1)} UG)<br/>Carga: ${carga.toFixed(2)} UG/ha<br/>${escaparXML(ocup.texto)}<br/>${escaparXML(detalle)}]]></description>
+      <ExtendedData>
+        <Data name="area_ha"><value>${ha.toFixed(1)}</value></Data>
+        <Data name="total_animales"><value>${total}</value></Data>
+        <Data name="total_ug"><value>${ug.toFixed(2)}</value></Data>
+        <Data name="carga_ug_ha"><value>${carga.toFixed(2)}</value></Data>
+        <Data name="estado_ocupacion"><value>${escaparXML(ocup.texto)}</value></Data>
+        <Data name="detalle_animales"><value>${escaparXML(detalle)}</value></Data>
+      </ExtendedData>
+      <Style><LineStyle><color>ff4a7a5c</color><width>2</width></LineStyle><PolyStyle><color>7a4a7a5c</color></PolyStyle></Style>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>${coordsStr}</coordinates></LinearRing></outerBoundaryIs></Polygon>
+    </Placemark>`;
+  };
+
+  const ocupados = POTREROS_GEO.filter(p=> totalPotrero(p.nombre) > 0);
+  const vacios = POTREROS_GEO.filter(p=> totalPotrero(p.nombre) === 0);
+
+  const folderPotrerosOcupados = `  <Folder>
+    <name>Potreros ocupados</name>
+${ocupados.map(placemarkPotrero).join('\n')}
+  </Folder>`;
+
+  const folderPotrerosVacios = `  <Folder>
+    <name>Potreros vacíos</name>
+${vacios.map(placemarkPotrero).join('\n')}
+  </Folder>`;
+
+  const placemarkPunto = (pt)=>{
+    const t = TIPOS_PUNTO[pt.tipo];
+    return `    <Placemark>
+      <name>${escaparXML(pt.nombre || pt.subtipo)}</name>
+      <description><![CDATA[${escaparXML(pt.subtipo)}]]></description>
+      <ExtendedData>
+        <Data name="tipo"><value>${escaparXML(t.etiqueta)}</value></Data>
+        <Data name="subtipo"><value>${escaparXML(pt.subtipo)}</value></Data>
+      </ExtendedData>
+      <Point><coordinates>${pt.lon},${pt.lat},0</coordinates></Point>
+    </Placemark>`;
+  };
+
+  const puntosAgua = estado.puntos.filter(p=>p.tipo==='agua');
+  const puntosInstalacion = estado.puntos.filter(p=>p.tipo==='instalacion');
+
+  const folderAgua = `  <Folder>
+    <name>Aguadas y fuentes de agua</name>
+${puntosAgua.map(placemarkPunto).join('\n')}
+  </Folder>`;
+
+  const folderInstalaciones = `  <Folder>
+    <name>Instalaciones y caminos</name>
+${puntosInstalacion.map(placemarkPunto).join('\n')}
+  </Folder>`;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>La Vuelta - Potreros</name>
+${folderPotrerosOcupados}
+${folderPotrerosVacios}
+${folderAgua}
+${folderInstalaciones}
+</Document>
+</kml>`;
+}
+function escaparXML(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ======================= EXPORTAR MARKDOWN ======================= */
+function construirMD(){
+  const hoy = fechaHoy();
+  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
+  const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
+  const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
+
+  let md = `# La Vuelta — Estado de potreros\n\n`;
+  md += `_Generado el ${hoy}_\n\n`;
+  md += `## Resumen general\n\n`;
+  md += `| Potreros | Hectáreas | Animales | UG totales | Dotación (UG/ha) |\n`;
+  md += `|---|---|---|---|---|\n`;
+  md += `| ${POTREROS_GEO.length} | ${totalHa.toFixed(1)} | ${totalAnimales} | ${totalUGCampo.toFixed(1)} | ${dotacionGeneral.toFixed(2)} |\n\n`;
+
+  md += `## Potreros\n\n`;
+  md += `| Potrero | Área (ha) | Animales | UG | UG/ha | Estado |\n`;
+  md += `|---|---|---|---|---|---|\n`;
+  const ordenados = POTREROS_GEO.slice().sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'));
+  ordenados.forEach(p=>{
+    const total = totalPotrero(p.nombre);
+    const ug = totalUG(p.nombre);
+    const carga = cargaPotrero(p.nombre);
+    const ocup = estadoOcupacion(p.nombre);
+    md += `| ${p.nombre} | ${areaHa(p.nombre).toFixed(1)} | ${total} | ${ug.toFixed(1)} | ${carga.toFixed(2)} | ${ocup.texto} |\n`;
+  });
+
+  md += `\n## Detalle de animales por potrero\n\n`;
+  ordenados.forEach(p=>{
+    const animales = estado.potreros[p.nombre].animales;
+    const cats = Object.entries(animales).filter(([k,v])=>v>0);
+    if(!cats.length) return;
+    md += `**${p.nombre}**: ${cats.map(([k,v])=>`${v} ${k}`).join(', ')}\n\n`;
+  });
+
+  if(estado.puntos && estado.puntos.length){
+    md += `## Aguadas y fuentes de agua\n\n`;
+    const agua = estado.puntos.filter(p=>p.tipo==='agua');
+    if(agua.length){
+      md += `| Nombre | Tipo |\n|---|---|\n`;
+      agua.forEach(p=> md += `| ${p.nombre || p.subtipo} | ${p.subtipo} |\n`);
+      md += `\n`;
+    }
+    const instal = estado.puntos.filter(p=>p.tipo==='instalacion');
+    if(instal.length){
+      md += `## Instalaciones y caminos\n\n`;
+      md += `| Nombre | Tipo |\n|---|---|\n`;
+      instal.forEach(p=> md += `| ${p.nombre || p.subtipo} | ${p.subtipo} |\n`);
+      md += `\n`;
+    }
+  }
+
+  md += `## Historial reciente\n\n`;
+  const todosHist = [];
+  ordenados.forEach(p=>{
+    estado.potreros[p.nombre].historial.forEach(h=> todosHist.push({...h, potrero:p.nombre}));
+  });
+  todosHist.slice(0,40).forEach(h=>{
+    md += `- **${h.fecha}** — ${h.potrero}: ${h.detalle}\n`;
+  });
+  if(!todosHist.length) md += `_Sin movimientos registrados._\n`;
+
+  if(estado.transacciones && estado.transacciones.length){
+    const compras = estado.transacciones.filter(t=>t.tipo==='Compra');
+    const ventas = estado.transacciones.filter(t=>t.tipo==='Venta');
+    const totalComprado = compras.reduce((s,t)=> s + (t.total||0), 0);
+    const totalVendido = ventas.reduce((s,t)=> s + (t.total||0), 0);
+    md += `\n## Compras y ventas\n\n`;
+    md += `Total comprado: USD ${totalComprado.toFixed(0)} · Total vendido: USD ${totalVendido.toFixed(0)} · Neto: USD ${(totalVendido-totalComprado).toFixed(0)}\n\n`;
+    md += `| Fecha | Potrero | Operación | Categoría | Cantidad | Precio unit. | Total | Contraparte |\n`;
+    md += `|---|---|---|---|---|---|---|---|\n`;
+    estado.transacciones.forEach(t=>{
+      md += `| ${t.fecha} | ${t.potrero} | ${t.tipo} | ${t.categoria} | ${t.cantidad} | ${t.precioUnitario!=null?'USD '+t.precioUnitario:''} | ${t.total!=null?'USD '+t.total.toFixed(0):''} | ${t.contraparte||''} |\n`;
+    });
+  }
+
+  return md;
+}
+
+document.getElementById('btn-exportar-md').addEventListener('click', ()=>{
+  const md = construirMD();
+  const blob = new Blob([md], {type:'text/markdown'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `la_vuelta_estado_${new Date().toISOString().slice(0,10)}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Markdown exportado');
+});
+
+/* ======================= DATOS COMPARTIDOS PARA PDF / EXCEL ======================= */
+function reunirDatosReporte(){
+  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
+  const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
+  const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
+  const ordenados = POTREROS_GEO.slice().sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'));
+
+  const potrerosRows = ordenados.map(p=>{
+    const ocup = estadoOcupacion(p.nombre);
+    return [
+      p.nombre,
+      areaHa(p.nombre).toFixed(1),
+      totalPotrero(p.nombre),
+      totalUG(p.nombre).toFixed(1),
+      cargaPotrero(p.nombre).toFixed(2),
+      ocup.texto
+    ];
+  });
+
+  const animalesRows = [];
+  ordenados.forEach(p=>{
+    const animales = estado.potreros[p.nombre].animales;
+    Object.entries(animales).filter(([k,v])=>v>0).forEach(([cat,cant])=>{
+      animalesRows.push([p.nombre, cat, cant]);
+    });
+  });
+
+  const aguaRows = (estado.puntos||[]).filter(p=>p.tipo==='agua').map(p=>[p.nombre||p.subtipo, p.subtipo]);
+  const instalRows = (estado.puntos||[]).filter(p=>p.tipo==='instalacion').map(p=>[p.nombre||p.subtipo, p.subtipo]);
+
+  const historialRows = [];
+  ordenados.forEach(p=>{
+    estado.potreros[p.nombre].historial.forEach(h=> historialRows.push([h.fecha, p.nombre, h.detalle]));
+  });
+
+  const transacciones = estado.transacciones || [];
+  const transaccionesRows = transacciones.map(t=>[
+    t.fecha, t.potrero, t.tipo, t.categoria, t.cantidad,
+    t.precioUnitario!=null?t.precioUnitario:'', t.total!=null?t.total.toFixed(0):'', t.contraparte||''
+  ]);
+  const totalComprado = transacciones.filter(t=>t.tipo==='Compra').reduce((s,t)=> s+(t.total||0),0);
+  const totalVendido = transacciones.filter(t=>t.tipo==='Venta').reduce((s,t)=> s+(t.total||0),0);
+
+  return {
+    fecha: fechaHoy(),
+    resumen: [POTREROS_GEO.length, totalHa.toFixed(1), totalAnimales, totalUGCampo.toFixed(1), dotacionGeneral.toFixed(2)],
+    potrerosRows, animalesRows, aguaRows, instalRows, historialRows,
+    transaccionesRows, totalComprado, totalVendido
+  };
+}
+
+/* ======================= EXPORTAR PDF ======================= */
+document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
+  const d = reunirDatosReporte();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(16);
+  doc.text('La Vuelta — Estado de potreros', 14, 16);
+  doc.setFontSize(10);
+  doc.text(`Generado el ${d.fecha}`, 14, 22);
+
+  doc.autoTable({
+    startY: 28,
+    head: [['Potreros','Hectáreas','Animales','UG totales','Dotación (UG/ha)']],
+    body: [d.resumen],
+    theme: 'grid', headStyles:{fillColor:[92,122,74]}
+  });
+
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 8,
+    head: [['Potrero','Área (ha)','Animales','UG','UG/ha','Estado']],
+    body: d.potrerosRows,
+    theme: 'striped', headStyles:{fillColor:[92,122,74]}, styles:{fontSize:8}
+  });
+
+  if(d.animalesRows.length){
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 8,
+      head: [['Potrero','Categoría','Cantidad']],
+      body: d.animalesRows,
+      theme: 'striped', headStyles:{fillColor:[122,82,54]}, styles:{fontSize:8}
+    });
+  }
+
+  if(d.aguaRows.length){
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 8,
+      head: [['Aguadas y fuentes de agua','Tipo']],
+      body: d.aguaRows,
+      theme: 'striped', headStyles:{fillColor:[63,107,143]}, styles:{fontSize:8}
+    });
+  }
+
+  if(d.instalRows.length){
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 8,
+      head: [['Instalaciones y caminos','Tipo']],
+      body: d.instalRows,
+      theme: 'striped', headStyles:{fillColor:[122,82,54]}, styles:{fontSize:8}
+    });
+  }
+
+  if(d.historialRows.length){
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 8,
+      head: [['Fecha','Potrero','Movimiento']],
+      body: d.historialRows.slice(0,60),
+      theme: 'striped', headStyles:{fillColor:[198,138,59]}, styles:{fontSize:7.5}
+    });
+  }
+
+  if(d.transaccionesRows.length){
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 8,
+      head: [['Fecha','Potrero','Operación','Categoría','Cant.','Precio unit.','Total USD','Contraparte']],
+      body: d.transaccionesRows,
+      theme: 'striped', headStyles:{fillColor:[138,109,31]}, styles:{fontSize:7.5}
+    });
+    doc.setFontSize(9);
+    doc.text(`Total comprado: USD ${d.totalComprado.toFixed(0)}  ·  Total vendido: USD ${d.totalVendido.toFixed(0)}  ·  Neto: USD ${(d.totalVendido-d.totalComprado).toFixed(0)}`, 14, doc.lastAutoTable.finalY + 8);
+  }
+
+  doc.save(`la_vuelta_estado_${new Date().toISOString().slice(0,10)}.pdf`);
+  toast('PDF exportado');
+});
+
+/* ======================= EXPORTAR EXCEL ======================= */
+document.getElementById('btn-exportar-excel').addEventListener('click', ()=>{
+  const d = reunirDatosReporte();
+  const wb = XLSX.utils.book_new();
+
+  const wsResumen = XLSX.utils.aoa_to_sheet([
+    ['La Vuelta — Estado de potreros'],
+    [`Generado el ${d.fecha}`],
+    [],
+    ['Potreros','Hectáreas','Animales','UG totales','Dotación (UG/ha)'],
+    d.resumen
+  ]);
+  XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+
+  const wsPotreros = XLSX.utils.aoa_to_sheet([
+    ['Potrero','Área (ha)','Animales','UG','UG/ha','Estado'],
+    ...d.potrerosRows
+  ]);
+  XLSX.utils.book_append_sheet(wb, wsPotreros, 'Potreros');
+
+  if(d.animalesRows.length){
+    const wsAnimales = XLSX.utils.aoa_to_sheet([['Potrero','Categoría','Cantidad'], ...d.animalesRows]);
+    XLSX.utils.book_append_sheet(wb, wsAnimales, 'Animales');
+  }
+
+  if(d.aguaRows.length){
+    const wsAgua = XLSX.utils.aoa_to_sheet([['Nombre','Tipo'], ...d.aguaRows]);
+    XLSX.utils.book_append_sheet(wb, wsAgua, 'Aguadas');
+  }
+
+  if(d.instalRows.length){
+    const wsInstal = XLSX.utils.aoa_to_sheet([['Nombre','Tipo'], ...d.instalRows]);
+    XLSX.utils.book_append_sheet(wb, wsInstal, 'Instalaciones');
+  }
+
+  if(d.historialRows.length){
+    const wsHist = XLSX.utils.aoa_to_sheet([['Fecha','Potrero','Movimiento'], ...d.historialRows]);
+    XLSX.utils.book_append_sheet(wb, wsHist, 'Historial');
+  }
+
+  if(d.transaccionesRows.length){
+    const wsTrans = XLSX.utils.aoa_to_sheet([
+      ['Fecha','Potrero','Operación','Categoría','Cantidad','Precio unit. USD','Total USD','Contraparte'],
+      ...d.transaccionesRows,
+      [],
+      ['Total comprado USD', d.totalComprado.toFixed(0)],
+      ['Total vendido USD', d.totalVendido.toFixed(0)],
+      ['Neto USD', (d.totalVendido-d.totalComprado).toFixed(0)]
+    ]);
+    XLSX.utils.book_append_sheet(wb, wsTrans, 'Compras y ventas');
+  }
+
+  XLSX.writeFile(wb, `la_vuelta_estado_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Excel exportado');
+});
+
+document.getElementById('btn-exportar-kmz').addEventListener('click', async ()=>{
+  const kml = construirKML();
+  const zip = new JSZip();
+  zip.file('doc.kml', kml);
+  const blob = await zip.generateAsync({type:'blob'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `la_vuelta_potreros_${new Date().toISOString().slice(0,10)}.kmz`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('KMZ exportado');
+});
+
+/* ======================= BACKUP JSON ======================= */
+/* Mejoras v1.7: el archivo lleva fecha y hora (para no pisar backups del mismo día),
+   se registra cuándo fue el último y se avisa si pasaron muchos días sin hacer uno. */
+const DIAS_AVISO_BACKUP = 3;
+
+function sellotiempoArchivo(){
+  const d = new Date();
+  const p = (n)=> String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+}
+function contarMovimientos(){
+  return POTREROS_GEO.reduce((s,p)=> s + (estado.potreros[p.nombre].historial||[]).length, 0);
+}
+function renderEstadoBackup(){
+  const el = document.getElementById('estado-backup');
+  if(!el) return;
+  const ub = estado.ultimoBackup;
+  if(!ub || !ub.fechaISO){
+    el.innerHTML = '⚠️ Todavía no hiciste ningún backup';
+    el.style.color = '#a1402e';
+    return;
+  }
+  const dias = diasDesde(ub.fechaISO);
+  const movsNuevos = contarMovimientos() - (ub.movimientos || 0);
+  let txt = `Último backup: ${fechaISOaDisplay(ub.fechaISO)}`;
+  if(ub.hora) txt += ` ${ub.hora}`;
+  if(dias===0) txt = `Último backup: hoy${ub.hora ? ' '+ub.hora : ''}`;
+  else if(dias===1) txt = `Último backup: ayer${ub.hora ? ' '+ub.hora : ''}`;
+  else if(dias>1) txt += ` (hace ${dias} días)`;
+
+  if(movsNuevos > 0) txt += ` · ${movsNuevos} movimiento${movsNuevos===1?'':'s'} sin respaldar`;
+
+  const atrasado = (dias!=null && dias >= DIAS_AVISO_BACKUP) || movsNuevos > 0;
+  el.innerHTML = (atrasado ? '⚠️ ' : '✅ ') + txt;
+  el.style.color = atrasado ? '#a1402e' : '#3f5a2c';
+}
+function registrarBackupHecho(){
+  const d = new Date();
+  const p = (n)=> String(n).padStart(2,'0');
+  estado.ultimoBackup = {
+    fechaISO: fechaISOHoy(),
+    hora: `${p(d.getHours())}:${p(d.getMinutes())}`,
+    movimientos: contarMovimientos()
+  };
+  guardarEstado();
+  renderEstadoBackup();
+}
+
+document.getElementById('btn-exportar-json').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(estado,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `la_vuelta_backup_${sellotiempoArchivo()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  registrarBackupHecho();
+  toast('Backup guardado — elegí la carpeta de OneDrive como destino');
+});
+
+document.getElementById('btn-importar-json').addEventListener('click', ()=>{
+  document.getElementById('input-json').click();
+});
+document.getElementById('input-json').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const parsed = JSON.parse(ev.target.result);
+      if(!parsed.potreros) throw new Error('Formato inválido');
+      estado = parsed;
+      // asegurar consistencia con potreros actuales
+      POTREROS_GEO.forEach(p=>{
+        if(!estado.potreros[p.nombre]) estado.potreros[p.nombre] = {animales:{},historial:[],fechaIngreso:null,fechaSalida:null};
+        if(estado.potreros[p.nombre].fechaIngreso===undefined) estado.potreros[p.nombre].fechaIngreso = null;
+        if(estado.potreros[p.nombre].fechaSalida===undefined) estado.potreros[p.nombre].fechaSalida = null;
+      });
+      if(!estado.ugCoef) estado.ugCoef = {...UG_DEFAULT};
+      if(!estado.puntos) estado.puntos = [];
+      if(!estado.transacciones) estado.transacciones = [];
+      if(!estado.config) estado.config = {...CONFIG_DEFAULT};
+      // recrear marcadores de puntos en el mapa
+      Object.values(puntosLayers).forEach(m=> map.removeLayer(m));
+      Object.keys(puntosLayers).forEach(k=> delete puntosLayers[k]);
+      estado.puntos.forEach(p=> crearMarcadorPunto(p));
+      guardarEstado();
+      actualizarTodo();
+      renderEstadoBackup();
+      if(seleccionActual) renderDetalle(seleccionActual);
+      toast('Backup importado correctamente');
+    }catch(err){
+      toast('No se pudo leer el archivo. ¿Es un backup válido?');
+    }
+  };
+  reader.readAsText(file);
+});
+
+/* ======================= MODAL COEFICIENTES UG ======================= */
+function renderCoefLista(valores){
+  const cont = document.getElementById('coef-lista');
+  cont.innerHTML = Object.entries(ESPECIES).map(([esp,cats])=>{
+    const filas = Object.keys(cats).map(c=>`
+      <div class="coef-row">
+        <label for="coef-${c}">${c}</label>
+        <input type="number" step="0.05" min="0" id="coef-${c}" value="${valores[c]}">
+      </div>
+    `).join('');
+    return `<div style="font-family:'Fraunces',serif;font-size:12px;font-weight:600;color:var(--verde-monte);margin:10px 0 2px;">${ESPECIE_LABEL[esp]}</div>${filas}`;
+  }).join('');
+}
+document.getElementById('btn-coeficientes').addEventListener('click', ()=>{
+  renderCoefLista(estado.ugCoef);
+  document.getElementById('modal-coef').style.display = 'flex';
+});
+document.getElementById('coef-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-coef').style.display = 'none';
+});
+document.getElementById('coef-reset').addEventListener('click', ()=>{
+  renderCoefLista(UG_DEFAULT);
+  toast('Valores restablecidos. Tocá Guardar para confirmar.');
+});
+document.getElementById('coef-guardar').addEventListener('click', ()=>{
+  CATEGORIAS.forEach(c=>{
+    const v = parseFloat(document.getElementById(`coef-${c}`).value);
+    estado.ugCoef[c] = isNaN(v) ? UG_DEFAULT[c] : v;
+  });
+  guardarEstado();
+  actualizarTodo();
+  if(seleccionActual) renderDetalle(seleccionActual);
+  document.getElementById('modal-coef').style.display = 'none';
+  toast('Coeficientes actualizados');
+});
+
+/* ======================= MODAL PUNTOS (aguadas / instalaciones) ======================= */
+function poblarSelectTipo(){
+  const sel = document.getElementById('np-tipo');
+  sel.innerHTML = Object.entries(TIPOS_PUNTO).map(([k,v])=>`<option value="${k}">${v.icono} ${v.etiqueta}</option>`).join('');
+}
+function poblarSelectSubtipo(){
+  const tipo = document.getElementById('np-tipo').value;
+  const sel = document.getElementById('np-subtipo');
+  sel.innerHTML = TIPOS_PUNTO[tipo].subtipos.map(s=>`<option value="${s}">${s}</option>`).join('');
+}
+function renderListaPuntos(){
+  const cont = document.getElementById('lista-puntos');
+  if(!estado.puntos.length){
+    cont.innerHTML = '<div class="puntos-vacio">Todavía no agregaste aguadas ni instalaciones.</div>';
+    return;
+  }
+  cont.innerHTML = estado.puntos.map(p=>`
+    <div class="punto-item">
+      <div class="info">
+        <span class="icono">${TIPOS_PUNTO[p.tipo].icono}</span>
+        <span>${p.nombre || p.subtipo} <span class="txt-sub">(${p.subtipo})</span></span>
+      </div>
+      <button data-del="${p.id}">Eliminar</button>
+    </div>
+  `).join('');
+  cont.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.del;
+      estado.puntos = estado.puntos.filter(p=>p.id!==id);
+      if(puntosLayers[id]){ map.removeLayer(puntosLayers[id]); delete puntosLayers[id]; }
+      guardarEstado();
+      renderListaPuntos();
+      toast('Punto eliminado');
+    });
+  });
+}
+
+document.getElementById('btn-puntos').addEventListener('click', ()=>{
+  poblarSelectTipo();
+  poblarSelectSubtipo();
+  renderListaPuntos();
+  document.getElementById('modal-puntos').style.display = 'flex';
+});
+document.getElementById('np-tipo').addEventListener('change', poblarSelectSubtipo);
+document.getElementById('puntos-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-puntos').style.display = 'none';
+});
+document.getElementById('np-colocar').addEventListener('click', ()=>{
+  const tipo = document.getElementById('np-tipo').value;
+  const subtipo = document.getElementById('np-subtipo').value;
+  const nombre = document.getElementById('np-nombre').value.trim();
+  modoColocarPunto = {tipo, subtipo, nombre};
+  document.getElementById('modal-puntos').style.display = 'none';
+  mostrarAvisoModo();
+});
+document.getElementById('np-cargar-seed').addEventListener('click', ()=>{
+  var agregados = 0, saltados = 0;
+  PUNTOS_SEED.forEach(function(seed){
+    var yaExiste = estado.puntos.some(function(p){
+      return Math.abs(p.lat-seed.lat)<0.00005 && Math.abs(p.lon-seed.lon)<0.00005;
+    });
+    if(yaExiste){ saltados++; return; }
+    var punto = {
+      id: 'pt_' + Date.now() + '_' + Math.floor(Math.random()*10000),
+      tipo: seed.tipo,
+      subtipo: seed.subtipo,
+      nombre: seed.nombre,
+      lat: seed.lat,
+      lon: seed.lon
+    };
+    estado.puntos.push(punto);
+    crearMarcadorPunto(punto);
+    agregados++;
+  });
+  guardarEstado();
+  renderListaPuntos();
+  document.getElementById('np-cargar-seed').textContent = '✅ Cargados';
+  toast(agregados + ' puntos cargados' + (saltados ? ` (${saltados} ya existían)` : ''));
+});
+
+/* ======================= ALERTAS Y UMBRALES (reglas, sin IA) ======================= */
+function renderAlertasLista(){
+  const cont = document.getElementById('alertas-lista');
+  const conAlerta = POTREROS_GEO.map(p=>({nombre:p.nombre, alertas: calcularAlertas(p.nombre)})).filter(x=>x.alertas.length);
+  if(!conAlerta.length){
+    cont.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">✅ Ningún potrero tiene alertas activas.</p>';
+    return;
+  }
+  cont.innerHTML = conAlerta.map(x=>`
+    <div class="potrero-card" style="cursor:pointer;" data-nombre="${x.nombre}">
+      <div class="nombre">⚠️ ${x.nombre}</div>
+      <div style="font-size:12px;color:#7a3420;margin-top:4px;">${x.alertas.join('<br>')}</div>
+    </div>
+  `).join('');
+  cont.querySelectorAll('[data-nombre]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      document.getElementById('modal-alertas').style.display='none';
+      seleccionarPotrero(el.dataset.nombre);
+    });
+  });
+}
+document.getElementById('btn-alertas').addEventListener('click', ()=>{
+  document.getElementById('al-carga-max').value = estado.config.cargaMaxima;
+  document.getElementById('al-dias-max').value = estado.config.diasOcupacionMax;
+  renderAlertasLista();
+  document.getElementById('modal-alertas').style.display = 'flex';
+});
+document.getElementById('alertas-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-alertas').style.display = 'none';
+});
+document.getElementById('al-guardar').addEventListener('click', ()=>{
+  const cm = parseFloat(document.getElementById('al-carga-max').value);
+  const dm = parseInt(document.getElementById('al-dias-max').value,10);
+  if(!isNaN(cm) && cm>0) estado.config.cargaMaxima = cm;
+  if(!isNaN(dm) && dm>0) estado.config.diasOcupacionMax = dm;
+  guardarEstado();
+  actualizarTodo();
+  if(seleccionActual) renderDetalle(seleccionActual);
+  renderAlertasLista();
+  toast('Umbrales actualizados');
+});
+
+/* ======================= CARGA POR VOZ (sin IA — reglas + reconocimiento del navegador) ======================= */
+const NUM_UNIDADES = {
+  cero:0, un:1, uno:1, una:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9,
+  diez:10, once:11, doce:12, trece:13, catorce:14, quince:15,
+  dieciseis:16, diecisiete:17, dieciocho:18, diecinueve:19,
+  veinte:20, veintiuno:21, veintidos:22, veintitres:23, veinticuatro:24, veinticinco:25,
+  veintiseis:26, veintisiete:27, veintiocho:28, veintinueve:29
+};
+const NUM_DECENAS = { treinta:30, cuarenta:40, cincuenta:50, sesenta:60, setenta:70, ochenta:80, noventa:90 };
+const NUM_CENTENAS = { cien:100, ciento:100, doscientos:200, trescientos:300, cuatrocientos:400, quinientos:500, seiscientos:600, setecientos:700, ochocientos:800, novecientos:900 };
+
+function quitarAcentos(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function parseNumeroDesdeTokensAt(tokens, idx){
+  let total=0, used=false, i=idx;
+  while(i<tokens.length){
+    const tk = tokens[i];
+    if(tk==='y' && used){ i++; continue; }
+    if(NUM_CENTENAS[tk]!==undefined){ total+=NUM_CENTENAS[tk]; used=true; i++; continue; }
+    if(NUM_DECENAS[tk]!==undefined){ total+=NUM_DECENAS[tk]; used=true; i++; continue; }
+    if(NUM_UNIDADES[tk]!==undefined){ total+=NUM_UNIDADES[tk]; used=true; i++; continue; }
+    break;
+  }
+  return used ? {valor:total, fin:i} : null;
+}
+function buscarNumeroEnTexto(texto){
+  const t = quitarAcentos(texto.toLowerCase());
+  const md = t.match(/\d+/);
+  if(md) return parseInt(md[0],10);
+  const tokens = t.split(/\s+/);
+  for(let i=0;i<tokens.length;i++){
+    const r = parseNumeroDesdeTokensAt(tokens,i);
+    if(r) return r.valor;
+  }
+  return null;
+}
+
+const PALABRAS_CATEGORIA = [
+  [/ternera/, "Terneras"], [/ternero/, "Terneros"],
+  [/novillito/, "Novillitos 1-2 años"],
+  [/novillo/, "Novillos 2-3 años"],
+  [/vaquillona/, "Vaquillonas 1-2 años"],
+  [/vaca/, "Vacas"], [/toro/, "Toros"], [/buey/, "Bueyes"],
+  [/corder/, "Corderos/as"], [/oveja/, "Ovejas"], [/capon/, "Capones"], [/carner/, "Carneros"],
+  [/potr/, "Potros/as"], [/yegua/, "Yeguas"], [/caballo/, "Caballos"]
+];
+function detectarCategoria(texto){
+  const t = quitarAcentos(texto.toLowerCase());
+  for(const [re,cat] of PALABRAS_CATEGORIA){ if(re.test(t)) return cat; }
+  return null;
+}
+const PALABRAS_ACCION = [
+  [/\bmov|mud|pase|trasl/, 'mover'],
+  [/\bagreg|ingres|sum/, 'agregar'],
+  [/\bnaci|pario|parto/, 'nacimiento'],
+  [/\bmurio|muert|perdi/, 'muerte'],
+  [/\bcompr/, 'compra'],
+  [/\bvend|venta/, 'venta']
+];
+function detectarAccion(texto){
+  const t = quitarAcentos(texto.toLowerCase());
+  for(const [re,acc] of PALABRAS_ACCION){ if(re.test(t)) return acc; }
+  return null;
+}
+function resolverPotrero(token){
+  if(!token) return null;
+  const t = quitarAcentos(token.toLowerCase()).replace(/[.,]/g,'');
+  let match = POTREROS_GEO.find(p=> quitarAcentos(p.nombre.toLowerCase())===t);
+  if(match) return match.nombre;
+  const asNum = buscarNumeroEnTexto(t);
+  if(asNum!==null){
+    match = POTREROS_GEO.find(p=> p.nombre === String(asNum));
+    if(match) return match.nombre;
+  }
+  return null;
+}
+function parseComandoVoz(textoOriginal){
+  const texto = quitarAcentos(textoOriginal.toLowerCase());
+  const accion = detectarAccion(texto) || 'agregar';
+  const categoria = detectarCategoria(texto);
+  const cantidad = buscarNumeroEnTexto(texto) || 1;
+  let origen = null, destino = null;
+
+  let m = texto.match(/del\s+([a-z0-9]+)\s+al\s+([a-z0-9]+)/);
+  if(m){ origen = resolverPotrero(m[1]); destino = resolverPotrero(m[2]); }
+  else {
+    m = texto.match(/\bal\s+([a-z0-9]+)/);
+    if(m) destino = resolverPotrero(m[1]);
+    m = texto.match(/\bdel\s+([a-z0-9]+)/);
+    if(m) origen = resolverPotrero(m[1]);
+    if(!origen && !destino){
+      m = texto.match(/\ben\s+([a-z0-9]+)/);
+      if(m){ const p = resolverPotrero(m[1]); origen = p; destino = p; }
+    }
+  }
+  let precio = null;
+  const mp = texto.match(/a\s+(\d+)\s*(dolares|pesos|usd)?/);
+  if(mp && /precio|dolares|pesos|usd|cada uno|c\/u/.test(texto)) precio = parseFloat(mp[1]);
+
+  return { accion, categoria, cantidad, origen, destino, precio };
+}
+function opcionesPotrerosTodos(seleccionado){
+  return '<option value="">—</option>' + POTREROS_GEO.map(p=>p.nombre).slice().sort().map(n=>`<option value="${n}" ${n===seleccionado?'selected':''}>${n}</option>`).join('');
+}
+function renderInterpretacionVoz(datos){
+  const cont = document.getElementById('voz-interpretado');
+  cont.innerHTML = `
+    <div class="form-accion">
+      <h3>Revisá antes de confirmar</h3>
+      <div class="form-row"><label>Operación</label>
+        <select id="vz-accion">
+          <option value="mover" ${datos.accion==='mover'?'selected':''}>Mover</option>
+          <option value="agregar" ${datos.accion==='agregar'?'selected':''}>Agregar</option>
+          <option value="nacimiento" ${datos.accion==='nacimiento'?'selected':''}>Nacimiento</option>
+          <option value="muerte" ${datos.accion==='muerte'?'selected':''}>Muerte</option>
+          <option value="compra" ${datos.accion==='compra'?'selected':''}>Compra</option>
+          <option value="venta" ${datos.accion==='venta'?'selected':''}>Venta</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Categoría</label><select id="vz-cat">${opcionesCategorias(datos.categoria)}</select></div>
+      <div class="form-row"><label>Cantidad</label><input type="number" id="vz-cant" min="1" value="${datos.cantidad||1}"></div>
+      <div class="form-row"><label>Potrero origen / donde ocurre</label><select id="vz-origen">${opcionesPotrerosTodos(datos.origen)}</select></div>
+      <div class="form-row"><label>Potrero destino (solo si mueve)</label><select id="vz-destino">${opcionesPotrerosTodos(datos.destino)}</select></div>
+      <div class="form-row"><label>Precio unitario USD (solo compra/venta, opcional)</label><input type="number" id="vz-precio" min="0" step="0.01" value="${datos.precio||''}"></div>
+      <div class="form-botones">
+        <button class="btn btn-agregar" id="vz-confirmar">✔ Confirmar</button>
+        <button class="btn btn-secundario" id="vz-descartar">Descartar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('vz-confirmar').addEventListener('click', confirmarAccionVoz);
+  document.getElementById('vz-descartar').addEventListener('click', ()=>{ cont.innerHTML=''; });
+}
+function confirmarAccionVoz(){
+  const accion = document.getElementById('vz-accion').value;
+  const cat = document.getElementById('vz-cat').value;
+  const cant = parseInt(document.getElementById('vz-cant').value,10);
+  const origen = document.getElementById('vz-origen').value;
+  const destino = document.getElementById('vz-destino').value;
+  const precio = parseFloat(document.getElementById('vz-precio').value);
+
+  if(!cant || cant<1){ toast('Cantidad inválida'); return; }
+
+  if(accion==='mover'){
+    if(!origen || !destino || origen===destino){ toast('Elegí potrero de origen y destino distintos'); return; }
+    const origenAnimales = estado.potreros[origen].animales;
+    const disponibles = origenAnimales[cat] || 0;
+    if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} en ${origen}`); return; }
+    const totalAntesOrigen = totalPotrero(origen);
+    const totalAntesDestino = totalPotrero(destino);
+    origenAnimales[cat] -= cant;
+    const destAnimales = estado.potreros[destino].animales;
+    destAnimales[cat] = (destAnimales[cat]||0) + cant;
+    registrarCambioOcupacion(origen, totalAntesOrigen);
+    registrarCambioOcupacion(destino, totalAntesDestino);
+    registrarHistorial(origen, 'movimiento', `-${cant} ${cat} → ${destino} (voz)`);
+    registrarHistorial(destino, 'movimiento', `+${cant} ${cat} ← ${origen} (voz)`);
+    enviarEvento('movimiento', origen, {categoria: cat, cantidad: cant, destino});
+    guardarEstado(); actualizarTodo(); seleccionarPotrero(destino);
+    toast(`Movidos ${cant} ${cat} de ${origen} a ${destino}`);
+  } else if(accion==='agregar' || accion==='nacimiento'){
+    const objetivo = destino || origen;
+    if(!objetivo){ toast('Elegí un potrero'); return; }
+    const a = estado.potreros[objetivo].animales;
+    const totalAntes = totalPotrero(objetivo);
+    a[cat] = (a[cat]||0) + cant;
+    registrarCambioOcupacion(objetivo, totalAntes);
+    registrarHistorial(objetivo, accion==='nacimiento'?'nacimiento':'ingreso', `${accion==='nacimiento'?'Nacimiento':'Ingreso'}: +${cant} ${cat} (voz)`);
+    enviarEvento(accion==='nacimiento'?'nacimiento':'ingreso', objetivo, {categoria: cat, cantidad: cant});
+    guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo);
+    toast(`Registrado en ${objetivo}: +${cant} ${cat}`);
+  } else if(accion==='muerte'){
+    const objetivo = origen || destino;
+    if(!objetivo){ toast('Elegí un potrero'); return; }
+    const a = estado.potreros[objetivo].animales;
+    const disponibles = a[cat] || 0;
+    if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} en ${objetivo}`); return; }
+    const totalAntes = totalPotrero(objetivo);
+    a[cat] -= cant;
+    registrarCambioOcupacion(objetivo, totalAntes);
+    registrarHistorial(objetivo, 'muerte', `Muerte: -${cant} ${cat} (voz)`);
+    enviarEvento('muerte', objetivo, {categoria: cat, cantidad: cant});
+    guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo);
+    toast(`Muerte registrada en ${objetivo}`);
+  } else if(accion==='compra' || accion==='venta'){
+    const objetivo = accion==='venta' ? (origen||destino) : (destino||origen);
+    if(!objetivo){ toast('Elegí un potrero'); return; }
+    const a = estado.potreros[objetivo].animales;
+    const totalAntes = totalPotrero(objetivo);
+    if(accion==='venta'){
+      const disponibles = a[cat] || 0;
+      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} en ${objetivo}`); return; }
+      a[cat] -= cant;
+    } else {
+      a[cat] = (a[cat]||0) + cant;
+    }
+    registrarCambioOcupacion(objetivo, totalAntes);
+    const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
+    let detalle = `${accion==='venta'?'Venta':'Compra'}: ${accion==='venta'?'-':'+'}${cant} ${cat} (voz)`;
+    if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
+    registrarHistorial(objetivo, accion==='venta'?'venta':'compra', detalle);
+    estado.transacciones = estado.transacciones || [];
+    estado.transacciones.unshift({fecha:fechaHoy(), potrero:objetivo, tipo: accion==='venta'?'Venta':'Compra', categoria:cat, cantidad:cant, precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte:'', notas:'voz'});
+    enviarEvento(accion==='venta'?'venta':'compra', objetivo, {categoria: cat, cantidad: cant, precio: montoTotal!==null?precio:null});
+    guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo);
+    toast(`${accion==='venta'?'Venta':'Compra'} registrada en ${objetivo}`);
+  }
+
+  document.getElementById('voz-interpretado').innerHTML = '';
+  document.getElementById('modal-voz').style.display = 'none';
+}
+
+let reconocimientoVoz = null;
+let grabandoVoz = false;
+function inicializarVoz(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return;
+  document.getElementById('btn-voz').style.display = 'block';
+  reconocimientoVoz = new SR();
+  reconocimientoVoz.lang = 'es-UY';
+  reconocimientoVoz.continuous = false;
+  reconocimientoVoz.interimResults = true;
+
+  reconocimientoVoz.onresult = (ev)=>{
+    let texto = '';
+    for(let i=0;i<ev.results.length;i++) texto += ev.results[i][0].transcript;
+    document.getElementById('voz-transcript').textContent = texto;
+    if(ev.results[ev.results.length-1].isFinal){
+      const datos = parseComandoVoz(texto);
+      renderInterpretacionVoz(datos);
+      document.getElementById('voz-estado').textContent = 'Listo. Revisá los datos interpretados abajo antes de confirmar.';
+    }
+  };
+  reconocimientoVoz.onerror = ()=>{
+    document.getElementById('voz-estado').textContent = 'No se entendió bien. Tocá el micrófono para intentar de nuevo.';
+    grabandoVoz = false;
+    document.getElementById('voz-grabar').textContent = '🎤 Empezar a hablar';
+  };
+  reconocimientoVoz.onend = ()=>{
+    grabandoVoz = false;
+    document.getElementById('voz-grabar').textContent = '🎤 Empezar a hablar';
+  };
+}
+document.getElementById('btn-voz').addEventListener('click', ()=>{
+  document.getElementById('voz-transcript').textContent = '—';
+  document.getElementById('voz-interpretado').innerHTML = '';
+  document.getElementById('voz-estado').textContent = 'Tocá el micrófono y decí algo como: "mover 45 vacas del 12 al 15", "agregar 20 ovejas al 8", "nació un ternero en el 9", "vendí 10 novillos del 7".';
+  document.getElementById('modal-voz').style.display = 'flex';
+});
+document.getElementById('voz-cerrar').addEventListener('click', ()=>{
+  if(reconocimientoVoz && grabandoVoz) reconocimientoVoz.stop();
+  document.getElementById('modal-voz').style.display = 'none';
+});
+document.getElementById('voz-grabar').addEventListener('click', ()=>{
+  if(!reconocimientoVoz){ toast('El reconocimiento de voz no está disponible en este navegador'); return; }
+  if(grabandoVoz){ reconocimientoVoz.stop(); return; }
+  grabandoVoz = true;
+  document.getElementById('voz-grabar').textContent = '⏹ Escuchando... tocá para detener';
+  document.getElementById('voz-estado').textContent = 'Escuchando...';
+  document.getElementById('voz-interpretado').innerHTML = '';
+  try{ reconocimientoVoz.start(); }catch(e){ grabandoVoz=false; }
+});
+inicializarVoz();
+
+/* ======================= INDICADOR DE CONEXIÓN ======================= */
+/* Los movimientos, altas/bajas, compras/ventas, etc. se guardan siempre en este dispositivo
+   (localStorage), tengas o no internet. Internet solo hace falta para ver el mapa satelital
+   y para el reconocimiento de voz — el resto funciona 100% sin conexión. */
+function actualizarEstadoConexion(estabaOffline){
+  const el = document.getElementById('estado-conexion');
+  if(!el) return;
+  if(navigator.onLine){
+    el.textContent = '🟢 En línea';
+    el.style.color = '#b9d9a0';
+    if(estabaOffline){
+      const ub = estado.ultimoBackup;
+      const movsNuevos = contarMovimientos() - ((ub && ub.movimientos) || 0);
+      toast(movsNuevos > 0
+        ? `Volvió la señal — tenés ${movsNuevos} movimiento${movsNuevos===1?'':'s'} sin respaldar`
+        : 'Conexión recuperada');
+    }
+    sincronizar(true);
+  } else {
+    el.textContent = '⚪ Sin conexión — los datos se siguen guardando en este dispositivo';
+    el.style.color = '#e8d9a8';
+  }
+}
+window.addEventListener('online', ()=> actualizarEstadoConexion(true));
+window.addEventListener('offline', ()=> actualizarEstadoConexion(false));
+actualizarEstadoConexion(false);
+
+document.getElementById('btn-sincronizar').addEventListener('click', ()=>{
+  if(!navigator.onLine){ toast('Sin conexión — no se puede sincronizar ahora'); return; }
+  sincronizar(true);
+});
+
+// Sincroniza solo al abrir y cada 3 minutos mientras haya señal (no interrumpe al usuario).
+if(navigator.onLine) setTimeout(()=> sincronizar(false), 1500);
+setInterval(()=>{ if(navigator.onLine) sincronizar(false); }, 3*60*1000);
+
+/* ======================= RESTABLECER DATOS DE FÁBRICA ======================= */
+document.getElementById('btn-restablecer').addEventListener('click', ()=>{
+  const total = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
+  const confirmar = window.confirm(
+    total > 0
+      ? `Esto borra TODO lo que hay guardado en este navegador (${total} animales, historial, backups) y vuelve a la carga inicial de fábrica. No se puede deshacer. ¿Seguro?`
+      : 'Esto borra lo guardado en este navegador y carga los datos de fábrica. ¿Continuar?'
+  );
+  if(!confirmar) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  location.reload();
+});
+
+/* ======================= INICIO ======================= */
+actualizarTodo();
+actualizarEstadoSync();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
