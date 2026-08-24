@@ -254,6 +254,11 @@
   .hist-item.compra{border-left-color:#1f7a5c;}
   .hist-item.venta{border-left-color:#8a6d1f;}
   .hist-item .fecha{color:var(--texto-suave);font-family:'JetBrains Mono',monospace;font-size:10.5px;}
+  .hist-item.correccion{border-left-color:#8a6d1f;background:#fbf6e8;}
+  .hist-item.eliminado{opacity:0.55;text-decoration:line-through;}
+  .hist-acciones{float:right;display:inline-flex;gap:6px;}
+  .hist-btn{border:none;background:none;cursor:pointer;font-size:12px;padding:0 2px;line-height:1;opacity:0.65;}
+  .hist-btn:hover{opacity:1;}
   .hist-vacio{font-size:12px;color:var(--texto-suave);font-style:italic;}
 
   /* ---------- FOOTER / EXPORT ---------- */
@@ -347,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.1 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.2 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -675,6 +680,19 @@ function aplicarEventoRemoto(row){
   const potrero = row.potrero;
   if(!potrero || !estado.potreros[potrero]) return;
 
+  if(row.tipo === 'correccion'){
+    aplicarAjusteReversion(d.reversar);
+    const texto = d.accion==='eliminar'
+      ? `Corrección (sincronizada): se eliminó un movimiento de ${d.tipoOriginal}`
+      : `Corrección (sincronizada): se editó un movimiento de ${d.tipoOriginal}`;
+    registrarHistorial(potrero, 'correccion', texto);
+    if(d.reversar && (d.reversar.tipo==='mover' || d.reversar.tipo==='mover_todo')){
+      const otro = d.reversar.origen===potrero ? d.reversar.destino : d.reversar.origen;
+      if(otro && estado.potreros[otro]) registrarHistorial(otro, 'correccion', texto);
+    }
+    return;
+  }
+
   if(row.tipo === 'movimiento'){
     if(!d.destino || !estado.potreros[d.destino]) return;
     const key = claveAnimal(d.categoria, d.dueno);
@@ -890,8 +908,124 @@ function toast(msg){
   clearTimeout(toast._timer);
   toast._timer = setTimeout(()=>t.classList.remove('mostrar'), 2200);
 }
-function registrarHistorial(nombre, tipo, detalle){
-  estado.potreros[nombre].historial.unshift({fecha: fechaHoy(), tipo, detalle});
+function generarIdHistorial(){
+  return 'h_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+}
+function registrarHistorial(nombre, tipo, detalle, extra, grupoId){
+  const entry = {fecha: fechaHoy(), tipo, detalle, id: generarIdHistorial()};
+  if(extra) entry.extra = extra;
+  if(grupoId) entry.grupoId = grupoId;
+  estado.potreros[nombre].historial.unshift(entry);
+  return entry;
+}
+function aplicarAjusteReversion(ajuste){
+  if(!ajuste) return;
+  if(ajuste.tipo==='sumar'){
+    const p = estado.potreros[ajuste.potrero]; if(!p) return;
+    const key = ajuste.dueno!==undefined ? claveAnimal(ajuste.categoria, ajuste.dueno) : ajuste.categoria;
+    const totalAntes = totalPotrero(ajuste.potrero);
+    p.animales[key] = (p.animales[key]||0) + ajuste.cantidad;
+    registrarCambioOcupacion(ajuste.potrero, totalAntes);
+  } else if(ajuste.tipo==='restar'){
+    const p = estado.potreros[ajuste.potrero]; if(!p) return;
+    const key = ajuste.dueno!==undefined ? claveAnimal(ajuste.categoria, ajuste.dueno) : ajuste.categoria;
+    const totalAntes = totalPotrero(ajuste.potrero);
+    p.animales[key] = Math.max(0, (p.animales[key]||0) - ajuste.cantidad);
+    registrarCambioOcupacion(ajuste.potrero, totalAntes);
+  } else if(ajuste.tipo==='mover'){
+    const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
+    if(!po || !pd) return;
+    const key = ajuste.dueno!==undefined ? claveAnimal(ajuste.categoria, ajuste.dueno) : ajuste.categoria;
+    const totalAntesO = totalPotrero(ajuste.origen);
+    const totalAntesD = totalPotrero(ajuste.destino);
+    po.animales[key] = Math.max(0, (po.animales[key]||0) - ajuste.cantidad);
+    pd.animales[key] = (pd.animales[key]||0) + ajuste.cantidad;
+    registrarCambioOcupacion(ajuste.origen, totalAntesO);
+    registrarCambioOcupacion(ajuste.destino, totalAntesD);
+  } else if(ajuste.tipo==='mover_todo'){
+    const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
+    if(!po || !pd) return;
+    const totalAntesO = totalPotrero(ajuste.origen);
+    const totalAntesD = totalPotrero(ajuste.destino);
+    (ajuste.items||[]).forEach(it=>{
+      const key = it.dueno!==undefined ? claveAnimal(it.categoria, it.dueno) : it.categoria;
+      po.animales[key] = Math.max(0, (po.animales[key]||0) - it.cantidad);
+      pd.animales[key] = (pd.animales[key]||0) + it.cantidad;
+    });
+    registrarCambioOcupacion(ajuste.origen, totalAntesO);
+    registrarCambioOcupacion(ajuste.destino, totalAntesD);
+  }
+}
+function construirAjusteInverso(h){
+  const e = h.extra || {};
+  if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
+    return {tipo:'restar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
+  }
+  if(h.tipo==='muerte' || h.tipo==='venta'){
+    return {tipo:'sumar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
+  }
+  if(h.tipo==='movimiento'){
+    return {tipo:'mover', origen: e.destino, destino: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
+  }
+  if(h.tipo==='movimiento_todo'){
+    return {tipo:'mover_todo', origen: e.destino, destino: e.potrero, items: e.items};
+  }
+  return null;
+}
+function ubicarHistorial(id){
+  for(const p of POTREROS_GEO){
+    const nombre = p.nombre;
+    const pot = estado.potreros[nombre];
+    if(!pot) continue;
+    const entry = (pot.historial||[]).find(h=>h.id===id);
+    if(entry) return {potrero: nombre, entry};
+  }
+  return null;
+}
+function marcarEliminadoPorGrupo(grupoId, idExcluir){
+  if(!grupoId) return;
+  for(const p of POTREROS_GEO){
+    const nombre = p.nombre;
+    const pot = estado.potreros[nombre];
+    if(!pot) continue;
+    const entry = (pot.historial||[]).find(h=>h.grupoId===grupoId && h.id!==idExcluir);
+    if(entry && !entry.eliminado){
+      entry.eliminado = true;
+      entry.detalle += ' — ELIMINADO';
+    }
+  }
+}
+function borrarHistorial(id){
+  const ub = ubicarHistorial(id);
+  if(!ub || ub.entry.eliminado || !ub.entry.extra){ toast('Este movimiento no se puede borrar'); return; }
+  if(!confirm('¿Borrar este movimiento del historial? Se va a revertir el cambio en los animales.')) return;
+  const h = ub.entry;
+  const ajuste = construirAjusteInverso(h);
+  aplicarAjusteReversion(ajuste);
+  h.eliminado = true;
+  h.detalle += ' — ELIMINADO';
+  if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id);
+  enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste});
+  guardarEstado(); actualizarTodo(); renderDetalle(ub.potrero);
+  toast('Movimiento borrado');
+}
+const ACCION_POR_TIPO_HIST = {ingreso:'agregar', nacimiento:'nacimiento', muerte:'muerte', compra:'compraventa', venta:'compraventa'};
+function editarHistorial(id){
+  const ub = ubicarHistorial(id);
+  if(!ub || ub.entry.eliminado || !ub.entry.extra){ toast('Este movimiento no se puede editar'); return; }
+  const h = ub.entry;
+  if(h.tipo==='movimiento' || h.tipo==='movimiento_todo'){
+    toast('Para corregir un movimiento entre potreros, borralo y volvé a cargarlo');
+    return;
+  }
+  if(!confirm('¿Editar este movimiento? Se va a revertir el valor anterior y vas a poder cargar el corregido.')) return;
+  const ajuste = construirAjusteInverso(h);
+  aplicarAjusteReversion(ajuste);
+  h.eliminado = true;
+  h.detalle += ' — EDITADO (ver movimiento nuevo)';
+  enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste});
+  guardarEstado(); actualizarTodo(); renderDetalle(ub.potrero);
+  mostrarFormulario(ub.potrero, ACCION_POR_TIPO_HIST[h.tipo], h.extra);
 }
 
 /* ======================= MAPA ======================= */
@@ -1139,8 +1273,13 @@ function renderDetalle(nombre){
     <div id="historial">
       <h3>Historial</h3>
       ${historial.length ? historial.slice(0,15).map(h=>`
-        <div class="hist-item ${h.tipo}">
+        <div class="hist-item ${h.tipo}${h.eliminado?' eliminado':''}">
           <span class="fecha">${h.fecha}</span> — ${h.detalle}
+          ${(h.id && h.extra && !h.eliminado) ? `
+          <span class="hist-acciones">
+            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo') ? `<button class="hist-btn" data-hist-editar="${h.id}" title="Editar">✏️</button>` : ''}
+            <button class="hist-btn" data-hist-borrar="${h.id}" title="Borrar">🗑</button>
+          </span>` : ''}
         </div>
       `).join('') : '<div class="hist-vacio">Todavía no hay movimientos en este potrero.</div>'}
     </div>
@@ -1148,6 +1287,12 @@ function renderDetalle(nombre){
 
   det.querySelectorAll('[data-accion]').forEach(btn=>{
     btn.addEventListener('click', ()=> mostrarFormulario(nombre, btn.dataset.accion));
+  });
+  det.querySelectorAll('[data-hist-borrar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); borrarHistorial(btn.dataset.histBorrar); });
+  });
+  det.querySelectorAll('[data-hist-editar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarHistorial(btn.dataset.histEditar); });
   });
   document.getElementById('detalle-cerrar').addEventListener('click', cerrarDetalle);
 }
@@ -1186,18 +1331,18 @@ function opcionesPotreros(excluir){
   return POTREROS_GEO.map(p=>p.nombre).filter(n=>n!==excluir).sort().map(n=>`<option value="${n}">${n}</option>`).join('');
 }
 
-function mostrarFormulario(nombre, accion){
+function mostrarFormulario(nombre, accion, prefill){
   const zona = document.getElementById('form-zona');
 
   if(accion==='agregar'){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Agregar animales a ${nombre}</h3>
-        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
-        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos()}</select></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
+        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
         <div class="form-botones">
-          <button class="btn btn-agregar" id="f-confirmar">Agregar</button>
+          <button class="btn btn-agregar" id="f-confirmar">${prefill?'Guardar corrección':'Agregar'}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
@@ -1211,7 +1356,7 @@ function mostrarFormulario(nombre, accion){
       const key = claveAnimal(cat, dueno);
       a[key] = (a[key]||0) + cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'ingreso', `+${cant} ${cat} de ${dueno} (ingreso)`);
+      registrarHistorial(nombre, 'ingreso', `+${cant} ${cat} de ${dueno} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant});
       enviarEvento('ingreso', nombre, {categoria: cat, dueno, cantidad: cant});
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Se agregaron ${cant} ${cat} (${dueno}) a ${nombre}`);
@@ -1249,8 +1394,10 @@ function mostrarFormulario(nombre, accion){
       destAnimales[key] = (destAnimales[key]||0) + cant;
       registrarCambioOcupacion(nombre, totalAntesOrigen);
       registrarCambioOcupacion(destino, totalAntesDestino);
-      registrarHistorial(nombre, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino}`);
-      registrarHistorial(destino, 'movimiento', `+${cant} ${cat} de ${dueno} ← ${nombre}`);
+      const grupoIdMov = generarIdHistorial();
+      const extraMov = {potrero: nombre, destino, categoria: cat, dueno, cantidad: cant};
+      registrarHistorial(nombre, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino}`, extraMov, grupoIdMov);
+      registrarHistorial(destino, 'movimiento', `+${cant} ${cat} de ${dueno} ← ${nombre}`, extraMov, grupoIdMov);
       enviarEvento('movimiento', nombre, {categoria: cat, dueno, cantidad: cant, destino});
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Se movieron ${cant} ${cat} (${dueno}) de ${nombre} a ${destino}`);
@@ -1296,8 +1443,10 @@ function mostrarFormulario(nombre, accion){
       registrarCambioOcupacion(nombre, totalAntesOrigen);
       registrarCambioOcupacion(destino, totalAntesDestino);
       const detalleMov = movidos.join(', ');
-      registrarHistorial(nombre, 'movimiento', `Potrero vaciado → ${destino}: ${detalleMov}`);
-      registrarHistorial(destino, 'movimiento', `Ingreso de potrero completo ← ${nombre}: ${detalleMov}`);
+      const grupoIdMov = generarIdHistorial();
+      const extraMov = {potrero: nombre, destino, items};
+      registrarHistorial(nombre, 'movimiento', `Potrero vaciado → ${destino}: ${detalleMov}`, extraMov, grupoIdMov);
+      registrarHistorial(destino, 'movimiento', `Ingreso de potrero completo ← ${nombre}: ${detalleMov}`, extraMov, grupoIdMov);
       enviarEvento('movimiento_todo', nombre, {destino, items});
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Se movió todo el rodeo de ${nombre} a ${destino}`);
@@ -1311,18 +1460,18 @@ function mostrarFormulario(nombre, accion){
         <h3>Compra / Venta en ${nombre}</h3>
         <div class="form-row"><label>Operación</label>
           <select id="f-tipo-op">
-            <option value="Compra">Compra (ingresan animales)</option>
-            <option value="Venta">Venta (salen animales)</option>
+            <option value="Compra"${prefill&&prefill._tipoOp==='Venta'?'':' selected'}>Compra (ingresan animales)</option>
+            <option value="Venta"${prefill&&prefill._tipoOp==='Venta'?' selected':''}>Venta (salen animales)</option>
           </select>
         </div>
-        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
-        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos()}</select></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
-        <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="f-precio" min="0" step="0.01" placeholder="Ej: 850"></div>
-        <div class="form-row"><label>Contraparte (opcional)</label><input type="text" id="f-contraparte" placeholder="Comprador / vendedor / consignatario"></div>
-        <div class="form-row"><label>Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: remate, flete incluido..."></div>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
+        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="f-precio" min="0" step="0.01" placeholder="Ej: 850" value="${prefill&&prefill.precio?prefill.precio:''}"></div>
+        <div class="form-row"><label>Contraparte (opcional)</label><input type="text" id="f-contraparte" placeholder="Comprador / vendedor / consignatario" value="${prefill&&prefill.contraparte?prefill.contraparte:''}"></div>
+        <div class="form-row"><label>Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: remate, flete incluido..." value="${prefill&&prefill.obs?prefill.obs:''}"></div>
         <div class="form-botones">
-          <button class="btn btn-compraventa" id="f-confirmar">Registrar</button>
+          <button class="btn btn-compraventa" id="f-confirmar">${prefill?'Guardar corrección':'Registrar'}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
@@ -1353,7 +1502,7 @@ function mostrarFormulario(nombre, accion){
       if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
       if(contraparte) detalle += ` — ${contraparte}`;
       if(obs) detalle += ` (${obs})`;
-      registrarHistorial(nombre, tipoOp==='Venta'?'venta':'compra', detalle);
+      registrarHistorial(nombre, tipoOp==='Venta'?'venta':'compra', detalle, {potrero: nombre, categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, obs: obs||null, _tipoOp: tipoOp});
 
       estado.transacciones = estado.transacciones || [];
       estado.transacciones.unshift({
@@ -1372,12 +1521,12 @@ function mostrarFormulario(nombre, accion){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Registrar nacimiento en ${nombre}</h3>
-        <div class="form-row"><label>Categoría de la cría</label><select id="f-cat">${opcionesCategorias('Terneros')}</select></div>
-        <div class="form-row"><label>Dueño (de la madre)</label><select id="f-dueno">${opcionesDuenos()}</select></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
-        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: parto sin problemas"></div>
+        <div class="form-row"><label>Categoría de la cría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:'Terneros')}</select></div>
+        <div class="form-row"><label>Dueño (de la madre)</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: parto sin problemas" value="${prefill&&prefill.obs?prefill.obs:''}"></div>
         <div class="form-botones">
-          <button class="btn btn-nacimiento" id="f-confirmar">Registrar nacimiento</button>
+          <button class="btn btn-nacimiento" id="f-confirmar">${prefill?'Guardar corrección':'Registrar nacimiento'}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
@@ -1392,7 +1541,7 @@ function mostrarFormulario(nombre, accion){
       const key = claveAnimal(cat, dueno);
       a[key] = (a[key]||0) + cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`);
+      registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null});
       enviarEvento('nacimiento', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null});
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Nacimiento registrado en ${nombre}`);
@@ -1404,12 +1553,12 @@ function mostrarFormulario(nombre, accion){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Registrar muerte en ${nombre}</h3>
-        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
-        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos()}</select></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
-        <div class="form-row"><label>Causa (opcional)</label><input type="text" id="f-obs" placeholder="Ej: empantanado, enfermedad..."></div>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
+        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label>Causa (opcional)</label><input type="text" id="f-obs" placeholder="Ej: empantanado, enfermedad..." value="${prefill&&prefill.obs?prefill.obs:''}"></div>
         <div class="form-botones">
-          <button class="btn btn-muerte" id="f-confirmar">Registrar muerte</button>
+          <button class="btn btn-muerte" id="f-confirmar">${prefill?'Guardar corrección':'Registrar muerte'}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
@@ -1426,7 +1575,7 @@ function mostrarFormulario(nombre, accion){
       const totalAntes = totalPotrero(nombre);
       a[key] -= cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`);
+      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null});
       enviarEvento('muerte', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null});
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Muerte registrada en ${nombre}`);
