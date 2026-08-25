@@ -1,0 +1,8 @@
+node_modules/
+package.json
+package-lock.json
+parchear_fecha.js
+probar_app.js
+probar_categoria.js
+probar_fecha.js
+probar_historial.js

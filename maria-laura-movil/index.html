@@ -352,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.4</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.5</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -628,8 +628,8 @@ function clienteSupabase(){
   }
   return supabaseClient;
 }
-function enviarEvento(tipo, potrero, detalle){
-  const evento = { tipo, potrero, detalle, fecha_cliente: fechaHoy() };
+function enviarEvento(tipo, potrero, detalle, fecha){
+  const evento = { tipo, potrero, detalle, fecha_cliente: fecha || fechaHoy() };
   pushEventoRemoto(evento);
 }
 async function pushEventoRemoto(evento){
@@ -664,16 +664,17 @@ function aplicarEventoRemoto(row){
   const d = row.detalle || {};
   const potrero = row.potrero;
   if(!potrero || !estado.potreros[potrero]) return;
+  const fechaEvt = row.fecha_cliente || fechaHoy();
 
   if(row.tipo === 'correccion'){
     aplicarAjusteReversion(d.reversar);
     const texto = d.accion==='eliminar'
       ? `Corrección (sincronizada): se eliminó un movimiento de ${d.tipoOriginal}`
       : `Corrección (sincronizada): se editó un movimiento de ${d.tipoOriginal}`;
-    registrarHistorial(potrero, 'correccion', texto);
+    registrarHistorial(potrero, 'correccion', texto, undefined, undefined, fechaEvt);
     if(d.reversar && (d.reversar.tipo==='mover' || d.reversar.tipo==='mover_todo')){
       const otro = d.reversar.origen===potrero ? d.reversar.destino : d.reversar.origen;
-      if(otro && estado.potreros[otro]) registrarHistorial(otro, 'correccion', texto);
+      if(otro && estado.potreros[otro]) registrarHistorial(otro, 'correccion', texto, undefined, undefined, fechaEvt);
     }
     return;
   }
@@ -692,11 +693,11 @@ function aplicarEventoRemoto(row){
     registrarCambioOcupacion(potrero, totalAntesOrigen);
     registrarCambioOcupacion(d.destino, totalAntesDestino);
     if(d.destino === potrero){
-      registrarHistorial(potrero, 'movimiento', `${d.categoria} → ${catDestino} de ${d.dueno} (${d.cantidad}, cambio de categoría, sincronizado)`);
+      registrarHistorial(potrero, 'movimiento', `${d.categoria} → ${catDestino} de ${d.dueno} (${d.cantidad}, cambio de categoría, sincronizado)`, undefined, undefined, fechaEvt);
     }else{
       const sufOrigen = catDestino!==d.categoria ? ` (pasa a ${catDestino})` : '';
-      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)`);
-      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${catDestino} de ${d.dueno} ← ${potrero} (sincronizado)`);
+      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)`, undefined, undefined, fechaEvt);
+      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${catDestino} de ${d.dueno} ← ${potrero} (sincronizado)`, undefined, undefined, fechaEvt);
     }
     return;
   }
@@ -714,8 +715,8 @@ function aplicarEventoRemoto(row){
     });
     registrarCambioOcupacion(potrero, totalAntesOrigen);
     registrarCambioOcupacion(d.destino, totalAntesDestino);
-    registrarHistorial(potrero, 'movimiento', `Potrero vaciado → ${d.destino} (sincronizado)`);
-    registrarHistorial(d.destino, 'movimiento', `Ingreso de potrero completo ← ${potrero} (sincronizado)`);
+    registrarHistorial(potrero, 'movimiento', `Potrero vaciado → ${d.destino} (sincronizado)`, undefined, undefined, fechaEvt);
+    registrarHistorial(d.destino, 'movimiento', `Ingreso de potrero completo ← ${potrero} (sincronizado)`, undefined, undefined, fechaEvt);
     return;
   }
 
@@ -736,7 +737,7 @@ function aplicarEventoRemoto(row){
   if(d.precio) detalleTxt += ` a USD ${d.precio}/cab`;
   if(d.contraparte) detalleTxt += ` — ${d.contraparte}`;
   if(d.obs) detalleTxt += ` (${d.obs})`;
-  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`);
+  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt);
 
   if(row.tipo==='compra' || row.tipo==='venta'){
     estado.transacciones = estado.transacciones || [];
@@ -850,6 +851,14 @@ function fechaISOaDisplay(fechaISO){
   const [y,m,d] = fechaISO.split('-');
   return `${d}/${m}/${y}`;
 }
+function parseFechaDMY(fecha){
+  if(!fecha) return 0;
+  const partes = fecha.split('/');
+  if(partes.length!==3) return 0;
+  const [d,m,y] = partes.map(Number);
+  if(!d||!m||!y) return 0;
+  return new Date(y,m-1,d).getTime();
+}
 /* Registra el cambio de estado (ocupado/vacío) de un potrero comparando el total
    de animales antes y después de una operación, para poder contar días de ocupación/descanso. */
 function registrarCambioOcupacion(nombre, totalAntes){
@@ -903,8 +912,8 @@ function toast(msg){
 function generarIdHistorial(){
   return 'h_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
 }
-function registrarHistorial(nombre, tipo, detalle, extra, grupoId){
-  const entry = {fecha: fechaHoy(), tipo, detalle, id: generarIdHistorial()};
+function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha){
+  const entry = {fecha: fecha || fechaHoy(), tipo, detalle, id: generarIdHistorial()};
   if(extra) entry.extra = extra;
   if(grupoId) entry.grupoId = grupoId;
   estado.potreros[nombre].historial.unshift(entry);
@@ -1353,7 +1362,7 @@ function renderDetalle(nombre){
 
     <div id="historial">
       <h3>Historial</h3>
-      ${historial.length ? historial.slice(0,15).map(h=>`
+      ${historial.length ? historial.slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||'')).slice(0,15).map(h=>`
         <div class="hist-item ${h.tipo}${h.eliminado?' eliminado':''}">
           <span class="fecha">${h.fecha}</span> — ${h.detalle}
           ${(h.id && h.extra && !h.eliminado) ? `
@@ -1422,6 +1431,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
         <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-botones">
           <button class="btn btn-agregar" id="f-confirmar">${prefill?'Guardar corrección':'Agregar'}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -1431,14 +1441,17 @@ function mostrarFormulario(nombre, accion, prefill){
       const cat = document.getElementById('f-cat').value;
       const dueno = document.getElementById('f-dueno').value;
       const cant = parseInt(document.getElementById('f-cant').value,10);
+      const fechaISO = document.getElementById('f-fecha').value;
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      const fecha = fechaISOaDisplay(fechaISO);
       const totalAntes = totalPotrero(nombre);
       const a = estado.potreros[nombre].animales;
       const key = claveAnimal(cat, dueno);
       a[key] = (a[key]||0) + cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'ingreso', `+${cant} ${cat} de ${dueno} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant});
-      enviarEvento('ingreso', nombre, {categoria: cat, dueno, cantidad: cant});
+      registrarHistorial(nombre, 'ingreso', `+${cant} ${cat} de ${dueno} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
+      enviarEvento('ingreso', nombre, {categoria: cat, dueno, cantidad: cant}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Se agregaron ${cant} ${cat} (${dueno}) a ${nombre}`);
     });
@@ -1454,6 +1467,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
         <div class="form-row"><label>Potrero destino</label><select id="f-destino"><option value="${nombre}">(sin mover — queda en ${nombre})</option>${opcionesPotreros(nombre)}</select></div>
         <div class="form-row"><label>Categoría destino</label><select id="f-cat-destino">${opcionesCategorias()}</select></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <p style="font-size:11px;color:var(--texto-suave);margin:2px 0 0 0;">Para recategorizar sin mover de potrero (ej. Terneros → Vaquillonas), dejá el potrero destino "sin mover" y elegí otra categoría destino. El dueño no cambia.</p>
         <div class="form-botones">
           <button class="btn btn-mover" id="f-confirmar">Mover</button>
@@ -1471,6 +1485,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const dueno = document.getElementById('f-dueno').value;
       const cant = parseInt(document.getElementById('f-cant').value,10);
       const destino = document.getElementById('f-destino').value;
+      const fechaISO = document.getElementById('f-fecha').value;
       const key = claveAnimal(cat, dueno);
       const keyDestino = claveAnimal(catDestino, dueno);
       const origenAnimales = estado.potreros[nombre].animales;
@@ -1478,6 +1493,8 @@ function mostrarFormulario(nombre, accion, prefill){
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
       if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} de ${dueno} en ${nombre}`); return; }
       if(destino===nombre && catDestino===cat){ toast('Elegí una categoría distinta o un potrero destino distinto'); return; }
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      const fecha = fechaISOaDisplay(fechaISO);
       const totalAntesOrigen = totalPotrero(nombre);
       const totalAntesDestino = totalPotrero(destino);
       origenAnimales[key] -= cant;
@@ -1489,13 +1506,13 @@ function mostrarFormulario(nombre, accion, prefill){
       const extraMov = {potrero: nombre, destino, categoria: cat, categoriaDestino: catDestino, dueno, cantidad: cant};
       if(destino===nombre){
         const detalle = `${cat} → ${catDestino} de ${dueno} (${cant}, cambio de categoría)`;
-        registrarHistorial(nombre, 'movimiento', detalle, extraMov, grupoIdMov);
+        registrarHistorial(nombre, 'movimiento', detalle, extraMov, grupoIdMov, fecha);
       }else{
         const sufOrigen = catDestino!==cat ? ` (pasa a ${catDestino})` : '';
-        registrarHistorial(nombre, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino}${sufOrigen}`, extraMov, grupoIdMov);
-        registrarHistorial(destino, 'movimiento', `+${cant} ${catDestino} de ${dueno} ← ${nombre}`, extraMov, grupoIdMov);
+        registrarHistorial(nombre, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino}${sufOrigen}`, extraMov, grupoIdMov, fecha);
+        registrarHistorial(destino, 'movimiento', `+${cant} ${catDestino} de ${dueno} ← ${nombre}`, extraMov, grupoIdMov, fecha);
       }
-      enviarEvento('movimiento', nombre, {categoria: cat, categoriaDestino: catDestino, dueno, cantidad: cant, destino});
+      enviarEvento('movimiento', nombre, {categoria: cat, categoriaDestino: catDestino, dueno, cantidad: cant, destino}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       const msg = destino===nombre
         ? `Se recategorizaron ${cant} ${cat} (${dueno}) a ${catDestino} en ${nombre}`
@@ -1518,6 +1535,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <h3>Mover TODO el potrero ${nombre}</h3>
         <p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 8px 0;">Se van a mover ${total} animales: ${resumen}</p>
         <div class="form-row"><label>Potrero destino</label><select id="f-destino">${opcionesPotreros(nombre)}</select></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-botones">
           <button class="btn btn-mover" id="f-confirmar">Mover todo (${total})</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -1525,6 +1543,9 @@ function mostrarFormulario(nombre, accion, prefill){
       </div>`;
     document.getElementById('f-confirmar').addEventListener('click', ()=>{
       const destino = document.getElementById('f-destino').value;
+      const fechaISO = document.getElementById('f-fecha').value;
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      const fecha = fechaISOaDisplay(fechaISO);
       const origenAnimales = estado.potreros[nombre].animales;
       const destAnimales = estado.potreros[destino].animales;
       const totalAntesOrigen = totalPotrero(nombre);
@@ -1545,9 +1566,9 @@ function mostrarFormulario(nombre, accion, prefill){
       const detalleMov = movidos.join(', ');
       const grupoIdMov = generarIdHistorial();
       const extraMov = {potrero: nombre, destino, items};
-      registrarHistorial(nombre, 'movimiento', `Potrero vaciado → ${destino}: ${detalleMov}`, extraMov, grupoIdMov);
-      registrarHistorial(destino, 'movimiento', `Ingreso de potrero completo ← ${nombre}: ${detalleMov}`, extraMov, grupoIdMov);
-      enviarEvento('movimiento_todo', nombre, {destino, items});
+      registrarHistorial(nombre, 'movimiento', `Potrero vaciado → ${destino}: ${detalleMov}`, extraMov, grupoIdMov, fecha);
+      registrarHistorial(destino, 'movimiento', `Ingreso de potrero completo ← ${nombre}: ${detalleMov}`, extraMov, grupoIdMov, fecha);
+      enviarEvento('movimiento_todo', nombre, {destino, items}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Se movió todo el rodeo de ${nombre} a ${destino}`);
     });
@@ -1567,6 +1588,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
         <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="f-precio" min="0" step="0.01" placeholder="Ej: 850" value="${prefill&&prefill.precio?prefill.precio:''}"></div>
         <div class="form-row"><label>Contraparte (opcional)</label><input type="text" id="f-contraparte" placeholder="Comprador / vendedor / consignatario" value="${prefill&&prefill.contraparte?prefill.contraparte:''}"></div>
         <div class="form-row"><label>Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: remate, flete incluido..." value="${prefill&&prefill.obs?prefill.obs:''}"></div>
@@ -1580,10 +1602,13 @@ function mostrarFormulario(nombre, accion, prefill){
       const cat = document.getElementById('f-cat').value;
       const dueno = document.getElementById('f-dueno').value;
       const cant = parseInt(document.getElementById('f-cant').value,10);
+      const fechaISO = document.getElementById('f-fecha').value;
       const precio = parseFloat(document.getElementById('f-precio').value);
       const contraparte = document.getElementById('f-contraparte').value.trim();
       const obs = document.getElementById('f-obs').value.trim();
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      const fecha = fechaISOaDisplay(fechaISO);
       const a = estado.potreros[nombre].animales;
       const key = claveAnimal(cat, dueno);
       const totalAntes = totalPotrero(nombre);
@@ -1602,14 +1627,14 @@ function mostrarFormulario(nombre, accion, prefill){
       if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
       if(contraparte) detalle += ` — ${contraparte}`;
       if(obs) detalle += ` (${obs})`;
-      registrarHistorial(nombre, tipoOp==='Venta'?'venta':'compra', detalle, {potrero: nombre, categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, obs: obs||null, _tipoOp: tipoOp});
+      registrarHistorial(nombre, tipoOp==='Venta'?'venta':'compra', detalle, {potrero: nombre, categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, obs: obs||null, _tipoOp: tipoOp, _fechaISO: fechaISO}, undefined, fecha);
 
       estado.transacciones = estado.transacciones || [];
       estado.transacciones.unshift({
-        fecha: fechaHoy(), potrero: nombre, tipo: tipoOp, categoria: cat, dueno, cantidad: cant,
+        fecha: fecha, potrero: nombre, tipo: tipoOp, categoria: cat, dueno, cantidad: cant,
         precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte, notas: obs
       });
-      enviarEvento(tipoOp==='Venta'?'venta':'compra', nombre, {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, obs: obs||null});
+      enviarEvento(tipoOp==='Venta'?'venta':'compra', nombre, {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, obs: obs||null}, fecha);
 
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`${tipoOp} registrada: ${cant} ${cat} (${dueno}) en ${nombre}`);
@@ -1624,6 +1649,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-row"><label>Categoría de la cría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:'Terneros')}</select></div>
         <div class="form-row"><label>Dueño (de la madre)</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: parto sin problemas" value="${prefill&&prefill.obs?prefill.obs:''}"></div>
         <div class="form-botones">
           <button class="btn btn-nacimiento" id="f-confirmar">${prefill?'Guardar corrección':'Registrar nacimiento'}</button>
@@ -1634,15 +1660,18 @@ function mostrarFormulario(nombre, accion, prefill){
       const cat = document.getElementById('f-cat').value;
       const dueno = document.getElementById('f-dueno').value;
       const cant = parseInt(document.getElementById('f-cant').value,10);
+      const fechaISO = document.getElementById('f-fecha').value;
       const obs = document.getElementById('f-obs').value.trim();
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      const fecha = fechaISOaDisplay(fechaISO);
       const totalAntes = totalPotrero(nombre);
       const a = estado.potreros[nombre].animales;
       const key = claveAnimal(cat, dueno);
       a[key] = (a[key]||0) + cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null});
-      enviarEvento('nacimiento', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null});
+      registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
+      enviarEvento('nacimiento', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Nacimiento registrado en ${nombre}`);
     });
@@ -1656,6 +1685,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
         <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Causa (opcional)</label><input type="text" id="f-obs" placeholder="Ej: empantanado, enfermedad..." value="${prefill&&prefill.obs?prefill.obs:''}"></div>
         <div class="form-botones">
           <button class="btn btn-muerte" id="f-confirmar">${prefill?'Guardar corrección':'Registrar muerte'}</button>
@@ -1666,17 +1696,20 @@ function mostrarFormulario(nombre, accion, prefill){
       const cat = document.getElementById('f-cat').value;
       const dueno = document.getElementById('f-dueno').value;
       const cant = parseInt(document.getElementById('f-cant').value,10);
+      const fechaISO = document.getElementById('f-fecha').value;
       const obs = document.getElementById('f-obs').value.trim();
       const a = estado.potreros[nombre].animales;
       const key = claveAnimal(cat, dueno);
       const disponibles = a[key] || 0;
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
       if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} de ${dueno} en ${nombre}`); return; }
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      const fecha = fechaISOaDisplay(fechaISO);
       const totalAntes = totalPotrero(nombre);
       a[key] -= cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null});
-      enviarEvento('muerte', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null});
+      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
+      enviarEvento('muerte', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Muerte registrada en ${nombre}`);
     });
