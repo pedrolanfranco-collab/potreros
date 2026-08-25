@@ -352,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.2 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.3 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -695,17 +695,24 @@ function aplicarEventoRemoto(row){
 
   if(row.tipo === 'movimiento'){
     if(!d.destino || !estado.potreros[d.destino]) return;
-    const key = claveAnimal(d.categoria, d.dueno);
+    const catDestino = d.categoriaDestino || d.categoria;
+    const keyOrigen = claveAnimal(d.categoria, d.dueno);
+    const keyDestino = claveAnimal(catDestino, d.dueno);
     const origenAnimales = estado.potreros[potrero].animales;
     const totalAntesOrigen = totalPotrero(potrero);
     const totalAntesDestino = totalPotrero(d.destino);
-    origenAnimales[key] = Math.max(0, (origenAnimales[key]||0) - d.cantidad);
+    origenAnimales[keyOrigen] = Math.max(0, (origenAnimales[keyOrigen]||0) - d.cantidad);
     const destAnimales = estado.potreros[d.destino].animales;
-    destAnimales[key] = (destAnimales[key]||0) + d.cantidad;
+    destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + d.cantidad;
     registrarCambioOcupacion(potrero, totalAntesOrigen);
     registrarCambioOcupacion(d.destino, totalAntesDestino);
-    registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino} (sincronizado)`);
-    registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${d.categoria} de ${d.dueno} ← ${potrero} (sincronizado)`);
+    if(d.destino === potrero){
+      registrarHistorial(potrero, 'movimiento', `${d.categoria} → ${catDestino} de ${d.dueno} (${d.cantidad}, cambio de categoría, sincronizado)`);
+    }else{
+      const sufOrigen = catDestino!==d.categoria ? ` (pasa a ${catDestino})` : '';
+      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)`);
+      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${catDestino} de ${d.dueno} ← ${potrero} (sincronizado)`);
+    }
     return;
   }
 
@@ -935,11 +942,13 @@ function aplicarAjusteReversion(ajuste){
   } else if(ajuste.tipo==='mover'){
     const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
     if(!po || !pd) return;
-    const key = ajuste.dueno!==undefined ? claveAnimal(ajuste.categoria, ajuste.dueno) : ajuste.categoria;
+    const catDestinoAjuste = ajuste.categoriaDestino || ajuste.categoria;
+    const keyOrigen = ajuste.dueno!==undefined ? claveAnimal(ajuste.categoria, ajuste.dueno) : ajuste.categoria;
+    const keyDestino = ajuste.dueno!==undefined ? claveAnimal(catDestinoAjuste, ajuste.dueno) : catDestinoAjuste;
     const totalAntesO = totalPotrero(ajuste.origen);
     const totalAntesD = totalPotrero(ajuste.destino);
-    po.animales[key] = Math.max(0, (po.animales[key]||0) - ajuste.cantidad);
-    pd.animales[key] = (pd.animales[key]||0) + ajuste.cantidad;
+    po.animales[keyOrigen] = Math.max(0, (po.animales[keyOrigen]||0) - ajuste.cantidad);
+    pd.animales[keyDestino] = (pd.animales[keyDestino]||0) + ajuste.cantidad;
     registrarCambioOcupacion(ajuste.origen, totalAntesO);
     registrarCambioOcupacion(ajuste.destino, totalAntesD);
   } else if(ajuste.tipo==='mover_todo'){
@@ -965,7 +974,7 @@ function construirAjusteInverso(h){
     return {tipo:'sumar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
   }
   if(h.tipo==='movimiento'){
-    return {tipo:'mover', origen: e.destino, destino: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
+    return {tipo:'mover', origen: e.destino, destino: e.potrero, categoria: e.categoriaDestino || e.categoria, categoriaDestino: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
   }
   if(h.tipo==='movimiento_todo'){
     return {tipo:'mover_todo', origen: e.destino, destino: e.potrero, items: e.items};
@@ -1371,36 +1380,55 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
         <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos()}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
-        <div class="form-row"><label>Potrero destino</label><select id="f-destino">${opcionesPotreros(nombre)}</select></div>
+        <div class="form-row"><label>Potrero destino</label><select id="f-destino"><option value="${nombre}">(sin mover — queda en ${nombre})</option>${opcionesPotreros(nombre)}</select></div>
+        <div class="form-row"><label>Categoría destino</label><select id="f-cat-destino">${opcionesCategorias()}</select></div>
+        <p style="font-size:11px;color:var(--texto-suave);margin:2px 0 0 0;">Para recategorizar sin mover de potrero (ej. Terneros → Vaquillonas), dejá el potrero destino "sin mover" y elegí otra categoría destino. El dueño no cambia.</p>
         <div class="form-botones">
           <button class="btn btn-mover" id="f-confirmar">Mover</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
+    let catDestinoTocada = false;
+    document.getElementById('f-cat-destino').addEventListener('change', ()=>{ catDestinoTocada = true; });
+    document.getElementById('f-cat').addEventListener('change', ()=>{
+      if(!catDestinoTocada) document.getElementById('f-cat-destino').value = document.getElementById('f-cat').value;
+    });
     document.getElementById('f-confirmar').addEventListener('click', ()=>{
       const cat = document.getElementById('f-cat').value;
+      const catDestino = document.getElementById('f-cat-destino').value;
       const dueno = document.getElementById('f-dueno').value;
       const cant = parseInt(document.getElementById('f-cant').value,10);
       const destino = document.getElementById('f-destino').value;
       const key = claveAnimal(cat, dueno);
+      const keyDestino = claveAnimal(catDestino, dueno);
       const origenAnimales = estado.potreros[nombre].animales;
       const disponibles = origenAnimales[key] || 0;
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
       if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} de ${dueno} en ${nombre}`); return; }
+      if(destino===nombre && catDestino===cat){ toast('Elegí una categoría distinta o un potrero destino distinto'); return; }
       const totalAntesOrigen = totalPotrero(nombre);
       const totalAntesDestino = totalPotrero(destino);
       origenAnimales[key] -= cant;
       const destAnimales = estado.potreros[destino].animales;
-      destAnimales[key] = (destAnimales[key]||0) + cant;
+      destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + cant;
       registrarCambioOcupacion(nombre, totalAntesOrigen);
       registrarCambioOcupacion(destino, totalAntesDestino);
       const grupoIdMov = generarIdHistorial();
-      const extraMov = {potrero: nombre, destino, categoria: cat, dueno, cantidad: cant};
-      registrarHistorial(nombre, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino}`, extraMov, grupoIdMov);
-      registrarHistorial(destino, 'movimiento', `+${cant} ${cat} de ${dueno} ← ${nombre}`, extraMov, grupoIdMov);
-      enviarEvento('movimiento', nombre, {categoria: cat, dueno, cantidad: cant, destino});
+      const extraMov = {potrero: nombre, destino, categoria: cat, categoriaDestino: catDestino, dueno, cantidad: cant};
+      if(destino===nombre){
+        const detalle = `${cat} → ${catDestino} de ${dueno} (${cant}, cambio de categoría)`;
+        registrarHistorial(nombre, 'movimiento', detalle, extraMov, grupoIdMov);
+      }else{
+        const sufOrigen = catDestino!==cat ? ` (pasa a ${catDestino})` : '';
+        registrarHistorial(nombre, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino}${sufOrigen}`, extraMov, grupoIdMov);
+        registrarHistorial(destino, 'movimiento', `+${cant} ${catDestino} de ${dueno} ← ${nombre}`, extraMov, grupoIdMov);
+      }
+      enviarEvento('movimiento', nombre, {categoria: cat, categoriaDestino: catDestino, dueno, cantidad: cant, destino});
       guardarEstado(); actualizarTodo(); cerrarDetalle();
-      toast(`Se movieron ${cant} ${cat} (${dueno}) de ${nombre} a ${destino}`);
+      const msg = destino===nombre
+        ? `Se recategorizaron ${cant} ${cat} (${dueno}) a ${catDestino} en ${nombre}`
+        : (catDestino!==cat ? `Se movieron ${cant} ${cat} (${dueno}) de ${nombre} a ${destino} (pasan a ${catDestino})` : `Se movieron ${cant} ${cat} (${dueno}) de ${nombre} a ${destino}`);
+      toast(msg);
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
