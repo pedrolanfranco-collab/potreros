@@ -352,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.5</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.6</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -692,12 +692,13 @@ function aplicarEventoRemoto(row){
     destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + d.cantidad;
     registrarCambioOcupacion(potrero, totalAntesOrigen);
     registrarCambioOcupacion(d.destino, totalAntesDestino);
+    const sufObsMov = d.obs ? ` (${d.obs})` : '';
     if(d.destino === potrero){
-      registrarHistorial(potrero, 'movimiento', `${d.categoria} → ${catDestino} de ${d.dueno} (${d.cantidad}, cambio de categoría, sincronizado)`, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento', `${d.categoria} → ${catDestino} de ${d.dueno} (${d.cantidad}, cambio de categoría, sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
     }else{
       const sufOrigen = catDestino!==d.categoria ? ` (pasa a ${catDestino})` : '';
-      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)`, undefined, undefined, fechaEvt);
-      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${catDestino} de ${d.dueno} ← ${potrero} (sincronizado)`, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
+      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${catDestino} de ${d.dueno} ← ${potrero} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
     }
     return;
   }
@@ -1468,6 +1469,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-row"><label>Potrero destino</label><select id="f-destino"><option value="${nombre}">(sin mover — queda en ${nombre})</option>${opcionesPotreros(nombre)}</select></div>
         <div class="form-row"><label>Categoría destino</label><select id="f-cat-destino">${opcionesCategorias()}</select></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label>Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: arreo por sequía, pastoreo rotativo..." value=""></div>
         <p style="font-size:11px;color:var(--texto-suave);margin:2px 0 0 0;">Para recategorizar sin mover de potrero (ej. Terneros → Vaquillonas), dejá el potrero destino "sin mover" y elegí otra categoría destino. El dueño no cambia.</p>
         <div class="form-botones">
           <button class="btn btn-mover" id="f-confirmar">Mover</button>
@@ -1486,6 +1488,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const cant = parseInt(document.getElementById('f-cant').value,10);
       const destino = document.getElementById('f-destino').value;
       const fechaISO = document.getElementById('f-fecha').value;
+      const obs = document.getElementById('f-obs').value.trim();
       const key = claveAnimal(cat, dueno);
       const keyDestino = claveAnimal(catDestino, dueno);
       const origenAnimales = estado.potreros[nombre].animales;
@@ -1503,16 +1506,18 @@ function mostrarFormulario(nombre, accion, prefill){
       registrarCambioOcupacion(nombre, totalAntesOrigen);
       registrarCambioOcupacion(destino, totalAntesDestino);
       const grupoIdMov = generarIdHistorial();
-      const extraMov = {potrero: nombre, destino, categoria: cat, categoriaDestino: catDestino, dueno, cantidad: cant};
+      const extraMov = {potrero: nombre, destino, categoria: cat, categoriaDestino: catDestino, dueno, cantidad: cant, obs: obs||null};
       if(destino===nombre){
-        const detalle = `${cat} → ${catDestino} de ${dueno} (${cant}, cambio de categoría)`;
+        let detalle = `${cat} → ${catDestino} de ${dueno} (${cant}, cambio de categoría)`;
+        if(obs) detalle += ` (${obs})`;
         registrarHistorial(nombre, 'movimiento', detalle, extraMov, grupoIdMov, fecha);
       }else{
         const sufOrigen = catDestino!==cat ? ` (pasa a ${catDestino})` : '';
-        registrarHistorial(nombre, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino}${sufOrigen}`, extraMov, grupoIdMov, fecha);
-        registrarHistorial(destino, 'movimiento', `+${cant} ${catDestino} de ${dueno} ← ${nombre}`, extraMov, grupoIdMov, fecha);
+        const sufObs = obs ? ` (${obs})` : '';
+        registrarHistorial(nombre, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino}${sufOrigen}${sufObs}`, extraMov, grupoIdMov, fecha);
+        registrarHistorial(destino, 'movimiento', `+${cant} ${catDestino} de ${dueno} ← ${nombre}${sufObs}`, extraMov, grupoIdMov, fecha);
       }
-      enviarEvento('movimiento', nombre, {categoria: cat, categoriaDestino: catDestino, dueno, cantidad: cant, destino}, fecha);
+      enviarEvento('movimiento', nombre, {categoria: cat, categoriaDestino: catDestino, dueno, cantidad: cant, destino, obs: obs||null}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       const msg = destino===nombre
         ? `Se recategorizaron ${cant} ${cat} (${dueno}) a ${catDestino} en ${nombre}`
