@@ -4,13 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>La Vuelta — Mapa de Potreros</title>
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="La Vuelta">
-<meta name="theme-color" content="#2b3a24">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192x192.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -352,7 +345,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.6</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.8</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -679,24 +672,26 @@ function aplicarEventoRemoto(row){
 
   if(row.tipo === 'movimiento'){
     if(!d.destino || !estado.potreros[d.destino]) return;
-    const catDestino = d.categoriaDestino || d.categoria;
     const keyOrigen = claveAnimal(d.categoria, d.dueno);
-    const keyDestino = claveAnimal(catDestino, d.dueno);
+    const keyDestino = claveAnimal(d.categoriaDestino || d.categoria, d.dueno);
     const origenAnimales = estado.potreros[potrero].animales;
     const totalAntesOrigen = totalPotrero(potrero);
     const totalAntesDestino = totalPotrero(d.destino);
-    origenAnimales[keyOrigen] = Math.max(0, (origenAnimales[keyOrigen]||0) - d.cantidad);
+    origenAnimales[keyOrigen] = (origenAnimales[keyOrigen]||0) - d.cantidad;
     const destAnimales = estado.potreros[d.destino].animales;
     destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + d.cantidad;
     registrarCambioOcupacion(potrero, totalAntesOrigen);
     registrarCambioOcupacion(d.destino, totalAntesDestino);
     const sufObsMov = d.obs ? ` (${d.obs})` : '';
     if(d.destino === potrero){
-      registrarHistorial(potrero, 'movimiento', `${d.categoria} → ${catDestino}${d.dueno?' de '+d.dueno:''} (${d.cantidad}, cambio de categoría, sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
+      const detalle = d.categoriaDestino && d.categoriaDestino!==d.categoria
+        ? `${d.categoria}${d.dueno?' de '+d.dueno:''} → ${d.categoriaDestino} (${d.cantidad}, cambio de categoría, sincronizado)${sufObsMov}`
+        : `-${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''} → ${d.destino} (sincronizado)${sufObsMov}`;
+      registrarHistorial(potrero, 'movimiento', detalle, undefined, undefined, fechaEvt);
     }else{
-      const sufOrigen = catDestino!==d.categoria ? ` (pasa a ${catDestino})` : '';
+      const sufOrigen = d.categoriaDestino && d.categoriaDestino!==d.categoria ? ` (pasa a ${d.categoriaDestino})` : '';
       registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''} → ${d.destino}${sufOrigen} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
-      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${catDestino}${d.dueno?' de '+d.dueno:''} ← ${potrero} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
+      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${d.categoriaDestino || d.categoria}${d.dueno?' de '+d.dueno:''} ← ${potrero} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
     }
     return;
   }
@@ -709,7 +704,7 @@ function aplicarEventoRemoto(row){
     const totalAntesDestino = totalPotrero(d.destino);
     d.items.forEach(it=>{
       const key = claveAnimal(it.categoria, it.dueno);
-      origenAnimales[key] = Math.max(0, (origenAnimales[key]||0) - it.cantidad);
+      origenAnimales[key] = (origenAnimales[key]||0) - it.cantidad;
       destAnimales[key] = (destAnimales[key]||0) + it.cantidad;
     });
     registrarCambioOcupacion(potrero, totalAntesOrigen);
@@ -915,7 +910,7 @@ function toast(msg){
   toast._timer = setTimeout(()=>t.classList.remove('mostrar'), 2200);
 }
 function generarIdHistorial(){
-  return 'h_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+  return 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
 }
 function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha){
   const entry = {fecha: fecha || fechaHoy(), tipo, detalle, id: generarIdHistorial()};
@@ -924,39 +919,38 @@ function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha){
   estado.potreros[nombre].historial.unshift(entry);
   return entry;
 }
+
+/* ===== Editar / borrar un movimiento ya cargado =====
+   Cada movimiento reversible guarda en su renglon de historial los datos
+   originales (extra), ademas del texto. Borrar o editar arma el ajuste
+   contrario exacto y lo aplica local y a los demas dispositivos como un
+   evento mas (tipo 'correccion'), sin tocar ni reinterpretar los eventos
+   viejos en Supabase -- por eso nunca se pierde la idempotencia. */
 function aplicarAjusteReversion(ajuste){
   if(!ajuste) return;
-  if(ajuste.tipo==='sumar'){
+  if(ajuste.tipo==='sumar' || ajuste.tipo==='restar'){
     const p = estado.potreros[ajuste.potrero]; if(!p) return;
-    const key = ajuste.dueno!==undefined ? claveAnimal(ajuste.categoria, ajuste.dueno) : ajuste.categoria;
+    const key = claveAnimal(ajuste.categoria, ajuste.dueno);
     const totalAntes = totalPotrero(ajuste.potrero);
-    p.animales[key] = (p.animales[key]||0) + ajuste.cantidad;
-    registrarCambioOcupacion(ajuste.potrero, totalAntes);
-  } else if(ajuste.tipo==='restar'){
-    const p = estado.potreros[ajuste.potrero]; if(!p) return;
-    const key = ajuste.dueno!==undefined ? claveAnimal(ajuste.categoria, ajuste.dueno) : ajuste.categoria;
-    const totalAntes = totalPotrero(ajuste.potrero);
-    p.animales[key] = Math.max(0, (p.animales[key]||0) - ajuste.cantidad);
+    const delta = ajuste.tipo==='sumar' ? ajuste.cantidad : -ajuste.cantidad;
+    p.animales[key] = Math.max(0, (p.animales[key]||0) + delta);
     registrarCambioOcupacion(ajuste.potrero, totalAntes);
   } else if(ajuste.tipo==='mover'){
     const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
     if(!po || !pd) return;
-    const catDestinoAjuste = ajuste.categoriaDestino || ajuste.categoria;
-    const keyOrigen = ajuste.dueno!==undefined ? claveAnimal(ajuste.categoria, ajuste.dueno) : ajuste.categoria;
-    const keyDestino = ajuste.dueno!==undefined ? claveAnimal(catDestinoAjuste, ajuste.dueno) : catDestinoAjuste;
-    const totalAntesO = totalPotrero(ajuste.origen);
-    const totalAntesD = totalPotrero(ajuste.destino);
+    const keyOrigen = claveAnimal(ajuste.categoria, ajuste.dueno);
+    const keyDestino = claveAnimal(ajuste.categoriaDestino || ajuste.categoria, ajuste.dueno);
+    const totalAntesO = totalPotrero(ajuste.origen), totalAntesD = totalPotrero(ajuste.destino);
     po.animales[keyOrigen] = Math.max(0, (po.animales[keyOrigen]||0) - ajuste.cantidad);
     pd.animales[keyDestino] = (pd.animales[keyDestino]||0) + ajuste.cantidad;
     registrarCambioOcupacion(ajuste.origen, totalAntesO);
     registrarCambioOcupacion(ajuste.destino, totalAntesD);
   } else if(ajuste.tipo==='mover_todo'){
     const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
-    if(!po || !pd) return;
-    const totalAntesO = totalPotrero(ajuste.origen);
-    const totalAntesD = totalPotrero(ajuste.destino);
-    (ajuste.items||[]).forEach(it=>{
-      const key = it.dueno!==undefined ? claveAnimal(it.categoria, it.dueno) : it.categoria;
+    if(!po || !pd || !Array.isArray(ajuste.items)) return;
+    const totalAntesO = totalPotrero(ajuste.origen), totalAntesD = totalPotrero(ajuste.destino);
+    ajuste.items.forEach(it=>{
+      const key = claveAnimal(it.categoria, it.dueno);
       po.animales[key] = Math.max(0, (po.animales[key]||0) - it.cantidad);
       pd.animales[key] = (pd.animales[key]||0) + it.cantidad;
     });
@@ -965,7 +959,7 @@ function aplicarAjusteReversion(ajuste){
   }
 }
 function construirAjusteInverso(h){
-  const e = h.extra || {};
+  const e = h.extra; if(!e) return null;
   if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
     return {tipo:'restar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
   }
@@ -982,58 +976,54 @@ function construirAjusteInverso(h){
 }
 function ubicarHistorial(id){
   for(const p of POTREROS_GEO){
-    const nombre = p.nombre;
-    const pot = estado.potreros[nombre];
-    if(!pot) continue;
-    const entry = (pot.historial||[]).find(h=>h.id===id);
-    if(entry) return {potrero: nombre, entry};
+    const h = (estado.potreros[p.nombre].historial||[]).find(x=>x.id===id);
+    if(h) return {potrero: p.nombre, entry: h};
   }
   return null;
 }
 function marcarEliminadoPorGrupo(grupoId, idExcluir){
-  if(!grupoId) return;
-  for(const p of POTREROS_GEO){
-    const nombre = p.nombre;
-    const pot = estado.potreros[nombre];
-    if(!pot) continue;
-    const entry = (pot.historial||[]).find(h=>h.grupoId===grupoId && h.id!==idExcluir);
-    if(entry && !entry.eliminado){
-      entry.eliminado = true;
-      entry.detalle += ' — ELIMINADO';
-    }
-  }
+  POTREROS_GEO.forEach(p=>{
+    (estado.potreros[p.nombre].historial||[]).forEach(h=>{
+      if(h.grupoId===grupoId && h.id!==idExcluir && !h.eliminado){
+        h.eliminado = true;
+        h.detalle = h.detalle + ' — ELIMINADO';
+      }
+    });
+  });
 }
 function borrarHistorial(id){
   const ub = ubicarHistorial(id);
-  if(!ub || ub.entry.eliminado || !ub.entry.extra){ toast('Este movimiento no se puede borrar'); return; }
-  if(!confirm('¿Borrar este movimiento del historial? Se va a revertir el cambio en los animales.')) return;
+  if(!ub || ub.entry.eliminado || !ub.entry.extra) return;
+  if(!confirm('¿Seguro que querés borrar este movimiento? Ajusta la cantidad de animales en el potrero correspondiente. No se puede deshacer.')) return;
   const h = ub.entry;
   const ajuste = construirAjusteInverso(h);
   aplicarAjusteReversion(ajuste);
   h.eliminado = true;
-  h.detalle += ' — ELIMINADO';
+  h.detalle = h.detalle + ' — ELIMINADO';
   if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id);
   enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste});
   guardarEstado(); actualizarTodo(); renderDetalle(ub.potrero);
-  toast('Movimiento borrado');
+  toast('Movimiento eliminado y corregido');
 }
 const ACCION_POR_TIPO_HIST = {ingreso:'agregar', nacimiento:'nacimiento', muerte:'muerte', compra:'compraventa', venta:'compraventa'};
 function editarHistorial(id){
   const ub = ubicarHistorial(id);
-  if(!ub || ub.entry.eliminado || !ub.entry.extra){ toast('Este movimiento no se puede editar'); return; }
+  if(!ub || ub.entry.eliminado || !ub.entry.extra) return;
   const h = ub.entry;
   if(h.tipo==='movimiento' || h.tipo==='movimiento_todo'){
-    toast('Para corregir un movimiento entre potreros, borralo y volvé a cargarlo');
+    toast('Para corregir un movimiento entre potreros, borralo y volvé a cargarlo.');
     return;
   }
-  if(!confirm('¿Editar este movimiento? Se va a revertir el valor anterior y vas a poder cargar el corregido.')) return;
+  if(!confirm('Esto va a borrar el movimiento actual y abrir el formulario para volver a cargarlo corregido. ¿Continuar?')) return;
   const ajuste = construirAjusteInverso(h);
   aplicarAjusteReversion(ajuste);
   h.eliminado = true;
-  h.detalle += ' — EDITADO (ver movimiento nuevo)';
+  h.detalle = h.detalle + ' — EDITADO (ver movimiento nuevo)';
   enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste});
-  guardarEstado(); actualizarTodo(); renderDetalle(ub.potrero);
+  guardarEstado(); actualizarTodo();
+  renderDetalle(ub.potrero);
   mostrarFormulario(ub.potrero, ACCION_POR_TIPO_HIST[h.tipo], h.extra);
+  toast('Corregí los datos y confirmá para volver a cargarlo');
 }
 
 /* ======================= MAPA ======================= */
@@ -1265,7 +1255,7 @@ function renderLista(filtro=''){
     const card = document.createElement('div');
     card.className = 'potrero-card' + (seleccionActual===nombre ? ' activo':'');
     const animales = estado.potreros[nombre].animales;
-    const catsConAnimales = Object.entries(animales).filter(([k,v])=>v>0);
+    const catsConAnimales = Object.entries(animales).filter(([k,v])=>v!==0);
 
     const carga = cargaPotrero(nombre);
     const ocup = estadoOcupacion(nombre);
@@ -1276,10 +1266,10 @@ function renderLista(filtro=''){
           <div class="nombre">${nombre} ${alertas.length ? '<span title="'+alertas.join(' · ')+'">⚠️</span>':''}</div>
           <div class="area">${areaHa(nombre).toFixed(1)} ha ${carga>0 ? `· <span class="carga-badge">${carga.toFixed(2)} UG/ha</span>` : ''}</div>
         </div>
-        <div class="badge-total ${total===0?'vacio':''}">${total}</div>
+        <div class="badge-total ${total===0?'vacio':''}"${total<0?' style="background:#d32f2f;color:#fff;"':''}>${total}</div>
       </div>
       <div class="ocupacion-badge ocupacion-${ocup.tipo}">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
-      ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span>${k}: ${v}</span>`).join('')}</div>` : ''}
+      ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span${v<0?' style="color:#d32f2f;font-weight:700;"':''}>${k}: ${v}</span>`).join('')}</div>` : ''}
     `;
     card.addEventListener('click', ()=> seleccionarPotrero(nombre));
     cont.appendChild(card);
@@ -1309,7 +1299,7 @@ function renderDetalle(nombre){
   const filasCat = CATEGORIAS.map(c=>{
     const v = animales[c] || 0;
     if(v===0 && !Object.keys(animales).includes(c)) return '';
-    return `<tr><td>${c}</td><td class="num">${v}</td></tr>`;
+    return `<tr${v<0?' style="color:#d32f2f;font-weight:700;"':''}><td>${c}</td><td class="num">${v}</td></tr>`;
   }).join('');
 
   const ha = areaHa(nombre);
@@ -1330,7 +1320,7 @@ function renderDetalle(nombre){
       <thead><tr><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead>
       <tbody>
         ${filasCat || '<tr><td colspan="2" style="color:#8a8465;">Sin animales registrados</td></tr>'}
-        <tr class="total"><td>Total (${ug.toFixed(1)} UG)</td><td class="num">${total}</td></tr>
+        <tr class="total"${total<0?' style="color:#d32f2f;"':''}><td>Total (${ug.toFixed(1)} UG)</td><td class="num">${total}</td></tr>
       </tbody>
     </table>
 
@@ -1471,8 +1461,11 @@ function mostrarFormulario(nombre, accion, prefill){
       const origenAnimales = estado.potreros[nombre].animales;
       const disponibles = origenAnimales[cat] || 0;
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
-      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} en ${nombre}`); return; }
       if(destino===nombre && catDestino===cat){ toast('Elegí una categoría distinta o un potrero destino distinto'); return; }
+      if(cant > disponibles){
+        const saldoResultante = disponibles - cant;
+        if(!confirm(`Solo hay ${disponibles} ${cat} en ${nombre}. Si continuás, el saldo de ${cat} en ${nombre} queda en ${saldoResultante} (negativo). ¿Continuar de todos modos?`)) return;
+      }
       if(!fechaISO){ toast('Elegí una fecha'); return; }
       const fecha = fechaISOaDisplay(fechaISO);
       const totalAntesOrigen = totalPotrero(nombre);
@@ -2264,7 +2257,10 @@ function confirmarAccionVoz(){
     if(!origen || !destino || origen===destino){ toast('Elegí potrero de origen y destino distintos'); return; }
     const origenAnimales = estado.potreros[origen].animales;
     const disponibles = origenAnimales[cat] || 0;
-    if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} en ${origen}`); return; }
+    if(cant > disponibles){
+      const saldoResultante = disponibles - cant;
+      if(!confirm(`Solo hay ${disponibles} ${cat} en ${origen}. Si continuás, el saldo de ${cat} en ${origen} queda en ${saldoResultante} (negativo). ¿Continuar de todos modos?`)) return;
+    }
     const totalAntesOrigen = totalPotrero(origen);
     const totalAntesDestino = totalPotrero(destino);
     origenAnimales[cat] -= cant;
@@ -2433,13 +2429,6 @@ document.getElementById('btn-restablecer').addEventListener('click', ()=>{
 /* ======================= INICIO ======================= */
 actualizarTodo();
 actualizarEstadoSync();
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  });
-}
 </script>
 </body>
 </html>
