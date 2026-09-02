@@ -345,7 +345,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.10 (completa)</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.11 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1937,7 +1937,11 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', (
   const d = reunirDatosReporte();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const ordenados = POTREROS_GEO.slice().sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'));
+  const ordenados = POTREROS_GEO.slice().sort((a,b)=>{
+    const conA = totalPotrero(a.nombre) !== 0, conB = totalPotrero(b.nombre) !== 0;
+    if(conA !== conB) return conA ? -1 : 1;
+    return a.nombre.localeCompare(b.nombre,'es');
+  });
   doc.setFontSize(16);
   doc.text('La Vuelta', 14, 16);
   doc.setFontSize(10);
