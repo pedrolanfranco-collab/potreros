@@ -345,7 +345,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.8 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.9 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -387,6 +387,8 @@
     <div id="menu-herramientas">
       <button class="btn btn-kmz" id="btn-exportar-kmz">⬇ Exportar KMZ</button>
       <button class="btn btn-kmz" id="btn-exportar-pdf">⬇ Exportar PDF</button>
+      <button class="btn btn-kmz" id="btn-exportar-pdf-animales">⬇ PDF: Animales por potrero</button>
+      <button class="btn btn-kmz" id="btn-exportar-pdf-historial">⬇ PDF: Historial por potrero</button>
       <button class="btn btn-kmz" id="btn-exportar-excel">⬇ Exportar Excel</button>
       <button class="btn btn-json" id="btn-exportar-md">⬇ Exportar MD</button>
       <button class="btn btn-json" id="btn-exportar-json">⬇ Backup (JSON)</button>
@@ -2002,6 +2004,60 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
   }
 
   doc.save(`maria_laura_estado_${new Date().toISOString().slice(0,10)}.pdf`);
+  toast('PDF exportado');
+});
+
+/* ======================= EXPORTAR PDF: ANIMALES POR POTRERO ======================= */
+document.getElementById('btn-exportar-pdf-animales').addEventListener('click', ()=>{
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const ordenados = POTREROS_GEO.slice().sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'));
+  doc.setFontSize(16);
+  doc.text('María Laura', 14, 16);
+  doc.setFontSize(10);
+  doc.text(`Animales por potrero — ${fechaHoy()}`, 14, 22);
+
+  const filas = ordenados.map(p=>{
+    const animales = estado.potreros[p.nombre].animales;
+    const categorias = detalleAnimales(animales).map(d=>`${d.cat} (${d.dueno}): ${d.cant}`).join(', ') || '—';
+    const alertas = calcularAlertas(p.nombre).join(' / ') || '—';
+    return [p.nombre, areaHa(p.nombre).toFixed(1), totalPotrero(p.nombre), categorias, cargaPotrero(p.nombre).toFixed(2), alertas];
+  });
+
+  doc.autoTable({
+    startY: 28,
+    head: [['Potrero','Área (ha)','Animales','Categorías (dueño)','UG/ha','Alertas']],
+    body: filas,
+    theme: 'striped', headStyles:{fillColor:[92,122,74]}, styles:{fontSize:8}
+  });
+
+  doc.save(`maria_laura_animales_por_potrero_${new Date().toISOString().slice(0,10)}.pdf`);
+  toast('PDF exportado');
+});
+
+/* ======================= EXPORTAR PDF: HISTORIAL POR POTRERO ======================= */
+document.getElementById('btn-exportar-pdf-historial').addEventListener('click', ()=>{
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const ordenados = POTREROS_GEO.slice().sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'));
+  doc.setFontSize(16);
+  doc.text('María Laura', 14, 16);
+  doc.setFontSize(10);
+  doc.text(`Historial de registros por potrero — ${fechaHoy()}`, 14, 22);
+
+  const filas = [];
+  ordenados.forEach(p=>{
+    estado.potreros[p.nombre].historial.forEach(h=> filas.push([p.nombre, h.fecha, h.detalle]));
+  });
+
+  doc.autoTable({
+    startY: 28,
+    head: [['Potrero','Fecha','Movimiento']],
+    body: filas,
+    theme: 'striped', headStyles:{fillColor:[198,138,59]}, styles:{fontSize:7.5}
+  });
+
+  doc.save(`maria_laura_historial_por_potrero_${new Date().toISOString().slice(0,10)}.pdf`);
   toast('PDF exportado');
 });
 
