@@ -349,7 +349,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.16 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.17 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -2890,6 +2890,24 @@ document.getElementById('btn-restablecer').addEventListener('click', ()=>{
 /* ======================= INICIO ======================= */
 actualizarTodo();
 actualizarEstadoSync();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      setInterval(() => reg.update(), 5 * 60 * 1000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update();
+      });
+    }).catch(()=>{});
+  });
+  let recargandoPorActualizacion = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (recargandoPorActualizacion) return;
+    recargandoPorActualizacion = true;
+    location.reload();
+  });
+}
 </script>
 </body>
 </html>
