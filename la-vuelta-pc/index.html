@@ -345,7 +345,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.12 (completa)</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.13 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1961,6 +1961,21 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', (
     head: [['Potreros','Hectáreas','Animales','UG totales','Dotación (UG/ha)']],
     body: [d.resumen],
     theme: 'grid', headStyles:{fillColor:[92,122,74]}
+  });
+
+  const totalesPorCategoria = {};
+  ordenados.forEach(p=>{
+    Object.entries(estado.potreros[p.nombre].animales).forEach(([cat,cant])=>{
+      if(!cant) return;
+      totalesPorCategoria[cat] = (totalesPorCategoria[cat]||0) + cant;
+    });
+  });
+  const filasCategoria = Object.entries(totalesPorCategoria).sort((a,b)=> b[1]-a[1]);
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 8,
+    head: [['Categoría','Animales']],
+    body: filasCategoria,
+    theme: 'striped', headStyles:{fillColor:[122,82,54]}, styles:{fontSize:8}
   });
 
   const filas = ordenados.map(p=>{
