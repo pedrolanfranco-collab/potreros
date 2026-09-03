@@ -349,7 +349,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.17 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.18 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -2001,6 +2001,44 @@ function reunirDatosReporte(){
   };
 }
 
+/* ======================= NACIMIENTOS: TEMPORADA ACTUAL Y HISTÓRICO AGO-DIC =======================
+   Temporada = agosto a diciembre del año en curso (o del año anterior si
+   todavía no llegó agosto). "Vacas" se cuenta por categoría, sin importar
+   el dueño (clave "categoria||dueño"). */
+function calcularEstadisticasNacimientos(){
+  const hoy = new Date();
+  const anioTemporada = (hoy.getMonth()+1) >= 8 ? hoy.getFullYear() : hoy.getFullYear()-1;
+
+  let vacas = 0;
+  POTREROS_GEO.forEach(p=>{
+    Object.entries(estado.potreros[p.nombre].animales).forEach(([key,cant])=>{
+      if(partesClave(key).cat==='Vacas') vacas += (cant||0);
+    });
+  });
+
+  let nacimientosTemporada = 0;
+  const porMesAnio = {};
+  POTREROS_GEO.forEach(p=>{
+    (estado.potreros[p.nombre].historial||[]).forEach(h=>{
+      if(h.tipo!=='nacimiento' || !h.extra || !h.extra._fechaISO) return;
+      const [y,m] = h.extra._fechaISO.split('-').map(Number);
+      if(m<8 || m>12) return;
+      const cant = h.extra.cantidad||0;
+      porMesAnio[y] = porMesAnio[y] || {8:0,9:0,10:0,11:0,12:0};
+      porMesAnio[y][m] += cant;
+      if(y===anioTemporada) nacimientosTemporada += cant;
+    });
+  });
+
+  const pct = vacas>0 ? (nacimientosTemporada/vacas*100) : 0;
+  const filasPorMes = Object.keys(porMesAnio).map(Number).sort((a,b)=>b-a).map(y=>{
+    const m = porMesAnio[y];
+    return [y, m[8], m[9], m[10], m[11], m[12], m[8]+m[9]+m[10]+m[11]+m[12]];
+  });
+
+  return {anioTemporada, vacas, nacimientosTemporada, pct, filasPorMes};
+}
+
 /* ======================= EXPORTAR PDF ======================= */
 document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
   const d = reunirDatosReporte();
@@ -2088,6 +2126,7 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
 /* ======================= EXPORTAR PDF: ANIMALES POR POTRERO ======================= */
 document.getElementById('btn-exportar-pdf-animales').addEventListener('click', ()=>{
   const rep = reunirDatosReporte();
+  const nac = calcularEstadisticasNacimientos();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const ordenados = POTREROS_GEO.slice().sort((a,b)=>{
@@ -2102,10 +2141,19 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', (
 
   doc.autoTable({
     startY: 28,
-    head: [['Potreros','Hectáreas','Animales','UG totales','Dotación (UG/ha)']],
-    body: [rep.resumen],
-    theme: 'grid', headStyles:{fillColor:[92,122,74]}
+    head: [['Potreros','Hectáreas','Animales','UG totales','Dotación (UG/ha)',`Nacimientos temp. ${nac.anioTemporada}`,'% s/ vacas']],
+    body: [[...rep.resumen, nac.nacimientosTemporada, nac.vacas>0 ? nac.pct.toFixed(1)+'%' : '—']],
+    theme: 'grid', headStyles:{fillColor:[92,122,74]}, styles:{fontSize:8}
   });
+
+  if(nac.filasPorMes.length){
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 8,
+      head: [['Año','Ago','Sep','Oct','Nov','Dic','Total']],
+      body: nac.filasPorMes,
+      theme: 'striped', headStyles:{fillColor:[198,138,59]}, styles:{fontSize:8}
+    });
+  }
 
   const totalesPorCategoria = {};
   ordenados.forEach(p=>{
