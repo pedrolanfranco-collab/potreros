@@ -345,7 +345,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.11</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.12</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -2189,12 +2189,9 @@ async function cargarSanidad(){
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const [pRes, uRes] = await Promise.all([
-        client.from('sanidad_proximos').select('*').eq('establecimiento', ESTABLECIMIENTO),
-        client.from('sanidad_ultimos').select('*').eq('establecimiento', ESTABLECIMIENTO)
-      ]);
-      if(!pRes.error && !uRes.error){
-        datos = { proximos: pRes.data||[], ultimos: uRes.data||[] };
+      const uRes = await client.from('sanidad_ultimos').select('*').eq('establecimiento', ESTABLECIMIENTO);
+      if(!uRes.error){
+        datos = { ultimos: uRes.data||[] };
         localStorage.setItem(cacheKey, JSON.stringify(datos));
       }
     }catch(e){ /* sigue con el cache */ }
@@ -2212,21 +2209,11 @@ async function cargarSanidad(){
 
 function renderSanidadLista(datos){
   const cont = document.getElementById('sanidad-lista');
-  const proximos = (datos.proximos||[]).slice().sort((a,b)=> (a.dias??0) - (b.dias??0));
   const ultimos = (datos.ultimos||[]).slice().sort((a,b)=> new Date(b.fecha||0) - new Date(a.fecha||0)).slice(0, 20);
-  const fechas = [...proximos, ...ultimos].map(x=>x.actualizado).filter(Boolean).sort();
+  const fechas = ultimos.map(x=>x.actualizado).filter(Boolean).sort();
   const actualizado = fechas.length ? new Date(fechas[fechas.length-1]).toLocaleString('es-UY') : null;
 
-  let html = '<h4 style="margin:10px 0 6px;font-size:13px;">Próximos tratamientos</h4>';
-  html += !proximos.length
-    ? '<p style="font-size:13px;color:var(--texto-suave);">Sin tratamientos registrados todavía.</p>'
-    : proximos.map(p=>`
-      <div class="potrero-card">
-        <div class="nombre">${p.categoria||'—'} · ${p.sanidad||''}</div>
-        <div style="font-size:12px;color:${(p.dias||0)<0?'#d32f2f':'var(--texto-suave)'};margin-top:4px;">${p.estado||''} · previsto ${p.prevista_txt||'—'}</div>
-      </div>`).join('');
-
-  html += '<h4 style="margin:14px 0 6px;font-size:13px;">Últimos tratamientos</h4>';
+  let html = '<h4 style="margin:10px 0 6px;font-size:13px;">Últimos tratamientos</h4>';
   html += !ultimos.length
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin tratamientos registrados todavía.</p>'
     : ultimos.map(u=>`
