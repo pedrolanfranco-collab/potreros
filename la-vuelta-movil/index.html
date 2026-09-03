@@ -345,7 +345,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.10</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.11</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -2213,7 +2213,7 @@ async function cargarSanidad(){
 function renderSanidadLista(datos){
   const cont = document.getElementById('sanidad-lista');
   const proximos = (datos.proximos||[]).slice().sort((a,b)=> (a.dias??0) - (b.dias??0));
-  const ultimos = (datos.ultimos||[]).slice().sort((a,b)=> new Date(b.fecha||0) - new Date(a.fecha||0));
+  const ultimos = (datos.ultimos||[]).slice().sort((a,b)=> new Date(b.fecha||0) - new Date(a.fecha||0)).slice(0, 20);
   const fechas = [...proximos, ...ultimos].map(x=>x.actualizado).filter(Boolean).sort();
   const actualizado = fechas.length ? new Date(fechas[fechas.length-1]).toLocaleString('es-UY') : null;
 
