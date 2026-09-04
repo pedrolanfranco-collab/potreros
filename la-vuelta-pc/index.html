@@ -349,7 +349,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.19 (completa)</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.20 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1936,8 +1936,17 @@ function reunirDatosReporte(){
 /* ======================= NACIMIENTOS: TEMPORADA ACTUAL Y HISTÓRICO AGO-DIC =======================
    Temporada = agosto a diciembre del año en curso (o del año anterior si
    todavía no llegó agosto). "Vacas" se cuenta por la categoría, ignorando el
-   dueño en María Laura (clave "categoria||dueño"). */
-function calcularEstadisticasNacimientos(){
+   dueño en María Laura (clave "categoria||dueño").
+
+   Los nacimientos NO se sacan del historial local: un evento de nacimiento
+   sincronizado desde otro dispositivo se aplica sin guardar cantidad/fecha
+   estructuradas en el historial (aplicarEventoRemoto solo arma un texto), así
+   que un dispositivo que nunca cargó el nacimiento a mano se queda en 0 aunque
+   el evento ya haya sumado el animal al stock. La única fuente que tiene la
+   cantidad y la fecha de TODOS los nacimientos, los cargados acá y en
+   cualquier otro dispositivo, es la tabla eventos_sync — se consulta directo,
+   con el mismo criterio de cache que ya usa el panel de Sanidad. */
+async function calcularEstadisticasNacimientos(){
   const hoy = new Date();
   const anioTemporada = (hoy.getMonth()+1) >= 8 ? hoy.getFullYear() : hoy.getFullYear()-1;
 
@@ -1948,18 +1957,38 @@ function calcularEstadisticasNacimientos(){
     });
   });
 
+  const cacheKey = ESTABLECIMIENTO + '_nacimientos_cache';
+  let eventos = null, fuente = 'sin_datos';
+  const client = clienteSupabase();
+  if(client && navigator.onLine){
+    try{
+      const res = await client.from('eventos_sync').select('fecha_cliente,detalle')
+        .eq('establecimiento', ESTABLECIMIENTO).eq('tipo', 'nacimiento');
+      if(!res.error){
+        eventos = res.data||[];
+        localStorage.setItem(cacheKey, JSON.stringify(eventos));
+        fuente = 'online';
+      }
+    }catch(e){ /* sigue con el cache */ }
+  }
+  if(!eventos){
+    const guardado = localStorage.getItem(cacheKey);
+    if(guardado){ eventos = JSON.parse(guardado); fuente = 'cache'; }
+  }
+
   let nacimientosTemporada = 0;
   const porMesAnio = {};
-  POTREROS_GEO.forEach(p=>{
-    (estado.potreros[p.nombre].historial||[]).forEach(h=>{
-      if(h.tipo!=='nacimiento' || !h.extra || !h.extra._fechaISO) return;
-      const [y,m] = h.extra._fechaISO.split('-').map(Number);
-      if(m<8 || m>12) return;
-      const cant = h.extra.cantidad||0;
-      porMesAnio[y] = porMesAnio[y] || {8:0,9:0,10:0,11:0,12:0};
-      porMesAnio[y][m] += cant;
-      if(y===anioTemporada) nacimientosTemporada += cant;
-    });
+  (eventos||[]).forEach(ev=>{
+    const fc = ev.fecha_cliente; // "dd/mm/yyyy"
+    if(!fc || typeof fc !== 'string') return;
+    const partes = fc.split('/');
+    if(partes.length!==3) return;
+    const d = parseInt(partes[0],10), m = parseInt(partes[1],10), y = parseInt(partes[2],10);
+    if(!m || !y || m<8 || m>12) return;
+    const cant = (ev.detalle && ev.detalle.cantidad) || 0;
+    porMesAnio[y] = porMesAnio[y] || {8:0,9:0,10:0,11:0,12:0};
+    porMesAnio[y][m] += cant;
+    if(y===anioTemporada) nacimientosTemporada += cant;
   });
 
   const pct = vacas>0 ? (nacimientosTemporada/vacas*100) : 0;
@@ -1968,7 +1997,7 @@ function calcularEstadisticasNacimientos(){
     return [y, m[8], m[9], m[10], m[11], m[12], m[8]+m[9]+m[10]+m[11]+m[12]];
   });
 
-  return {anioTemporada, vacas, nacimientosTemporada, pct, filasPorMes};
+  return {anioTemporada, vacas, nacimientosTemporada, pct, filasPorMes, fuente};
 }
 
 /* ======================= EXPORTAR PDF ======================= */
@@ -2047,9 +2076,9 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
 });
 
 /* ======================= EXPORTAR PDF: ANIMALES POR POTRERO ======================= */
-document.getElementById('btn-exportar-pdf-animales').addEventListener('click', ()=>{
+document.getElementById('btn-exportar-pdf-animales').addEventListener('click', async ()=>{
   const d = reunirDatosReporte();
-  const nac = calcularEstadisticasNacimientos();
+  const nac = await calcularEstadisticasNacimientos();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const ordenados = POTREROS_GEO.slice().sort((a,b)=>{
@@ -2062,12 +2091,21 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', (
   doc.setFontSize(10);
   doc.text(`Animales por potrero — ${d.fecha}`, 14, 22);
 
+  const nacTxt = nac.fuente==='sin_datos' ? 'N/D' : nac.nacimientosTemporada;
+  const pctTxt = nac.fuente==='sin_datos' ? 'N/D' : (nac.vacas>0 ? nac.pct.toFixed(1)+'%' : '—');
   doc.autoTable({
     startY: 28,
     head: [['Potreros','Hectáreas','Animales','UG totales','Dotación (UG/ha)',`Nacimientos temp. ${nac.anioTemporada}`,'% s/ vacas']],
-    body: [[...d.resumen, nac.nacimientosTemporada, nac.vacas>0 ? nac.pct.toFixed(1)+'%' : '—']],
+    body: [[...d.resumen, nacTxt, pctTxt]],
     theme: 'grid', headStyles:{fillColor:[92,122,74]}, styles:{fontSize:8}
   });
+  if(nac.fuente==='cache'){
+    doc.setFontSize(8);
+    doc.setTextColor(150,90,20);
+    doc.text('Nacimientos: dato de la última vez que hubo conexión, puede estar desactualizado.', 14, doc.lastAutoTable.finalY + 5);
+    doc.setTextColor(0,0,0);
+    doc.lastAutoTable.finalY += 4;
+  }
 
   if(nac.filasPorMes.length){
     doc.autoTable({
