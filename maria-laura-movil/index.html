@@ -311,6 +311,8 @@
   }
   .modal-box h3{font-family:'Fraunces',serif;font-size:17px;margin:0 0 6px 0;color:var(--verde-monte);}
   .modal-info{font-size:12px;color:var(--texto-suave);margin:0 0 12px 0;line-height:1.4;}
+  .stock-tab-btn{flex:1;font-size:12px;padding:7px 4px;border-radius:6px;border:1px solid var(--linea);background:transparent;color:var(--texto);font-family:'Inter',sans-serif;cursor:pointer;}
+  .stock-tab-btn.activo{border-color:var(--ocre);background:var(--ocre);color:#fff;}
   .coef-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #eee6cd;}
   .coef-row label{font-size:13px;flex:1;}
   .coef-row input{
@@ -349,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.16</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.17</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -442,7 +444,15 @@
   <div class="modal-box">
     <h3>📊 Stock total</h3>
     <p class="modal-info">Categorías, animales por potrero, nacimientos y muertes de la temporada.</p>
-    <div id="stock-contenido"></div>
+    <div id="stock-resumen" style="font-size:12.5px;color:var(--texto-suave);margin-bottom:10px;"></div>
+    <div id="stock-tabs" style="display:flex;gap:4px;margin-bottom:12px;">
+      <button data-tab="0" class="stock-tab-btn">Categorías</button>
+      <button data-tab="1" class="stock-tab-btn">Potreros</button>
+      <button data-tab="2" class="stock-tab-btn">Temporada</button>
+    </div>
+    <div data-panel="0" id="stock-panel-0"></div>
+    <div data-panel="1" id="stock-panel-1" style="display:none;"></div>
+    <div data-panel="2" id="stock-panel-2" style="display:none;"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="stock-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -2370,14 +2380,41 @@ function tablaMesesHTML(filas){
   </table>`;
 }
 
+function seccionEstadisticaHTML(titulo, stat, unidad){
+  let html = `<h4 style="margin:0 0 6px;font-size:13px;">${titulo}</h4>`;
+  if(stat.fuente==='sin_datos'){
+    html += '<p style="font-size:12.5px;color:var(--texto-suave);">Sin conexión y sin datos guardados todavía.</p>';
+    return html;
+  }
+  html += `<p style="font-size:13px;"><strong>${stat.cantidadTemporada}</strong> ${unidad}</p>`;
+  if(stat.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
+  html += tablaMesesHTML(stat.filasPorMes);
+  return html;
+}
+
+function cambiarPestanaStock(indice){
+  document.querySelectorAll('#stock-tabs .stock-tab-btn').forEach(b=>{
+    b.classList.toggle('activo', b.dataset.tab === String(indice));
+  });
+  [0,1,2].forEach(i=>{
+    document.getElementById('stock-panel-'+i).style.display = (i===indice) ? 'block' : 'none';
+  });
+}
+document.getElementById('stock-tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.stock-tab-btn');
+  if(btn) cambiarPestanaStock(Number(btn.dataset.tab));
+});
+
 async function cargarStock(){
-  const cont = document.getElementById('stock-contenido');
-  cont.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>';
+  cambiarPestanaStock(0);
+  [0,1,2].forEach(i=> document.getElementById('stock-panel-'+i).innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>');
 
   const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
   const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
   const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
   const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
+  document.getElementById('stock-resumen').textContent =
+    `${POTREROS_GEO.length} potreros · ${totalHa.toFixed(1)} ha · ${totalAnimales} animales · ${totalUGCampo.toFixed(1)} UG · ${dotacionGeneral.toFixed(2)} UG/ha`;
 
   const totalesPorCategoria = {};
   POTREROS_GEO.forEach(p=>{
@@ -2386,6 +2423,13 @@ async function cargarStock(){
     });
   });
   const filasCategoria = Object.entries(totalesPorCategoria).sort((a,b)=> b[1]-a[1]);
+  document.getElementById('stock-panel-0').innerHTML = `<table class="tabla-animales">
+    <thead><tr><th>Categoría</th><th style="text-align:right;">Animales</th></tr></thead>
+    <tbody>
+      ${filasCategoria.length ? filasCategoria.map(([cat,cant])=>`<tr><td>${cat}</td><td class="num">${cant}</td></tr>`).join('') : '<tr><td colspan="2" style="color:#8a8465;">Sin animales registrados</td></tr>'}
+      <tr class="total"><td>Total</td><td class="num">${totalAnimales}</td></tr>
+    </tbody>
+  </table>`;
 
   const ordenados = POTREROS_GEO.slice().sort((a,b)=>{
     const conA = totalPotrero(a.nombre) !== 0, conB = totalPotrero(b.nombre) !== 0;
@@ -2394,49 +2438,21 @@ async function cargarStock(){
   });
   const ocupados = ordenados.filter(p=> totalPotrero(p.nombre) !== 0);
   const vacios = ordenados.length - ocupados.length;
-
-  const [nac, muertes] = await Promise.all([calcularEstadisticasNacimientos(), calcularEstadisticasMuertes()]);
-
-  let html = `<p style="font-size:12.5px;color:var(--texto-suave);margin-bottom:10px;">${POTREROS_GEO.length} potreros · ${totalHa.toFixed(1)} ha · ${totalAnimales} animales · ${totalUGCampo.toFixed(1)} UG · ${dotacionGeneral.toFixed(2)} UG/ha</p>`;
-
-  html += '<h4 style="margin:10px 0 6px;font-size:13px;">Stock total por categoría</h4>';
-  html += `<table class="tabla-animales">
-    <thead><tr><th>Categoría</th><th style="text-align:right;">Animales</th></tr></thead>
-    <tbody>
-      ${filasCategoria.length ? filasCategoria.map(([cat,cant])=>`<tr><td>${cat}</td><td class="num">${cant}</td></tr>`).join('') : '<tr><td colspan="2" style="color:#8a8465;">Sin animales registrados</td></tr>'}
-      <tr class="total"><td>Total</td><td class="num">${totalAnimales}</td></tr>
-    </tbody>
-  </table>`;
-
-  html += '<h4 style="margin:14px 0 6px;font-size:13px;">Animales por potrero</h4>';
-  html += ocupados.length ? ocupados.map(p=>{
+  let htmlPotreros = ocupados.length ? ocupados.map(p=>{
     const animales = estado.potreros[p.nombre].animales;
     const categorias = detalleAnimales(animales).map(x=>`${x.cat} (${x.dueno}): ${x.cant}`).join(', ') || '—';
     const total = totalPotrero(p.nombre);
     return `<div class="potrero-card"><div class="nombre"${total<0?' style="color:#d32f2f;"':''}>${p.nombre} — ${total} animal${total===1?'':'es'}</div><div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${categorias}</div></div>`;
   }).join('') : '<p style="font-size:12.5px;color:var(--texto-suave);">Ningún potrero tiene animales cargados.</p>';
-  if(vacios) html += `<p style="font-size:11.5px;color:var(--texto-suave);margin-top:6px;">+ ${vacios} potrero${vacios===1?'':'s'} vacío${vacios===1?'':'s'}.</p>`;
+  if(vacios) htmlPotreros += `<p style="font-size:11.5px;color:var(--texto-suave);margin-top:6px;">+ ${vacios} potrero${vacios===1?'':'s'} vacío${vacios===1?'':'s'}.</p>`;
+  document.getElementById('stock-panel-1').innerHTML = htmlPotreros;
 
-  html += `<h4 style="margin:14px 0 6px;font-size:13px;">Nacimientos — temporada ${nac.anioTemporada}</h4>`;
-  if(nac.fuente==='sin_datos'){
-    html += '<p style="font-size:12.5px;color:var(--texto-suave);">Sin conexión y sin datos guardados todavía.</p>';
-  }else{
-    const pctTxt = nac.vacas>0 ? nac.pct.toFixed(1)+'% s/ vacas' : 'sin vacas cargadas';
-    html += `<p style="font-size:13px;"><strong>${nac.nacimientosTemporada}</strong> nacimientos (${pctTxt})</p>`;
-    if(nac.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
-    html += tablaMesesHTML(nac.filasPorMes);
-  }
-
-  html += `<h4 style="margin:14px 0 6px;font-size:13px;">Muertes — temporada ${muertes.anioTemporada}</h4>`;
-  if(muertes.fuente==='sin_datos'){
-    html += '<p style="font-size:12.5px;color:var(--texto-suave);">Sin conexión y sin datos guardados todavía.</p>';
-  }else{
-    html += `<p style="font-size:13px;"><strong>${muertes.muertesTemporada}</strong> muertes</p>`;
-    if(muertes.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
-    html += tablaMesesHTML(muertes.filasPorMes);
-  }
-
-  cont.innerHTML = html;
+  const [nac, muertes] = await Promise.all([calcularEstadisticasNacimientos(), calcularEstadisticasMuertes()]);
+  const pctTxt = nac.vacas>0 ? nac.pct.toFixed(1)+'% s/ vacas' : 'sin vacas cargadas';
+  let htmlTemporada = seccionEstadisticaHTML(`Nacimientos — temporada ${nac.anioTemporada}`, {...nac, cantidadTemporada: nac.nacimientosTemporada}, `nacimientos (${pctTxt})`);
+  htmlTemporada += '<div style="height:14px;"></div>';
+  htmlTemporada += seccionEstadisticaHTML(`Muertes — temporada ${muertes.anioTemporada}`, {...muertes, cantidadTemporada: muertes.muertesTemporada}, 'muertes');
+  document.getElementById('stock-panel-2').innerHTML = htmlTemporada;
 }
 document.getElementById('btn-stock').addEventListener('click', ()=>{
   document.getElementById('modal-stock').style.display = 'flex';
