@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.17</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.18</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -393,6 +393,7 @@
   <div class="modal-box">
     <h3>🛠 Herramientas</h3>
     <div id="menu-herramientas">
+      <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
       <button class="btn btn-kmz" id="btn-exportar-kmz">⬇ Exportar KMZ</button>
       <button class="btn btn-json" id="btn-exportar-md">⬇ Exportar MD</button>
       <button class="btn btn-json" id="btn-exportar-json">⬇ Backup (JSON)</button>
@@ -454,6 +455,17 @@
     <div data-panel="1" id="stock-panel-1" style="display:none;"></div>
     <div data-panel="2" id="stock-panel-2" style="display:none;"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="stock-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-usuario" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>👤 ¿Quién sos?</h3>
+    <p class="modal-info">Tu nombre queda guardado en este celular y se agrega a cada movimiento que cargues, para saber quién hizo qué.</p>
+    <div class="form-row"><label>Nombre</label><input type="text" id="usuario-nombre-input" placeholder="Ej: Pedro"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="usuario-guardar">Guardar</button>
+      <button class="btn btn-secundario" id="usuario-cancelar">Cancelar</button>
+    </div>
   </div>
 </div>
 <div id="toast"></div>
@@ -550,6 +562,14 @@ function detalleAnimales(animales){
    se cargan una sola vez con el botón "Cargar puntos de referencia" en el modal de puntos. */
 const PUNTOS_SEED = [];
 const STORAGE_KEY = "maria_laura_potreros_v1";
+
+/* Nombre de quién usa este celular — no depende del establecimiento (misma
+   clave para todas las apps del proyecto, todas en el mismo origen) para que
+   alguien que usa La Vuelta y María Laura desde el mismo teléfono lo cargue
+   una sola vez. Se agrega a cada evento enviado y a cada línea de historial
+   creada localmente (ver enviarEvento y registrarHistorial). */
+const USUARIO_KEY = 'potreros_nombre_usuario';
+function usuarioActual(){ return (localStorage.getItem(USUARIO_KEY) || '').trim(); }
 
 /* ======================= SINCRONIZACIÓN (Supabase) ======================= */
 const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
@@ -654,7 +674,8 @@ function clienteSupabase(){
   return supabaseClient;
 }
 function enviarEvento(tipo, potrero, detalle, fecha){
-  const evento = { tipo, potrero, detalle, fecha_cliente: fecha || fechaHoy() };
+  const detalleConUsuario = Object.assign({}, detalle, { usuario: usuarioActual() });
+  const evento = { tipo, potrero, detalle: detalleConUsuario, fecha_cliente: fecha || fechaHoy() };
   pushEventoRemoto(evento);
 }
 async function pushEventoRemoto(evento){
@@ -696,10 +717,10 @@ function aplicarEventoRemoto(row){
     const texto = d.accion==='eliminar'
       ? `Corrección (sincronizada): se eliminó un movimiento de ${d.tipoOriginal}`
       : `Corrección (sincronizada): se editó un movimiento de ${d.tipoOriginal}`;
-    registrarHistorial(potrero, 'correccion', texto, undefined, undefined, fechaEvt);
+    registrarHistorial(potrero, 'correccion', texto, undefined, undefined, fechaEvt, d.usuario);
     if(d.reversar && (d.reversar.tipo==='mover' || d.reversar.tipo==='mover_todo' || d.reversar.tipo==='mover_multi')){
       const otro = d.reversar.origen===potrero ? d.reversar.destino : d.reversar.origen;
-      if(otro && estado.potreros[otro]) registrarHistorial(otro, 'correccion', texto, undefined, undefined, fechaEvt);
+      if(otro && estado.potreros[otro]) registrarHistorial(otro, 'correccion', texto, undefined, undefined, fechaEvt, d.usuario);
     }
     return;
   }
@@ -721,11 +742,11 @@ function aplicarEventoRemoto(row){
       const detalle = d.categoriaDestino && d.categoriaDestino!==d.categoria
         ? `${d.categoria} de ${d.dueno} → ${d.categoriaDestino} (${d.cantidad}, cambio de categoría, sincronizado)${sufObsMov}`
         : `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino} (sincronizado)${sufObsMov}`;
-      registrarHistorial(potrero, 'movimiento', detalle, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento', detalle, undefined, undefined, fechaEvt, d.usuario);
     }else{
       const sufOrigen = d.categoriaDestino && d.categoriaDestino!==d.categoria ? ` (pasa a ${d.categoriaDestino})` : '';
-      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
-      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${d.categoriaDestino || d.categoria} de ${d.dueno} ← ${potrero} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt, d.usuario);
+      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${d.categoriaDestino || d.categoria} de ${d.dueno} ← ${potrero} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt, d.usuario);
     }
     return;
   }
@@ -743,8 +764,8 @@ function aplicarEventoRemoto(row){
     });
     registrarCambioOcupacion(potrero, totalAntesOrigen);
     registrarCambioOcupacion(d.destino, totalAntesDestino);
-    registrarHistorial(potrero, 'movimiento', `Potrero vaciado → ${d.destino} (sincronizado)`, undefined, undefined, fechaEvt);
-    registrarHistorial(d.destino, 'movimiento', `Ingreso de potrero completo ← ${potrero} (sincronizado)`, undefined, undefined, fechaEvt);
+    registrarHistorial(potrero, 'movimiento', `Potrero vaciado → ${d.destino} (sincronizado)`, undefined, undefined, fechaEvt, d.usuario);
+    registrarHistorial(d.destino, 'movimiento', `Ingreso de potrero completo ← ${potrero} (sincronizado)`, undefined, undefined, fechaEvt, d.usuario);
     return;
   }
 
@@ -768,10 +789,10 @@ function aplicarEventoRemoto(row){
     registrarCambioOcupacion(d.destino, totalAntesDestino);
     const sufObsMov = d.obs ? ` (${d.obs})` : '';
     if(d.destino === potrero){
-      registrarHistorial(potrero, 'movimiento_multi', `Recategorización (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento_multi', `Recategorización (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt, d.usuario);
     }else{
-      registrarHistorial(potrero, 'movimiento_multi', `→ ${d.destino} (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt);
-      registrarHistorial(d.destino, 'movimiento_multi', `← ${potrero} (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento_multi', `→ ${d.destino} (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt, d.usuario);
+      registrarHistorial(d.destino, 'movimiento_multi', `← ${potrero} (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt, d.usuario);
     }
     return;
   }
@@ -793,7 +814,7 @@ function aplicarEventoRemoto(row){
   if(d.precio) detalleTxt += ` a USD ${d.precio}/cab`;
   if(d.contraparte) detalleTxt += ` — ${d.contraparte}`;
   if(d.obs) detalleTxt += ` (${d.obs})`;
-  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt);
+  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt, d.usuario);
 
   if(row.tipo==='compra' || row.tipo==='venta'){
     estado.transacciones = estado.transacciones || [];
@@ -968,8 +989,16 @@ function toast(msg){
 function generarIdHistorial(){
   return 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
 }
-function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha){
-  const entry = {fecha: fecha || fechaHoy(), tipo, detalle, id: generarIdHistorial()};
+/* El 7mo parámetro (usuario) sólo lo pasa aplicarEventoRemoto(), con el
+   usuario que venía en el evento sincronizado (puede ser undefined si el
+   evento es viejo y no lo tenía) -- nunca hay que adivinarlo ahí. Si se omite
+   (todas las acciones locales: agregar, mover, nacimiento, etc.) se usa el
+   usuario de este celular. arguments.length es lo que permite distinguir
+   "no vino" de "vino explícitamente undefined". */
+function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha, usuario){
+  const quien = arguments.length >= 7 ? usuario : usuarioActual();
+  const detalleFinal = quien ? `${detalle} — ${quien}` : detalle;
+  const entry = {fecha: fecha || fechaHoy(), tipo, detalle: detalleFinal, id: generarIdHistorial()};
   if(extra) entry.extra = extra;
   if(grupoId) entry.grupoId = grupoId;
   estado.potreros[nombre].historial.unshift(entry);
@@ -2791,6 +2820,27 @@ document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   location.reload();
 });
+
+/* ======================= QUIÉN SOY (identificación de usuario) ======================= */
+document.getElementById('btn-usuario').addEventListener('click', ()=>{
+  document.getElementById('usuario-nombre-input').value = usuarioActual();
+  document.getElementById('modal-usuario').style.display = 'flex';
+});
+document.getElementById('usuario-cancelar').addEventListener('click', ()=>{
+  document.getElementById('modal-usuario').style.display = 'none';
+});
+document.getElementById('usuario-guardar').addEventListener('click', ()=>{
+  const nombre = document.getElementById('usuario-nombre-input').value.trim();
+  if(!nombre){ toast('Escribí un nombre'); return; }
+  localStorage.setItem(USUARIO_KEY, nombre);
+  document.getElementById('modal-usuario').style.display = 'none';
+  toast('Usuario guardado: ' + nombre);
+});
+// La primera vez que se abre en este celular (o si nunca se cargó un nombre), lo pide solo.
+if(!usuarioActual()){
+  document.getElementById('usuario-nombre-input').value = '';
+  document.getElementById('modal-usuario').style.display = 'flex';
+}
 
 /* ======================= INICIO ======================= */
 actualizarTodo();
