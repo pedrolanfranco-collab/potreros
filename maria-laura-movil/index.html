@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.18</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.19</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -394,17 +394,17 @@
     <h3>🛠 Herramientas</h3>
     <div id="menu-herramientas">
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
-      <button class="btn btn-kmz" id="btn-exportar-kmz">⬇ Exportar KMZ</button>
-      <button class="btn btn-json" id="btn-exportar-md">⬇ Exportar MD</button>
+      <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
       <button class="btn btn-json" id="btn-exportar-json">⬇ Backup (JSON)</button>
       <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
-      <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
+      <button class="btn btn-json" id="btn-puntos" style="display:none;">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
       <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
       <input type="file" id="input-json" accept=".json">
+      <input type="file" id="input-kml" accept=".kml,.kmz">
     </div>
     <div class="nota-guardado">Los datos se guardan solos en este navegador. El backup JSON es para pasarlos a otro dispositivo (guardalo en tu carpeta de OneDrive).</div>
     <div class="form-botones"><button class="btn btn-secundario" id="herramientas-cerrar">Cerrar</button></div>
@@ -1240,6 +1240,22 @@ const poligonos = {}; // nombre -> layer
 let seleccionActual = null;
 const bounds = [];
 
+/* Límites de potrero actualizados por "Importar KML/KMZ" (ver más abajo),
+   persistidos acá porque POTREROS_GEO es un literal fijo del archivo -- sin
+   esto, un límite importado se perdería al recargar la página. Se aplican
+   ANTES de calcular AREA_CALCULADA y dibujar los polígonos, para que todo
+   el resto del arranque ya trabaje con el límite más reciente. */
+const LIMITES_KEY = ESTABLECIMIENTO + '_limites_potreros';
+try{
+  const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
+  POTREROS_GEO.forEach(p=>{
+    if(limitesGuardados[p.nombre]){
+      p.coords = limitesGuardados[p.nombre].coords;
+      p.area = limitesGuardados[p.nombre].area;
+    }
+  });
+}catch(e){ /* si el guardado está corrupto, se ignora y quedan los límites originales */ }
+
 // área geométrica calculada por potrero (fallback / verificación del dato del KML)
 const AREA_CALCULADA = {};
 POTREROS_GEO.forEach(p=>{ AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords); });
@@ -1862,207 +1878,88 @@ function actualizarTodo(){
   if(typeof actualizarEstadoSync === 'function') actualizarEstadoSync();
 }
 
-/* ======================= EXPORTAR KMZ ======================= */
-function construirKML(){
-  const placemarkPotrero = (p)=>{
-    const animales = estado.potreros[p.nombre].animales;
-    const total = totalPotrero(p.nombre);
-    const ha = areaHa(p.nombre);
-    const ug = totalUG(p.nombre);
-    const carga = cargaPotrero(p.nombre);
-    const ocup = estadoOcupacion(p.nombre);
-    const detalle = detalleAnimales(animales).map(d=>`${d.cat} (${d.dueno}): ${d.cant}`).join(', ') || 'Sin animales';
-    const coordsStr = p.coords.map(c=> `${c[1]},${c[0]},0`).join(' ');
-    return `    <Placemark>
-      <name>${escaparXML(p.nombre)}</name>
-      <description><![CDATA[Área: ${ha.toFixed(1)} ha<br/>Total animales: ${total} (${ug.toFixed(1)} UG)<br/>Carga: ${carga.toFixed(2)} UG/ha<br/>${escaparXML(ocup.texto)}<br/>${escaparXML(detalle)}]]></description>
-      <ExtendedData>
-        <Data name="area_ha"><value>${ha.toFixed(1)}</value></Data>
-        <Data name="total_animales"><value>${total}</value></Data>
-        <Data name="total_ug"><value>${ug.toFixed(2)}</value></Data>
-        <Data name="carga_ug_ha"><value>${carga.toFixed(2)}</value></Data>
-        <Data name="estado_ocupacion"><value>${escaparXML(ocup.texto)}</value></Data>
-        <Data name="detalle_animales"><value>${escaparXML(detalle)}</value></Data>
-      </ExtendedData>
-      <Style><LineStyle><color>ff4a7a5c</color><width>2</width></LineStyle><PolyStyle><color>7a4a7a5c</color></PolyStyle></Style>
-      <Polygon><outerBoundaryIs><LinearRing><coordinates>${coordsStr}</coordinates></LinearRing></outerBoundaryIs></Polygon>
-    </Placemark>`;
-  };
-
-  const ocupados = POTREROS_GEO.filter(p=> totalPotrero(p.nombre) > 0);
-  const vacios = POTREROS_GEO.filter(p=> totalPotrero(p.nombre) === 0);
-
-  const folderPotrerosOcupados = `  <Folder>
-    <name>Potreros ocupados</name>
-${ocupados.map(placemarkPotrero).join('\n')}
-  </Folder>`;
-
-  const folderPotrerosVacios = `  <Folder>
-    <name>Potreros vacíos</name>
-${vacios.map(placemarkPotrero).join('\n')}
-  </Folder>`;
-
-  const placemarkPunto = (pt)=>{
-    const t = TIPOS_PUNTO[pt.tipo];
-    return `    <Placemark>
-      <name>${escaparXML(pt.nombre || pt.subtipo)}</name>
-      <description><![CDATA[${escaparXML(pt.subtipo)}]]></description>
-      <ExtendedData>
-        <Data name="tipo"><value>${escaparXML(t.etiqueta)}</value></Data>
-        <Data name="subtipo"><value>${escaparXML(pt.subtipo)}</value></Data>
-      </ExtendedData>
-      <Point><coordinates>${pt.lon},${pt.lat},0</coordinates></Point>
-    </Placemark>`;
-  };
-
-  const puntosAgua = estado.puntos.filter(p=>p.tipo==='agua');
-  const puntosInstalacion = estado.puntos.filter(p=>p.tipo==='instalacion');
-
-  const folderAgua = `  <Folder>
-    <name>Aguadas y fuentes de agua</name>
-${puntosAgua.map(placemarkPunto).join('\n')}
-  </Folder>`;
-
-  const folderInstalaciones = `  <Folder>
-    <name>Instalaciones y caminos</name>
-${puntosInstalacion.map(placemarkPunto).join('\n')}
-  </Folder>`;
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-<Document>
-  <name>María Laura - Potreros</name>
-${folderPotrerosOcupados}
-${folderPotrerosVacios}
-${folderAgua}
-${folderInstalaciones}
-</Document>
-</kml>`;
-}
-function escaparXML(str){
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+/* ======================= IMPORTAR LÍMITES DESDE KML/KMZ =======================
+   Actualiza el polígono del potrero cuyo nombre coincida EXACTO con el
+   <name> de cada <Placemark> con <Polygon> del archivo. No crea potreros
+   nuevos -- si un nombre no coincide con ninguno existente se avisa y se
+   ignora, para no inventar un potrero sin categorías/hacienda configuradas.
+   El área declarada vieja se descarta: de ahí en más se muestra el área
+   calculada de la geometría nueva (ver areaHa(), que prioriza el área
+   declarada del KML original sobre la calculada). */
+function parsearPlacemarksPotrero(kmlTexto){
+  const doc = new DOMParser().parseFromString(kmlTexto, 'text/xml');
+  const placemarks = Array.from(doc.getElementsByTagName('Placemark'));
+  return placemarks.map(pm=>{
+    const nombreEl = pm.getElementsByTagName('name')[0];
+    const coordsEl = pm.getElementsByTagName('coordinates')[0];
+    if(!nombreEl || !coordsEl) return null;
+    const nombre = nombreEl.textContent.trim();
+    const coords = coordsEl.textContent.trim().split(/\s+/).map(tupla=>{
+      const [lon, lat] = tupla.split(',').map(Number);
+      return [lat, lon];
+    }).filter(c=> !isNaN(c[0]) && !isNaN(c[1]));
+    if(!nombre || coords.length<3) return null;
+    return {nombre, coords};
+  }).filter(Boolean);
 }
 
-/* ======================= EXPORTAR MARKDOWN ======================= */
-function construirMD(){
-  const hoy = fechaHoy();
-  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
-  const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
-  const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
-  const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
-
-  let md = `# María Laura — Estado de potreros\n\n`;
-  md += `_Generado el ${hoy}_\n\n`;
-  md += `## Resumen general\n\n`;
-  md += `| Potreros | Hectáreas | Animales | UG totales | Dotación (UG/ha) |\n`;
-  md += `|---|---|---|---|---|\n`;
-  md += `| ${POTREROS_GEO.length} | ${totalHa.toFixed(1)} | ${totalAnimales} | ${totalUGCampo.toFixed(1)} | ${dotacionGeneral.toFixed(2)} |\n\n`;
-
-  md += `## Stock por dueño\n\n`;
-  md += `| Dueño | Animales | UG |\n|---|---|---|\n`;
-  DUENOS.forEach(d=>{
-    let cant=0, ug=0;
-    POTREROS_GEO.forEach(p=>{
-      Object.entries(estado.potreros[p.nombre].animales).forEach(([key,c])=>{
-        const partes = partesClave(key);
-        if(partes.dueno===d && c>0){
-          cant += c;
-          const coef = estado.ugCoef[partes.cat] !== undefined ? estado.ugCoef[partes.cat] : (UG_DEFAULT[partes.cat]||1);
-          ug += c*coef;
-        }
-      });
-    });
-    md += `| ${d} | ${cant} | ${ug.toFixed(1)} |\n`;
-  });
-
-  md += `\n## Potreros\n\n`;
-  md += `| Potrero | Área (ha) | Animales | UG | UG/ha | Estado |\n`;
-  md += `|---|---|---|---|---|---|\n`;
-  const ordenados = POTREROS_GEO.slice().sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'));
-  ordenados.forEach(p=>{
-    const total = totalPotrero(p.nombre);
-    const ug = totalUG(p.nombre);
-    const carga = cargaPotrero(p.nombre);
-    const ocup = estadoOcupacion(p.nombre);
-    md += `| ${p.nombre} | ${areaHa(p.nombre).toFixed(1)} | ${total} | ${ug.toFixed(1)} | ${carga.toFixed(2)} | ${ocup.texto} |\n`;
-  });
-
-  md += `\n## Detalle de animales por potrero (categoría y dueño)\n\n`;
-  ordenados.forEach(p=>{
-    const animales = estado.potreros[p.nombre].animales;
-    const det = detalleAnimales(animales);
-    if(!det.length) return;
-    md += `**${p.nombre}**: ${det.map(d=>`${d.cant} ${d.cat} (${d.dueno})`).join(', ')}\n\n`;
-  });
-
-  if(estado.puntos && estado.puntos.length){
-    md += `## Aguadas y fuentes de agua\n\n`;
-    const agua = estado.puntos.filter(p=>p.tipo==='agua');
-    if(agua.length){
-      md += `| Nombre | Tipo |\n|---|---|\n`;
-      agua.forEach(p=> md += `| ${p.nombre || p.subtipo} | ${p.subtipo} |\n`);
-      md += `\n`;
-    }
-    const instal = estado.puntos.filter(p=>p.tipo==='instalacion');
-    if(instal.length){
-      md += `## Instalaciones y caminos\n\n`;
-      md += `| Nombre | Tipo |\n|---|---|\n`;
-      instal.forEach(p=> md += `| ${p.nombre || p.subtipo} | ${p.subtipo} |\n`);
-      md += `\n`;
-    }
+async function importarLimitesKML(archivo){
+  let texto;
+  if(/\.kmz$/i.test(archivo.name)){
+    const zip = await JSZip.loadAsync(archivo);
+    const nombreKml = Object.keys(zip.files).find(n=> /\.kml$/i.test(n));
+    if(!nombreKml){ toast('El KMZ no tiene ningún .kml adentro'); return; }
+    texto = await zip.files[nombreKml].async('text');
+  }else{
+    texto = await archivo.text();
   }
 
-  md += `## Historial reciente\n\n`;
-  const todosHist = [];
-  ordenados.forEach(p=>{
-    estado.potreros[p.nombre].historial.forEach(h=> todosHist.push({...h, potrero:p.nombre}));
-  });
-  todosHist.slice(0,40).forEach(h=>{
-    md += `- **${h.fecha}** — ${h.potrero}: ${h.detalle}\n`;
-  });
-  if(!todosHist.length) md += `_Sin movimientos registrados._\n`;
+  const placemarks = parsearPlacemarksPotrero(texto);
+  if(!placemarks.length){ toast('No se encontró ningún polígono en el archivo'); return; }
 
-  if(estado.transacciones && estado.transacciones.length){
-    const compras = estado.transacciones.filter(t=>t.tipo==='Compra');
-    const ventas = estado.transacciones.filter(t=>t.tipo==='Venta');
-    const totalComprado = compras.reduce((s,t)=> s + (t.total||0), 0);
-    const totalVendido = ventas.reduce((s,t)=> s + (t.total||0), 0);
-    md += `\n## Compras y ventas\n\n`;
-    md += `Total comprado: USD ${totalComprado.toFixed(0)} · Total vendido: USD ${totalVendido.toFixed(0)} · Neto: USD ${(totalVendido-totalComprado).toFixed(0)}\n\n`;
-    md += `| Fecha | Potrero | Operación | Categoría | Cantidad | Precio unit. | Total | Contraparte |\n`;
-    md += `|---|---|---|---|---|---|---|---|\n`;
-    estado.transacciones.forEach(t=>{
-      md += `| ${t.fecha} | ${t.potrero} | ${t.tipo} | ${t.categoria} | ${t.cantidad} | ${t.precioUnitario!=null?'USD '+t.precioUnitario:''} | ${t.total!=null?'USD '+t.total.toFixed(0):''} | ${t.contraparte||''} |\n`;
-    });
+  const guardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
+  let actualizados = 0;
+  const noEncontrados = [];
+  placemarks.forEach(pm=>{
+    const p = POTREROS_GEO.find(x=> x.nombre === pm.nombre);
+    if(!p){ noEncontrados.push(pm.nombre); return; }
+    p.coords = pm.coords;
+    p.area = null;
+    AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords);
+    guardados[p.nombre] = {coords: p.coords, area: null};
+    const entry = poligonos[p.nombre];
+    if(entry){
+      entry.layer.setLatLngs(p.coords);
+      entry.label.setLatLng(entry.layer.getBounds().getCenter());
+      entry.area = p.area;
+    }
+    actualizados++;
+  });
+  localStorage.setItem(LIMITES_KEY, JSON.stringify(guardados));
+
+  if(actualizados){
+    actualizarTodo();
+    if(seleccionActual && POTREROS_GEO.some(p=>p.nombre===seleccionActual && placemarks.some(pm=>pm.nombre===seleccionActual))){
+      seleccionarPotrero(seleccionActual);
+    }
   }
-
-  return md;
+  toast(`${actualizados} potrero${actualizados===1?'':'s'} actualizado${actualizados===1?'':'s'}`);
+  if(noEncontrados.length){
+    alert('Estos nombres del archivo no coinciden con ningún potrero, no se importaron:\n\n' + noEncontrados.join('\n'));
+  }
 }
 
-document.getElementById('btn-exportar-md').addEventListener('click', ()=>{
-  const md = construirMD();
-  const blob = new Blob([md], {type:'text/markdown'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `maria_laura_estado_${new Date().toISOString().slice(0,10)}.md`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('Markdown exportado');
+document.getElementById('btn-importar-kml').addEventListener('click', ()=>{
+  document.getElementById('input-kml').click();
 });
-
-document.getElementById('btn-exportar-kmz').addEventListener('click', async ()=>{
-  const kml = construirKML();
-  const zip = new JSZip();
-  zip.file('doc.kml', kml);
-  const blob = await zip.generateAsync({type:'blob'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `maria_laura_potreros_${new Date().toISOString().slice(0,10)}.kmz`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('KMZ exportado');
+document.getElementById('input-kml').addEventListener('change', (e)=>{
+  const archivo = e.target.files[0];
+  if(!archivo) return;
+  importarLimitesKML(archivo).catch(err=>{
+    console.warn(err);
+    toast('No se pudo leer el archivo');
+  });
+  e.target.value = '';
 });
 
 /* ======================= BACKUP JSON ======================= */
