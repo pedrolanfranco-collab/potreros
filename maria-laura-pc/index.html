@@ -349,7 +349,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.23 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.24 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -402,6 +402,7 @@
       <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
+      <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias</button>
       <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
       <input type="file" id="input-json" accept=".json">
@@ -440,6 +441,18 @@
     <p class="modal-info">Es una foto del sistema de Sanidad (Excel), no un dato en vivo.</p>
     <div id="sanidad-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="sanidad-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-lluvias" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🌧 Lluvias</h3>
+    <div class="form-row"><label>Fecha</label><input type="date" id="ll-fecha"></div>
+    <div class="form-row"><label>Milímetros</label><input type="number" id="ll-mm" min="0" step="0.1"></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="ll-guardar">Cargar lluvia</button>
+    </div>
+    <div id="lluvias-lista"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -611,7 +624,7 @@ function estadoInicial(){
       fechaSalida: null
     };
   });
-  return { potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], config: {...CONFIG_DEFAULT}, colaSync: [], ultimaSincronizacion: null };
+  return { potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], config: {...CONFIG_DEFAULT}, colaSync: [], ultimaSincronizacion: null };
 }
 
 function cargarEstado(){
@@ -632,6 +645,7 @@ function cargarEstado(){
       CATEGORIAS.forEach(c=>{ if(parsed.ugCoef[c]===undefined) parsed.ugCoef[c] = UG_DEFAULT[c]; });
       if(!parsed.puntos) parsed.puntos = [];
       if(!parsed.transacciones) parsed.transacciones = [];
+      if(!parsed.lluvias) parsed.lluvias = [];
       if(!parsed.config) parsed.config = {...CONFIG_DEFAULT};
       if(parsed.config.cargaMaxima===undefined) parsed.config.cargaMaxima = CONFIG_DEFAULT.cargaMaxima;
       if(parsed.config.diasOcupacionMax===undefined) parsed.config.diasOcupacionMax = CONFIG_DEFAULT.diasOcupacionMax;
@@ -703,6 +717,17 @@ async function vaciarColaSync(){
 function aplicarEventoRemoto(row){
   const d = row.detalle || {};
   const potrero = row.potrero;
+
+  if(row.tipo === 'lluvia'){
+    // No es un movimiento de potrero -- se aplica antes del guard de abajo,
+    // que exige un "potrero" válido y una lluvia no tiene uno.
+    estado.lluvias = estado.lluvias || [];
+    if(!estado.lluvias.some(l=>l.id===d.id)){
+      estado.lluvias.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), mm: d.mm, dispositivo: row.dispositivo, usuario: d.usuario||null});
+    }
+    return;
+  }
+
   if(!potrero || !estado.potreros[potrero]) return;
   const fechaEvt = row.fecha_cliente || fechaHoy();
 
@@ -2825,6 +2850,48 @@ document.getElementById('btn-sanidad').addEventListener('click', ()=>{
 });
 document.getElementById('sanidad-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-sanidad').style.display = 'none';
+});
+
+/* ======================= LLUVIAS ======================= */
+function renderLluviasLista(){
+  const cont = document.getElementById('lluvias-lista');
+  const lista = (estado.lluvias||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha)).slice(0,20);
+  cont.innerHTML = !lista.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Sin lluvias registradas todavía.</p>'
+    : lista.map(l=>`
+      <div class="potrero-card">
+        <div class="nombre">${l.fecha}</div>
+        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${l.mm} mm${l.usuario?(' — '+l.usuario):''}</div>
+      </div>`).join('');
+}
+document.getElementById('btn-lluvias').addEventListener('click', ()=>{
+  document.getElementById('ll-fecha').value = fechaISOHoy();
+  document.getElementById('ll-fecha').max = fechaISOHoy();
+  document.getElementById('ll-mm').value = '';
+  renderLluviasLista();
+  document.getElementById('modal-lluvias').style.display = 'flex';
+});
+document.getElementById('lluvias-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-lluvias').style.display = 'none';
+});
+document.getElementById('ll-guardar').addEventListener('click', ()=>{
+  const fechaISO = document.getElementById('ll-fecha').value;
+  const mm = parseFloat(document.getElementById('ll-mm').value);
+  if(!fechaISO){ toast('Elegí una fecha'); return; }
+  if(isNaN(mm) || mm<0){ toast('Ingresá los milímetros'); return; }
+  const fecha = fechaISOaDisplay(fechaISO);
+  const id = generarIdHistorial();
+  const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
+  estado.lluvias = estado.lluvias || [];
+  estado.lluvias.unshift({id, fecha, mm, dispositivo: idDispositivo(), usuario: usuario||null});
+  guardarEstado();
+  // "potrero" no aplica a una lluvia (es del establecimiento entero), pero
+  // enviarEvento()/eventos_sync siempre esperan un valor -- se manda el
+  // propio ESTABLECIMIENTO como placeholder; aplicarEventoRemoto() nunca lo
+  // usa para esta rama, así que el valor exacto no importa funcionalmente.
+  enviarEvento('lluvia', ESTABLECIMIENTO, {id, mm, usuario: usuario||null}, fecha);
+  renderLluviasLista();
+  toast(`Se cargó ${mm} mm del ${fecha}`);
 });
 
 /* ======================= CARGA POR VOZ (sin IA — reglas + reconocimiento del navegador) ======================= */
