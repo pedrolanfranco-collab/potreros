@@ -349,7 +349,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.22 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.23 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1496,6 +1496,10 @@ function mostrarFormulario(nombre, accion, prefill){
   const zona = document.getElementById('form-zona');
 
   if(accion==='agregar'){
+    if(!prefill && totalPotrero(nombre)>0){
+      zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">"＋ Agregar animales" es solo para cargar el stock inicial de un potrero vacío. Para sumar animales a ${nombre} ahora, usá 💰 Compra, 🐄 Nacimiento, o ⇄ Mover si vienen de otro potrero.</p></div>`;
+      return;
+    }
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Agregar animales a ${nombre}</h3>
@@ -3002,6 +3006,10 @@ function confirmarAccionVoz(){
   } else if(accion==='agregar' || accion==='nacimiento'){
     const objetivo = destino || origen;
     if(!objetivo){ toast('Elegí un potrero'); return; }
+    if(accion==='agregar' && totalPotrero(objetivo)>0){
+      toast(`"Agregar" es solo para carga inicial de un potrero vacío. Para ${objetivo} usá "compra" o "nacimiento".`);
+      return;
+    }
     const a = estado.potreros[objetivo].animales;
     const totalAntes = totalPotrero(objetivo);
     a[key] = (a[key]||0) + cant;
