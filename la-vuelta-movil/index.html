@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.19</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.20</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -546,6 +546,20 @@ const ESTABLECIMIENTO = 'la_vuelta';
 /* En La Vuelta no hay dueño — esta función existe igual para que el motor de
    sincronización sea idéntico al de María Laura (donde sí combina categoría+dueño). */
 function claveAnimal(cat){ return cat; }
+
+/* Potreros creados por "Importar KML/KMZ" cuando un nombre del archivo no
+   coincidía con ninguno existente (ver más abajo, importarLimitesKML). Se
+   agregan ACÁ, antes de armar "estado" -- cargarEstado()/estadoInicial() más
+   abajo recorren POTREROS_GEO para asegurarse de que cada potrero tenga su
+   entrada en estado.potreros; si el potrero nuevo se agregara más tarde,
+   se quedaría sin esa entrada hasta la próxima recarga. */
+const POTREROS_NUEVOS_KEY = ESTABLECIMIENTO + '_potreros_nuevos';
+try{
+  const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
+  nuevosGuardados.forEach(p=>{
+    if(!POTREROS_GEO.some(x=>x.nombre===p.nombre)) POTREROS_GEO.push(p);
+  });
+}catch(e){ /* si el guardado está corrupto, se ignora */ }
 
 /* Tipos de puntos (capas adicionales del KMZ): aguadas/fuentes de agua e instalaciones/caminos */
 const TIPOS_PUNTO = {
@@ -1264,9 +1278,11 @@ try{
 const AREA_CALCULADA = {};
 POTREROS_GEO.forEach(p=>{ AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords); });
 
-POTREROS_GEO.forEach(p=>{
+/* Dibuja el polígono + etiqueta de un potrero y lo registra en poligonos[].
+   Separado en función aparte para poder reusarlo cuando "Importar KML/KMZ"
+   da de alta un potrero que no existía (ver más abajo, importarLimitesKML). */
+function dibujarPotrero(p){
   const latlngs = p.coords; // ya en [lat,lon]
-  bounds.push(...latlngs);
   const poly = L.polygon(latlngs, {
     color:'#5c7a4a',
     weight:2,
@@ -1287,6 +1303,11 @@ POTREROS_GEO.forEach(p=>{
   poly.bindTooltip(p.nombre, {sticky:true});
 
   poligonos[p.nombre] = {layer: poly, label, area: p.area};
+}
+
+POTREROS_GEO.forEach(p=>{
+  bounds.push(...p.coords);
+  dibujarPotrero(p);
 });
 
 if(bounds.length) map.fitBounds(bounds, {padding:[20,20]});
@@ -1844,12 +1865,13 @@ function actualizarTodo(){
 
 /* ======================= IMPORTAR LÍMITES DESDE KML/KMZ =======================
    Actualiza el polígono del potrero cuyo nombre coincida EXACTO con el
-   <name> de cada <Placemark> con <Polygon> del archivo. No crea potreros
-   nuevos -- si un nombre no coincide con ninguno existente se avisa y se
-   ignora, para no inventar un potrero sin categorías/hacienda configuradas.
-   El área declarada vieja se descarta: de ahí en más se muestra el área
-   calculada de la geometría nueva (ver areaHa(), que prioriza el área
-   declarada del KML original sobre la calculada). */
+   <name> de cada <Placemark> con <Polygon> del archivo. Si un nombre no
+   coincide con ninguno existente, se pregunta (uno por uno) si crear un
+   potrero nuevo con ese límite -- nace sin animales ni historial, como
+   cualquier potrero recién agregado. El área declarada vieja se descarta:
+   de ahí en más se muestra el área calculada de la geometría nueva (ver
+   areaHa(), que prioriza el área declarada del KML original sobre la
+   calculada). */
 function parsearPlacemarksPotrero(kmlTexto){
   const doc = new DOMParser().parseFromString(kmlTexto, 'text/xml');
   const placemarks = Array.from(doc.getElementsByTagName('Placemark'));
@@ -1882,11 +1904,23 @@ async function importarLimitesKML(archivo){
   if(!placemarks.length){ toast('No se encontró ningún polígono en el archivo'); return; }
 
   const guardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
-  let actualizados = 0;
-  const noEncontrados = [];
+  const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
+  let actualizados = 0, creados = 0;
+  const omitidos = [];
   placemarks.forEach(pm=>{
-    const p = POTREROS_GEO.find(x=> x.nombre === pm.nombre);
-    if(!p){ noEncontrados.push(pm.nombre); return; }
+    let p = POTREROS_GEO.find(x=> x.nombre === pm.nombre);
+    if(!p){
+      const crear = confirm(`"${pm.nombre}" no existe todavía. ¿Crear un potrero nuevo con ese nombre y ese límite?`);
+      if(!crear){ omitidos.push(pm.nombre); return; }
+      p = {nombre: pm.nombre, coords: pm.coords, area: null};
+      POTREROS_GEO.push(p);
+      nuevosGuardados.push(p);
+      estado.potreros[p.nombre] = {animales:{}, historial:[], fechaIngreso:null, fechaSalida:null};
+      AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords);
+      dibujarPotrero(p);
+      creados++;
+      return;
+    }
     p.coords = pm.coords;
     p.area = null;
     AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords);
@@ -1900,16 +1934,21 @@ async function importarLimitesKML(archivo){
     actualizados++;
   });
   localStorage.setItem(LIMITES_KEY, JSON.stringify(guardados));
+  if(creados) localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevosGuardados));
 
-  if(actualizados){
+  if(actualizados || creados){
+    if(creados) guardarEstado();
     actualizarTodo();
-    if(seleccionActual && POTREROS_GEO.some(p=>p.nombre===seleccionActual && placemarks.some(pm=>pm.nombre===seleccionActual))){
+    if(seleccionActual && placemarks.some(pm=>pm.nombre===seleccionActual)){
       seleccionarPotrero(seleccionActual);
     }
   }
-  toast(`${actualizados} potrero${actualizados===1?'':'s'} actualizado${actualizados===1?'':'s'}`);
-  if(noEncontrados.length){
-    alert('Estos nombres del archivo no coinciden con ningún potrero, no se importaron:\n\n' + noEncontrados.join('\n'));
+  const partes = [];
+  if(actualizados) partes.push(`${actualizados} actualizado${actualizados===1?'':'s'}`);
+  if(creados) partes.push(`${creados} creado${creados===1?'':'s'}`);
+  toast(partes.length ? partes.join(', ') : 'No se importó nada');
+  if(omitidos.length){
+    alert('No se importaron (se decidió no crearlos):\n\n' + omitidos.join('\n'));
   }
 }
 
