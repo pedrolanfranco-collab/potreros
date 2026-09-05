@@ -349,7 +349,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.20 (completa)</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.21 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -397,6 +397,7 @@
       <button class="btn btn-json" id="btn-exportar-md">⬇ Exportar MD</button>
       <button class="btn btn-json" id="btn-exportar-json">⬇ Backup (JSON)</button>
       <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
+      <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
       <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
       <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
@@ -404,6 +405,7 @@
       <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
       <input type="file" id="input-json" accept=".json">
+      <input type="file" id="input-kml" accept=".kml,.kmz">
     </div>
     <div class="nota-guardado">Los datos se guardan solos en este navegador. El backup JSON es para pasarlos a otro dispositivo (guardalo en tu carpeta de OneDrive).</div>
     <div class="form-botones"><button class="btn btn-secundario" id="herramientas-cerrar">Cerrar</button></div>
@@ -525,6 +527,20 @@ const ESTABLECIMIENTO = 'la_vuelta';
 /* En La Vuelta no hay dueño — esta función existe igual para que el motor de
    sincronización sea idéntico al de María Laura (donde sí combina categoría+dueño). */
 function claveAnimal(cat){ return cat; }
+
+/* Potreros creados por "Importar KML/KMZ" cuando un nombre del archivo no
+   coincidía con ninguno existente (ver más abajo, importarLimitesKML). Se
+   agregan ACÁ, antes de armar "estado" -- cargarEstado()/estadoInicial() más
+   abajo recorren POTREROS_GEO para asegurarse de que cada potrero tenga su
+   entrada en estado.potreros; si el potrero nuevo se agregara más tarde,
+   se quedaría sin esa entrada hasta la próxima recarga. */
+const POTREROS_NUEVOS_KEY = ESTABLECIMIENTO + '_potreros_nuevos';
+try{
+  const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
+  nuevosGuardados.forEach(p=>{
+    if(!POTREROS_GEO.some(x=>x.nombre===p.nombre)) POTREROS_GEO.push(p);
+  });
+}catch(e){ /* si el guardado está corrupto, se ignora */ }
 
 /* Tipos de puntos (capas adicionales del KMZ): aguadas/fuentes de agua e instalaciones/caminos */
 const TIPOS_PUNTO = {
@@ -1127,13 +1143,31 @@ const poligonos = {}; // nombre -> layer
 let seleccionActual = null;
 const bounds = [];
 
+/* Límites de potrero actualizados por "Importar KML/KMZ" (ver más abajo),
+   persistidos acá porque POTREROS_GEO es un literal fijo del archivo -- sin
+   esto, un límite importado se perdería al recargar la página. Se aplican
+   ANTES de calcular AREA_CALCULADA y dibujar los polígonos, para que todo
+   el resto del arranque ya trabaje con el límite más reciente. */
+const LIMITES_KEY = ESTABLECIMIENTO + '_limites_potreros';
+try{
+  const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
+  POTREROS_GEO.forEach(p=>{
+    if(limitesGuardados[p.nombre]){
+      p.coords = limitesGuardados[p.nombre].coords;
+      p.area = limitesGuardados[p.nombre].area;
+    }
+  });
+}catch(e){ /* si el guardado está corrupto, se ignora y quedan los límites originales */ }
+
 // área geométrica calculada por potrero (fallback / verificación del dato del KML)
 const AREA_CALCULADA = {};
 POTREROS_GEO.forEach(p=>{ AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords); });
 
-POTREROS_GEO.forEach(p=>{
+/* Dibuja el polígono + etiqueta de un potrero y lo registra en poligonos[].
+   Separado en función aparte para poder reusarlo cuando "Importar KML/KMZ"
+   da de alta un potrero que no existía (ver más abajo, importarLimitesKML). */
+function dibujarPotrero(p){
   const latlngs = p.coords; // ya en [lat,lon]
-  bounds.push(...latlngs);
   const poly = L.polygon(latlngs, {
     color:'#5c7a4a',
     weight:2,
@@ -1154,6 +1188,11 @@ POTREROS_GEO.forEach(p=>{
   poly.bindTooltip(p.nombre, {sticky:true});
 
   poligonos[p.nombre] = {layer: poly, label, area: p.area};
+}
+
+POTREROS_GEO.forEach(p=>{
+  bounds.push(...p.coords);
+  dibujarPotrero(p);
 });
 
 if(bounds.length) map.fitBounds(bounds, {padding:[20,20]});
@@ -2252,6 +2291,109 @@ document.getElementById('btn-exportar-kmz').addEventListener('click', async ()=>
   a.click();
   URL.revokeObjectURL(url);
   toast('KMZ exportado');
+});
+
+/* ======================= IMPORTAR LÍMITES DESDE KML/KMZ =======================
+   Actualiza el polígono del potrero cuyo nombre coincida EXACTO con el
+   <name> de cada <Placemark> con <Polygon> del archivo. Si un nombre no
+   coincide con ninguno existente, se pregunta (uno por uno) si crear un
+   potrero nuevo con ese límite -- nace sin animales ni historial, como
+   cualquier potrero recién agregado. El área declarada vieja se descarta:
+   de ahí en más se muestra el área calculada de la geometría nueva (ver
+   areaHa(), que prioriza el área declarada del KML original sobre la
+   calculada). Acepta tanto un KML propio como uno exportado antes por
+   "Exportar KMZ" de esta misma app (mismo formato de Placemark). */
+function parsearPlacemarksPotrero(kmlTexto){
+  const doc = new DOMParser().parseFromString(kmlTexto, 'text/xml');
+  const placemarks = Array.from(doc.getElementsByTagName('Placemark'));
+  return placemarks.map(pm=>{
+    const nombreEl = pm.getElementsByTagName('name')[0];
+    const coordsEl = pm.getElementsByTagName('coordinates')[0];
+    if(!nombreEl || !coordsEl) return null;
+    const nombre = nombreEl.textContent.trim();
+    const coords = coordsEl.textContent.trim().split(/\s+/).map(tupla=>{
+      const [lon, lat] = tupla.split(',').map(Number);
+      return [lat, lon];
+    }).filter(c=> !isNaN(c[0]) && !isNaN(c[1]));
+    if(!nombre || coords.length<3) return null;
+    return {nombre, coords};
+  }).filter(Boolean);
+}
+
+async function importarLimitesKML(archivo){
+  let texto;
+  if(/\.kmz$/i.test(archivo.name)){
+    const zip = await JSZip.loadAsync(archivo);
+    const nombreKml = Object.keys(zip.files).find(n=> /\.kml$/i.test(n));
+    if(!nombreKml){ toast('El KMZ no tiene ningún .kml adentro'); return; }
+    texto = await zip.files[nombreKml].async('text');
+  }else{
+    texto = await archivo.text();
+  }
+
+  const placemarks = parsearPlacemarksPotrero(texto);
+  if(!placemarks.length){ toast('No se encontró ningún polígono en el archivo'); return; }
+
+  const guardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
+  const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
+  let actualizados = 0, creados = 0;
+  const omitidos = [];
+  placemarks.forEach(pm=>{
+    let p = POTREROS_GEO.find(x=> x.nombre === pm.nombre);
+    if(!p){
+      const crear = confirm(`"${pm.nombre}" no existe todavía. ¿Crear un potrero nuevo con ese nombre y ese límite?`);
+      if(!crear){ omitidos.push(pm.nombre); return; }
+      p = {nombre: pm.nombre, coords: pm.coords, area: null};
+      POTREROS_GEO.push(p);
+      nuevosGuardados.push(p);
+      estado.potreros[p.nombre] = {animales:{}, historial:[], fechaIngreso:null, fechaSalida:null};
+      AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords);
+      dibujarPotrero(p);
+      creados++;
+      return;
+    }
+    p.coords = pm.coords;
+    p.area = null;
+    AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords);
+    guardados[p.nombre] = {coords: p.coords, area: null};
+    const entry = poligonos[p.nombre];
+    if(entry){
+      entry.layer.setLatLngs(p.coords);
+      entry.label.setLatLng(entry.layer.getBounds().getCenter());
+      entry.area = p.area;
+    }
+    actualizados++;
+  });
+  localStorage.setItem(LIMITES_KEY, JSON.stringify(guardados));
+  if(creados) localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevosGuardados));
+
+  if(actualizados || creados){
+    if(creados) guardarEstado();
+    actualizarTodo();
+    if(seleccionActual && placemarks.some(pm=>pm.nombre===seleccionActual)){
+      seleccionarPotrero(seleccionActual);
+    }
+  }
+  const partes = [];
+  if(actualizados) partes.push(`${actualizados} actualizado${actualizados===1?'':'s'}`);
+  if(creados) partes.push(`${creados} creado${creados===1?'':'s'}`);
+  toast(partes.length ? partes.join(', ') : 'No se importó nada');
+  if(omitidos.length){
+    alert('No se importaron (se decidió no crearlos):\n\n' + omitidos.join('\n'));
+  }
+}
+
+document.getElementById('btn-importar-kml').addEventListener('click', ()=>{
+  document.getElementById('input-kml').click();
+});
+document.getElementById('input-kml').addEventListener('change', (e)=>{
+  const archivo = e.target.files[0];
+  if(!archivo) return;
+  importarLimitesKML(archivo).catch(err=>{
+    console.warn(err);
+    toast('No se pudo leer el archivo');
+  });
+  e.target.value = '';
 });
 
 /* ======================= BACKUP JSON ======================= */
