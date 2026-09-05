@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192x192.png">
 <link rel="apple-touch-icon" href="icon-192x192.png">
-<meta name="theme-color" content="#7a5236">
+<meta name="theme-color" content="#1d4fa8">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.0</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.1</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1490,6 +1490,7 @@ function renderDetalle(nombre){
       <button class="btn btn-compraventa btn-full" data-accion="compraventa">💰 Compra / Venta</button>
       <button class="btn btn-mover btn-full" data-accion="mover-todo" style="filter:brightness(0.9);">⇄⇄ Mover TODO el potrero</button>
     </div>
+    <button class="btn btn-json btn-full" id="btn-eliminar-potrero" style="color:var(--rojo-hacienda);margin-top:6px;">🗑 Eliminar potrero</button>
 
     <div id="form-zona"></div>
 
@@ -1518,6 +1519,43 @@ function renderDetalle(nombre){
     btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarHistorial(btn.dataset.histEditar); });
   });
   document.getElementById('detalle-cerrar').addEventListener('click', cerrarDetalle);
+  document.getElementById('btn-eliminar-potrero').addEventListener('click', ()=> eliminarPotrero(nombre));
+}
+
+/* Contraparte de "Importar KML/KMZ": deshace una importación equivocada.
+   Si el potrero fue CREADO por un import (está en POTREROS_NUEVOS_KEY), lo
+   elimina del todo. Si ya existía y solo se le pisó el límite (está en
+   LIMITES_KEY), revierte el límite y lo deja como estaba. No sincroniza
+   entre dispositivos -- mismo alcance que ya tiene "Importar KML/KMZ". */
+function eliminarPotrero(nombre){
+  const animales = estado.potreros[nombre].animales;
+  if(Object.values(animales).some(v => v !== 0)){
+    alert(`"${nombre}" todavía tiene animales cargados. Movelos o dalos de baja antes de poder tocar este potrero.`);
+    return;
+  }
+  const nuevos = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
+  const esNuevo = nuevos.some(p=>p.nombre===nombre);
+  const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
+  const teniaLimiteImportado = !!limitesGuardados[nombre];
+
+  if(!esNuevo && !teniaLimiteImportado){
+    alert(`"${nombre}" no fue creado ni modificado por "Importar KML/KMZ" — no se puede eliminar ni revertir desde acá.`);
+    return;
+  }
+
+  if(esNuevo){
+    if(!confirm(`"${nombre}" fue creado por una importación de KML/KMZ. Esto lo va a eliminar por completo. No se puede deshacer. ¿Continuar?`)) return;
+    localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevos.filter(p=>p.nombre!==nombre)));
+    if(teniaLimiteImportado){ delete limitesGuardados[nombre]; localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados)); }
+    delete estado.potreros[nombre];
+    guardarEstado();
+  } else {
+    if(!confirm(`"${nombre}" es un potrero original: no se va a eliminar, pero se va a deshacer el límite importado y volver al contorno de siempre. ¿Continuar?`)) return;
+    delete limitesGuardados[nombre];
+    localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados));
+  }
+  alert('Listo. La página se va a recargar para aplicar el cambio.');
+  location.reload();
 }
 
 /* ======================= PANEL FLOTANTE Y HERRAMIENTAS ======================= */
