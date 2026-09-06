@@ -349,7 +349,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.24 (completa)</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.25 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -439,6 +439,23 @@
   <div class="modal-box">
     <h3>🏥 Sanidad</h3>
     <p class="modal-info">Es una foto del sistema de Sanidad (Excel), no un dato en vivo.</p>
+    <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento</button>
+    <div id="form-sanidad" style="display:none;margin-bottom:12px;">
+      <div class="form-row"><label>Fecha</label><input type="date" id="sc-fecha"></div>
+      <div class="form-row"><label>Categoría</label><select id="sc-categoria"></select></div>
+      <div class="form-row"><label>Potrero</label><select id="sc-potrero"></select></div>
+      <div class="form-row"><label>Cantidad</label><input type="number" id="sc-cantidad" min="1"></div>
+      <div class="form-row"><label>Gen (opcional)</label><input type="number" id="sc-gen" min="0"></div>
+      <div class="form-row"><label>Producto 1</label><input type="text" id="sc-producto1"></div>
+      <div class="form-row"><label>Dosis 1</label><input type="number" id="sc-dosis1" min="0" step="0.01"></div>
+      <div class="form-row"><label>Producto 2 (opcional)</label><input type="text" id="sc-producto2"></div>
+      <div class="form-row"><label>Dosis 2 (opcional)</label><input type="number" id="sc-dosis2" min="0" step="0.01"></div>
+      <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="sc-obs"></div>
+      <div class="form-botones">
+        <button class="btn btn-agregar" id="sc-guardar">Guardar</button>
+        <button class="btn btn-secundario" id="sc-cancelar">Cancelar</button>
+      </div>
+    </div>
     <div id="sanidad-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="sanidad-cerrar">Cerrar</button></div>
   </div>
@@ -595,7 +612,7 @@ function estadoInicial(){
       fechaSalida: null
     };
   });
-  return { potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], config: {...CONFIG_DEFAULT}, colaSync: [], ultimaSincronizacion: null };
+  return { potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], config: {...CONFIG_DEFAULT}, colaSync: [], colaSanidad: [], ultimaSincronizacion: null };
 }
 
 function cargarEstado(){
@@ -621,6 +638,7 @@ function cargarEstado(){
       if(parsed.config.cargaMaxima===undefined) parsed.config.cargaMaxima = CONFIG_DEFAULT.cargaMaxima;
       if(parsed.config.diasOcupacionMax===undefined) parsed.config.diasOcupacionMax = CONFIG_DEFAULT.diasOcupacionMax;
       if(!parsed.colaSync) parsed.colaSync = [];
+      if(!parsed.colaSanidad) parsed.colaSanidad = [];
       if(parsed.ultimaSincronizacion===undefined) parsed.ultimaSincronizacion = null;
       return parsed;
     }
@@ -708,6 +726,47 @@ async function vaciarColaSync(){
   }
   guardarEstado();
   actualizarEstadoSync();
+}
+
+/* Carga de Sanidad desde la app: fire-and-forget a la tabla "sanidad_carga"
+   (no pasa por eventos_sync -- no toca estado.potreros). Un script aparte,
+   fuera de esta app, la trae hasta Entradas_celular.xlsx para que
+   ImportarDelCelular la importe igual que una carga de AppSheet. */
+async function guardarSanidadCarga(registro){
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine){
+    estado.colaSanidad = estado.colaSanidad || [];
+    estado.colaSanidad.push(registro);
+    guardarEstado();
+    return false;
+  }
+  try{
+    const { error } = await client.from('sanidad_carga').insert(registro);
+    if(error){
+      estado.colaSanidad = estado.colaSanidad || [];
+      estado.colaSanidad.push(registro);
+      guardarEstado();
+      return false;
+    }
+    return true;
+  }catch(e){
+    estado.colaSanidad = estado.colaSanidad || [];
+    estado.colaSanidad.push(registro);
+    guardarEstado();
+    return false;
+  }
+}
+async function vaciarColaSanidad(){
+  if(!estado.colaSanidad || !estado.colaSanidad.length) return;
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine) return;
+  const pendientes = estado.colaSanidad;
+  estado.colaSanidad = [];
+  for(const registro of pendientes){
+    const ok = await guardarSanidadCarga(registro);
+    if(!ok) break;
+  }
+  guardarEstado();
 }
 
 /* Aplica un evento que vino de OTRO dispositivo al estado local.
@@ -850,6 +909,7 @@ async function sincronizar(mostrarToast){
   if(!navigator.onLine){ return; }
   actualizarEstadoSync('sincronizando');
   await vaciarColaSync();
+  await vaciarColaSanidad();
   try{
     let query = client.from('eventos_sync').select('*').eq('establecimiento', ESTABLECIMIENTO).order('creado_en', {ascending:true});
     if(estado.ultimaSincronizacion) query = query.gt('creado_en', estado.ultimaSincronizacion);
@@ -2770,6 +2830,59 @@ document.getElementById('btn-sanidad').addEventListener('click', ()=>{
 });
 document.getElementById('sanidad-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-sanidad').style.display = 'none';
+  document.getElementById('form-sanidad').style.display = 'none';
+});
+
+/* ===== Cargar un tratamiento desde la app (va a "sanidad_carga", no a
+   eventos_sync -- no es un movimiento de potrero). Un script aparte trae
+   esto hasta Entradas_celular.xlsx para que lo importe ImportarDelCelular,
+   igual que una carga por AppSheet -- el cálculo sigue siendo del Excel. ===== */
+document.getElementById('btn-cargar-sanidad').addEventListener('click', ()=>{
+  document.getElementById('sc-fecha').value = fechaISOHoy();
+  document.getElementById('sc-fecha').max = fechaISOHoy();
+  document.getElementById('sc-categoria').innerHTML = opcionesCategorias();
+  document.getElementById('sc-potrero').innerHTML = opcionesPotreros();
+  document.getElementById('sc-cantidad').value = '';
+  document.getElementById('sc-gen').value = '';
+  document.getElementById('sc-producto1').value = '';
+  document.getElementById('sc-dosis1').value = '';
+  document.getElementById('sc-producto2').value = '';
+  document.getElementById('sc-dosis2').value = '';
+  document.getElementById('sc-obs').value = '';
+  document.getElementById('form-sanidad').style.display = 'block';
+});
+document.getElementById('sc-cancelar').addEventListener('click', ()=>{
+  document.getElementById('form-sanidad').style.display = 'none';
+});
+document.getElementById('sc-guardar').addEventListener('click', async ()=>{
+  const fechaISO = document.getElementById('sc-fecha').value;
+  const categoria = document.getElementById('sc-categoria').value;
+  const potrero = document.getElementById('sc-potrero').value;
+  const cantidad = parseInt(document.getElementById('sc-cantidad').value, 10);
+  const genRaw = document.getElementById('sc-gen').value;
+  const gen = genRaw ? parseInt(genRaw, 10) : null;
+  const producto1 = document.getElementById('sc-producto1').value.trim();
+  const dosis1 = parseFloat(document.getElementById('sc-dosis1').value);
+  const producto2 = document.getElementById('sc-producto2').value.trim();
+  const dosis2Raw = document.getElementById('sc-dosis2').value;
+  const dosis2 = dosis2Raw ? parseFloat(dosis2Raw) : null;
+  const obs = document.getElementById('sc-obs').value.trim();
+  if(!fechaISO){ toast('Elegí una fecha'); return; }
+  if(!cantidad || cantidad<1){ toast('Ingresá una cantidad válida'); return; }
+  if(!producto1){ toast('Ingresá el producto 1'); return; }
+  if(isNaN(dosis1) || dosis1<=0){ toast('Ingresá la dosis 1'); return; }
+  const registro = {
+    id: 'sc_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+    establecimiento: ESTABLECIMIENTO,
+    fecha: fechaISO,
+    categoria, potrero, cantidad, gen,
+    producto1, dosis1,
+    producto2: producto2||null, dosis2,
+    observaciones: obs||null
+  };
+  await guardarSanidadCarga(registro);
+  document.getElementById('form-sanidad').style.display = 'none';
+  toast('Tratamiento cargado');
 });
 
 /* ======================= LLUVIAS ======================= */
