@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.24</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.25</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -445,9 +445,9 @@
       <div class="form-row"><label>Potrero</label><select id="sc-potrero"></select></div>
       <div class="form-row"><label>Cantidad</label><input type="number" id="sc-cantidad" min="1"></div>
       <div class="form-row"><label>Gen (opcional)</label><input type="number" id="sc-gen" min="0"></div>
-      <div class="form-row"><label>Producto 1</label><input type="text" id="sc-producto1"></div>
+      <div class="form-row"><label>Producto 1</label><select id="sc-producto1" style="display:none;"></select><input type="text" id="sc-producto1-otro" placeholder="Producto 1"></div>
       <div class="form-row"><label>Dosis 1</label><input type="number" id="sc-dosis1" min="0" step="0.01"></div>
-      <div class="form-row"><label>Producto 2 (opcional)</label><input type="text" id="sc-producto2"></div>
+      <div class="form-row"><label>Producto 2 (opcional)</label><select id="sc-producto2" style="display:none;"></select><input type="text" id="sc-producto2-otro" placeholder="Producto 2 (opcional)"></div>
       <div class="form-row"><label>Dosis 2 (opcional)</label><input type="number" id="sc-dosis2" min="0" step="0.01"></div>
       <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="sc-obs"></div>
       <div class="form-botones">
@@ -2370,18 +2370,77 @@ document.getElementById('sanidad-cerrar').addEventListener('click', ()=>{
    eventos_sync -- no es un movimiento de potrero). Un script aparte trae
    esto hasta Entradas_celular.xlsx para que lo importe ImportarDelCelular,
    igual que una carga por AppSheet -- el cálculo sigue siendo del Excel. ===== */
-document.getElementById('btn-cargar-sanidad').addEventListener('click', ()=>{
+/* ===== Catalogo de productos (P1.3): publicado desde la hoja "Costo
+   productos" del .xlsm a la tabla Supabase productos_catalogo. Los campos
+   Producto 1/2 se muestran como <select> si el catalogo esta disponible, o
+   como texto libre (comportamiento de antes) si esta offline y nunca se
+   cacheo. "Otro (escribir)..." en el desplegable vuelve a texto libre para
+   productos que todavia no estan en el catalogo del Excel. ===== */
+let catalogoProductos = [];
+async function cargarCatalogoProductos(){
+  const cacheKey = 'productos_catalogo_cache';
+  const client = clienteSupabase();
+  if(client && navigator.onLine){
+    try{
+      const res = await client.from('productos_catalogo').select('producto').order('producto');
+      if(!res.error){
+        catalogoProductos = (res.data||[]).map(r=>r.producto).filter(Boolean);
+        localStorage.setItem(cacheKey, JSON.stringify(catalogoProductos));
+        return;
+      }
+    }catch(e){ /* sigue con el cache */ }
+  }
+  const guardado = localStorage.getItem(cacheKey);
+  if(guardado){ try{ catalogoProductos = JSON.parse(guardado); }catch(e){} }
+}
+function opcionesProductos(){
+  let html = '<option value="">Elegir…</option>';
+  html += catalogoProductos.map(p=>`<option value="${p}">${p}</option>`).join('');
+  html += '<option value="__otro__">Otro (escribir)…</option>';
+  return html;
+}
+function prepararCampoProducto(idBase){
+  const sel = document.getElementById(idBase);
+  const libre = document.getElementById(idBase + '-otro');
+  libre.value = '';
+  if(catalogoProductos.length){
+    sel.innerHTML = opcionesProductos();
+    sel.value = '';
+    sel.style.display = '';
+    libre.style.display = 'none';
+  }else{
+    sel.style.display = 'none';
+    libre.style.display = '';
+  }
+}
+function valorProducto(idBase){
+  const sel = document.getElementById(idBase);
+  const libre = document.getElementById(idBase + '-otro');
+  if(sel.style.display !== 'none'){
+    return sel.value === '__otro__' ? libre.value.trim() : sel.value;
+  }
+  return libre.value.trim();
+}
+['sc-producto1','sc-producto2'].forEach(idBase=>{
+  document.getElementById(idBase).addEventListener('change', ()=>{
+    const libre = document.getElementById(idBase + '-otro');
+    if(document.getElementById(idBase).value === '__otro__'){ libre.style.display = ''; libre.focus(); }
+    else{ libre.style.display = 'none'; libre.value = ''; }
+  });
+});
+document.getElementById('btn-cargar-sanidad').addEventListener('click', async ()=>{
   document.getElementById('sc-fecha').value = fechaISOHoy();
   document.getElementById('sc-fecha').max = fechaISOHoy();
   document.getElementById('sc-categoria').innerHTML = opcionesCategorias();
   document.getElementById('sc-potrero').innerHTML = opcionesPotreros();
   document.getElementById('sc-cantidad').value = '';
   document.getElementById('sc-gen').value = '';
-  document.getElementById('sc-producto1').value = '';
   document.getElementById('sc-dosis1').value = '';
-  document.getElementById('sc-producto2').value = '';
   document.getElementById('sc-dosis2').value = '';
   document.getElementById('sc-obs').value = '';
+  await cargarCatalogoProductos();
+  prepararCampoProducto('sc-producto1');
+  prepararCampoProducto('sc-producto2');
   document.getElementById('form-sanidad').style.display = 'block';
 });
 document.getElementById('sc-cancelar').addEventListener('click', ()=>{
@@ -2394,9 +2453,9 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   const cantidad = parseInt(document.getElementById('sc-cantidad').value, 10);
   const genRaw = document.getElementById('sc-gen').value;
   const gen = genRaw ? parseInt(genRaw, 10) : null;
-  const producto1 = document.getElementById('sc-producto1').value.trim();
+  const producto1 = valorProducto('sc-producto1');
   const dosis1 = parseFloat(document.getElementById('sc-dosis1').value);
-  const producto2 = document.getElementById('sc-producto2').value.trim();
+  const producto2 = valorProducto('sc-producto2');
   const dosis2Raw = document.getElementById('sc-dosis2').value;
   const dosis2 = dosis2Raw ? parseFloat(dosis2Raw) : null;
   const obs = document.getElementById('sc-obs').value.trim();
