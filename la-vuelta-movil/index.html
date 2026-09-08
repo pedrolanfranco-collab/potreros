@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.30</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.31</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1536,7 +1536,7 @@ function renderDetalle(nombre){
 
   const filasCat = CATEGORIAS.map(c=>{
     const v = animales[c] || 0;
-    if(v===0 && !Object.keys(animales).includes(c)) return '';
+    if(v===0) return '';
     return `<tr${v<0?' style="color:#d32f2f;font-weight:700;"':''}><td>${c}</td><td class="num">${v}</td></tr>`;
   }).join('');
 
