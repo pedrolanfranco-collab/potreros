@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.3</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.4</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -2898,6 +2898,12 @@ actualizarTodo();
 actualizarEstadoSync();
 </script>
 <script>
+if (navigator.storage && navigator.storage.persist) {
+  // Le pedimos al navegador que no borre localStorage (potreros, historial,
+  // "Quien soy") por poco uso o poco espacio. No hace nada si el navegador
+  // no lo soporta o lo deniega -- es una capa extra, no la unica proteccion.
+  navigator.storage.persist().catch(()=>{});
+}
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then(reg => {
