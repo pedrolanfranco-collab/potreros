@@ -32,14 +32,14 @@ jobs:
       - name: Lluvias
         run: node tests/probar_lluvias.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
 
-      - name: "Agregar animales" solo carga inicial
+      - name: Agregar animales — solo carga inicial
         run: node tests/probar_agregar_solo_inicial.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
 
       - name: Pone Chico (arranque sin potreros)
         run: node tests/probar_pone_chico.js pone-chico-pc/index.html pone-chico-movil/index.html
 
-      - name: "Agregar animales" en Pone Chico
+      - name: Agregar animales en Pone Chico
         run: node tests/probar_agregar_pone_chico.js pone-chico-pc/index.html pone-chico-movil/index.html
 
-      - name: "Eliminar potrero" (La Vuelta y Pone Chico)
+      - name: Eliminar potrero (La Vuelta y Pone Chico)
         run: node tests/probar_eliminar_potrero.js la-vuelta-movil/index.html pone-chico-movil/index.html
