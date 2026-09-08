@@ -1,0 +1,9 @@
+{
+  "name": "potreros-tests",
+  "private": true,
+  "description": "Banco de pruebas jsdom de las apps de potreros. Copia de scripts/ en la skill apps-potreros -- si editás algo acá, llevá el cambio también a esa skill (y viceversa).",
+  "devDependencies": {
+    "jsdom": "30.0.1",
+    "jszip": "3.10.1"
+  }
+}

@@ -1,0 +1,45 @@
+name: Probar apps de potreros
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  jsdom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar jsdom
+        working-directory: tests
+        run: npm install
+
+      - name: Banco general (La Vuelta y María Laura)
+        run: node tests/probar_app.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
+
+      - name: "+ Cargar tratamiento (Sanidad)"
+        run: node tests/probar_sanidad_carga.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
+
+      - name: Saldo negativo al mover
+        run: node tests/probar_saldo_negativo.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
+
+      - name: Lluvias
+        run: node tests/probar_lluvias.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
+
+      - name: "Agregar animales" solo carga inicial
+        run: node tests/probar_agregar_solo_inicial.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
+
+      - name: Pone Chico (arranque sin potreros)
+        run: node tests/probar_pone_chico.js pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: "Agregar animales" en Pone Chico
+        run: node tests/probar_agregar_pone_chico.js pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: "Eliminar potrero" (La Vuelta y Pone Chico)
+        run: node tests/probar_eliminar_potrero.js la-vuelta-movil/index.html pone-chico-movil/index.html
