@@ -167,7 +167,7 @@ async function probarArchivo(archivo, tieneDueno){
 (async () => {
   const archivos = process.argv.slice(2);
   for(const a of archivos){
-    const tieneDueno = /maria_laura|pone_chico/.test(a);
+    const tieneDueno = /maria[_-]laura|pone[_-]chico/.test(a);
     await probarArchivo(a, tieneDueno);
   }
   console.log('\n' + (fallas ? fallas + ' verificacion(es) fallaron' : 'Todo OK'));

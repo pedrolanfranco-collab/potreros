@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.29 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.30 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1762,8 +1762,8 @@ function mostrarFormulario(nombre, accion, prefill){
       const detalleMov = movidos.join(', ');
       const grupoIdMov = generarIdHistorial();
       const extraMov = {potrero: nombre, destino, items};
-      registrarHistorial(nombre, 'movimiento', `Potrero vaciado → ${destino}: ${detalleMov}`, extraMov, grupoIdMov, fecha);
-      registrarHistorial(destino, 'movimiento', `Ingreso de potrero completo ← ${nombre}: ${detalleMov}`, extraMov, grupoIdMov, fecha);
+      registrarHistorial(nombre, 'movimiento_todo', `Potrero vaciado → ${destino}: ${detalleMov}`, extraMov, grupoIdMov, fecha);
+      registrarHistorial(destino, 'movimiento_todo', `Ingreso de potrero completo ← ${nombre}: ${detalleMov}`, extraMov, grupoIdMov, fecha);
       enviarEvento('movimiento_todo', nombre, {destino, items}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Se movió todo el rodeo de ${nombre} a ${destino}`);
