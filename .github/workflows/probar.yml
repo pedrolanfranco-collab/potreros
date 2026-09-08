@@ -43,3 +43,6 @@ jobs:
 
       - name: Eliminar potrero (La Vuelta y Pone Chico)
         run: node tests/probar_eliminar_potrero.js la-vuelta-movil/index.html pone-chico-movil/index.html
+
+      - name: Stock total (PC y móvil, las 3 apps)
+        run: node tests/probar_stock_total.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
