@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.29</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.30</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -930,18 +930,21 @@ function aplicarEventoRemoto(row){
   }
 }
 
+let sincronizando = false;
 async function sincronizar(mostrarToast){
   const client = clienteSupabase();
   if(!client){ return; }
   if(!navigator.onLine){ return; }
+  if(sincronizando){ return; } // ya hay una sincronizacion en curso -- evita aplicar los mismos eventos dos veces
+  sincronizando = true;
   actualizarEstadoSync('sincronizando');
-  await vaciarColaSync();
-  await vaciarColaSanidad();
   try{
+    await vaciarColaSync();
+    await vaciarColaSanidad();
     let query = client.from('eventos_sync').select('*').eq('establecimiento', ESTABLECIMIENTO).order('creado_en', {ascending:true});
     if(estado.ultimaSincronizacion) query = query.gt('creado_en', estado.ultimaSincronizacion);
     const { data, error } = await query;
-    if(error || !data){ actualizarEstadoSync(); return; }
+    if(error || !data){ return; }
     let cambios = 0;
     const miId = idDispositivo();
     data.forEach(row=>{
@@ -958,8 +961,10 @@ async function sincronizar(mostrarToast){
     }
   }catch(e){
     console.warn('Error al sincronizar', e);
+  }finally{
+    sincronizando = false;
+    actualizarEstadoSync();
   }
-  actualizarEstadoSync();
 }
 function actualizarEstadoSync(estadoTexto){
   const el = document.getElementById('estado-sync');

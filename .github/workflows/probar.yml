@@ -49,3 +49,6 @@ jobs:
 
       - name: Borrar historial revierte bien el stock (mover uno / TODO / recategorizar)
         run: node tests/probar_borrar_historial.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
+
+      - name: Sincronizar no duplica eventos si se llama dos veces en simultaneo
+        run: node tests/probar_sync_concurrente.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
