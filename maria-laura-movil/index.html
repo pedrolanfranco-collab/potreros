@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.30</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.31</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -754,9 +754,9 @@ async function vaciarColaSync(){
   if(!client || !navigator.onLine) return;
   const pendientes = estado.colaSync;
   estado.colaSync = [];
-  for(const ev of pendientes){
-    const ok = await pushEventoRemoto(ev);
-    if(!ok) break;
+  for(let i=0;i<pendientes.length;i++){
+    const ok = await pushEventoRemoto(pendientes[i]);
+    if(!ok){ estado.colaSync.push(...pendientes.slice(i+1)); break; } // reencola tambien los que quedaban sin mandar, no solo el que fallo
   }
   guardarEstado(); actualizarEstadoSync();
 }
@@ -795,9 +795,9 @@ async function vaciarColaSanidad(){
   if(!client || !navigator.onLine) return;
   const pendientes = estado.colaSanidad;
   estado.colaSanidad = [];
-  for(const registro of pendientes){
-    const ok = await guardarSanidadCarga(registro);
-    if(!ok) break;
+  for(let i=0;i<pendientes.length;i++){
+    const ok = await guardarSanidadCarga(pendientes[i]);
+    if(!ok){ estado.colaSanidad.push(...pendientes.slice(i+1)); break; }
   }
   guardarEstado();
 }
@@ -2812,7 +2812,7 @@ const PALABRAS_CATEGORIA = [
   [/vaca.*invern|invernada/, "Vacas de invernada"],
   [/vaca/, "Vacas"], [/toro/, "Toros"], [/buey/, "Bueyes"],
   [/corder/, "Corderos/as"], [/oveja/, "Ovejas"], [/capon/, "Capones"], [/carner/, "Carneros"],
-  [/potr/, "Potros/as"], [/yegua/, "Yeguas"], [/caballo/, "Caballos"]
+  [/potr(?!ero)/, "Potros/as"], [/yegua/, "Yeguas"], [/caballo/, "Caballos"]
 ];
 function detectarCategoria(texto){
   const t = quitarAcentos(texto.toLowerCase());
@@ -2856,21 +2856,22 @@ function parseComandoVoz(textoOriginal){
   const accion = detectarAccion(texto) || 'agregar';
   const categoria = detectarCategoria(texto);
   const dueno = detectarDueno(texto);
-  const cantidad = buscarNumeroEnTexto(texto) || 1;
   let origen = null, destino = null;
+  let textoSinPotreros = texto;
 
-  let m = texto.match(/del\s+([a-z0-9]+)\s+al\s+([a-z0-9]+)/);
-  if(m){ origen = resolverPotrero(m[1]); destino = resolverPotrero(m[2]); }
+  let m = texto.match(/del\s+(?:el\s+|la\s+|potrero\s+)?([a-z0-9]+)\s+al\s+(?:el\s+|la\s+|potrero\s+)?([a-z0-9]+)/);
+  if(m){ origen = resolverPotrero(m[1]); destino = resolverPotrero(m[2]); textoSinPotreros = textoSinPotreros.replace(m[0], ' '); }
   else {
-    m = texto.match(/\bal\s+([a-z0-9]+)/);
-    if(m) destino = resolverPotrero(m[1]);
-    m = texto.match(/\bdel\s+([a-z0-9]+)/);
-    if(m) origen = resolverPotrero(m[1]);
+    m = texto.match(/\bal\s+(?:el\s+|la\s+|potrero\s+)?([a-z0-9]+)/);
+    if(m){ destino = resolverPotrero(m[1]); textoSinPotreros = textoSinPotreros.replace(m[0], ' '); }
+    m = texto.match(/\bdel\s+(?:el\s+|la\s+|potrero\s+)?([a-z0-9]+)/);
+    if(m){ origen = resolverPotrero(m[1]); textoSinPotreros = textoSinPotreros.replace(m[0], ' '); }
     if(!origen && !destino){
-      m = texto.match(/\ben\s+([a-z0-9]+)/);
-      if(m){ const p = resolverPotrero(m[1]); origen = p; destino = p; }
+      m = texto.match(/\ben\s+(?:el\s+|la\s+|potrero\s+)?([a-z0-9]+)/);
+      if(m){ const p = resolverPotrero(m[1]); origen = p; destino = p; textoSinPotreros = textoSinPotreros.replace(m[0], ' '); }
     }
   }
+  const cantidad = buscarNumeroEnTexto(textoSinPotreros) || 1;
   let precio = null;
   const mp = texto.match(/a\s+(\d+)\s*(dolares|pesos|usd)?/);
   if(mp && /precio|dolares|pesos|usd|cada uno|c\/u/.test(texto)) precio = parseFloat(mp[1]);
@@ -2937,8 +2938,9 @@ function confirmarAccionVoz(){
     destAnimales[key] = (destAnimales[key]||0) + cant;
     registrarCambioOcupacion(origen, totalAntesOrigen);
     registrarCambioOcupacion(destino, totalAntesDestino);
-    registrarHistorial(origen, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino} (voz)`);
-    registrarHistorial(destino, 'movimiento', `+${cant} ${cat} de ${dueno} ← ${origen} (voz)`);
+    const extraMov = {potrero: origen, destino, categoria: cat, categoriaDestino: cat, cantidad: cant, dueno};
+    registrarHistorial(origen, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino} (voz)`, extraMov);
+    registrarHistorial(destino, 'movimiento', `+${cant} ${cat} de ${dueno} ← ${origen} (voz)`, extraMov);
     enviarEvento('movimiento', origen, {categoria: cat, dueno, cantidad: cant, destino});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(destino);
     toast(`Movidos ${cant} ${cat} (${dueno}) de ${origen} a ${destino}`);
@@ -2953,7 +2955,7 @@ function confirmarAccionVoz(){
     const totalAntes = totalPotrero(objetivo);
     a[key] = (a[key]||0) + cant;
     registrarCambioOcupacion(objetivo, totalAntes);
-    registrarHistorial(objetivo, accion==='nacimiento'?'nacimiento':'ingreso', `${accion==='nacimiento'?'Nacimiento':'Ingreso'}: +${cant} ${cat} de ${dueno} (voz)`);
+    registrarHistorial(objetivo, accion==='nacimiento'?'nacimiento':'ingreso', `${accion==='nacimiento'?'Nacimiento':'Ingreso'}: +${cant} ${cat} de ${dueno} (voz)`, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
     enviarEvento(accion==='nacimiento'?'nacimiento':'ingreso', objetivo, {categoria: cat, dueno, cantidad: cant});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo);
     toast(`Registrado en ${objetivo}: +${cant} ${cat} (${dueno})`);
@@ -2966,7 +2968,7 @@ function confirmarAccionVoz(){
     const totalAntes = totalPotrero(objetivo);
     a[key] -= cant;
     registrarCambioOcupacion(objetivo, totalAntes);
-    registrarHistorial(objetivo, 'muerte', `Muerte: -${cant} ${cat} de ${dueno} (voz)`);
+    registrarHistorial(objetivo, 'muerte', `Muerte: -${cant} ${cat} de ${dueno} (voz)`, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
     enviarEvento('muerte', objetivo, {categoria: cat, dueno, cantidad: cant});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo);
     toast(`Muerte registrada en ${objetivo}`);
@@ -2986,7 +2988,7 @@ function confirmarAccionVoz(){
     const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
     let detalle = `${accion==='venta'?'Venta':'Compra'}: ${accion==='venta'?'-':'+'}${cant} ${cat} de ${dueno} (voz)`;
     if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
-    registrarHistorial(objetivo, accion==='venta'?'venta':'compra', detalle);
+    registrarHistorial(objetivo, accion==='venta'?'venta':'compra', detalle, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
     estado.transacciones = estado.transacciones || [];
     estado.transacciones.unshift({fecha:fechaHoy(), potrero:objetivo, tipo: accion==='venta'?'Venta':'Compra', categoria:cat, dueno, cantidad:cant, precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte:'', notas:'voz'});
     enviarEvento(accion==='venta'?'venta':'compra', objetivo, {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null});
@@ -3090,10 +3092,17 @@ setInterval(()=>{ if(navigator.onLine) sincronizar(false); }, 3*60*1000);
    y por eso la carga inicial nunca se aplicó (borrar caché NO borra localStorage). */
 document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   const total = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
+  const pendSync = (estado.colaSync||[]).length;
+  const pendSanidad = (estado.colaSanidad||[]).length;
+  const partesPendientes = [];
+  if(pendSync>0) partesPendientes.push(`${pendSync} movimiento${pendSync===1?'':'s'}`);
+  if(pendSanidad>0) partesPendientes.push(`${pendSanidad} carga${pendSanidad===1?'':'s'} de Sanidad`);
+  const avisoPendientes = partesPendientes.length ? ` Ojo: hay ${partesPendientes.join(' y ')} sin mandar todavía a Supabase -- se van a perder.` : '';
   const confirmar = window.confirm(
-    total > 0
+    (total > 0
       ? `Esto borra TODO lo que hay guardado en este navegador (${total} animales, historial, backups) y vuelve a la carga inicial de fábrica. No se puede deshacer. ¿Seguro?`
-      : 'Esto borra lo guardado en este navegador y carga los datos de fábrica. ¿Continuar?'
+      : 'Esto borra lo guardado en este navegador y carga los datos de fábrica. ¿Continuar?')
+    + avisoPendientes
   );
   if(!confirmar) return;
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}

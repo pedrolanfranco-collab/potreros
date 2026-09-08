@@ -52,3 +52,9 @@ jobs:
 
       - name: Sincronizar no duplica eventos si se llama dos veces en simultaneo
         run: node tests/probar_sync_concurrente.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: Voz -- resuelve potrero con relleno (en el N / al potrero N) y no confunde categoria/cantidad
+        run: node tests/probar_voz.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: Auditoria 8/9 -- cola no pierde eventos, voz se puede borrar, exportadores muestran negativos, restablecer avisa
+        run: node tests/probar_auditoria_fixes.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
