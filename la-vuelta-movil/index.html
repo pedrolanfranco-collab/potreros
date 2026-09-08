@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.25</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.26</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -455,6 +455,7 @@
         <button class="btn btn-secundario" id="sc-cancelar">Cancelar</button>
       </div>
     </div>
+    <div id="sanidad-mis-cargas"></div>
     <div id="sanidad-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="sanidad-cerrar">Cerrar</button></div>
   </div>
@@ -631,7 +632,7 @@ function estadoInicial(){
       fechaSalida: null
     };
   });
-  return { potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], config: {...CONFIG_DEFAULT}, colaSync: [], colaSanidad: [], ultimaSincronizacion: null };
+  return { potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], config: {...CONFIG_DEFAULT}, colaSync: [], colaSanidad: [], historialSanidad: [], ultimaSincronizacion: null };
 }
 
 function cargarEstado(){
@@ -658,6 +659,7 @@ function cargarEstado(){
       if(parsed.config.diasOcupacionMax===undefined) parsed.config.diasOcupacionMax = CONFIG_DEFAULT.diasOcupacionMax;
       if(!parsed.colaSync) parsed.colaSync = [];
       if(!parsed.colaSanidad) parsed.colaSanidad = [];
+      if(!parsed.historialSanidad) parsed.historialSanidad = [];
       if(parsed.ultimaSincronizacion===undefined) parsed.ultimaSincronizacion = null;
       return parsed;
     }
@@ -2357,9 +2359,46 @@ function renderSanidadLista(datos){
   if(actualizado) html += `<p style="font-size:11px;color:var(--texto-suave);margin-top:10px;">Actualizado: ${actualizado} — es una foto, no un dato en vivo.</p>`;
   cont.innerHTML = html;
 }
+
+/* ===== Mis cargas recientes (P1.2): historial local de lo que este
+   dispositivo mando a "sanidad_carga", con su estado real segun
+   importado_en (lo pone bajar_sanidad_de_potreros.py cuando ya quedo
+   escrito en Entradas_celular.xlsx). Es la unica forma de saber, sin abrir
+   el Excel, si una carga realmente llego a la planilla. ===== */
+async function renderMisCargasSanidad(){
+  const cont = document.getElementById('sanidad-mis-cargas');
+  if(!cont) return;
+  const historial = estado.historialSanidad || [];
+  if(!historial.length){ cont.innerHTML = ''; return; }
+  const enCola = new Set((estado.colaSanidad||[]).map(r=>r.id));
+  const procesados = {};
+  const client = clienteSupabase();
+  if(client && navigator.onLine){
+    try{
+      const ids = historial.map(h=>h.id).filter(id=>!enCola.has(id));
+      if(ids.length){
+        const res = await client.from('sanidad_carga').select('id,importado_en').in('id', ids);
+        if(!res.error) (res.data||[]).forEach(r=>{ procesados[r.id] = !!r.importado_en; });
+      }
+    }catch(e){ /* se muestra sin estado del servidor */ }
+  }
+  const html = historial.map(h=>{
+    let estadoTxt;
+    if(enCola.has(h.id)) estadoTxt = '📴 sin señal, en tu dispositivo';
+    else if(procesados[h.id] === true) estadoTxt = '✅ en la planilla';
+    else if(procesados[h.id] === false) estadoTxt = '⏳ cargado, esperando el puente';
+    else estadoTxt = '✓ cargado';
+    return `<div class="potrero-card">
+        <div class="nombre">${h.fecha||''} · ${h.categoria||'—'}${h.potrero?(' · potrero '+h.potrero):''}</div>
+        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${h.producto1||''} — ${estadoTxt}</div>
+      </div>`;
+  }).join('');
+  cont.innerHTML = '<h4 style="margin:10px 0 6px;font-size:13px;">Mis cargas recientes</h4>' + html;
+}
 document.getElementById('btn-sanidad').addEventListener('click', ()=>{
   document.getElementById('modal-sanidad').style.display = 'flex';
   cargarSanidad();
+  renderMisCargasSanidad();
 });
 document.getElementById('sanidad-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-sanidad').style.display = 'none';
@@ -2473,8 +2512,13 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
     observaciones: obs||null
   };
   await guardarSanidadCarga(registro);
+  estado.historialSanidad = estado.historialSanidad || [];
+  estado.historialSanidad.unshift({ id: registro.id, fecha: registro.fecha, categoria: registro.categoria, potrero: registro.potrero, producto1: registro.producto1 });
+  estado.historialSanidad = estado.historialSanidad.slice(0, 15);
+  guardarEstado();
   document.getElementById('form-sanidad').style.display = 'none';
   toast('Tratamiento cargado');
+  await renderMisCargasSanidad();
 });
 
 /* ======================= LLUVIAS ======================= */
