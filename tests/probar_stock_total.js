@@ -58,6 +58,7 @@ function crearServidor(eventosSemilla){
         const q = {
           _filtros: [],
           select(){ return q; }, eq(col,val){ q._filtros.push(r=>r[col]===val); return q; },
+          in(col,vals){ q._filtros.push(r=>vals.includes(r[col])); return q; },
           then(res){ const data = (filas[tabla]||[]).filter(r=>q._filtros.every(f=>f(r))); return Promise.resolve(res({data, error:null})); }
         };
         return q;

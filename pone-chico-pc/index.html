@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.8 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.9 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1136,7 +1136,7 @@ function borrarHistorial(id){
   h.eliminado = true;
   h.detalle = h.detalle + ' — ELIMINADO';
   if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id);
-  enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste});
+  enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste, fechaOriginal: h.fecha});
   guardarEstado(); actualizarTodo(); renderDetalle(ub.potrero);
   toast('Movimiento eliminado y corregido');
 }
@@ -1154,7 +1154,7 @@ function editarHistorial(id){
   aplicarAjusteReversion(ajuste);
   h.eliminado = true;
   h.detalle = h.detalle + ' — EDITADO (ver movimiento nuevo)';
-  enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste});
+  enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste, fechaOriginal: h.fecha});
   guardarEstado(); actualizarTodo();
   renderDetalle(ub.potrero);
   mostrarFormulario(ub.potrero, ACCION_POR_TIPO_HIST[h.tipo], h.extra);
@@ -2161,8 +2161,8 @@ async function calcularEstadisticasNacimientos(){
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const res = await client.from('eventos_sync').select('fecha_cliente,detalle')
-        .eq('establecimiento', ESTABLECIMIENTO).eq('tipo', 'nacimiento');
+      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo')
+        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['nacimiento','correccion']);
       if(!res.error){
         eventos = res.data||[];
         localStorage.setItem(cacheKey, JSON.stringify(eventos));
@@ -2177,17 +2177,26 @@ async function calcularEstadisticasNacimientos(){
 
   let nacimientosTemporada = 0;
   const porMesAnio = {};
-  (eventos||[]).forEach(ev=>{
-    const fc = ev.fecha_cliente; // "dd/mm/yyyy"
+  const acumularMes = (fc, delta)=>{
     if(!fc || typeof fc !== 'string') return;
     const partes = fc.split('/');
     if(partes.length!==3) return;
-    const d = parseInt(partes[0],10), m = parseInt(partes[1],10), y = parseInt(partes[2],10);
+    const m = parseInt(partes[1],10), y = parseInt(partes[2],10);
     if(!m || !y || m<8 || m>12) return;
-    const cant = (ev.detalle && ev.detalle.cantidad) || 0;
     porMesAnio[y] = porMesAnio[y] || {8:0,9:0,10:0,11:0,12:0};
-    porMesAnio[y][m] += cant;
-    if(y===anioTemporada) nacimientosTemporada += cant;
+    porMesAnio[y][m] += delta;
+    if(y===anioTemporada) nacimientosTemporada += delta;
+  };
+  (eventos||[]).forEach(ev=>{
+    if(ev.tipo==='nacimiento'){
+      acumularMes(ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
+    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.tipoOriginal==='nacimiento' && ev.detalle.reversar){
+      // una carga de nacimiento que se borro/edito no debe seguir contando
+      // en el total de la temporada -- se resta del mes original si se
+      // guardo (fechaOriginal), o si es una correccion vieja sin ese dato,
+      // del mes en que se hizo la correccion.
+      acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -((ev.detalle.reversar.cantidad)||0));
+    }
   });
 
   const pct = vacas>0 ? (nacimientosTemporada/vacas*100) : 0;
@@ -2208,8 +2217,8 @@ async function calcularEstadisticasMuertes(){
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const res = await client.from('eventos_sync').select('fecha_cliente,detalle')
-        .eq('establecimiento', ESTABLECIMIENTO).eq('tipo', 'muerte');
+      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo')
+        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','correccion']);
       if(!res.error){
         eventos = res.data||[];
         localStorage.setItem(cacheKey, JSON.stringify(eventos));
@@ -2224,17 +2233,22 @@ async function calcularEstadisticasMuertes(){
 
   let muertesTemporada = 0;
   const porMesAnio = {};
-  (eventos||[]).forEach(ev=>{
-    const fc = ev.fecha_cliente; // "dd/mm/yyyy"
+  const acumularMes = (fc, delta)=>{
     if(!fc || typeof fc !== 'string') return;
     const partes = fc.split('/');
     if(partes.length!==3) return;
     const m = parseInt(partes[1],10), y = parseInt(partes[2],10);
     if(!m || !y || m<8 || m>12) return;
-    const cant = (ev.detalle && ev.detalle.cantidad) || 0;
     porMesAnio[y] = porMesAnio[y] || {8:0,9:0,10:0,11:0,12:0};
-    porMesAnio[y][m] += cant;
-    if(y===anioTemporada) muertesTemporada += cant;
+    porMesAnio[y][m] += delta;
+    if(y===anioTemporada) muertesTemporada += delta;
+  };
+  (eventos||[]).forEach(ev=>{
+    if(ev.tipo==='muerte'){
+      acumularMes(ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
+    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.tipoOriginal==='muerte' && ev.detalle.reversar){
+      acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -((ev.detalle.reversar.cantidad)||0));
+    }
   });
 
   const filasPorMes = Object.keys(porMesAnio).map(Number).sort((a,b)=>b-a).map(y=>{
