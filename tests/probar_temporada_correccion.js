@@ -80,7 +80,7 @@ async function levantar(archivo, servidor){
   win.alert = () => {}; win.confirm = () => true; win.prompt = () => null;
   win.URL.createObjectURL = () => 'blob:x'; win.URL.revokeObjectURL = () => {};
   const codigo = Array.from(win.document.querySelectorAll('script')).map(s => s.textContent).filter(Boolean).join('\n');
-  try { win.eval(codigo + ';window.__est = function(){ return estado; };window.__calcNac = calcularEstadisticasNacimientos; window.__borrar = borrarHistorial; window.__registrarHistorial = registrarHistorial; window.__registrarCambioOcupacion = registrarCambioOcupacion; window.__totalPotrero = totalPotrero; window.__establecimiento = function(){ return ESTABLECIMIENTO; };'); }
+  try { win.eval(codigo + ';window.__est = function(){ return estado; };window.__calcNac = calcularEstadisticasNacimientos; window.__borrar = borrarHistorial; window.__editar = editarHistorial; window.__registrarHistorial = registrarHistorial; window.__registrarCambioOcupacion = registrarCambioOcupacion; window.__totalPotrero = totalPotrero; window.__establecimiento = function(){ return ESTABLECIMIENTO; };'); }
   catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await new Promise(r => setTimeout(r, 60));
   return { win, errores };
@@ -131,6 +131,21 @@ async function probarArchivo(archivo){
   const despues = await win.__calcNac();
   chequear('despues de borrar la carga de +2: sigue en 8 (no debe contar la que se borro)',
     despues.nacimientosTemporada === 8, 'dio: ' + despues.nacimientosTemporada);
+
+  // "Editar" (a diferencia de "Borrar") NO significa que el nacimiento no
+  // pasó -- el flujo revierte para volver a cargar corregido, el hecho
+  // sigue siendo real. No debe descontarse de la temporada.
+  const totalAntes2 = win.__totalPotrero(p);
+  est.potreros[p].animales['Terneros'] = (est.potreros[p].animales['Terneros']||0) + 4;
+  win.__registrarCambioOcupacion(p, totalAntes2);
+  const fechaExtra2 = fechaHoyTemporada(3);
+  win.__registrarHistorial(p, 'nacimiento', 'nacimiento: +4 Terneros', {potrero:p, categoria:'Terneros', cantidad:4}, undefined, fechaExtra2);
+  servidor.filas.eventos_sync.push({ establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaExtra2, detalle: { categoria:'Terneros', cantidad: 4 } });
+  const entradaEditar = est.potreros[p].historial.find(h=>h.detalle==='nacimiento: +4 Terneros' && !h.eliminado);
+  win.__editar(entradaEditar.id);
+  const luegoDeEditar = await win.__calcNac();
+  chequear('editar (no borrar) una carga de nacimiento NO descuenta de la temporada',
+    luegoDeEditar.nacimientosTemporada === 12, 'esperaba 8+4=12, dio: ' + luegoDeEditar.nacimientosTemporada);
 }
 
 (async () => {

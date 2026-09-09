@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.33</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.34</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -2615,10 +2615,12 @@ async function leerEventosTemporada(tipo){
   (eventos||[]).forEach(ev=>{
     if(ev.tipo===tipo){
       acumularMes(ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
-    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.tipoOriginal===tipo && ev.detalle.reversar){
-      // una carga que se borro/edito no debe seguir contando en el total de
-      // la temporada -- se resta del mes original si se guardo
-      // (fechaOriginal), o del mes de la correccion si es una vieja sin ese dato.
+    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.accion==='eliminar' && ev.detalle.tipoOriginal===tipo && ev.detalle.reversar){
+      // solo "Borrar" (accion:'eliminar') significa que esa carga no
+      // deberia haber existido -- "Editar" revierte para volver a cargar
+      // corregido, el hecho sigue siendo real y no se descuenta. Se resta
+      // del mes original si se guardo (fechaOriginal), o del mes de la
+      // correccion si es una vieja sin ese dato.
       acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -((ev.detalle.reversar.cantidad)||0));
     }
   });
