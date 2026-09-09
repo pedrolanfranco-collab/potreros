@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.34</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.35</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -816,14 +816,43 @@ function aplicarEventoRemoto(row){
   const fechaEvt = row.fecha_cliente || fechaHoy();
 
   if(row.tipo === 'correccion'){
+    const r = d.reversar || {};
+    let marcado = false;
+    if(r.tipo==='restar' || r.tipo==='sumar'){
+      // El id de historial no es estable entre dispositivos (cada uno genera
+      // el suyo al aplicar el evento), asi que el movimiento original se
+      // busca por potrero+tipo+categoria+cantidad+dueño, el mas cercano a la
+      // fecha original -- si se encuentra, se tacha igual que en el
+      // dispositivo que hizo la correccion, en vez de dejar una linea suelta
+      // sin relacionar con el movimiento que corrige.
+      const potreroOriginal = r.potrero || potrero;
+      const hist = (estado.potreros[potreroOriginal]||{}).historial || [];
+      const fechaObjetivo = parseFechaDMY(d.fechaOriginal || fechaEvt);
+      let mejor = null, mejorDist = Infinity;
+      hist.forEach(h=>{
+        if(h.eliminado || h.tipo !== d.tipoOriginal || !h.origDatos) return;
+        const od = h.origDatos;
+        if(od.categoria !== r.categoria || od.cantidad !== r.cantidad) return;
+        if((od.dueno||null) !== (r.dueno||null)) return;
+        const dist = Math.abs(parseFechaDMY(h.fecha) - fechaObjetivo);
+        if(dist < mejorDist){ mejorDist = dist; mejor = h; }
+      });
+      if(mejor){
+        mejor.eliminado = true;
+        mejor.detalle += (d.accion==='eliminar' ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)');
+        marcado = true;
+      }
+    }
     aplicarAjusteReversion(d.reversar);
-    const texto = d.accion==='eliminar'
-      ? `Corrección (sincronizada): se eliminó un movimiento de ${d.tipoOriginal}`
-      : `Corrección (sincronizada): se editó un movimiento de ${d.tipoOriginal}`;
-    registrarHistorial(potrero, 'correccion', texto, undefined, undefined, fechaEvt, d.usuario);
-    if(d.reversar && (d.reversar.tipo==='mover' || d.reversar.tipo==='mover_todo' || d.reversar.tipo==='mover_multi')){
-      const otro = d.reversar.origen===potrero ? d.reversar.destino : d.reversar.origen;
-      if(otro && estado.potreros[otro]) registrarHistorial(otro, 'correccion', texto, undefined, undefined, fechaEvt, d.usuario);
+    if(!marcado){
+      const texto = d.accion==='eliminar'
+        ? `Corrección (sincronizada): se eliminó un movimiento de ${d.tipoOriginal}`
+        : `Corrección (sincronizada): se editó un movimiento de ${d.tipoOriginal}`;
+      registrarHistorial(potrero, 'correccion', texto, undefined, undefined, fechaEvt, d.usuario);
+      if(d.reversar && (d.reversar.tipo==='mover' || d.reversar.tipo==='mover_todo' || d.reversar.tipo==='mover_multi')){
+        const otro = d.reversar.origen===potrero ? d.reversar.destino : d.reversar.origen;
+        if(otro && estado.potreros[otro]) registrarHistorial(otro, 'correccion', texto, undefined, undefined, fechaEvt, d.usuario);
+      }
     }
     return;
   }
@@ -917,7 +946,7 @@ function aplicarEventoRemoto(row){
   if(d.precio) detalleTxt += ` a USD ${d.precio}/cab`;
   if(d.contraparte) detalleTxt += ` — ${d.contraparte}`;
   if(d.obs) detalleTxt += ` (${d.obs})`;
-  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt, d.usuario);
+  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt, d.usuario).origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null};
 
   if(row.tipo==='compra' || row.tipo==='venta'){
     estado.transacciones = estado.transacciones || [];

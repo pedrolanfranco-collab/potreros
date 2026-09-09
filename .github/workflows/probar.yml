@@ -61,3 +61,6 @@ jobs:
 
       - name: Borrar una carga de nacimiento/muerte descuenta del total de la temporada
         run: node tests/probar_temporada_correccion.js la-vuelta-pc/index.html la-vuelta-movil/index.html
+
+      - name: Una correccion sincronizada tacha el movimiento original (no deja una linea suelta)
+        run: node tests/probar_correccion_marca_original.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
