@@ -351,7 +351,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.36 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.37 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -821,30 +821,58 @@ function aplicarEventoRemoto(row){
   if(row.tipo === 'correccion'){
     const r = d.reversar || {};
     let marcado = false;
-    if(r.tipo==='restar' || r.tipo==='sumar'){
-      // El id de historial no es estable entre dispositivos (cada uno genera
-      // el suyo al aplicar el evento), asi que el movimiento original se
-      // busca por potrero+tipo+categoria+cantidad+dueño, el mas cercano a la
-      // fecha original -- si se encuentra, se tacha igual que en el
-      // dispositivo que hizo la correccion, en vez de dejar una linea suelta
-      // sin relacionar con el movimiento que corrige.
-      const potreroOriginal = r.potrero || potrero;
-      const hist = (estado.potreros[potreroOriginal]||{}).historial || [];
-      const fechaObjetivo = parseFechaDMY(d.fechaOriginal || fechaEvt);
+    const fechaObjetivo = parseFechaDMY(d.fechaOriginal || fechaEvt);
+    // El id de historial no es estable entre dispositivos (cada uno genera
+    // el suyo al aplicar el evento), asi que el movimiento original se
+    // busca por potrero+tipo+categoria(s)+cantidad+dueño (o items, para
+    // mover_todo/mover_multi), el mas cercano a la fecha original -- si se
+    // encuentra, se tacha igual que en el dispositivo que hizo la
+    // correccion, en vez de dejar una linea suelta sin relacionar con el
+    // movimiento que corrige.
+    const buscarMejor = (nombrePotrero, matcher)=>{
+      const hist = (estado.potreros[nombrePotrero]||{}).historial || [];
       let mejor = null, mejorDist = Infinity;
       hist.forEach(h=>{
         if(h.eliminado || h.tipo !== d.tipoOriginal || !h.origDatos) return;
-        const od = h.origDatos;
-        if(od.categoria !== r.categoria || od.cantidad !== r.cantidad) return;
-        if((od.dueno||null) !== (r.dueno||null)) return;
+        if(!matcher(h.origDatos)) return;
         const dist = Math.abs(parseFechaDMY(h.fecha) - fechaObjetivo);
         if(dist < mejorDist){ mejorDist = dist; mejor = h; }
       });
-      if(mejor){
-        mejor.eliminado = true;
-        mejor.detalle += (d.accion==='eliminar' ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)');
-        marcado = true;
-      }
+      return mejor;
+    };
+    const tachar = (h)=>{
+      h.eliminado = true;
+      h.detalle += (d.accion==='eliminar' ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)');
+    };
+    if(r.tipo==='restar' || r.tipo==='sumar'){
+      const potreroOriginal = r.potrero || potrero;
+      const h = buscarMejor(potreroOriginal, od =>
+        od.categoria===r.categoria && od.cantidad===r.cantidad && (od.dueno||null)===(r.dueno||null));
+      if(h){ tachar(h); marcado = true; }
+    } else if(r.tipo==='mover'){
+      // construirAjusteInverso invierte origen/destino y categoria/categoriaDestino:
+      // el potrero de origen ORIGINAL es r.destino, y el de destino ORIGINAL es r.origen.
+      const potreroOrigenOriginal = r.destino, potreroDestinoOriginal = r.origen;
+      const matcher = od => od.potrero===potreroOrigenOriginal && od.destino===potreroDestinoOriginal
+        && od.categoria===r.categoriaDestino && od.categoriaDestino===r.categoria
+        && od.cantidad===r.cantidad && (od.dueno||null)===(r.dueno||null);
+      const hOrigen = buscarMejor(potreroOrigenOriginal, matcher);
+      if(hOrigen) tachar(hOrigen);
+      let hDestino = null;
+      if(potreroDestinoOriginal !== potreroOrigenOriginal) hDestino = buscarMejor(potreroDestinoOriginal, matcher);
+      if(hDestino) tachar(hDestino);
+      marcado = !!(hOrigen || hDestino);
+    } else if(r.tipo==='mover_todo' || r.tipo==='mover_multi'){
+      const potreroOrigenOriginal = r.destino, potreroDestinoOriginal = r.origen;
+      const itemsStr = JSON.stringify(r.items||[]);
+      const matcher = od => od.potrero===potreroOrigenOriginal && od.destino===potreroDestinoOriginal
+        && JSON.stringify(od.items||[])===itemsStr;
+      const hOrigen = buscarMejor(potreroOrigenOriginal, matcher);
+      if(hOrigen) tachar(hOrigen);
+      let hDestino = null;
+      if(potreroDestinoOriginal !== potreroOrigenOriginal) hDestino = buscarMejor(potreroDestinoOriginal, matcher);
+      if(hDestino) tachar(hDestino);
+      marcado = !!(hOrigen || hDestino);
     }
     aplicarAjusteReversion(d.reversar);
     if(!marcado){
@@ -873,15 +901,19 @@ function aplicarEventoRemoto(row){
     registrarCambioOcupacion(potrero, totalAntesOrigen);
     registrarCambioOcupacion(d.destino, totalAntesDestino);
     const sufObsMov = d.obs ? ` (${d.obs})` : '';
+    // Mismo objeto para las dos entradas (origen y destino) -- asi una
+    // correccion futura las encuentra a las dos con un solo emparejamiento,
+    // igual que ya hace `extra` en las cargas locales.
+    const origDatosMov = {potrero, destino: d.destino, categoria: d.categoria, categoriaDestino: d.categoriaDestino||d.categoria, dueno: d.dueno||null, cantidad: d.cantidad};
     if(d.destino === potrero){
       const detalle = d.categoriaDestino && d.categoriaDestino!==d.categoria
         ? `${d.categoria} de ${d.dueno} → ${d.categoriaDestino} (${d.cantidad}, cambio de categoría, sincronizado)${sufObsMov}`
         : `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino} (sincronizado)${sufObsMov}`;
-      registrarHistorial(potrero, 'movimiento', detalle, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento', detalle, undefined, undefined, fechaEvt).origDatos = origDatosMov;
     }else{
       const sufOrigen = d.categoriaDestino && d.categoriaDestino!==d.categoria ? ` (pasa a ${d.categoriaDestino})` : '';
-      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
-      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${d.categoriaDestino || d.categoria} de ${d.dueno} ← ${potrero} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMov;
+      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${d.categoriaDestino || d.categoria} de ${d.dueno} ← ${potrero} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMov;
     }
     return;
   }
@@ -899,8 +931,12 @@ function aplicarEventoRemoto(row){
     });
     registrarCambioOcupacion(potrero, totalAntesOrigen);
     registrarCambioOcupacion(d.destino, totalAntesDestino);
-    registrarHistorial(potrero, 'movimiento', `Potrero vaciado → ${d.destino} (sincronizado)`, undefined, undefined, fechaEvt);
-    registrarHistorial(d.destino, 'movimiento', `Ingreso de potrero completo ← ${potrero} (sincronizado)`, undefined, undefined, fechaEvt);
+    const origDatosTodo = {potrero, destino: d.destino, items: d.items};
+    // tipo 'movimiento_todo' (no 'movimiento'): tiene que coincidir con lo
+    // que carga el dispositivo de origen, o d.tipoOriginal de una futura
+    // correccion nunca matchea esta entrada.
+    registrarHistorial(potrero, 'movimiento_todo', `Potrero vaciado → ${d.destino} (sincronizado)`, undefined, undefined, fechaEvt).origDatos = origDatosTodo;
+    registrarHistorial(d.destino, 'movimiento_todo', `Ingreso de potrero completo ← ${potrero} (sincronizado)`, undefined, undefined, fechaEvt).origDatos = origDatosTodo;
     return;
   }
 
@@ -923,11 +959,12 @@ function aplicarEventoRemoto(row){
     registrarCambioOcupacion(potrero, totalAntesOrigen);
     registrarCambioOcupacion(d.destino, totalAntesDestino);
     const sufObsMov = d.obs ? ` (${d.obs})` : '';
+    const origDatosMulti = {potrero, destino: d.destino, items: d.items};
     if(d.destino === potrero){
-      registrarHistorial(potrero, 'movimiento_multi', `Recategorización (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento_multi', `Recategorización (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMulti;
     }else{
-      registrarHistorial(potrero, 'movimiento_multi', `→ ${d.destino} (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt);
-      registrarHistorial(d.destino, 'movimiento_multi', `← ${potrero} (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt);
+      registrarHistorial(potrero, 'movimiento_multi', `→ ${d.destino} (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMulti;
+      registrarHistorial(d.destino, 'movimiento_multi', `← ${potrero} (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMulti;
     }
     return;
   }

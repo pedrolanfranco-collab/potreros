@@ -87,13 +87,17 @@ async function probarArchivo(archivo){
 
   const est = win.__est();
   const establecimiento = win.__establecimiento();
-  // Pone Chico arranca sin potreros (POTREROS_GEO=[]) -- se sintetiza uno
-  // minimo, ya que esta prueba no pasa por seleccionarPotrero/renderDetalle
-  // (que si necesitarian info geografica).
+  // Pone Chico arranca sin potreros (POTREROS_GEO=[]) -- se sintetizan dos
+  // minimos (hace falta un segundo para probar movimientos entre potreros),
+  // ya que esta prueba no pasa por seleccionarPotrero/renderDetalle (que si
+  // necesitarian info geografica).
   if(Object.keys(est.potreros).length === 0){
     est.potreros['TEST'] = { animales: {}, historial: [] };
+    est.potreros['TEST2'] = { animales: {}, historial: [] };
   }
-  const potrero = Object.keys(est.potreros)[0];
+  const nombres = Object.keys(est.potreros);
+  const potrero = nombres[0];
+  const potrero2 = nombres[1] || nombres[0];
 
   // Caso 1: "Borrar" -- la correccion debe encontrar y tachar la carga
   // original en vez de agregar una linea suelta.
@@ -154,6 +158,100 @@ async function probarArchivo(archivo){
   const histDespues3 = est.potreros[potrero].historial.slice(0, est.potreros[potrero].historial.length - totalAntes3);
   chequear('sin match: cae en la linea generica de respaldo (no se pierde la correccion)',
     histDespues3.length === 1 && histDespues3[0].tipo === 'correccion', JSON.stringify(histDespues3));
+
+  if(potrero2 === potrero){
+    console.log('  (sin un segundo potrero real disponible -- se salta la parte de movimientos entre potreros)');
+    return;
+  }
+
+  // Caso 4: "movimiento" (una sola categoria) entre DOS potreros -- tiene
+  // que tachar la entrada tanto en el origen como en el destino, sin dejar
+  // ninguna linea "correccion" suelta de ningun lado.
+  const antesOrigen4 = est.potreros[potrero].historial.length;
+  const antesDestino4 = est.potreros[potrero2].historial.length;
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'movimiento', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '09/09/2026', detalle: { categoria: 'Vacas', cantidad: 5, destino: potrero2 }
+  });
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'correccion', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '09/09/2026',
+    detalle: { historialId: 'h_noCoincideMov', tipoOriginal: 'movimiento', accion: 'eliminar',
+      reversar: { tipo: 'mover', origen: potrero2, destino: potrero, categoria: 'Vacas', categoriaDestino: 'Vacas', dueno: null, cantidad: 5 },
+      fechaOriginal: '09/09/2026' }
+  });
+  const nuevasOrigen4 = est.potreros[potrero].historial.slice(0, est.potreros[potrero].historial.length - antesOrigen4);
+  const nuevasDestino4 = est.potreros[potrero2].historial.slice(0, est.potreros[potrero2].historial.length - antesDestino4);
+  chequear('movimiento: no quedo ninguna linea "correccion" suelta (ni origen ni destino)',
+    !nuevasOrigen4.some(h=>h.tipo==='correccion') && !nuevasDestino4.some(h=>h.tipo==='correccion'),
+    JSON.stringify({nuevasOrigen4, nuevasDestino4}));
+  const movOrigen4 = nuevasOrigen4.find(h=>h.tipo==='movimiento');
+  const movDestino4 = nuevasDestino4.find(h=>h.tipo==='movimiento');
+  chequear('movimiento: se tacho el lado origen', !!(movOrigen4 && movOrigen4.eliminado && /ELIMINADO/.test(movOrigen4.detalle)), JSON.stringify(movOrigen4));
+  chequear('movimiento: se tacho el lado destino', !!(movDestino4 && movDestino4.eliminado && /ELIMINADO/.test(movDestino4.detalle)), JSON.stringify(movDestino4));
+
+  // Caso 5: "movimiento" dentro del MISMO potrero (recategorizacion) -- un
+  // solo lado, no debe intentar buscar un segundo potrero.
+  const antes5 = est.potreros[potrero].historial.length;
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'movimiento', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '09/09/2026', detalle: { categoria: 'Terneros', categoriaDestino: 'Vaquillonas 1-2 años', cantidad: 2, destino: potrero }
+  });
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'correccion', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '09/09/2026',
+    detalle: { historialId: 'h_noCoincideRecat', tipoOriginal: 'movimiento', accion: 'eliminar',
+      reversar: { tipo: 'mover', origen: potrero, destino: potrero, categoria: 'Vaquillonas 1-2 años', categoriaDestino: 'Terneros', dueno: null, cantidad: 2 },
+      fechaOriginal: '09/09/2026' }
+  });
+  const nuevas5 = est.potreros[potrero].historial.slice(0, est.potreros[potrero].historial.length - antes5);
+  chequear('recategorizacion (mismo potrero): una sola linea nueva, tachada, sin generica',
+    nuevas5.length === 1 && nuevas5[0].eliminado && /ELIMINADO/.test(nuevas5[0].detalle), JSON.stringify(nuevas5));
+
+  // Caso 6: "movimiento_todo" -- items entre dos potreros.
+  const antesOrigen6 = est.potreros[potrero].historial.length;
+  const antesDestino6 = est.potreros[potrero2].historial.length;
+  const items6 = [{ categoria: 'Vacas', cantidad: 10 }, { categoria: 'Terneros', cantidad: 4 }];
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'movimiento_todo', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '09/09/2026', detalle: { destino: potrero2, items: items6 }
+  });
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'correccion', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '09/09/2026',
+    detalle: { historialId: 'h_noCoincideTodo', tipoOriginal: 'movimiento_todo', accion: 'eliminar',
+      reversar: { tipo: 'mover_todo', origen: potrero2, destino: potrero, items: items6 },
+      fechaOriginal: '09/09/2026' }
+  });
+  const nuevasOrigen6 = est.potreros[potrero].historial.slice(0, est.potreros[potrero].historial.length - antesOrigen6);
+  const nuevasDestino6 = est.potreros[potrero2].historial.slice(0, est.potreros[potrero2].historial.length - antesDestino6);
+  chequear('movimiento_todo: quedo etiquetado como movimiento_todo (no como movimiento a secas)',
+    nuevasOrigen6.every(h=>h.tipo==='movimiento_todo') && nuevasDestino6.every(h=>h.tipo==='movimiento_todo'),
+    JSON.stringify({nuevasOrigen6, nuevasDestino6}));
+  chequear('movimiento_todo: no quedo ninguna linea "correccion" suelta',
+    nuevasOrigen6.length === 1 && nuevasOrigen6[0].eliminado && nuevasDestino6.length === 1 && nuevasDestino6[0].eliminado,
+    JSON.stringify({nuevasOrigen6, nuevasDestino6}));
+
+  // Caso 7: "movimiento_multi" -- varias categorias entre dos potreros.
+  const antesOrigen7 = est.potreros[potrero].historial.length;
+  const antesDestino7 = est.potreros[potrero2].historial.length;
+  const items7 = [{ categoria: 'Vacas', cantidad: 3 }, { categoria: 'Toros', categoriaDestino: 'Toros', cantidad: 1 }];
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'movimiento_multi', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '09/09/2026', detalle: { destino: potrero2, items: items7 }
+  });
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'correccion', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '09/09/2026',
+    detalle: { historialId: 'h_noCoincideMulti', tipoOriginal: 'movimiento_multi', accion: 'eliminar',
+      reversar: { tipo: 'mover_multi', origen: potrero2, destino: potrero, items: items7 },
+      fechaOriginal: '09/09/2026' }
+  });
+  const nuevasOrigen7 = est.potreros[potrero].historial.slice(0, est.potreros[potrero].historial.length - antesOrigen7);
+  const nuevasDestino7 = est.potreros[potrero2].historial.slice(0, est.potreros[potrero2].historial.length - antesDestino7);
+  chequear('movimiento_multi: no quedo ninguna linea "correccion" suelta (ni origen ni destino)',
+    nuevasOrigen7.length === 1 && nuevasOrigen7[0].eliminado && nuevasDestino7.length === 1 && nuevasDestino7[0].eliminado,
+    JSON.stringify({nuevasOrigen7, nuevasDestino7}));
 }
 
 (async () => {
