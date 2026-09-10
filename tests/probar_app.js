@@ -165,8 +165,17 @@ async function probar(archivo){
   chequear('hay potreros cargados', potreros.length > 0, potreros.length + '');
   chequear('la lista del costado se dibuja',
     doc.getElementById('lista-potreros').innerHTML.length > 50);
-  chequear('el resumen muestra numeros',
-    !isNaN(parseFloat(doc.getElementById('res-animales').textContent)));
+  // 10/9/2026: el panel superior separa "Animales" en vacunos/ovinos/equinos
+  // (Pedro) en vez de un solo total.
+  const vacunos = parseFloat(doc.getElementById('res-vacunos').textContent);
+  const ovinos = parseFloat(doc.getElementById('res-ovinos').textContent);
+  const equinos = parseFloat(doc.getElementById('res-equinos').textContent);
+  chequear('el resumen muestra numeros (vacunos/ovinos/equinos)',
+    !isNaN(vacunos) && !isNaN(ovinos) && !isNaN(equinos));
+  const totalAnimalesReal = potreros.reduce((s,p)=> s + win.totalPotrero(p), 0);
+  chequear('vacunos+ovinos+equinos suma el total real de animales',
+    (vacunos+ovinos+equinos) === totalAnimalesReal,
+    `${vacunos}+${ovinos}+${equinos} != ${totalAnimalesReal}`);
 
   const tiene = id => !!doc.getElementById(id);
   const variante = tiene('btn-gps') ? 'movil' : 'PC';

@@ -351,14 +351,16 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.12</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.13</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
     <div class="resumen">
       <div class="stat"><div class="num" id="res-potreros">0</div><div class="lbl">Potreros</div></div>
       <div class="stat"><div class="num" id="res-ha">0</div><div class="lbl">Hectáreas</div></div>
-      <div class="stat"><div class="num" id="res-animales">0</div><div class="lbl">Animales</div></div>
+      <div class="stat"><div class="num" id="res-vacunos">0</div><div class="lbl">Vacunos</div></div>
+      <div class="stat"><div class="num" id="res-ovinos">0</div><div class="lbl">Ovinos</div></div>
+      <div class="stat"><div class="num" id="res-equinos">0</div><div class="lbl">Equinos</div></div>
       <div class="stat"><div class="num" id="res-ug">0</div><div class="lbl">UG totales</div></div>
       <div class="stat"><div class="num" id="res-dotacion">0</div><div class="lbl">UG / ha</div></div>
     </div>
@@ -538,6 +540,20 @@ const ESPECIES = {
 const ESPECIE_LABEL = {bovino:"Bovinos", ovino:"Ovinos", equino:"Equinos"};
 const UG_DEFAULT = Object.assign({}, ESPECIES.bovino, ESPECIES.ovino, ESPECIES.equino);
 const CATEGORIAS = Object.keys(UG_DEFAULT);
+const CATEGORIA_ESPECIE = {};
+Object.entries(ESPECIES).forEach(([esp,cats])=> Object.keys(cats).forEach(c=> CATEGORIA_ESPECIE[c]=esp));
+/* Total de animales de un potrero, separado por especie -- para el panel
+   superior (vacunos/ovinos/equinos), no por categoria como totalUG(). */
+function totalPorEspecie(nombre){
+  const a = estado.potreros[nombre].animales;
+  const out = {bovino:0, ovino:0, equino:0};
+  Object.entries(a).forEach(([key,cant])=>{
+    const {cat} = partesClave(key);
+    const esp = CATEGORIA_ESPECIE[cat];
+    if(esp) out[esp] += Number(cant||0);
+  });
+  return out;
+}
 
 /* ======================= DUEÑOS ======================= */
 /* Cada animal es de un único dueño. Se guarda como clave compuesta "categoria||dueño"
@@ -2021,8 +2037,14 @@ function actualizarResumen(){
   document.getElementById('res-potreros').textContent = POTREROS_GEO.length;
   const ha = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
   document.getElementById('res-ha').textContent = Math.round(ha);
-  const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
-  document.getElementById('res-animales').textContent = totalAnimales;
+  const porEspecie = POTREROS_GEO.reduce((s,p)=>{
+    const e = totalPorEspecie(p.nombre);
+    s.bovino += e.bovino; s.ovino += e.ovino; s.equino += e.equino;
+    return s;
+  }, {bovino:0, ovino:0, equino:0});
+  document.getElementById('res-vacunos').textContent = porEspecie.bovino;
+  document.getElementById('res-ovinos').textContent = porEspecie.ovino;
+  document.getElementById('res-equinos').textContent = porEspecie.equino;
   const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
   document.getElementById('res-ug').textContent = totalUGCampo.toFixed(1);
   document.getElementById('res-dotacion').textContent = ha>0 ? (totalUGCampo/ha).toFixed(2) : '0';
