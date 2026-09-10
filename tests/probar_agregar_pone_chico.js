@@ -85,6 +85,14 @@ async function probarArchivo(archivo){
   if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
   chequear('arranca sin potreros (todavia no se cargo ningun limite)', Object.keys(win.__est().potreros).length === 0);
 
+  // 10/9/2026: el boton "+ Agregar animales" se saco de la version movil.
+  // Pone Chico no pasa por renderDetalle en esta prueba (sin info geografica
+  // todavia), asi que se chequea directo en el HTML fuente en vez de en el DOM.
+  const variante = win.document.getElementById('btn-gps') ? 'movil' : 'PC';
+  const tieneBotonAgregar = /data-accion="agregar"/.test(fs.readFileSync(archivo, 'utf-8'));
+  chequear('boton "+ Agregar animales" ' + (variante==='PC' ? 'presente en PC' : 'ausente en movil'),
+    tieneBotonAgregar === (variante === 'PC'));
+
   const nombre = 'PotreroPrueba';
   win.__crearPotrero(nombre);
   const doc = win.document;

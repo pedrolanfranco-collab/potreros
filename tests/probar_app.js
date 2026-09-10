@@ -203,6 +203,13 @@ async function probar(archivo){
   // el potrero ya tiene stock. Para poder probarlo hay que vaciarlo primero.
   win.__vaciar(p1);
   win.seleccionarPotrero(p1);
+  // 10/9/2026: el boton "+ Agregar animales" se saco de la version movil
+  // (Pedro: la carga inicial de un potrero se hace desde la PC; en el
+  // celular solo quedan los movimientos del dia a dia) -- el mecanismo de
+  // abajo (mostrarFormulario(p,'agregar')) sigue andando en los dos, para
+  // no romper "editar" sobre una carga inicial ya hecha.
+  chequear('boton "+ Agregar animales" ' + (variante==='PC' ? 'presente en PC' : 'ausente en movil'),
+    !!doc.querySelector('[data-accion="agregar"]') === (variante === 'PC'));
   const antes = win.totalPotrero(p1);
   win.mostrarFormulario(p1, 'agregar');
   const cat = doc.getElementById('f-cat');
