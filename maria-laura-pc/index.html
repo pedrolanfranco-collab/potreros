@@ -352,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.48 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.49 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -602,8 +602,9 @@ const DUENOS = ["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"];
 function claveAnimal(cat, dueno){ return cat + '||' + dueno; }
 function partesClave(key){
   const [cat, dueno] = key.split('||');
-  return {cat, dueno: dueno || '(sin dueño)'};
+  return {cat, dueno: dueno || ''};
 }
+function textoFirma(dueno){ return dueno || '(sin dueño)'; }
 function opcionesDuenos(seleccionado){
   return DUENOS.map(d=>`<option value="${d}" ${d===seleccionado?'selected':''}>${d}</option>`).join('');
 }
@@ -1848,7 +1849,7 @@ function filasCategoriasMover(nombre){
     <div class="form-row" style="align-items:center;gap:8px;">
       <label style="display:flex;align-items:center;gap:6px;flex:1;font-weight:normal;">
         <input type="checkbox" class="mov-check" data-key="${key}" data-cat="${x.cat}" data-dueno="${x.dueno}" checked>
-        ${x.cat} (${x.dueno}) <span style="color:var(--texto-suave);font-size:12px;">(hay ${x.cant})</span>
+        ${x.cat} (${textoFirma(x.dueno)}) <span style="color:var(--texto-suave);font-size:12px;">(hay ${x.cant})</span>
       </label>
       <input type="number" class="mov-cant" data-key="${key}" min="1" value="${x.cant}" style="width:70px;">
     </div>`;
@@ -1888,10 +1889,10 @@ function mostrarFormulario(nombre, accion, prefill){
       const key = claveAnimal(cat, dueno);
       a[key] = (a[key]||0) + cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'ingreso', `+${cant} ${cat} de ${dueno} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
+      registrarHistorial(nombre, 'ingreso', `+${cant} ${cat}${dueno?' de '+dueno:''} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
       enviarEvento('ingreso', nombre, {categoria: cat, dueno, cantidad: cant}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
-      toast(`Se agregaron ${cant} ${cat} (${dueno}) a ${nombre}`);
+      toast(`Se agregaron ${cant} ${cat}${dueno?' ('+dueno+')':''} a ${nombre}`);
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
@@ -1937,7 +1938,7 @@ function mostrarFormulario(nombre, accion, prefill){
       if(faltantes.length){
         const detalleFaltantes = faltantes.map(f=>{
           const disp = origenAnimales[f.key]||0;
-          return `${f.cat} (${f.dueno}): hay ${disp}, queda en ${disp - f.cant}`;
+          return `${f.cat} (${textoFirma(f.dueno)}): hay ${disp}, queda en ${disp - f.cant}`;
         }).join('\n');
         if(!confirm(`Vas a dejar saldo negativo en ${nombre}:\n${detalleFaltantes}\n¿Continuar de todos modos?`)) return;
       }
@@ -1953,7 +1954,7 @@ function mostrarFormulario(nombre, accion, prefill){
         origenAnimales[f.key] = (origenAnimales[f.key]||0) - f.cant;
         destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + f.cant;
         items.push({categoria: f.cat, categoriaDestino: catDestino, dueno: f.dueno, cantidad: f.cant});
-        detalleTxt.push(catDestino!==f.cat ? `${f.cant} ${f.cat} (${f.dueno}) → ${catDestino}` : `${f.cant} ${f.cat} (${f.dueno})`);
+        detalleTxt.push(catDestino!==f.cat ? `${f.cant} ${f.cat} (${textoFirma(f.dueno)}) → ${catDestino}` : `${f.cant} ${f.cat} (${textoFirma(f.dueno)})`);
       });
       registrarCambioOcupacion(nombre, totalAntesOrigen);
       registrarCambioOcupacion(destino, totalAntesDestino);
@@ -1976,7 +1977,7 @@ function mostrarFormulario(nombre, accion, prefill){
   if(accion==='mover-todo'){
     const total = totalPotrero(nombre);
     const animales = estado.potreros[nombre].animales;
-    const resumen = detalleAnimales(animales).map(d=>`${d.cant} ${d.cat} (${d.dueno})`).join(', ');
+    const resumen = detalleAnimales(animales).filter(d=>d.cant>0).map(d=>`${d.cant} ${d.cat} (${textoFirma(d.dueno)})`).join(', ');
     if(total===0){
       zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">No hay animales en ${nombre} para mover.</p></div>`;
       return;
@@ -2007,7 +2008,7 @@ function mostrarFormulario(nombre, accion, prefill){
         if(cant>0){
           destAnimales[key] = (destAnimales[key]||0) + cant;
           const {cat,dueno} = partesClave(key);
-          movidos.push(`${cant} ${cat} (${dueno})`);
+          movidos.push(`${cant} ${cat} (${textoFirma(dueno)})`);
           items.push({categoria: cat, dueno, cantidad: cant});
           origenAnimales[key] = 0;
         }
@@ -2066,7 +2067,7 @@ function mostrarFormulario(nombre, accion, prefill){
 
       if(tipoOp==='Venta'){
         const disponibles = a[key] || 0;
-        if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} de ${dueno} en ${nombre}`); return; }
+        if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${nombre}`); return; }
         a[key] -= cant;
       } else {
         a[key] = (a[key]||0) + cant;
@@ -2074,7 +2075,7 @@ function mostrarFormulario(nombre, accion, prefill){
       registrarCambioOcupacion(nombre, totalAntes);
 
       const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
-      let detalle = `${tipoOp}: ${tipoOp==='Venta'?'-':'+'}${cant} ${cat} de ${dueno}`;
+      let detalle = `${tipoOp}: ${tipoOp==='Venta'?'-':'+'}${cant} ${cat}${dueno?' de '+dueno:''}`;
       if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
       if(contraparte) detalle += ` — ${contraparte}`;
       if(obs) detalle += ` (${obs})`;
@@ -2088,7 +2089,7 @@ function mostrarFormulario(nombre, accion, prefill){
       enviarEvento(tipoOp==='Venta'?'venta':'compra', nombre, {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, obs: obs||null}, fecha);
 
       guardarEstado(); actualizarTodo(); cerrarDetalle();
-      toast(`${tipoOp} registrada: ${cant} ${cat} (${dueno}) en ${nombre}`);
+      toast(`${tipoOp} registrada: ${cant} ${cat}${dueno?' ('+dueno+')':''} en ${nombre}`);
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
@@ -2121,7 +2122,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const key = claveAnimal(cat, dueno);
       a[key] = (a[key]||0) + cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
+      registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
       enviarEvento('nacimiento', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Nacimiento registrado en ${nombre}`);
@@ -2159,7 +2160,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const totalAntes = totalPotrero(nombre);
       a[key] -= cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
+      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
       enviarEvento('muerte', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Muerte registrada en ${nombre}`);
@@ -2198,7 +2199,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const totalAntes = totalPotrero(nombre);
       a[key] -= cant;
       registrarCambioOcupacion(nombre, totalAntes);
-      const entry = registrarHistorial(nombre, 'desaparecido', `Desaparecido: -${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''} (buscando)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
+      const entry = registrarHistorial(nombre, 'desaparecido', `Desaparecido: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''} (buscando)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
       enviarEvento('desaparecido', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null, casoId: entry.id}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Desaparición registrada en ${nombre} — resolvela en 🛠 Herramientas › ❓ Desaparecidos`);
@@ -2243,7 +2244,7 @@ function construirKML(){
     const ug = totalUG(p.nombre);
     const carga = cargaPotrero(p.nombre);
     const ocup = estadoOcupacion(p.nombre);
-    const detalle = detalleAnimales(animales).map(d=>`${d.cat} (${d.dueno}): ${d.cant}`).join(', ') || 'Sin animales';
+    const detalle = detalleAnimales(animales).map(d=>`${d.cat} (${textoFirma(d.dueno)}): ${d.cant}`).join(', ') || 'Sin animales';
     const coordsStr = p.coords.map(c=> `${c[1]},${c[0]},0`).join(' ');
     return `    <Placemark>
       <name>${escaparXML(p.nombre)}</name>
@@ -2447,7 +2448,7 @@ function reunirDatosReporte(){
   ordenados.forEach(p=>{
     const animales = estado.potreros[p.nombre].animales;
     detalleAnimales(animales).forEach(d=>{
-      animalesRows.push([p.nombre, d.cat, d.dueno, d.cant]);
+      animalesRows.push([p.nombre, d.cat, textoFirma(d.dueno), d.cant]);
     });
   });
 
@@ -2463,8 +2464,8 @@ function reunirDatosReporte(){
         }
       });
     });
-    return [d, cant, ug.toFixed(1)];
-  });
+    return [textoFirma(d), cant, ug.toFixed(1)];
+  }).filter(row=>row[1]>0);
 
   const aguaRows = (estado.puntos||[]).filter(p=>p.tipo==='agua').map(p=>[p.nombre||p.subtipo, p.subtipo]);
   const instalRows = (estado.puntos||[]).filter(p=>p.tipo==='instalacion').map(p=>[p.nombre||p.subtipo, p.subtipo]);
@@ -2476,7 +2477,7 @@ function reunirDatosReporte(){
 
   const transacciones = estado.transacciones || [];
   const transaccionesRows = transacciones.map(t=>[
-    t.fecha, t.potrero, t.tipo, t.categoria, t.dueno||'', t.cantidad,
+    t.fecha, t.potrero, t.tipo, t.categoria, textoFirma(t.dueno||''), t.cantidad,
     t.precioUnitario!=null?t.precioUnitario:'', t.total!=null?t.total.toFixed(0):'', t.contraparte||''
   ]);
   const totalComprado = transacciones.filter(t=>t.tipo==='Compra').reduce((s,t)=> s+(t.total||0),0);
@@ -2702,7 +2703,7 @@ async function cargarStock(){
   const vacios = ordenados.length - ocupados.length;
   let htmlPotreros = ocupados.length ? ocupados.map(p=>{
     const animales = estado.potreros[p.nombre].animales;
-    const categorias = detalleAnimales(animales).map(x=>`${x.cat} (${x.dueno}): ${x.cant}`).join(', ') || '—';
+    const categorias = detalleAnimales(animales).map(x=>`${x.cat} (${textoFirma(x.dueno)}): ${x.cant}`).join(', ') || '—';
     const total = totalPotrero(p.nombre);
     return `<div class="potrero-card"><div class="nombre"${total<0?' style="color:#d32f2f;"':''}>${p.nombre} — ${total} animal${total===1?'':'es'}</div><div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${categorias}</div></div>`;
   }).join('') : '<p style="font-size:12.5px;color:var(--texto-suave);">Ningún potrero tiene animales cargados.</p>';
@@ -2865,7 +2866,7 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', a
 
   const filas = ordenados.map(p=>{
     const animales = estado.potreros[p.nombre].animales;
-    const categorias = detalleAnimales(animales).map(x=>`${x.cat} (${x.dueno}): ${x.cant}`).join(', ') || '—';
+    const categorias = detalleAnimales(animales).map(x=>`${x.cat} (${textoFirma(x.dueno)}): ${x.cant}`).join(', ') || '—';
     const alertas = calcularAlertas(p.nombre).join(' / ') || '—';
     return [p.nombre, areaHa(p.nombre).toFixed(1), totalPotrero(p.nombre), categorias, cargaPotrero(p.nombre).toFixed(2), alertas];
   });
@@ -3067,6 +3068,7 @@ async function importarLimitesKML(archivo){
   if(actualizados || creados){
     if(creados) guardarEstado();
     actualizarTodo();
+    actualizarEtiquetasMapa();
     actualizarLimiteMapa();
     if(seleccionActual && placemarks.some(pm=>pm.nombre===seleccionActual)){
       seleccionarPotrero(seleccionActual);
