@@ -15,7 +15,7 @@ There are three establishments, each with a **PC** variant and a **móvil**
 | Folder | Establishment | Notes |
 |---|---|---|
 | `la-vuelta-pc/`, `la-vuelta-movil/` | La Vuelta | 31 paddocks, no owner-per-animal |
-| `maria-laura-pc/`, `maria-laura-movil/` | María Laura | 4 paddocks, **owner-per-animal** (`Dueño`) |
+| `maria-laura-pc/`, `maria-laura-movil/` | María Laura | 5 paddocks (Tajamar, Casco, Uno, Rincon, Manantial), **owner-per-animal** (`Dueño`) |
 | `pone-chico-pc/`, `pone-chico-movil/` | Pone Chico | newest establishment, starts with zero paddocks — they're added later via "Importar KML/KMZ" |
 | `la-vuelta-test/` | — | disposable clone of `la-vuelta-movil` for testing on a phone without touching real data; not kept in sync automatically |
 
@@ -50,9 +50,20 @@ The `.gitignore` excludes `probar_*.js`, `parchear_fecha.js`, `node_modules/`,
 live locally, never committed.
 
 **Deploy:** `git add` the changed folder(s), commit, `git push`. GitHub Pages
-serves `main` directly — no Actions workflow, no build. Changes are live in
-roughly 15–40 seconds; verify with `curl -H "Cache-Control: no-cache" <url>`
-rather than assuming an instant deploy.
+serves `main` directly — no build step. Changes are live in roughly 15–40
+seconds; verify with `curl -H "Cache-Control: no-cache" <url>` rather than
+assuming an instant deploy.
+
+**CI:** `.github/workflows/probar.yml` runs on every push/PR to `main` — 16
+jsdom test scripts (`tests/probar_*.js`, using `tests/package.json`'s pinned
+`jsdom@30.0.1`/`jszip@3.10.1`) against the published `index.html` files of
+whichever folders each script targets. These are the same scripts as
+`scripts/probar_*.js` in the `apps-potreros` skill — kept in sync by hand,
+no symlink. Two of them (`probar_pone_chico.js`, `probar_eliminar_potrero.js`)
+accept a `process.argv` file list with a hardcoded fallback. Check the actual
+Actions run after pushing — "works on my machine" isn't enough; a Node
+version or YAML-parsing mismatch has broken this CI before without any local
+symptom.
 
 **Before shipping any change**, bump the version in two places or a device
 that already installed the app as a PWA keeps serving the stale cached
@@ -145,6 +156,43 @@ shape was overwritten by mistake) — it never mutates the original
 
 None of this — new paddocks, edited boundaries, or deletions — syncs across
 devices. It's local to whichever phone/PC performed the import.
+
+**Renaming a paddock already in `POTREROS_GEO` is not a plain string
+replace.** María Laura's "Cerro" was renamed to "Rincon" (same land,
+mis-named since the original data load) — since `eventos_sync` rows are
+immutable and every device has its own `localStorage` cache keyed by the old
+name, the rename needed two mechanisms: a one-time migration in
+`cargarEstado()` (renames an already-cached `estado.potreros['Cerro']` key
+before the "ensure every `POTREROS_GEO` entry exists" loop would otherwise
+create an empty new one) and a `NOMBRES_VIEJOS_POTRERO` alias applied at the
+top of `aplicarEventoRemoto()` (so a device with no local cache replaying
+historical events that still say `"Cerro"` redirects them to `"Rincon"`
+instead of silently dropping them). Any future paddock rename needs both.
+
+### Sanidad ("+ Cargar tratamiento")
+
+Each establishment logs animal-health treatments differently, and this is
+**separate from `eventos_sync`** — a treatment record never touches
+`estado.potreros`, so it has its own Supabase table(s) and its own offline
+queue (`estado.colaSanidad` / `guardarSanidadCarga()` / `vaciarColaSanidad()`,
+called from `sincronizar()` right after `vaciarColaSync()`).
+
+- **La Vuelta**: writes to `sanidad_carga` (shared table, filtered by an
+  `establecimiento` column) and still has a real bridge to an external Excel
+  workbook (outside this repo) — `importado_en` tracks whether a row has been
+  picked up by that bridge, and the "Mis cargas recientes" tri-state UI
+  (`sanidad-mis-cargas`) reflects it.
+- **María Laura and Pone Chico**: each has its own dedicated table
+  (`sanidad_carga_maria_laura`, `sanidad_carga_pone_chico` — same schema
+  minus `establecimiento` and `importado_en`, since the table itself
+  identifies the establishment and there's no Excel bridge to track). The
+  app derives the table name as `TABLA_SANIDAD = 'sanidad_carga_' +
+  ESTABLECIMIENTO` and both reads and writes go straight there — no
+  tri-state UI, just one unified `sanidad-lista`.
+- `productos_catalogo` (product dropdown in the treatment form) **is**
+  shared across all three establishments on purpose — it's a reference list,
+  not an operational record, and María Laura/Pone Chico sync their catalog
+  from La Vuelta's.
 
 ### PWA / offline
 
