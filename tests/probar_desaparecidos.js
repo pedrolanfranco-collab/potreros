@@ -118,7 +118,9 @@ async function probarArchivo(archivo, tieneDueno){
   const nombres = Object.keys(est.potreros);
   const origen = nombres[0], destino = nombres[1];
   const categoria = 'Vaquillonas 1-2 años';
-  const key = tieneDueno ? categoria + '||Pedro' : categoria;
+  // 11/9/2026: las 6 apps ya usan clave compuesta "categoria||firma"; sin
+  // "tieneDueno" (María Laura/Pone Chico) cae en la firma vacía.
+  const key = tieneDueno ? categoria + '||Pedro' : categoria + '||';
 
   // Estado conocido: 3 Vaquillonas en el origen, nada en el destino.
   [origen, destino].forEach(n => Object.keys(est.potreros[n].animales).forEach(k => est.potreros[n].animales[k]=0));

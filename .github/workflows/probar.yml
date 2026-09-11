@@ -70,3 +70,6 @@ jobs:
 
       - name: Desaparecido -- resta, caso abierto parcial/total, Encontrado a otro potrero, Perdida, sincronizado, borrar revierte
         run: node tests/probar_desaparecidos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: Firma en La Vuelta -- migracion de claves sin firma, formularios opcionales, Dueno sigue obligatorio en Maria Laura/Pone Chico
+        run: node tests/probar_firma_la_vuelta.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html

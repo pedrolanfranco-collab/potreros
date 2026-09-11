@@ -84,8 +84,10 @@ async function probarArchivo(archivo, tieneDueno){
   const doc = win.document;
   if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
 
-  const claveVacas = tieneDueno ? 'Vacas||Pedro' : 'Vacas';
-  const claveTerneros = tieneDueno ? 'Terneros||Pedro' : 'Terneros';
+  // 11/9/2026: las 6 apps ya usan clave compuesta "categoria||firma"; sin
+  // "tieneDueno" (María Laura/Pone Chico) cae en la firma vacía.
+  const claveVacas = tieneDueno ? 'Vacas||Pedro' : 'Vacas||';
+  const claveTerneros = tieneDueno ? 'Terneros||Pedro' : 'Terneros||';
   const est = win.__est();
   const potreros = Object.keys(est.potreros);
   const origen = potreros[0], destino = potreros[1];

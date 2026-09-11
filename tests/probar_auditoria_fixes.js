@@ -128,7 +128,11 @@ async function probarVozBorrable(archivo, tieneDueno){
   const potreros = Object.keys(est.potreros);
   const p = potreros[0];
   Object.keys(est.potreros[p].animales).forEach(k=> est.potreros[p].animales[k]=0);
-  const claveVacas = tieneDueno ? 'Vacas||Pedro' : 'Vacas';
+  // 11/9/2026: las 6 apps ya usan clave compuesta "categoria||firma" -- la
+  // voz no pregunta la firma en ninguna, así que sin "tieneDueno" (María
+  // Laura/Pone Chico) la carga cae en la firma vacía "Vacas||" en vez de
+  // la clave pelada vieja "Vacas".
+  const claveVacas = tieneDueno ? 'Vacas||Pedro' : 'Vacas||';
 
   win.renderInterpretacionVoz(win.__parseVoz(`agregar 8 vacas en el ${p}`));
   doc.getElementById('vz-accion').value = 'nacimiento';

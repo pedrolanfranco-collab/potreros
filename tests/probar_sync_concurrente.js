@@ -115,7 +115,9 @@ async function probarArchivo(archivo){
   const potrero = Object.keys(win.__est().potreros)[0];
   eventos[0].potrero = potrero;
   if(tieneDueno) eventos[0].detalle.dueno = 'Pedro';
-  const claveVacas = tieneDueno ? 'Vacas||Pedro' : 'Vacas';
+  // 11/9/2026: las 6 apps ya usan clave compuesta "categoria||firma"; sin
+  // "tieneDueno" (María Laura/Pone Chico) cae en la firma vacía.
+  const claveVacas = tieneDueno ? 'Vacas||Pedro' : 'Vacas||';
 
   // Relanzar con el potrero real y latencia de red de 40ms -- simula el caso
   // real: actualizarEstadoConexion() dispara sincronizar() al cargar, y 1.5s
