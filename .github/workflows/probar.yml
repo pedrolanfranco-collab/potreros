@@ -67,3 +67,6 @@ jobs:
 
       - name: Maria Laura -- "Cerro" renombrado a "Rincon" (migra datos guardados y traduce eventos viejos)
         run: node tests/probar_renombrar_cerro_rincon.js maria-laura-pc/index.html maria-laura-movil/index.html
+
+      - name: Desaparecido -- resta, caso abierto parcial/total, Encontrado a otro potrero, Perdida, sincronizado, borrar revierte
+        run: node tests/probar_desaparecidos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html

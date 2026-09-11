@@ -352,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.45 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.46 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -406,6 +406,7 @@
       <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
       <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
+      <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias</button>
@@ -439,6 +440,14 @@
     </div>
     <div id="alertas-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="alertas-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-desaparecidos" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>❓ Desaparecidos</h3>
+    <p class="modal-info">Animales que salieron del potrero sin que sepas dónde están (cruzaron a otro campo, etc.) — resolvé acá cuando aparezcan, o dalos por perdidos si no vuelven.</p>
+    <div id="desaparecidos-lista"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="desaparecidos-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="modal-sanidad" class="modal-overlay" style="display:none;">
@@ -1015,6 +1024,40 @@ function aplicarEventoRemoto(row){
     return;
   }
 
+  if(row.tipo === 'desaparecido'){
+    const key = claveAnimal(d.categoria, d.dueno);
+    const a = estado.potreros[potrero].animales;
+    const totalAntes = totalPotrero(potrero);
+    a[key] = Math.max(0, (a[key]||0) - d.cantidad);
+    registrarCambioOcupacion(potrero, totalAntes);
+    const detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}${d.obs?' — '+d.obs:''}`;
+    const entry = registrarHistorial(potrero, 'desaparecido', `Desaparecido (sincronizado): ${detalleTxt} (buscando)`, undefined, undefined, fechaEvt);
+    entry.origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, obs: d.obs||null};
+    // Id explícito (no el autogenerado) para que "encontrado"/"perdida" lo
+    // puedan referenciar desde cualquier dispositivo -- ver lección del
+    // 9/9/2026 sobre historialId no determinista en la memoria del proyecto.
+    entry.id = d.casoId;
+    return;
+  }
+
+  if(row.tipo === 'encontrado' || row.tipo === 'perdida'){
+    if(row.tipo === 'encontrado'){
+      const key = claveAnimal(d.categoria, d.dueno);
+      const a = estado.potreros[potrero].animales;
+      const totalAntes = totalPotrero(potrero);
+      a[key] = (a[key]||0) + d.cantidad;
+      registrarCambioOcupacion(potrero, totalAntes);
+    }
+    const detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}`;
+    const texto = row.tipo==='encontrado'
+      ? `Encontrado (sincronizado): +${detalleTxt}`
+      : `Pérdida confirmada (sincronizada): ${detalleTxt} (no vuelven)`;
+    const entry = registrarHistorial(potrero, row.tipo, texto, undefined, undefined, fechaEvt);
+    entry.origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null};
+    entry.casoId = d.casoId;
+    return;
+  }
+
   const key = claveAnimal(d.categoria, d.dueno);
   const a = estado.potreros[potrero].animales;
   const totalAntes = totalPotrero(potrero);
@@ -1203,6 +1246,44 @@ function calcularAlertas(nombre){
   }
   return alertas;
 }
+/* Casos de animales "desaparecidos" (cruzaron a otro campo, etc.) todavía
+   sin resolver del todo. No es un array de estado nuevo -- se calcula
+   leyendo el historial (mismo criterio que el resto del proyecto: el log
+   de eventos es la fuente de la verdad), así que corre igual en cualquier
+   dispositivo, no solo en el que originó el caso (que es el único con
+   "extra" -- por eso también se lee "origDatos", que sí llega remoto). */
+function listarCasosDesaparecidos(){
+  const casos = [];
+  POTREROS_GEO.forEach(p=>{
+    (estado.potreros[p.nombre].historial||[]).forEach(h=>{
+      if(h.tipo==='desaparecido' && !h.eliminado){
+        const datos = h.extra || h.origDatos || {};
+        casos.push({
+          casoId: h.id,
+          potreroOrigen: p.nombre,
+          categoria: datos.categoria,
+          dueno: datos.dueno || null,
+          cantidadOriginal: datos.cantidad || 0,
+          fecha: h.fecha,
+          obs: datos.obs || null
+        });
+      }
+    });
+  });
+  casos.forEach(caso=>{
+    let resuelto = 0;
+    POTREROS_GEO.forEach(p=>{
+      (estado.potreros[p.nombre].historial||[]).forEach(h=>{
+        if((h.tipo==='encontrado' || h.tipo==='perdida') && h.casoId===caso.casoId && !h.eliminado){
+          const datos = h.extra || h.origDatos || {};
+          resuelto += datos.cantidad || 0;
+        }
+      });
+    });
+    caso.pendiente = caso.cantidadOriginal - resuelto;
+  });
+  return casos.filter(c=>c.pendiente>0);
+}
 function toast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1288,6 +1369,23 @@ function construirAjusteInverso(h){
   if(h.tipo==='movimiento_multi'){
     return {tipo:'mover_multi', origen: e.destino, destino: e.potrero, items: e.items};
   }
+  if(h.tipo==='desaparecido'){
+    // Borrar una desaparición devuelve el stock al potrero de origen -- mismo
+    // criterio que borrar una Muerte. Si el caso ya tenía resoluciones
+    // (Encontrado/Pérdida) asociadas, esas quedan huérfanas -- no se resuelve acá.
+    return {tipo:'sumar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
+  }
+  if(h.tipo==='encontrado'){
+    // Borrar un "Encontrado" saca esos animales de donde se habían sumado --
+    // el caso original vuelve a quedar pendiente por esa cantidad.
+    return {tipo:'restar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
+  }
+  if(h.tipo==='perdida'){
+    // "Pérdida" nunca tocó el stock (ya se había restado al declarar la
+    // desaparición) -- no hay nada que revertir en los animales, solo se
+    // tacha la entrada, y el caso vuelve a aparecer como pendiente.
+    return null;
+  }
   return null;
 }
 function ubicarHistorial(id){
@@ -1321,13 +1419,13 @@ function borrarHistorial(id){
   guardarEstado(); actualizarTodo(); renderDetalle(ub.potrero);
   toast('Movimiento eliminado y corregido');
 }
-const ACCION_POR_TIPO_HIST = {ingreso:'agregar', nacimiento:'nacimiento', muerte:'muerte', compra:'compraventa', venta:'compraventa'};
+const ACCION_POR_TIPO_HIST = {ingreso:'agregar', nacimiento:'nacimiento', muerte:'muerte', compra:'compraventa', venta:'compraventa', desaparecido:'desaparecido'};
 function editarHistorial(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || !ub.entry.extra) return;
   const h = ub.entry;
-  if(h.tipo==='movimiento' || h.tipo==='movimiento_todo' || h.tipo==='movimiento_multi'){
-    toast('Para corregir un movimiento entre potreros, borralo y volvé a cargarlo.');
+  if(h.tipo==='movimiento' || h.tipo==='movimiento_todo' || h.tipo==='movimiento_multi' || h.tipo==='encontrado' || h.tipo==='perdida'){
+    toast('Para corregir esto, borralo y volvé a cargarlo.');
     return;
   }
   if(!confirm('Esto va a borrar el movimiento actual y abrir el formulario para volver a cargarlo corregido. ¿Continuar?')) return;
@@ -1523,6 +1621,7 @@ function renderLista(filtro=''){
   cont.innerHTML = '';
   const f = filtro.trim().toLowerCase();
   const nombres = POTREROS_GEO.map(p=>p.nombre).filter(n=> n.toLowerCase().includes(f));
+  const casosAbiertos = listarCasosDesaparecidos();
 
   nombres.forEach(nombre=>{
     const total = totalPotrero(nombre);
@@ -1535,10 +1634,11 @@ function renderLista(filtro=''){
     const carga = cargaPotrero(nombre);
     const ocup = estadoOcupacion(nombre);
     const alertas = calcularAlertas(nombre);
+    const casosPotrero = casosAbiertos.filter(c=>c.potreroOrigen===nombre);
     card.innerHTML = `
       <div class="fila-top">
         <div>
-          <div class="nombre">${nombre} ${alertas.length ? '<span title="'+alertas.join(' · ')+'">⚠️</span>':''}</div>
+          <div class="nombre">${nombre} ${alertas.length ? '<span title="'+alertas.join(' · ')+'">⚠️</span>':''} ${casosPotrero.length ? '<span title="'+casosPotrero.map(c=>c.pendiente+' '+c.categoria+' desaparecidos').join(' · ')+'">❓</span>':''}</div>
           <div class="area">${areaHa(nombre).toFixed(1)} ha ${carga>0 ? `· <span class="carga-badge">${carga.toFixed(2)} UG/ha</span>` : ''}</div>
         </div>
         <div class="badge-total ${total===0?'vacio':''}"${total<0?' style="background:#d32f2f;color:#fff;"':''}>${total}</div>
@@ -1581,12 +1681,14 @@ function renderDetalle(nombre){
   const difiereArea = info.area && Math.abs(parseFloat(info.area) - areaCalc) / parseFloat(info.area) > 0.05;
   const ocup = estadoOcupacion(nombre);
   const alertasPotrero = calcularAlertas(nombre);
+  const casosPotrero = listarCasosDesaparecidos().filter(c=>c.potreroOrigen===nombre);
 
   det.innerHTML = `
     <div class="detalle-titulo"><h2>${nombre}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
     <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong></div>
     <div class="ocupacion-badge ocupacion-${ocup.tipo}" style="margin-bottom:10px;">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
     ${alertasPotrero.length ? `<div style="background:#fbe6d9;border-left:3px solid var(--rojo-hacienda);border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a3420;">${alertasPotrero.map(a=>'⚠️ '+a).join('<br>')}</div>` : ''}
+    ${casosPotrero.length ? `<div style="background:#fdf1de;border-left:3px solid #c68a3b;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a5220;">${casosPotrero.map(c=>`❓ ${c.pendiente} de ${c.cantidadOriginal} ${c.categoria}${c.dueno?' de '+c.dueno:''} desaparecidos desde ${c.fecha} — <span style="cursor:pointer;text-decoration:underline;" data-abrir-desaparecidos="1">resolver</span>`).join('<br>')}</div>` : ''}
 
     <table class="tabla-animales">
       <thead><tr><th>Categoría</th><th>Dueño</th><th style="text-align:right;">Cant.</th></tr></thead>
@@ -1601,6 +1703,7 @@ function renderDetalle(nombre){
       <button class="btn btn-mover" data-accion="mover">⇄ Mover una categoría</button>
       <button class="btn btn-nacimiento" data-accion="nacimiento">🐄 Nacimiento</button>
       <button class="btn btn-muerte" data-accion="muerte">✕ Muerte</button>
+      <button class="btn btn-muerte" data-accion="desaparecido">❓ Desaparecido</button>
       <button class="btn btn-compraventa btn-full" data-accion="compraventa">💰 Compra / Venta</button>
       <button class="btn btn-mover btn-full" data-accion="mover-todo" style="filter:brightness(0.9);">⇄⇄ Mover TODO el potrero</button>
     </div>
@@ -1615,7 +1718,7 @@ function renderDetalle(nombre){
           <span class="fecha">${h.fecha}</span> — ${h.detalle}
           ${(h.id && h.extra && !h.eliminado) ? `
           <span class="hist-acciones">
-            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi') ? `<button class="hist-btn" data-hist-editar="${h.id}" title="Editar">✏️</button>` : ''}
+            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida') ? `<button class="hist-btn" data-hist-editar="${h.id}" title="Editar">✏️</button>` : ''}
             <button class="hist-btn" data-hist-borrar="${h.id}" title="Borrar">🗑</button>
           </span>` : ''}
         </div>
@@ -1631,6 +1734,12 @@ function renderDetalle(nombre){
   });
   det.querySelectorAll('[data-hist-editar]').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarHistorial(btn.dataset.histEditar); });
+  });
+  det.querySelectorAll('[data-abrir-desaparecidos]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      renderDesaparecidosLista();
+      document.getElementById('modal-desaparecidos').style.display = 'flex';
+    });
   });
   document.getElementById('detalle-cerrar').addEventListener('click', cerrarDetalle);
   document.getElementById('btn-eliminar-potrero').addEventListener('click', ()=> eliminarPotrero(nombre));
@@ -2036,6 +2145,45 @@ function mostrarFormulario(nombre, accion, prefill){
       enviarEvento('muerte', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
       toast(`Muerte registrada en ${nombre}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
+
+  if(accion==='desaparecido'){
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Registrar desaparición en ${nombre}</h3>
+        <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Para un animal que salió del potrero sin que sepas dónde está (cruzó a otro campo, etc.) — se resta de acá y queda en 🛠 Herramientas › ❓ Desaparecidos hasta que aparezca o se dé por perdido.</p>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
+        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: cerca del vecino Fulano" value="${prefill&&prefill.obs?prefill.obs:''}"></div>
+        <div class="form-botones">
+          <button class="btn btn-muerte" id="f-confirmar">${prefill?'Guardar corrección':'Registrar desaparición'}</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const cat = document.getElementById('f-cat').value;
+      const dueno = document.getElementById('f-dueno').value;
+      const cant = parseInt(document.getElementById('f-cant').value,10);
+      const fechaISO = document.getElementById('f-fecha').value;
+      const obs = document.getElementById('f-obs').value.trim();
+      const a = estado.potreros[nombre].animales;
+      const key = claveAnimal(cat, dueno);
+      const disponibles = a[key] || 0;
+      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} de ${dueno} en ${nombre}`); return; }
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      const fecha = fechaISOaDisplay(fechaISO);
+      const totalAntes = totalPotrero(nombre);
+      a[key] -= cant;
+      registrarCambioOcupacion(nombre, totalAntes);
+      const entry = registrarHistorial(nombre, 'desaparecido', `Desaparecido: -${cant} ${cat} de ${dueno}${obs ? ' — '+obs : ''} (buscando)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
+      enviarEvento('desaparecido', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null, casoId: entry.id}, fecha);
+      guardarEstado(); actualizarTodo(); cerrarDetalle();
+      toast(`Desaparición registrada en ${nombre} — resolvela en 🛠 Herramientas › ❓ Desaparecidos`);
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
@@ -3165,6 +3313,92 @@ document.getElementById('al-guardar').addEventListener('click', ()=>{
   if(seleccionActual) renderDetalle(seleccionActual);
   renderAlertasLista();
   toast('Umbrales actualizados');
+});
+
+/* ======================= "❓ DESAPARECIDOS" (animales perdidos, buscando) =======================
+   No hay un array de estado nuevo: los casos se calculan leyendo el
+   historial (listarCasosDesaparecidos, más arriba). Resolver un caso
+   ("Encontrado"/"Pérdida") es simplemente registrar otro evento más,
+   igual que cualquier otra acción del proyecto. */
+function renderDesaparecidosLista(){
+  const cont = document.getElementById('desaparecidos-lista');
+  const casos = listarCasosDesaparecidos();
+  if(!casos.length){
+    cont.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">✅ No hay animales desaparecidos pendientes.</p>';
+    return;
+  }
+  cont.innerHTML = casos.map(c=>`
+    <div class="potrero-card">
+      <div class="nombre">❓ ${c.potreroOrigen}</div>
+      <div style="font-size:12px;color:#7a5220;margin-top:4px;">${c.pendiente} de ${c.cantidadOriginal} ${c.categoria}${c.dueno?' de '+c.dueno:''} desde ${c.fecha}${c.obs?' — '+c.obs:''}</div>
+      <div class="form-botones" style="margin-top:8px;">
+        <button class="btn btn-agregar" data-encontrado="${c.casoId}">✅ Encontrado</button>
+        <button class="btn btn-secundario" data-perdido="${c.casoId}" style="color:var(--rojo-hacienda);">❌ Dar por perdido</button>
+      </div>
+      <div id="form-resolver-${c.casoId}" style="display:none;margin-top:8px;"></div>
+    </div>
+  `).join('');
+  cont.querySelectorAll('[data-encontrado]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const caso = casos.find(c=>c.casoId===btn.dataset.encontrado);
+      if(caso) abrirFormularioEncontrado(caso);
+    });
+  });
+  cont.querySelectorAll('[data-perdido]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const caso = casos.find(c=>c.casoId===btn.dataset.perdido);
+      if(!caso) return;
+      if(!confirm(`¿Dar por perdido definitivamente: ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}? No se puede deshacer.`)) return;
+      const fecha = fechaHoy();
+      const entry = registrarHistorial(caso.potreroOrigen, 'perdida', `Pérdida confirmada: ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''} (no vuelven)`, {potrero: caso.potreroOrigen, categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, _fechaISO: fechaISOHoy()}, undefined, fecha);
+      entry.casoId = caso.casoId;
+      enviarEvento('perdida', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, casoId: caso.casoId}, fecha);
+      guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
+      if(seleccionActual) renderDetalle(seleccionActual);
+      toast('Caso cerrado como pérdida');
+    });
+  });
+}
+function abrirFormularioEncontrado(caso){
+  const cont = document.getElementById(`form-resolver-${caso.casoId}`);
+  cont.style.display = 'block';
+  cont.innerHTML = `
+    <div class="form-row"><label>Cantidad encontrada</label><input type="number" id="fe-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
+    <div class="form-row"><label>Potrero al que vuelve</label><select id="fe-potrero"><option value="${caso.potreroOrigen}">${caso.potreroOrigen} (de donde salió)</option>${opcionesPotreros(caso.potreroOrigen)}</select></div>
+    <div class="form-row"><label>Fecha</label><input type="date" id="fe-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="fe-confirmar">Confirmar</button>
+      <button class="btn btn-secundario" id="fe-cancelar">Cancelar</button>
+    </div>`;
+  document.getElementById('fe-confirmar').addEventListener('click', ()=>{
+    const cant = parseInt(document.getElementById('fe-cant').value,10);
+    const destino = document.getElementById('fe-potrero').value;
+    const fechaISO = document.getElementById('fe-fecha').value;
+    if(!cant || cant<1 || cant>caso.pendiente){ toast(`Ingresá una cantidad entre 1 y ${caso.pendiente}`); return; }
+    if(!fechaISO){ toast('Elegí una fecha'); return; }
+    const fecha = fechaISOaDisplay(fechaISO);
+    const totalAntes = totalPotrero(destino);
+    const a = estado.potreros[destino].animales;
+    const key = claveAnimal(caso.categoria, caso.dueno);
+    a[key] = (a[key]||0) + cant;
+    registrarCambioOcupacion(destino, totalAntes);
+    const entry = registrarHistorial(destino, 'encontrado', `Encontrado: +${cant} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''} (de la desaparición del ${caso.fecha} en ${caso.potreroOrigen})`, {potrero: destino, categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
+    entry.casoId = caso.casoId;
+    enviarEvento('encontrado', destino, {categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, casoId: caso.casoId}, fecha);
+    guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
+    if(seleccionActual) renderDetalle(seleccionActual);
+    toast(`Se sumaron ${cant} ${caso.categoria} a ${destino}`);
+  });
+  document.getElementById('fe-cancelar').addEventListener('click', ()=>{
+    cont.style.display = 'none'; cont.innerHTML = '';
+  });
+}
+document.getElementById('btn-desaparecidos').addEventListener('click', ()=>{
+  renderDesaparecidosLista();
+  document.getElementById('modal-desaparecidos').style.display = 'flex';
+});
+document.getElementById('desaparecidos-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-desaparecidos').style.display = 'none';
 });
 
 /* ======================= SANIDAD (base propia en Supabase, sin Excel) =======================
