@@ -14,8 +14,8 @@ There are three establishments, each with a **PC** variant and a **móvil**
 
 | Folder | Establishment | Notes |
 |---|---|---|
-| `la-vuelta-pc/`, `la-vuelta-movil/` | La Vuelta | 31 paddocks, no owner-per-animal |
-| `maria-laura-pc/`, `maria-laura-movil/` | María Laura | 5 paddocks (Tajamar, Casco, Uno, Rincon, Manantial), **owner-per-animal** (`Dueño`) |
+| `la-vuelta-pc/`, `la-vuelta-movil/` | La Vuelta | 31 paddocks, owner-per-animal as **optional** "Firma" (Pedro Lanfranco, Silvia Dutra, Fideicomiso, Walter Lanfranco) — for DICOSE, not a person-per-owner model like the other two |
+| `maria-laura-pc/`, `maria-laura-movil/` | María Laura | 5 paddocks (Tajamar, Casco, Uno, Rincon, Manantial), owner-per-animal as **required** `Dueño` |
 | `pone-chico-pc/`, `pone-chico-movil/` | Pone Chico | newest establishment, starts with zero paddocks — they're added later via "Importar KML/KMZ" |
 | `la-vuelta-test/` | — | disposable clone of `la-vuelta-movil` for testing on a phone without touching real data; not kept in sync automatically |
 
@@ -112,10 +112,21 @@ María Laura and Pone Chico additionally have a `DUEÑOS` section near the top.
   under `STORAGE_KEY`. `cargarEstado()`/`estadoInicial()` walk `POTREROS_GEO`
   to guarantee every paddock has an entry — see the initialization-order
   note below, it matters.
-- María Laura and Pone Chico key `animales` by `"categoria||dueño"`
-  (`claveAnimal()`/`partesClave()`) instead of bare category, since more than
-  one owner can have stock in the same paddock. La Vuelta has no owner
-  concept at all — don't assume `claveAnimal` exists there.
+- All three establishments key `animales` by `"categoria||dueño"`
+  (`claveAnimal()`/`partesClave()`/`detalleAnimales()`) instead of bare
+  category, since more than one owner/firm can have stock in the same
+  paddock. The only real difference is whether the field is required:
+  María Laura/Pone Chico's `opcionesDuenos()` has no blank option (the
+  field can't be left empty); La Vuelta's does (`<option value="">— sin
+  asignar —</option>`, selected by default) because its "Dueño" is
+  actually "Firma" (DICOSE bookkeeping) and most existing stock predates
+  it. La Vuelta's `partesClave()` deliberately returns the raw `dueno`
+  (possibly `""`), not a display fallback — several call sites round-trip
+  it back through `claveAnimal()` to build a new key, and baking a
+  display string like `"(sin firma)"` in there would corrupt that key. A
+  separate `textoFirma(dueno)` helper does the `dueno || '(sin firma)'`
+  formatting only at display sites. Bare-category legacy keys
+  (pre-11/9/2026) get migrated once on load by `migrarClavesSinFirma()`.
 
 ### Sync: Supabase, event-sourced
 
