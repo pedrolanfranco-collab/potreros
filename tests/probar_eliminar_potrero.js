@@ -52,14 +52,16 @@ function stubLeaflet(win){
     return o;
   };
   const mapa = {
-    _capas: new Set(), setView(){ return mapa; }, fitBounds(){ return mapa; }, on(){ return mapa; },
+    _capas: new Set(), _maxBoundsCalls: 0, setView(){ return mapa; }, fitBounds(){ return mapa; }, on(){ return mapa; },
     addLayer(l){ mapa._capas.add(l); return mapa; }, removeLayer(l){ mapa._capas.delete(l); return mapa; },
-    hasLayer(l){ return mapa._capas.has(l); }, getZoom(){ return 14; }, invalidateSize(){ return mapa; }
+    hasLayer(l){ return mapa._capas.has(l); }, getZoom(){ return 14; }, invalidateSize(){ return mapa; },
+    setMaxBounds(){ mapa._maxBoundsCalls++; return mapa; }
   };
+  win.__mapa = mapa;
   win.L = {
     map(){ return mapa; }, tileLayer(){ const c = capa(); mapa._capas.add(c); return c; },
     polygon(){ return capa(); }, marker(){ return capa(); }, circleMarker(){ return capa(); }, circle(){ return capa(); },
-    divIcon(){ return {}; }, latLng(a, b){ return { lat: a, lng: b }; }
+    divIcon(){ return {}; }, latLng(a, b){ return { lat: a, lng: b }; }, latLngBounds(){ return limites(); }
   };
 }
 
@@ -132,9 +134,12 @@ async function probarLaVuelta(archivo){
   win.__alerts = [];
 
   // 1c. Revertir límite importado sobre un potrero original
+  chequear('al arrancar con potreros ya se fijó un límite de paneo', win.__mapa._maxBoundsCalls >= 1);
+  const llamadasAntes = win.__mapa._maxBoundsCalls;
   const coordsNuevas = '-55.400,-31.390,0 -55.401,-31.391,0 -55.402,-31.389,0 -55.400,-31.390,0';
   const kmlTxt = kmlConPlacemarks([{ nombre: nombreOriginal, coords: coordsNuevas }]);
   await win.importarLimitesKML(archivoFalso('limites.kml', Buffer.from(kmlTxt, 'utf-8')));
+  chequear('Importar KML/KMZ recalcula el límite de paneo', win.__mapa._maxBoundsCalls > llamadasAntes);
   let guardado = JSON.parse(win.localStorage.getItem(win.__limitesKey()) || '{}');
   chequear('(previo) el límite importado quedó guardado', !!guardado[nombreOriginal]);
 
@@ -153,11 +158,13 @@ async function probarPoneChico(archivo){
   if(errores.length){ chequear('carga sin errores de JS', false, errores[0]); return; }
   chequear('carga sin errores de JS', true);
 
+  chequear('sin potreros todavía no hay límite de paneo', win.__mapa._maxBoundsCalls === 0);
   const coordsNuevas = '-55.400,-31.390,0 -55.401,-31.391,0 -55.402,-31.389,0 -55.400,-31.390,0';
   const kmlTxt = kmlConPlacemarks([{ nombre: 'Potrero Mal Importado', coords: coordsNuevas }]);
   win.__confirmRespuesta = true;
   await win.importarLimitesKML(archivoFalso('limites.kml', Buffer.from(kmlTxt, 'utf-8')));
   chequear('(previo) el potrero de prueba quedó creado', win.__potreros().some(p=>p.nombre==='Potrero Mal Importado'));
+  chequear('al crear el primer potrero por KML se fija el límite de paneo', win.__mapa._maxBoundsCalls >= 1);
 
   win.__confirmRespuesta = true;
   win.__alerts = [];

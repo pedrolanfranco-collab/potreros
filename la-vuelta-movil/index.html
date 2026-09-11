@@ -352,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.43</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v2.44</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1425,7 +1425,7 @@ function editarHistorial(id){
 }
 
 /* ======================= MAPA ======================= */
-const map = L.map('map', {zoomControl:true});
+const map = L.map('map', {zoomControl:true, maxBoundsViscosity:1.0});
 
 // Única capa base: satelital (Esri), se puede prender/apagar con el botón flotante.
 const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -1591,6 +1591,19 @@ POTREROS_GEO.forEach(p=>{
 });
 
 if(bounds.length) map.fitBounds(bounds, {padding:[20,20]});
+
+/* Límite de paneo: evita que el mapa quede "perdido" lejos del establecimiento
+   si alguien arrastra o hace zoom de más. Deja un margen (tolerancia) del 50%
+   del tamaño del establecimiento para todos los lados -- alcanza para ver un
+   poco del campo vecino (ej. al buscar un animal "❓ Desaparecido") pero no
+   para irse a otro lugar. Se recalcula también si "Importar KML/KMZ" cambia
+   los límites (ver importarLimitesKML). */
+function actualizarLimiteMapa(){
+  const puntos = [];
+  POTREROS_GEO.forEach(p=> puntos.push(...p.coords));
+  if(puntos.length) map.setMaxBounds(L.latLngBounds(puntos).pad(0.5));
+}
+actualizarLimiteMapa();
 
 /* ======================= PUNTOS (aguadas / instalaciones) ======================= */
 let modoColocarPunto = null; // {tipo, subtipo, nombre}
@@ -2323,6 +2336,7 @@ async function importarLimitesKML(archivo){
   if(actualizados || creados){
     if(creados) guardarEstado();
     actualizarTodo();
+    actualizarLimiteMapa();
     if(seleccionActual && placemarks.some(pm=>pm.nombre===seleccionActual)){
       seleccionarPotrero(seleccionActual);
     }

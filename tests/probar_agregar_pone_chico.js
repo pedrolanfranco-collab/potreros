@@ -40,10 +40,11 @@ function stubLeaflet(win){
   const mapa = { _capas: new Set(), setView(){ return mapa; }, fitBounds(){ return mapa; },
     on(){ return mapa; }, addLayer(l){ mapa._capas.add(l); return mapa; },
     removeLayer(l){ mapa._capas.delete(l); return mapa; }, hasLayer(l){ return mapa._capas.has(l); },
-    getZoom(){ return 14; }, invalidateSize(){ return mapa; } };
+    getZoom(){ return 14; }, invalidateSize(){ return mapa; }, setMaxBounds(){ return mapa; } };
   win.L = { map(){ return mapa; }, tileLayer(){ const c = capa(); mapa._capas.add(c); return c; },
     polygon(){ return capa(); }, marker(){ return capa(); }, circleMarker(){ return capa(); },
-    circle(){ return capa(); }, divIcon(){ return {}; }, latLng(a, b){ return { lat: a, lng: b }; } };
+    circle(){ return capa(); }, divIcon(){ return {}; }, latLng(a, b){ return { lat: a, lng: b }; },
+    latLngBounds(){ return limites(); } };
   win.JSZip = function(){ return { file(){}, generateAsync(){ return Promise.resolve(new win.Blob([])); } }; };
 }
 
