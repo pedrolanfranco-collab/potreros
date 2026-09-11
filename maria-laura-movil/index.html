@@ -352,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.41</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.42</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1796,6 +1796,12 @@ function opcionesCategorias(seleccionada){
     return `<optgroup label="${ESPECIE_LABEL[esp]}">${opts}</optgroup>`;
   }).join('');
 }
+/* Solo las categorías que pueden ser una cría recién nacida -- el desplegable
+   de "Nacimiento" no necesita las otras 16 categorías de adultos. */
+const CATEGORIAS_CRIA = ['Terneros','Terneras','Corderos/as','Potros/as'];
+function opcionesCategoriasNacimiento(seleccionada){
+  return CATEGORIAS_CRIA.map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
+}
 function opcionesPotreros(excluir){
   return POTREROS_GEO.map(p=>p.nombre).filter(n=>n!==excluir).sort().map(n=>`<option value="${n}">${n}</option>`).join('');
 }
@@ -2058,7 +2064,7 @@ function mostrarFormulario(nombre, accion, prefill){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Registrar nacimiento en ${nombre}</h3>
-        <div class="form-row"><label>Categoría de la cría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:'Terneros')}</select></div>
+        <div class="form-row"><label>Categoría de la cría</label><select id="f-cat">${opcionesCategoriasNacimiento(prefill?prefill.categoria:'Terneros')}</select></div>
         <div class="form-row"><label>Dueño (de la madre)</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>

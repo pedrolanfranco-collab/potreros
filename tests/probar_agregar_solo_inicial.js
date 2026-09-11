@@ -157,6 +157,12 @@ async function probarArchivo(archivo){
     win.seleccionarPotrero(conStock);
     win.mostrarFormulario(conStock, 'nacimiento');
     chequear('D: "nacimiento" se muestra igual con stock en el potrero', !!doc.getElementById('f-confirmar'));
+    const opcionesCria = Array.from(doc.getElementById('f-cat').options).map(o=>o.value);
+    chequear('D: la categoria de "nacimiento" solo ofrece crias (Terneros/Terneras/Corderos-as/Potros-as)',
+      opcionesCria.length === 4 && ['Terneros','Terneras','Corderos/as','Potros/as'].every(c=>opcionesCria.includes(c)),
+      JSON.stringify(opcionesCria));
+    chequear('D: la categoria de "nacimiento" NO ofrece categorias de adultos (ej. Vacas)',
+      !opcionesCria.includes('Vacas'));
   }
 
   // E) comando de voz: "agregar" bloqueado con stock, "nacimiento" libre
