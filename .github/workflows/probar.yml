@@ -24,7 +24,7 @@ jobs:
         run: node tests/probar_app.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
 
       - name: "+ Cargar tratamiento (Sanidad)"
-        run: node tests/probar_sanidad_carga.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
+        run: node tests/probar_sanidad_carga.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
 
       - name: Saldo negativo al mover
         run: node tests/probar_saldo_negativo.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
