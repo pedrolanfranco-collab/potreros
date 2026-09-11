@@ -64,3 +64,6 @@ jobs:
 
       - name: Una correccion sincronizada tacha el movimiento original (no deja una linea suelta)
         run: node tests/probar_correccion_marca_original.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: Maria Laura -- "Cerro" renombrado a "Rincon" (migra datos guardados y traduce eventos viejos)
+        run: node tests/probar_renombrar_cerro_rincon.js maria-laura-pc/index.html maria-laura-movil/index.html
