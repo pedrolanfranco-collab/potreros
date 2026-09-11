@@ -352,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.44 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.45 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -588,7 +588,7 @@ function totalPorEspecie(nombre){
 /* Cada animal es de un único dueño. Se guarda como clave compuesta "categoria||dueño"
    dentro del mismo objeto "animales" de cada potrero — así todo lo que ya suma/lee
    Object.entries(animales) sigue funcionando, solo hay que separar la clave donde haga falta. */
-const DUENOS = ["Silvia","Perico","Mili","Pedro","Juan Pablo"];
+const DUENOS = ["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"];
 function claveAnimal(cat, dueno){ return cat + '||' + dueno; }
 function partesClave(key){
   const [cat, dueno] = key.split('||');
