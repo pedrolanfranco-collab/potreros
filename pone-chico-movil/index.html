@@ -352,7 +352,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.18</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.19</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -489,6 +489,7 @@
     <h3>📊 Stock total</h3>
     <p class="modal-info">Categorías, animales por potrero, nacimientos y muertes de la temporada.</p>
     <div id="stock-resumen" style="font-size:12.5px;color:var(--texto-suave);margin-bottom:10px;"></div>
+    <div id="stock-desaparecidos-aviso"></div>
     <div id="stock-tabs" style="display:flex;gap:4px;margin-bottom:12px;">
       <button data-tab="0" class="stock-tab-btn">Categorías</button>
       <button data-tab="1" class="stock-tab-btn">Potreros</button>
@@ -1709,6 +1710,10 @@ function renderLista(filtro=''){
       <div class="ocupacion-badge ocupacion-${ocup.tipo}">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
       ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span${v<0?' style="color:#d32f2f;font-weight:700;"':''}>${k}: ${v}</span>`).join('')}</div>` : ''}
     `;
+    if(casosPotrero.length){
+      card.style.borderLeft = '4px solid #c68a3b';
+      card.style.background = '#fdf1de';
+    }
     card.addEventListener('click', ()=> seleccionarPotrero(nombre));
     cont.appendChild(card);
   });
@@ -3012,6 +3017,22 @@ async function cargarStock(){
   const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
   document.getElementById('stock-resumen').textContent =
     `${POTREROS_GEO.length} potreros · ${totalHa.toFixed(1)} ha · ${totalAnimales} animales · ${totalUGCampo.toFixed(1)} UG · ${dotacionGeneral.toFixed(2)} UG/ha`;
+
+  const casosStock = listarCasosDesaparecidos();
+  const avisoDesap = document.getElementById('stock-desaparecidos-aviso');
+  if(casosStock.length){
+    const totalPend = casosStock.reduce((s,c)=>s+c.pendiente,0);
+    avisoDesap.innerHTML = `<div style="background:#fdf1de;border-left:3px solid #c68a3b;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a5220;cursor:pointer;">
+      ❓ Faltan ${totalPend} animal${totalPend===1?'':'es'} (${casosStock.length} caso${casosStock.length===1?'':'s'} sin resolver) — ${casosStock.map(c=>`${c.pendiente} ${c.categoria}${c.dueno?' de '+c.dueno:''} en ${c.potreroOrigen}`).join(', ')}. <span style="text-decoration:underline;">Ver en Desaparecidos</span>
+    </div>`;
+    avisoDesap.querySelector('div').addEventListener('click', ()=>{
+      document.getElementById('modal-stock').style.display = 'none';
+      renderDesaparecidosLista();
+      document.getElementById('modal-desaparecidos').style.display = 'flex';
+    });
+  } else {
+    avisoDesap.innerHTML = '';
+  }
 
   const totalesPorCategoria = {};
   POTREROS_GEO.forEach(p=>{

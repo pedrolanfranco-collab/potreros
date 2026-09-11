@@ -87,7 +87,9 @@ async function levantar(archivo){
       '\n;window.__renderDesaparecidos = function(){ return renderDesaparecidosLista(); };' +
       '\n;window.__abrirEncontrado = function(caso){ return abrirFormularioEncontrado(caso); };' +
       '\n;window.__potrerosGeo = POTREROS_GEO;' +
-      '\n;window.__dibujarPotrero = function(p){ return dibujarPotrero(p); };');
+      '\n;window.__dibujarPotrero = function(p){ return dibujarPotrero(p); };' +
+      '\n;window.__cargarStock = function(){ return cargarStock(); };' +
+      '\n;window.__cardDe = function(nombre){ return Array.from(document.getElementById("lista-potreros").children).find(c=>c.querySelector(".nombre").textContent.trim().split(/\\s+/)[0]===nombre); };');
   }catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await new Promise(r => setTimeout(r, 60));
   return { win, errores };
@@ -137,6 +139,16 @@ async function probarArchivo(archivo, tieneDueno){
   chequear('el caso aparece en listarCasosDesaparecidos()', casos.length===1 && casos[0].pendiente===3,
     JSON.stringify(casos));
 
+  const cardOrigen = win.__cardDe(origen);
+  chequear('la tarjeta del potrero de origen queda destacada (borde + fondo)',
+    !!cardOrigen && !!cardOrigen.style.borderLeft && !!cardOrigen.style.background,
+    cardOrigen && JSON.stringify({borderLeft: cardOrigen.style.borderLeft, background: cardOrigen.style.background}));
+
+  await win.__cargarStock();
+  const avisoStock = doc.getElementById('stock-desaparecidos-aviso').innerHTML;
+  chequear('"Stock total" muestra el aviso de animales desaparecidos', /desaparecid/i.test(avisoStock) && /3/.test(avisoStock),
+    avisoStock);
+
   // 2) Resolver 1 de las 3, devuelto a un potrero DISTINTO del de origen
   //    (Pedro pidió poder elegir, no que vuelva siempre al mismo).
   win.__renderDesaparecidos();
@@ -166,6 +178,14 @@ async function probarArchivo(archivo, tieneDueno){
     !!entradaPerdida && /2/.test(entradaPerdida.detalle), entradaPerdida && entradaPerdida.detalle);
   chequear('"perdida" no volvió a tocar el stock de ningún potrero',
     (est.potreros[origen].animales[key]||0)===0 && (est.potreros[destino].animales[key]||0)===1);
+
+  const cardOrigenResuelto = win.__cardDe(origen);
+  chequear('con el caso resuelto, la tarjeta ya no queda destacada',
+    !!cardOrigenResuelto && !cardOrigenResuelto.style.borderLeft,
+    cardOrigenResuelto && cardOrigenResuelto.style.borderLeft);
+  await win.__cargarStock();
+  chequear('"Stock total" ya no muestra el aviso (caso resuelto)',
+    doc.getElementById('stock-desaparecidos-aviso').innerHTML.trim()==='');
 
   // 4) Un dispositivo que reconstruye todo desde cero, recibiendo los 3
   //    eventos en el mismo orden, tiene que llegar exactamente al mismo
