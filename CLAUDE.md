@@ -201,7 +201,9 @@ comments — grep for these to navigate: `DATOS DE POTREROS`, `SINCRONIZACIÓN`,
 One shared Supabase project (`skkknfjpwcstefcroqjt`) and one table,
 `eventos_sync`, used by every establishment, filtered by an `establecimiento`
 column (`.eq('establecimiento', ESTABLECIMIENTO)`) — not by separate
-tables/projects. RLS is open to `anon`; there is no login. It's an
+tables/projects. RLS is open to `anon`; there is no login (see "RLS real
+por tabla" below for what each table's policies actually allow — verified
+directly in Supabase, not assumed). It's an
 **event log, not a state sync**: every local change is applied locally *and*
 inserted as a row; each device pulls new rows on load and every ~3 minutes
 and replays them (`sincronizar()`), so replay order and offline queuing
@@ -320,6 +322,42 @@ called from `sincronizar()` right after `vaciarColaSync()`).
   only a same-device preview to avoid the bridge's delay. A product typed
   as free text (not in the catalog) shows nothing calculated, same
   graceful-degradation as the dropdown itself.
+
+### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
+
+RLS está **activado** (`relrowsecurity = true`) en las 7 tablas de este
+proyecto. Ninguna política filtra por `establecimiento` a nivel de base de
+datos — ese filtro (`.eq('establecimiento', ...)`) es solo del lado del
+cliente; la key pública puede en teoría leer/escribir filas de cualquier
+establecimiento en las tablas compartidas. Aceptado a propósito dado el
+modelo de amenaza real (todos los usuarios son la misma familia con la
+misma key pública, no hay login) — documentado acá para que quede explícito,
+no implícito.
+
+| Tabla | SELECT | INSERT | UPDATE | DELETE |
+|---|---|---|---|---|
+| `eventos_sync` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL", sin distinguir comando)* |
+| `productos_catalogo` | ✅ | ✅ | ❌ | ✅ |
+| `sanidad_carga` (La Vuelta) | ✅ | ✅ | ✅ | ❌ |
+| `sanidad_carga_maria_laura` | ✅ | ✅ | ❌ | ❌ |
+| `sanidad_carga_pone_chico` | ✅ | ✅ | ❌ | ❌ |
+| `sanidad_ultimos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
+| `sanidad_proximos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
+
+Dos cosas que explican comportamiento ya visto, no teoría:
+- **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del
+  12/9/2026 (ver memoria `planilla-sanitaria-v22`): un `PATCH` contra esa
+  tabla no da error, da `200` con cuerpo vacío — PostgREST no distingue
+  "bloqueado por RLS" de "no había ninguna fila para actualizar". El fix ya
+  aplicado en el script publicador es no usar `PATCH` nunca contra esta
+  tabla, solo `DELETE`+`POST` (que sí tienen política).
+- **`sanidad_carga_maria_laura`/`sanidad_carga_pone_chico` sin UPDATE ni
+  DELETE**: hoy la app solo inserta y lee de estas tablas (no hay "editar/
+  borrar una carga de Sanidad" para María Laura o Pone Chico, a diferencia
+  de La Vuelta). **Si alguna vez se agrega esa función para estos dos
+  establecimientos, agregar las políticas antes de escribir el código que
+  las asuma** — mismo error de secuencia (schema/permisos antes que
+  código) que ya pasó una vez.
 
 ### PWA / offline
 
