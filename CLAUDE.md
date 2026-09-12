@@ -63,24 +63,35 @@ assuming an instant deploy.
 step: `node template/generar.js --check` — regenerates all 6 files in memory
 and fails the build if any committed `index.html` doesn't match (someone
 edited a generated file by hand, or edited the template/configs without
-regenerating). After that, 19 jsdom test scripts (`tests/probar_*.js`, using
+regenerating), and also fails if any `sw.js`'s `CACHE` doesn't match the
+config's version (someone bumped the version but forgot to regenerate).
+After that, 19 jsdom test scripts (`tests/probar_*.js`, using
 `tests/package.json`'s pinned `jsdom@30.0.1`/`jszip@3.10.1`) run against the
 published `index.html` files of whichever folders each script targets. These
 are the same scripts as `scripts/probar_*.js` in the `apps-potreros` skill —
-kept in sync by hand, no symlink. Two of them (`probar_pone_chico.js`,
+kept in sync with `node tests/sync-skill.js` (`--check` to only verify,
+no args to copy `tests/probar_*.js` → the skill; no symlink, since they're
+different filesystem roots for different tools). This only runs locally —
+GitHub Actions has no access to the skill's path on Pedro's machine, so it
+can't be a CI step; run it by hand before committing a test change. Two of
+them (`probar_pone_chico.js`,
 `probar_eliminar_potrero.js`) accept a `process.argv` file list with a
 hardcoded fallback. Check the actual Actions run after pushing — "works on
 my machine" isn't enough; a Node version or YAML-parsing mismatch has broken
 this CI before without any local symptom.
 
-**Before shipping any change**, bump the version in three places or a device
-that already installed the app as a PWA keeps serving the stale cached
-version indefinitely:
+**Before shipping any change**, bump the version or a device that already
+installed the app as a PWA keeps serving the stale cached version
+indefinitely:
 1. `versionPc`/`versionMovil` in that establishment's `template/configs/<nombre>.js`.
 2. Re-run `node template/generar.js` (writes the 6 `index.html` **and** the
-   6 OneDrive master files Pedro also keeps in sync).
-3. The `CACHE` constant at the top of that folder's `sw.js` (e.g.
-   `'la-vuelta-movil-v2.21'`) — **not** generated, still bumped by hand.
+   6 OneDrive master files Pedro also keeps in sync). Since 12/9/2026 this
+   **also** rewrites the `CACHE` constant at the top of that folder's
+   `sw.js` (e.g. `'la-vuelta-movil-v2.21'`) to match — nothing else in
+   `sw.js` is touched or generated (`PRECACHE_URLS` and the listeners stay
+   hand-maintained per folder). `--check` fails if any `sw.js`'s `CACHE`
+   is out of sync with its config, same as it does for a hand-edited
+   `index.html`.
 
 ## Architecture
 

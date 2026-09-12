@@ -8,7 +8,17 @@
  *                                        lo que generaría no coincide con lo
  *                                        que ya está en el repo (detecta un
  *                                        index.html tocado a mano en vez del
- *                                        template).
+ *                                        template), o si el CACHE de algún
+ *                                        sw.js quedó desalineado de la
+ *                                        versión del config.
+ *
+ * El `CACHE` de cada `sw.js` (el resto del archivo no se toca -- no sale
+ * del template, cada uno tiene su propia lista de PRECACHE_URLS) se
+ * mantiene igual a `<establecimiento>-<pc|movil>-v<versión>` acá mismo,
+ * para no depender de acordarse de subirlo a mano en cada deploy (12/9/2026,
+ * P1 de la auditoría de 3 IAs -- antes de esto, un deploy con HTML nuevo y
+ * CACHE viejo dejaba a los dispositivos que ya instalaron la PWA sirviendo
+ * la versión vieja indefinidamente, sin que --check lo detectara).
  *
  * Cada establecimiento tiene su config en configs/<nombre>.js. El template usa
  * dos mecanismos:
@@ -97,6 +107,17 @@ function generar(templateText, config, variant) {
   return texto;
 }
 
+function cacheEsperado(est, variant) {
+  const version = variant === 'pc' ? est.config.versionPc : est.config.versionMovil;
+  return `${est.nombre}-${variant === 'movil' ? 'movil' : 'pc'}-v${version}`;
+}
+
+// Reemplaza solo la línea "const CACHE = '...';" -- el resto de sw.js
+// (PRECACHE_URLS, los listeners) no sale del template y no se toca acá.
+function actualizarCacheSw(swText, cacheValue) {
+  return swText.replace(/const CACHE = '[^']*';/, `const CACHE = '${cacheValue}';`);
+}
+
 function main() {
   const check = process.argv.includes('--check');
   // El template puede tener CRLF (se edita en Windows) -- se normaliza a LF
@@ -115,6 +136,8 @@ function main() {
       const salida = generar(templateText, est.config, variant);
       const repoPath = path.join(REPO_DIR, est.repoDir[variant], 'index.html');
       const onedrivePath = path.join(ONEDRIVE_DIR, est.onedrive[variant]);
+      const swPath = path.join(REPO_DIR, est.repoDir[variant], 'sw.js');
+      const cacheValue = cacheEsperado(est, variant);
 
       if (check) {
         const actual = fs.existsSync(repoPath) ? fs.readFileSync(repoPath, 'utf-8').replace(/\r\n/g, '\n') : null;
@@ -124,11 +147,29 @@ function main() {
         } else {
           console.log(`OK: ${repoPath}`);
         }
+
+        const swActual = fs.existsSync(swPath) ? fs.readFileSync(swPath, 'utf-8') : null;
+        const cacheActual = swActual && (swActual.match(/const CACHE = '([^']*)';/) || [])[1];
+        if (cacheActual !== cacheValue) {
+          algunoDistinto = true;
+          console.error(`DISTINTO: ${swPath} tiene CACHE='${cacheActual}', esperaba '${cacheValue}'.`);
+        } else {
+          console.log(`OK: ${swPath}`);
+        }
       } else {
         fs.writeFileSync(repoPath, salida, 'utf-8');
         console.log(`escrito: ${repoPath} (${salida.length} caracteres)`);
         fs.writeFileSync(onedrivePath, salida, 'utf-8');
         console.log(`escrito: ${onedrivePath} (${salida.length} caracteres)`);
+
+        if (fs.existsSync(swPath)) {
+          const swTextOriginal = fs.readFileSync(swPath, 'utf-8');
+          const swTextNuevo = actualizarCacheSw(swTextOriginal, cacheValue);
+          if (swTextNuevo !== swTextOriginal) {
+            fs.writeFileSync(swPath, swTextNuevo, 'utf-8');
+            console.log(`escrito: ${swPath} (CACHE='${cacheValue}')`);
+          }
+        }
       }
     }
   }
