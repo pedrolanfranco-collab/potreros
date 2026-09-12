@@ -99,22 +99,25 @@ function generar(templateText, config, variant) {
 
 function main() {
   const check = process.argv.includes('--check');
-  // Los 6 archivos reales usan fin de línea CRLF (Windows). Se normaliza a LF
-  // para que los marcadores (que buscan "\n") funcionen sin importar el CRLF,
-  // y se vuelve a CRLF recién al escribir -- mismo patrón que el modo texto
-  // de Python (universal newlines) usado para armar este template.
+  // El template puede tener CRLF (se edita en Windows) -- se normaliza a LF
+  // para que los marcadores (que buscan "\n") funcionen sin importar eso, y
+  // la salida queda en LF siempre. Windows/git pueden mostrar CRLF en la
+  // copia local (core.autocrlf) sin que eso importe: es HTML/JS, el fin de
+  // línea no afecta nada servido al navegador. Lo que sí importa es no
+  // comparar CRLF contra LF en --check -- por eso "actual" también se
+  // normaliza antes de comparar (así da lo mismo en qué SO corra CI).
   const templateText = fs.readFileSync(TEMPLATE_PATH, 'utf-8').replace(/\r\n/g, '\n');
 
   let algunoDistinto = false;
 
   for (const est of ESTABLECIMIENTOS) {
     for (const variant of ['pc', 'movil']) {
-      const salida = generar(templateText, est.config, variant).replace(/\n/g, '\r\n');
+      const salida = generar(templateText, est.config, variant);
       const repoPath = path.join(REPO_DIR, est.repoDir[variant], 'index.html');
       const onedrivePath = path.join(ONEDRIVE_DIR, est.onedrive[variant]);
 
       if (check) {
-        const actual = fs.existsSync(repoPath) ? fs.readFileSync(repoPath, 'utf-8') : null;
+        const actual = fs.existsSync(repoPath) ? fs.readFileSync(repoPath, 'utf-8').replace(/\r\n/g, '\n') : null;
         if (actual !== salida) {
           algunoDistinto = true;
           console.error(`DISTINTO: ${repoPath} no coincide con lo que generaría el template.`);
