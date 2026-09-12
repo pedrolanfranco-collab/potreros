@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- ARCHIVO GENERADO por template/generar.js -- no editar a mano. Editar template/potreros.template.html o template/configs/*.js y correr `node template/generar.js`. -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -352,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.49 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.50 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -458,7 +459,7 @@
     <div id="form-sanidad" style="display:none;margin-bottom:12px;">
       <div class="form-row"><label>Fecha</label><input type="date" id="sc-fecha"></div>
       <div class="form-row"><label>Categoría</label><select id="sc-categoria"></select></div>
-      <div class="form-row"><label>Dueño</label><select id="sc-dueno"></select></div>
+      <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="sc-dueno"></select></div>
       <div class="form-row"><label>Potrero</label><select id="sc-potrero"></select></div>
       <div class="form-row"><label>Cantidad</label><input type="number" id="sc-cantidad" min="1"></div>
       <div class="form-row"><label>Gen (opcional)</label><input type="number" id="sc-gen" min="0"></div>
@@ -539,8 +540,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.50","versionMovil":"2.49","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
-const POTREROS_GEO = [{"nombre": "Tajamar", "area": "105", "coords": [[-31.9862405289836, -56.3413776051438], [-31.9875842735414, -56.3411138608048], [-31.9956046143929, -56.3463879824331], [-31.9985447867797, -56.3397262183214], [-31.9852255759918, -56.3312299917146], [-31.9850217616419, -56.3315872525512], [-31.986185516626, -56.3413717510553], [-31.9862405289836, -56.3413776051438]]}, {"nombre": "Casco", "area": "", "coords": [[-31.9838554895387, -56.3425870583613], [-31.9823980139953, -56.3408467316838], [-31.9832407140343, -56.3399894100099], [-31.9837301507294, -56.3408410105815], [-31.98425969917, -56.3406593319481], [-31.9858344421215, -56.3403685160856], [-31.9860592736037, -56.3419635482279], [-31.9838505413426, -56.3426213908869], [-31.9838554895387, -56.3425870583613]]}, {"nombre": "Uno", "area": "151", "coords": [[-31.93576959567678, -56.4081291624744], [-31.9452875874814, -56.38622311645682], [-31.95136253376021, -56.39002286388637], [-31.94126865468329, -56.40844213011457], [-31.94065616020247, -56.41013853247393], [-31.93752597951533, -56.40991766834384], [-31.93576959567678, -56.4081291624744]]}, {"nombre": "Rincon", "area": "", "coords": [[-31.9837039062187, -56.3474209372114], [-31.9761150263722, -56.3533599701717], [-31.9740168257515, -56.3469270962241], [-31.9674262617362, -56.3522446535181], [-31.9726961364739, -56.3621352293382], [-31.9843417778031, -56.3530215211435], [-31.9837365791426, -56.3516130696197], [-31.9837365791426, -56.3516130696197], [-31.9837039062187, -56.3474209372114]]}, {"nombre": "Manantial", "area": "", "coords": [[-31.984339782685, -56.3529940644301], [-31.9837518314776, -56.3516013339718], [-31.9836975228147, -56.3474322547496], [-31.9864206064913, -56.3453221543545], [-31.986987541999, -56.3509442280919], [-31.984339782685, -56.3529940644301]]}];
+const POTREROS_GEO = CONFIG.potrerosGeo;
 
 /* Categorías por especie con coeficiente de Unidad Ganadera (UG) por defecto.
    Referencia estándar usada en Uruguay (INIA / Plan Agropecuario, base 1 UG = vaca de cría de ~400-450kg).
@@ -594,19 +596,20 @@ function totalPorEspecie(nombre){
   return out;
 }
 
-/* ======================= DUEÑOS (característica propia de María Laura) ======================= */
+/* ======================= DUEÑOS/FIRMA (config por establecimiento -- ver CONFIG.duenoLabel/duenoObligatorio) ======================= */
 /* Cada animal es de un único dueño. Se guarda como clave compuesta "categoria||dueño"
    dentro del mismo objeto "animales" de cada potrero — así todo lo que ya suma/lee
    Object.entries(animales) sigue funcionando, solo hay que separar la clave donde haga falta. */
-const DUENOS = ["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"];
-function claveAnimal(cat, dueno){ return cat + '||' + dueno; }
+const DUENOS = CONFIG.duenos;
+function claveAnimal(cat, dueno){ return cat + '||' + (dueno || ''); }
 function partesClave(key){
   const [cat, dueno] = key.split('||');
   return {cat, dueno: dueno || ''};
 }
-function textoFirma(dueno){ return dueno || '(sin dueño)'; }
+function textoFirma(dueno){ return dueno || CONFIG.textoSinAsignar; }
 function opcionesDuenos(seleccionado){
-  return DUENOS.map(d=>`<option value="${d}" ${d===seleccionado?'selected':''}>${d}</option>`).join('');
+  const enBlanco = CONFIG.duenoObligatorio ? '' : `<option value="" ${!seleccionado?'selected':''}>— sin asignar —</option>`;
+  return enBlanco + DUENOS.map(d=>`<option value="${d}" ${d===seleccionado?'selected':''}>${d}</option>`).join('');
 }
 /* Agrupa el objeto "animales" (claves compuestas) en totales por categoría, para las
    vistas que solo necesitan el total (mini-cats, tabla resumen, KMZ, MD, exportaciones). */
@@ -626,16 +629,40 @@ function detalleAnimales(animales){
     return {cat, dueno, cant};
   });
 }
+/* Migración de una sola vez: si alguna vez se guardó una clave de "animales"
+   sin "||" (categoría pelada, de antes de que este establecimiento tuviera
+   dueño/firma), se renombra a "clave||" (conservando la cantidad -- "sin
+   asignar" es exactamente lo que esa clave ya significaba). Idempotente --
+   si ya migró, o el establecimiento siempre usó claves compuestas (como
+   CARGA_INICIAL_SEED de María Laura/Pone Chico), no hay nada que hacer. */
+function migrarClavesSinFirma(potreros){
+  let migro = false;
+  Object.values(potreros).forEach(p=>{
+    if(!p || !p.animales) return;
+    Object.keys(p.animales).forEach(key=>{
+      if(key.includes('||')) return;
+      const nueva = key + '||';
+      p.animales[nueva] = (p.animales[nueva]||0) + p.animales[key];
+      delete p.animales[key];
+      migro = true;
+    });
+  });
+  return migro;
+}
 
 /* Puntos de referencia (bebederos, llaves, tanques) extraídos del monitor hidráulico —
    se cargan una sola vez con el botón "Cargar puntos de referencia" en el modal de puntos. */
-const PUNTOS_SEED = [];
-const STORAGE_KEY = "maria_laura_potreros_v1";
+const PUNTOS_SEED = CONFIG.puntosSeed;
+const STORAGE_KEY = CONFIG.storageKey;
 
 /* ======================= SINCRONIZACIÓN (Supabase) ======================= */
 const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
-const ESTABLECIMIENTO = 'maria_laura';
+const ESTABLECIMIENTO = CONFIG.establecimiento;
+/* Vacas preñadas de la temporada, según el tacto -- si el establecimiento no
+   lo declara (0 u opcional), se estima contando la categoría "Vacas" del stock
+   (no distingue preñadas de vacías, pero es lo único disponible). */
+const VACAS_PRENADAS_TEMPORADA = CONFIG.vacasPrenadasTemporada || 0;
 
 /* Potreros creados por "Importar KML/KMZ" cuando un nombre del archivo no
    coincidía con ninguno existente (ver más abajo, importarLimitesKML). Se
@@ -672,12 +699,13 @@ const CONFIG_DEFAULT = { cargaMaxima: 1.3, diasOcupacionMax: 5 };
 /* Carga inicial (de la planilla de animales) — se aplica UNA sola vez, la primera vez
    que se abre la app sin datos guardados todavía. Si ya hay datos en este navegador
    (localStorage), esto no se toca ni se pisa. */
-const CARGA_INICIAL_SEED = {"Uno": {"animales": {"Novillitos 1-2 años||Silvia": 18}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}], "fechaIngreso": "2026-08-20"}, "Tajamar": {"animales": {"Vacas||Silvia": 1, "Vaquillonas 1-2 años||Silvia": 4, "Novillitos 1-2 años||Silvia": 5}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}], "fechaIngreso": "2026-08-20"}, "Rincon": {"animales": {"Vacas||Silvia": 8}, "historial": [{"fecha": "20/08/2026", "tipo": "ingreso", "detalle": "Carga inicial desde planilla: 8 Vacas (Silvia)"}], "fechaIngreso": "2026-08-20"}};
+const CARGA_INICIAL_SEED = CONFIG.cargaInicialSeed;
 // 10/9/2026: este potrero se cargó originalmente como "Cerro" -- era un
 // nombre equivocado desde el principio, la tierra real es "Rincón". Ver
 // migración de datos guardados y alias de eventos viejos más abajo.
-const NOMBRES_VIEJOS_POTRERO = {'Cerro': 'Rincon'};
+const NOMBRES_VIEJOS_POTRERO = CONFIG.nombresViejosPotrero;
 let estado = cargarEstado();
+if(migrarClavesSinFirma(estado.potreros)) guardarEstado();
 
 function estadoInicial(){
   const potreros = {};
@@ -703,14 +731,18 @@ function cargarEstado(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
-      // 10/9/2026: "Cerro" se renombró a "Rincon" (nombre equivocado desde
-      // la carga inicial). Este dispositivo puede tener animales/historial
-      // guardados todavía bajo la clave vieja -- se los lleva a la clave
-      // nueva ANTES de que el loop de abajo cree un "Rincon" vacío.
-      if(parsed.potreros && parsed.potreros['Cerro'] && !parsed.potreros['Rincon']){
-        parsed.potreros['Rincon'] = parsed.potreros['Cerro'];
-        delete parsed.potreros['Cerro'];
-      }
+      // Alias de potreros renombrados (ver NOMBRES_VIEJOS_POTRERO, config por
+      // establecimiento -- ej. "Cerro" -> "Rincon" en María Laura, nombre
+      // equivocado desde la carga inicial). Este dispositivo puede tener
+      // animales/historial guardados todavía bajo la clave vieja -- se los
+      // lleva a la clave nueva ANTES de que el loop de abajo cree la nueva
+      // vacía. Es un no-op si el establecimiento no tiene alias declarados.
+      Object.entries(NOMBRES_VIEJOS_POTRERO).forEach(([viejo, nuevo])=>{
+        if(parsed.potreros && parsed.potreros[viejo] && !parsed.potreros[nuevo]){
+          parsed.potreros[nuevo] = parsed.potreros[viejo];
+          delete parsed.potreros[viejo];
+        }
+      });
       // asegurar que todos los potreros del KML existan en el estado
       const base = estadoInicial();
       POTREROS_GEO.forEach(p=>{
@@ -719,10 +751,10 @@ function cargarEstado(){
         if(!parsed.potreros[p.nombre].historial) parsed.potreros[p.nombre].historial = [];
         if(parsed.potreros[p.nombre].fechaIngreso === undefined) parsed.potreros[p.nombre].fechaIngreso = null;
         if(parsed.potreros[p.nombre].fechaSalida === undefined) parsed.potreros[p.nombre].fechaSalida = null;
-        // corrige el fechaIngreso de la carga inicial: quedó grabado como 2026-08-11
-        // pero el historial de esa misma carga dice 20/08/2026 (desajuste de origen).
-        if(['Tajamar','Uno','Rincon'].includes(p.nombre) && parsed.potreros[p.nombre].fechaIngreso === '2026-08-11'){
-          parsed.potreros[p.nombre].fechaIngreso = '2026-08-20';
+        // corrige un fechaIngreso de carga inicial mal grabado (ver
+        // CONFIG.fixFechaIngreso) -- no-op si el establecimiento no declara uno.
+        if(CONFIG.fixFechaIngreso && CONFIG.fixFechaIngreso.potreros.includes(p.nombre) && parsed.potreros[p.nombre].fechaIngreso === CONFIG.fixFechaIngreso.desde){
+          parsed.potreros[p.nombre].fechaIngreso = CONFIG.fixFechaIngreso.hasta;
         }
       });
       if(!parsed.ugCoef) parsed.ugCoef = {...UG_DEFAULT};
@@ -801,15 +833,12 @@ async function vaciarColaSync(){
   guardarEstado(); actualizarEstadoSync();
 }
 
-/* Carga de Sanidad desde la app: fire-and-forget a la tabla propia de este
-   establecimiento (no pasa por eventos_sync -- no toca estado.potreros).
-   10/9/2026: María Laura nunca llegó a usar el puente hacia el Excel (nunca
-   se cargó nada en Planilla_Sanitaria_MariaLaura.xlsm desde acá) y Pedro
-   pidió que cada establecimiento tenga su propia tabla de Sanidad en vez de
-   compartir una sola filtrada por columna -- por eso esto va directo a
-   "sanidad_carga_<establecimiento>", sin ningún script intermedio ni Excel
-   de por medio; el panel de abajo lee de la misma tabla. */
-const TABLA_SANIDAD = 'sanidad_carga_' + ESTABLECIMIENTO;
+/* Carga de Sanidad desde la app: fire-and-forget a la tabla de
+   CONFIG.tablaSanidad (no pasa por eventos_sync -- no toca estado.potreros).
+   Puede ser una tabla compartida con puente a Excel (La Vuelta, ver
+   sanidad-vista-celular) o una tabla propia nativa sin Excel (María
+   Laura/Pone Chico) -- la diferencia es solo de config, no de código. */
+const TABLA_SANIDAD = CONFIG.tablaSanidad;
 async function guardarSanidadCarga(registro){
   const client = clienteSupabase();
   if(!client || !navigator.onLine){
@@ -964,13 +993,13 @@ function aplicarEventoRemoto(row){
     const origDatosMov = {potrero, destino: d.destino, categoria: d.categoria, categoriaDestino: d.categoriaDestino||d.categoria, dueno: d.dueno||null, cantidad: d.cantidad};
     if(d.destino === potrero){
       const detalle = d.categoriaDestino && d.categoriaDestino!==d.categoria
-        ? `${d.categoria} de ${d.dueno} → ${d.categoriaDestino} (${d.cantidad}, cambio de categoría, sincronizado)${sufObsMov}`
-        : `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino} (sincronizado)${sufObsMov}`;
+        ? `${d.categoria}${d.dueno?' de '+d.dueno:''} → ${d.categoriaDestino} (${d.cantidad}, cambio de categoría, sincronizado)${sufObsMov}`
+        : `-${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''} → ${d.destino} (sincronizado)${sufObsMov}`;
       registrarHistorial(potrero, 'movimiento', detalle, undefined, undefined, fechaEvt).origDatos = origDatosMov;
     }else{
       const sufOrigen = d.categoriaDestino && d.categoriaDestino!==d.categoria ? ` (pasa a ${d.categoriaDestino})` : '';
-      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria} de ${d.dueno} → ${d.destino}${sufOrigen} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMov;
-      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${d.categoriaDestino || d.categoria} de ${d.dueno} ← ${potrero} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMov;
+      registrarHistorial(potrero, 'movimiento', `-${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''} → ${d.destino}${sufOrigen} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMov;
+      registrarHistorial(d.destino, 'movimiento', `+${d.cantidad} ${d.categoriaDestino || d.categoria}${d.dueno?' de '+d.dueno:''} ← ${potrero} (sincronizado)${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMov;
     }
     return;
   }
@@ -1073,7 +1102,7 @@ function aplicarEventoRemoto(row){
   }
   registrarCambioOcupacion(potrero, totalAntes);
 
-  let detalleTxt = `${d.cantidad} ${d.categoria} de ${d.dueno}`;
+  let detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}`;
   if(d.precio) detalleTxt += ` a USD ${d.precio}/cab`;
   if(d.contraparte) detalleTxt += ` — ${d.contraparte}`;
   if(d.obs) detalleTxt += ` (${d.obs})`;
@@ -1544,6 +1573,7 @@ POTREROS_GEO.forEach(p=>{
 });
 
 if(bounds.length) map.fitBounds(bounds, {padding:[20,20]});
+else map.setView(CONFIG.mapaFallback, 15); // sin potreros todavía: centro aproximado de la zona
 actualizarEtiquetasMapa();
 
 /* Límite de paneo: evita que el mapa quede "perdido" lejos del establecimiento
@@ -1691,7 +1721,7 @@ function renderDetalle(nombre){
   const historial = estado.potreros[nombre].historial;
 
   const detalle = detalleAnimales(animales).sort((a,b)=> a.cat.localeCompare(b.cat,'es') || a.dueno.localeCompare(b.dueno,'es'));
-  const filasCat = detalle.map(d=>`<tr${d.cant<0?' style="color:#d32f2f;font-weight:700;"':''}><td>${d.cat}</td><td>${d.dueno}</td><td class="num">${d.cant}</td></tr>`).join('');
+  const filasCat = detalle.map(d=>`<tr${d.cant<0?' style="color:#d32f2f;font-weight:700;"':''}><td>${d.cat}</td><td>${textoFirma(d.dueno)}</td><td class="num">${d.cant}</td></tr>`).join('');
 
   const ha = areaHa(nombre);
   const ug = totalUG(nombre);
@@ -1710,7 +1740,7 @@ function renderDetalle(nombre){
     ${casosPotrero.length ? `<div style="background:#fdf1de;border-left:3px solid #c68a3b;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a5220;">${casosPotrero.map(c=>`❓ ${c.pendiente} de ${c.cantidadOriginal} ${c.categoria}${c.dueno?' de '+c.dueno:''} desaparecidos desde ${c.fecha} — <span style="cursor:pointer;text-decoration:underline;" data-abrir-desaparecidos="1">resolver</span>`).join('<br>')}</div>` : ''}
 
     <table class="tabla-animales">
-      <thead><tr><th>Categoría</th><th>Dueño</th><th style="text-align:right;">Cant.</th></tr></thead>
+      <thead><tr><th>Categoría</th><th>${CONFIG.duenoLabel}</th><th style="text-align:right;">Cant.</th></tr></thead>
       <tbody>
         ${filasCat || '<tr><td colspan="3" style="color:#8a8465;">Sin animales registrados</td></tr>'}
         <tr class="total"${total<0?' style="color:#d32f2f;"':''}><td colspan="2">Total (${ug.toFixed(1)} UG)</td><td class="num">${total}</td></tr>
@@ -1868,7 +1898,7 @@ function mostrarFormulario(nombre, accion, prefill){
       <div class="form-accion">
         <h3>Agregar animales a ${nombre}</h3>
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
-        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-botones">
@@ -2038,7 +2068,7 @@ function mostrarFormulario(nombre, accion, prefill){
           </select>
         </div>
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
-        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="f-precio" min="0" step="0.01" placeholder="Ej: 850" value="${prefill&&prefill.precio?prefill.precio:''}"></div>
@@ -2099,7 +2129,7 @@ function mostrarFormulario(nombre, accion, prefill){
       <div class="form-accion">
         <h3>Registrar nacimiento en ${nombre}</h3>
         <div class="form-row"><label>Categoría de la cría</label><select id="f-cat">${opcionesCategoriasNacimiento(prefill?prefill.categoria:'Terneros')}</select></div>
-        <div class="form-row"><label>Dueño (de la madre)</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>${CONFIG.duenoLabel} (de la madre)</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: parto sin problemas" value="${prefill&&prefill.obs?prefill.obs:''}"></div>
@@ -2135,7 +2165,7 @@ function mostrarFormulario(nombre, accion, prefill){
       <div class="form-accion">
         <h3>Registrar muerte en ${nombre}</h3>
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
-        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Causa (opcional)</label><input type="text" id="f-obs" placeholder="Ej: empantanado, enfermedad..." value="${prefill&&prefill.obs?prefill.obs:''}"></div>
@@ -2154,7 +2184,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const key = claveAnimal(cat, dueno);
       const disponibles = a[key] || 0;
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
-      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} de ${dueno} en ${nombre}`); return; }
+      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${nombre}`); return; }
       if(!fechaISO){ toast('Elegí una fecha'); return; }
       const fecha = fechaISOaDisplay(fechaISO);
       const totalAntes = totalPotrero(nombre);
@@ -2174,7 +2204,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <h3>Registrar desaparición en ${nombre}</h3>
         <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Para un animal que salió del potrero sin que sepas dónde está (cruzó a otro campo, etc.) — se resta de acá y queda en 🛠 Herramientas › ❓ Desaparecidos hasta que aparezca o se dé por perdido.</p>
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
-        <div class="form-row"><label>Dueño</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: cerca del vecino Fulano" value="${prefill&&prefill.obs?prefill.obs:''}"></div>
@@ -2193,7 +2223,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const key = claveAnimal(cat, dueno);
       const disponibles = a[key] || 0;
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
-      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} de ${dueno} en ${nombre}`); return; }
+      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${nombre}`); return; }
       if(!fechaISO){ toast('Elegí una fecha'); return; }
       const fecha = fechaISOaDisplay(fechaISO);
       const totalAntes = totalPotrero(nombre);
@@ -2304,7 +2334,7 @@ ${puntosInstalacion.map(placemarkPunto).join('\n')}
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
-  <name>María Laura - Potreros</name>
+  <name>${CONFIG.nombre} - Potreros</name>
 ${folderPotrerosOcupados}
 ${folderPotrerosVacios}
 ${folderAgua}
@@ -2324,7 +2354,7 @@ function construirMD(){
   const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
   const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
 
-  let md = `# María Laura — Estado de potreros\n\n`;
+  let md = `# ${CONFIG.nombre} — Estado de potreros\n\n`;
   md += `_Generado el ${hoy}_\n\n`;
   md += `## Resumen general\n\n`;
   md += `| Potreros | Hectáreas | Animales | UG totales | Dotación (UG/ha) |\n`;
@@ -2332,7 +2362,7 @@ function construirMD(){
   md += `| ${POTREROS_GEO.length} | ${totalHa.toFixed(1)} | ${totalAnimales} | ${totalUGCampo.toFixed(1)} | ${dotacionGeneral.toFixed(2)} |\n\n`;
 
   md += `## Stock por dueño\n\n`;
-  md += `| Dueño | Animales | UG |\n|---|---|---|\n`;
+  md += `| ${CONFIG.duenoLabel} | Animales | UG |\n|---|---|---|\n`;
   DUENOS.forEach(d=>{
     let cant=0, ug=0;
     POTREROS_GEO.forEach(p=>{
@@ -2365,7 +2395,7 @@ function construirMD(){
     const animales = estado.potreros[p.nombre].animales;
     const det = detalleAnimales(animales);
     if(!det.length) return;
-    md += `**${p.nombre}**: ${det.map(d=>`${d.cant} ${d.cat} (${d.dueno})`).join(', ')}\n\n`;
+    md += `**${p.nombre}**: ${det.map(d=>`${d.cant} ${d.cat} (${textoFirma(d.dueno)})`).join(', ')}\n\n`;
   });
 
   if(estado.puntos && estado.puntos.length){
@@ -2418,7 +2448,7 @@ document.getElementById('btn-exportar-md').addEventListener('click', ()=>{
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `maria_laura_estado_${new Date().toISOString().slice(0,10)}.md`;
+  a.download = `${ESTABLECIMIENTO}_estado_${new Date().toISOString().slice(0,10)}.md`;
   a.click();
   URL.revokeObjectURL(url);
   toast('Markdown exportado');
@@ -2452,7 +2482,7 @@ function reunirDatosReporte(){
     });
   });
 
-  const duenosRows = DUENOS.map(d=>{
+  const duenosRows = [...DUENOS, ''].map(d=>{
     let cant=0, ug=0;
     POTREROS_GEO.forEach(p=>{
       Object.entries(estado.potreros[p.nombre].animales).forEach(([key,c])=>{
@@ -2508,12 +2538,14 @@ async function calcularEstadisticasNacimientos(){
   const hoy = new Date();
   const anioTemporada = (hoy.getMonth()+1) >= 8 ? hoy.getFullYear() : hoy.getFullYear()-1;
 
-  let vacas = 0;
-  POTREROS_GEO.forEach(p=>{
-    Object.entries(estado.potreros[p.nombre].animales).forEach(([key,cant])=>{
-      if(partesClave(key).cat==='Vacas') vacas += (cant||0);
+  let vacas = VACAS_PRENADAS_TEMPORADA || 0;
+  if(!vacas){
+    POTREROS_GEO.forEach(p=>{
+      Object.entries(estado.potreros[p.nombre].animales).forEach(([key,cant])=>{
+        if(partesClave(key).cat==='Vacas') vacas += (cant||0);
+      });
     });
-  });
+  }
 
   const cacheKey = ESTABLECIMIENTO + '_nacimientos_cache';
   let eventos = null, fuente = 'sin_datos';
@@ -2731,7 +2763,7 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   doc.setFontSize(16);
-  doc.text('María Laura — Estado de potreros', 14, 16);
+  doc.text(`${CONFIG.nombre} — Estado de potreros`, 14, 16);
   doc.setFontSize(10);
   doc.text(`Generado el ${d.fecha}`, 14, 22);
 
@@ -2752,7 +2784,7 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
   if(d.duenosRows && d.duenosRows.length){
     doc.autoTable({
       startY: doc.lastAutoTable.finalY + 8,
-      head: [['Dueño','Animales','UG']],
+      head: [[CONFIG.duenoLabel,'Animales','UG']],
       body: d.duenosRows,
       theme: 'striped', headStyles:{fillColor:[138,109,31]}, styles:{fontSize:8}
     });
@@ -2761,7 +2793,7 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
   if(d.animalesRows.length){
     doc.autoTable({
       startY: doc.lastAutoTable.finalY + 8,
-      head: [['Potrero','Categoría','Dueño','Cantidad']],
+      head: [['Potrero','Categoría',CONFIG.duenoLabel,'Cantidad']],
       body: d.animalesRows,
       theme: 'striped', headStyles:{fillColor:[122,82,54]}, styles:{fontSize:8}
     });
@@ -2797,7 +2829,7 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
   if(d.transaccionesRows.length){
     doc.autoTable({
       startY: doc.lastAutoTable.finalY + 8,
-      head: [['Fecha','Potrero','Operación','Categoría','Dueño','Cant.','Precio unit.','Total USD','Contraparte']],
+      head: [['Fecha','Potrero','Operación','Categoría',CONFIG.duenoLabel,'Cant.','Precio unit.','Total USD','Contraparte']],
       body: d.transaccionesRows,
       theme: 'striped', headStyles:{fillColor:[138,109,31]}, styles:{fontSize:7.5}
     });
@@ -2805,7 +2837,7 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', ()=>{
     doc.text(`Total comprado: USD ${d.totalComprado.toFixed(0)}  ·  Total vendido: USD ${d.totalVendido.toFixed(0)}  ·  Neto: USD ${(d.totalVendido-d.totalComprado).toFixed(0)}`, 14, doc.lastAutoTable.finalY + 8);
   }
 
-  doc.save(`maria_laura_estado_${new Date().toISOString().slice(0,10)}.pdf`);
+  doc.save(`${ESTABLECIMIENTO}_estado_${new Date().toISOString().slice(0,10)}.pdf`);
   toast('PDF exportado');
 });
 
@@ -2821,7 +2853,7 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', a
     return a.nombre.localeCompare(b.nombre,'es');
   });
   doc.setFontSize(16);
-  doc.text('María Laura', 14, 16);
+  doc.text(CONFIG.nombre, 14, 16);
   doc.setFontSize(10);
   doc.text(`Animales por potrero — ${rep.fecha}`, 14, 22);
 
@@ -2878,7 +2910,7 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', a
     theme: 'striped', headStyles:{fillColor:[92,122,74]}, styles:{fontSize:8}
   });
 
-  doc.save(`maria_laura_animales_por_potrero_${new Date().toISOString().slice(0,10)}.pdf`);
+  doc.save(`${ESTABLECIMIENTO}_animales_por_potrero_${new Date().toISOString().slice(0,10)}.pdf`);
   toast('PDF exportado');
 });
 
@@ -2889,7 +2921,7 @@ document.getElementById('btn-exportar-pdf-historial').addEventListener('click', 
   const doc = new jsPDF();
   const ordenados = POTREROS_GEO.slice().sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'));
   doc.setFontSize(16);
-  doc.text('María Laura', 14, 16);
+  doc.text(CONFIG.nombre, 14, 16);
   doc.setFontSize(10);
   doc.text(`Historial de registros por potrero — ${rep.fecha}`, 14, 22);
 
@@ -2912,7 +2944,7 @@ document.getElementById('btn-exportar-pdf-historial').addEventListener('click', 
     theme: 'striped', headStyles:{fillColor:[198,138,59]}, styles:{fontSize:7.5}
   });
 
-  doc.save(`maria_laura_historial_por_potrero_${new Date().toISOString().slice(0,10)}.pdf`);
+  doc.save(`${ESTABLECIMIENTO}_historial_por_potrero_${new Date().toISOString().slice(0,10)}.pdf`);
   toast('PDF exportado');
 });
 
@@ -2922,7 +2954,7 @@ document.getElementById('btn-exportar-excel').addEventListener('click', ()=>{
   const wb = XLSX.utils.book_new();
 
   const wsResumen = XLSX.utils.aoa_to_sheet([
-    ['María Laura — Estado de potreros'],
+    [`${CONFIG.nombre} — Estado de potreros`],
     [`Generado el ${d.fecha}`],
     [],
     ['Potreros','Hectáreas','Animales','UG totales','Dotación (UG/ha)'],
@@ -2931,8 +2963,8 @@ document.getElementById('btn-exportar-excel').addEventListener('click', ()=>{
   XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
 
   if(d.duenosRows && d.duenosRows.length){
-    const wsDuenos = XLSX.utils.aoa_to_sheet([['Dueño','Animales','UG'], ...d.duenosRows]);
-    XLSX.utils.book_append_sheet(wb, wsDuenos, 'Dueños');
+    const wsDuenos = XLSX.utils.aoa_to_sheet([[CONFIG.duenoLabel,'Animales','UG'], ...d.duenosRows]);
+    XLSX.utils.book_append_sheet(wb, wsDuenos, CONFIG.duenoLabel+'s');
   }
 
   const wsPotreros = XLSX.utils.aoa_to_sheet([
@@ -2942,7 +2974,7 @@ document.getElementById('btn-exportar-excel').addEventListener('click', ()=>{
   XLSX.utils.book_append_sheet(wb, wsPotreros, 'Potreros');
 
   if(d.animalesRows.length){
-    const wsAnimales = XLSX.utils.aoa_to_sheet([['Potrero','Categoría','Dueño','Cantidad'], ...d.animalesRows]);
+    const wsAnimales = XLSX.utils.aoa_to_sheet([['Potrero','Categoría',CONFIG.duenoLabel,'Cantidad'], ...d.animalesRows]);
     XLSX.utils.book_append_sheet(wb, wsAnimales, 'Animales');
   }
 
@@ -2963,7 +2995,7 @@ document.getElementById('btn-exportar-excel').addEventListener('click', ()=>{
 
   if(d.transaccionesRows.length){
     const wsTrans = XLSX.utils.aoa_to_sheet([
-      ['Fecha','Potrero','Operación','Categoría','Dueño','Cantidad','Precio unit. USD','Total USD','Contraparte'],
+      ['Fecha','Potrero','Operación','Categoría',CONFIG.duenoLabel,'Cantidad','Precio unit. USD','Total USD','Contraparte'],
       ...d.transaccionesRows,
       [],
       ['Total comprado USD', d.totalComprado.toFixed(0)],
@@ -2973,7 +3005,7 @@ document.getElementById('btn-exportar-excel').addEventListener('click', ()=>{
     XLSX.utils.book_append_sheet(wb, wsTrans, 'Compras y ventas');
   }
 
-  XLSX.writeFile(wb, `maria_laura_estado_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `${ESTABLECIMIENTO}_estado_${new Date().toISOString().slice(0,10)}.xlsx`);
   toast('Excel exportado');
 });
 
@@ -2985,7 +3017,7 @@ document.getElementById('btn-exportar-kmz').addEventListener('click', async ()=>
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `maria_laura_potreros_${new Date().toISOString().slice(0,10)}.kmz`;
+  a.download = `${ESTABLECIMIENTO}_potreros_${new Date().toISOString().slice(0,10)}.kmz`;
   a.click();
   URL.revokeObjectURL(url);
   toast('KMZ exportado');
@@ -3149,7 +3181,7 @@ document.getElementById('btn-exportar-json').addEventListener('click', ()=>{
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `maria_laura_backup_${sellotiempoArchivo()}.json`;
+  a.download = `${ESTABLECIMIENTO}_backup_${sellotiempoArchivo()}.json`;
   a.click();
   URL.revokeObjectURL(url);
   registrarBackupHecho();
@@ -3785,8 +3817,8 @@ function renderInterpretacionVoz(datos){
         </select>
       </div>
       <div class="form-row"><label>Categoría</label><select id="vz-cat">${opcionesCategorias(datos.categoria)}</select></div>
-      <div class="form-row"><label>Dueño</label><select id="vz-dueno">${opcionesDuenos(datos.dueno)}</select></div>
-      <div class="form-row"><label>Cantidad</label><input type="number" id="vz-cant" min="1" value="${datos.cantidad||1}"></div>
+            <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="vz-dueno">${opcionesDuenos(datos.dueno)}</select></div>
+            <div class="form-row"><label>Cantidad</label><input type="number" id="vz-cant" min="1" value="${datos.cantidad||1}"></div>
       <div class="form-row"><label>Potrero origen / donde ocurre</label><select id="vz-origen">${opcionesPotrerosTodos(datos.origen)}</select></div>
       <div class="form-row"><label>Potrero destino (solo si mueve)</label><select id="vz-destino">${opcionesPotrerosTodos(datos.destino)}</select></div>
       <div class="form-row"><label>Precio unitario USD (solo compra/venta, opcional)</label><input type="number" id="vz-precio" min="0" step="0.01" value="${datos.precio||''}"></div>
@@ -3817,7 +3849,7 @@ function confirmarAccionVoz(){
     const disponibles = origenAnimales[key] || 0;
     if(cant > disponibles){
       const saldoResultante = disponibles - cant;
-      if(!confirm(`Solo hay ${disponibles} ${cat} de ${dueno} en ${origen}. Si continuás, el saldo de ${cat} (${dueno}) en ${origen} queda en ${saldoResultante} (negativo). ¿Continuar de todos modos?`)) return;
+      if(!confirm(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${origen}. Si continuás, el saldo de ${cat}${dueno?' ('+dueno+')':''} en ${origen} queda en ${saldoResultante} (negativo). ¿Continuar de todos modos?`)) return;
     }
     const totalAntesOrigen = totalPotrero(origen);
     const totalAntesDestino = totalPotrero(destino);
@@ -3827,11 +3859,11 @@ function confirmarAccionVoz(){
     registrarCambioOcupacion(origen, totalAntesOrigen);
     registrarCambioOcupacion(destino, totalAntesDestino);
     const extraMov = {potrero: origen, destino, categoria: cat, categoriaDestino: cat, cantidad: cant, dueno};
-    registrarHistorial(origen, 'movimiento', `-${cant} ${cat} de ${dueno} → ${destino} (voz)`, extraMov);
-    registrarHistorial(destino, 'movimiento', `+${cant} ${cat} de ${dueno} ← ${origen} (voz)`, extraMov);
+    registrarHistorial(origen, 'movimiento', `-${cant} ${cat}${dueno?' de '+dueno:''} → ${destino} (voz)`, extraMov);
+    registrarHistorial(destino, 'movimiento', `+${cant} ${cat}${dueno?' de '+dueno:''} ← ${origen} (voz)`, extraMov);
     enviarEvento('movimiento', origen, {categoria: cat, dueno, cantidad: cant, destino});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(destino);
-    toast(`Movidos ${cant} ${cat} (${dueno}) de ${origen} a ${destino}`);
+    toast(`Movidos ${cant} ${cat}${dueno?' ('+dueno+')':''} de ${origen} a ${destino}`);
   } else if(accion==='agregar' || accion==='nacimiento'){
     const objetivo = destino || origen;
     if(!objetivo){ toast('Elegí un potrero'); return; }
@@ -3843,20 +3875,20 @@ function confirmarAccionVoz(){
     const totalAntes = totalPotrero(objetivo);
     a[key] = (a[key]||0) + cant;
     registrarCambioOcupacion(objetivo, totalAntes);
-    registrarHistorial(objetivo, accion==='nacimiento'?'nacimiento':'ingreso', `${accion==='nacimiento'?'Nacimiento':'Ingreso'}: +${cant} ${cat} de ${dueno} (voz)`, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
+    registrarHistorial(objetivo, accion==='nacimiento'?'nacimiento':'ingreso', `${accion==='nacimiento'?'Nacimiento':'Ingreso'}: +${cant} ${cat}${dueno?' de '+dueno:''} (voz)`, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
     enviarEvento(accion==='nacimiento'?'nacimiento':'ingreso', objetivo, {categoria: cat, dueno, cantidad: cant});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo);
-    toast(`Registrado en ${objetivo}: +${cant} ${cat} (${dueno})`);
+    toast(`Registrado en ${objetivo}: +${cant} ${cat}${dueno?' ('+dueno+')':''}`);
   } else if(accion==='muerte'){
     const objetivo = origen || destino;
     if(!objetivo){ toast('Elegí un potrero'); return; }
     const a = estado.potreros[objetivo].animales;
     const disponibles = a[key] || 0;
-    if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} de ${dueno} en ${objetivo}`); return; }
+    if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${objetivo}`); return; }
     const totalAntes = totalPotrero(objetivo);
     a[key] -= cant;
     registrarCambioOcupacion(objetivo, totalAntes);
-    registrarHistorial(objetivo, 'muerte', `Muerte: -${cant} ${cat} de ${dueno} (voz)`, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
+    registrarHistorial(objetivo, 'muerte', `Muerte: -${cant} ${cat}${dueno?' de '+dueno:''} (voz)`, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
     enviarEvento('muerte', objetivo, {categoria: cat, dueno, cantidad: cant});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo);
     toast(`Muerte registrada en ${objetivo}`);
@@ -3867,14 +3899,14 @@ function confirmarAccionVoz(){
     const totalAntes = totalPotrero(objetivo);
     if(accion==='venta'){
       const disponibles = a[key] || 0;
-      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat} de ${dueno} en ${objetivo}`); return; }
+      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${objetivo}`); return; }
       a[key] -= cant;
     } else {
       a[key] = (a[key]||0) + cant;
     }
     registrarCambioOcupacion(objetivo, totalAntes);
     const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
-    let detalle = `${accion==='venta'?'Venta':'Compra'}: ${accion==='venta'?'-':'+'}${cant} ${cat} de ${dueno} (voz)`;
+    let detalle = `${accion==='venta'?'Venta':'Compra'}: ${accion==='venta'?'-':'+'}${cant} ${cat}${dueno?' de '+dueno:''} (voz)`;
     if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
     registrarHistorial(objetivo, accion==='venta'?'venta':'compra', detalle, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
     estado.transacciones = estado.transacciones || [];

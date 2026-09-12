@@ -20,12 +20,17 @@ There are three establishments, each with a **PC** variant and a **móvil**
 | `la-vuelta-test/` | — | disposable clone of `la-vuelta-movil` for testing on a phone without touching real data; not kept in sync automatically |
 
 Each folder is served at `pedrolanfranco-collab.github.io/potreros/<folder>/`
-and contains: `index.html` (the whole app), `manifest.json`, `sw.js`, and six
-`icon-*.png` sizes. There is no shared/imported code between folders — each
-`index.html` is independently maintained. The root-level `index.html`,
-`potreros.html`, `manifest.json` and `launchericon-*.png` predate the
-per-establishment split and appear to be an unmaintained leftover from before
-the multi-app structure existed; don't assume they're wired up to anything.
+and contains: `index.html` (the whole app, **generated — see below**),
+`manifest.json`, `sw.js`, and six `icon-*.png` sizes. The root-level
+`index.html`, `potreros.html`, `manifest.json` and `launchericon-*.png`
+predate the per-establishment split and appear to be an unmaintained leftover
+from before the multi-app structure existed; don't assume they're wired up to
+anything.
+
+**Every `index.html` in this repo is generated — never edit one directly.**
+Since 12/9/2026 the 6 files come from a single `template/potreros.template.html`
+plus `template/configs/*.js`, run through `template/generar.js`. See
+"Template system" below before touching app behavior.
 
 ## Commands
 
@@ -54,31 +59,76 @@ serves `main` directly — no build step. Changes are live in roughly 15–40
 seconds; verify with `curl -H "Cache-Control: no-cache" <url>` rather than
 assuming an instant deploy.
 
-**CI:** `.github/workflows/probar.yml` runs on every push/PR to `main` — 16
-jsdom test scripts (`tests/probar_*.js`, using `tests/package.json`'s pinned
-`jsdom@30.0.1`/`jszip@3.10.1`) against the published `index.html` files of
-whichever folders each script targets. These are the same scripts as
-`scripts/probar_*.js` in the `apps-potreros` skill — kept in sync by hand,
-no symlink. Two of them (`probar_pone_chico.js`, `probar_eliminar_potrero.js`)
-accept a `process.argv` file list with a hardcoded fallback. Check the actual
-Actions run after pushing — "works on my machine" isn't enough; a Node
-version or YAML-parsing mismatch has broken this CI before without any local
-symptom.
+**CI:** `.github/workflows/probar.yml` runs on every push/PR to `main`. First
+step: `node template/generar.js --check` — regenerates all 6 files in memory
+and fails the build if any committed `index.html` doesn't match (someone
+edited a generated file by hand, or edited the template/configs without
+regenerating). After that, 18 jsdom test scripts (`tests/probar_*.js`, using
+`tests/package.json`'s pinned `jsdom@30.0.1`/`jszip@3.10.1`) run against the
+published `index.html` files of whichever folders each script targets. These
+are the same scripts as `scripts/probar_*.js` in the `apps-potreros` skill —
+kept in sync by hand, no symlink. Two of them (`probar_pone_chico.js`,
+`probar_eliminar_potrero.js`) accept a `process.argv` file list with a
+hardcoded fallback. Check the actual Actions run after pushing — "works on
+my machine" isn't enough; a Node version or YAML-parsing mismatch has broken
+this CI before without any local symptom.
 
-**Before shipping any change**, bump the version in two places or a device
+**Before shipping any change**, bump the version in three places or a device
 that already installed the app as a PWA keeps serving the stale cached
 version indefinitely:
-1. The visible version string in the header (`<div class="sub">...vX.Y</div>`, near the top of `<body>`).
-2. The `CACHE` constant at the top of that folder's `sw.js` (e.g. `'la-vuelta-movil-v2.21'`).
+1. `versionPc`/`versionMovil` in that establishment's `template/configs/<nombre>.js`.
+2. Re-run `node template/generar.js` (writes the 6 `index.html` **and** the
+   6 OneDrive master files Pedro also keeps in sync).
+3. The `CACHE` constant at the top of that folder's `sw.js` (e.g.
+   `'la-vuelta-movil-v2.21'`) — **not** generated, still bumped by hand.
 
 ## Architecture
 
-### PC vs. móvil split
+### Template system (`template/`)
 
-The two variants of an establishment are hand-maintained separately, not
-generated from a shared master — there used to be a `<name>_maestro.html` →
-cut-PC / cut-móvil pipeline, but it's stale; a feature meant for both
-variants has to be edited into both `index.html` files by hand, identically.
+All 6 `index.html` come from one source: `template/potreros.template.html`
+(the shared code) + `template/configs/{la-vuelta,maria-laura,pone-chico}.js`
+(the per-establishment data and feature flags) → `template/generar.js`
+(the generator). **Never edit an `index.html` directly** — edit the template
+or the relevant config, then `node template/generar.js` (writes all 6
+`index.html` files *and* the 6 OneDrive master files at
+`C:\Users\Pedro\OneDrive\Proyecto Gestion ganadera`, in one pass, from the
+repo root). `node template/generar.js --check` verifies without writing —
+that's the first step of CI.
+
+A prior attempt at a shared master (`<name>_maestro.html` → cut-PC/cut-móvil
+by line range) was abandoned because line ranges drifted with every edit —
+see the git history before 12/9/2026 if you need the old per-file discipline.
+This template avoids that failure mode: differences are marked by **comment
+delimiters**, matched by regex, immune to the file growing.
+
+**Marker scheme** — `generar.js` strips inactive blocks and unwraps active
+ones before writing:
+- HTML: `<!-- @name:start -->` … `<!-- @name:end -->`
+- JS: `// @name:start` … `// @name:end` (start/end must share the same
+  leading whitespace — the stripping regex depends on it)
+
+Four independent marker axes, each resolved from `configs/<name>.js`:
+| Axis | Active when | Feature |
+|---|---|---|
+| `pc` / `movil` | which variant is being generated | PDF/Excel export & UG-coefficient editor (PC) vs. GPS + voice input (móvil) — see below |
+| `mapLabels` / `noMapLabels` | `config.mapLabels` | on-map paddock labels + click-popup (María Laura/Pone Chico only — La Vuelta's 31 paddocks would be unreadable) |
+| `sanidadExcel` / `sanidadNativa` | `config.usaExcelBridge` | Sanidad subsystem: shared table + Excel bridge (La Vuelta) vs. native per-establishment table (María Laura/Pone Chico) |
+| `duenoVoz` / `sinDuenoVoz` | `config.duenoObligatorio` | whether the voice-command confirmation form asks for Dueño/Firma at all — La Vuelta deliberately doesn't (voice-logged animals default to unassigned, reassign later from the normal forms) |
+
+Everything else establishment-specific is `CONFIG.<campo>` (injected as a
+single `const CONFIG = {...};` line, first thing inside the `<script>` tag
+that also declares `POTREROS_GEO`) rather than a marker — see each
+`configs/*.js` for the full schema (`potrerosGeo`, `puntosSeed`, `duenos`,
+`duenoLabel`, `duenoObligatorio`, `cargaInicialSeed`, `nombresViejosPotrero`,
+`vacasPrenadasTemporada`, `tablaSanidad`, `usaExcelBridge`, `mapLabels`,
+`mapaFallback`, `fixFechaIngreso`, plus display strings). A handful of
+placeholders (`__TITULO__`, `__THEME_COLOR__`, `__NOMBRE__`, `__SUBTITULO__`,
+`__VERSION_PC__`, `__VERSION_MOVIL__`) are plain string substitutions, used
+where a literal has to sit outside the `CONFIG` object (page `<title>`, meta
+theme-color).
+
+### PC vs. móvil split
 
 - **PC**: has PDF export (jsPDF), Excel export (SheetJS), and a UG-coefficient
   editor modal. No GPS.
@@ -88,13 +138,14 @@ variants has to be edited into both `index.html` files by hand, identically.
   user identification, shared across establishments via one unprefixed
   `localStorage` key so a phone used for two apps only asks once).
 
-Every `index.html` is internally organized under the same
+The template (and therefore every generated `index.html`) is internally
+organized under the same
 `/* ======================= SECTION ======================= */` banner
 comments — grep for these to navigate: `DATOS DE POTREROS`, `SINCRONIZACIÓN`,
 `ESTADO`, `MOTOR DE SINCRONIZACIÓN`, `MAPA`, `SELECCIÓN Y DETALLE`,
 `FORMULARIOS DE ACCIÓN`, `IMPORTAR LÍMITES DESDE KML/KMZ`, `BACKUP JSON`,
-`ALERTAS Y UMBRALES`, `SANIDAD`, `CARGA POR VOZ` (móvil), `EXPORTAR *` (PC).
-María Laura and Pone Chico additionally have a `DUEÑOS` section near the top.
+`ALERTAS Y UMBRALES`, `SANIDAD`, `CARGA POR VOZ` (móvil), `EXPORTAR *` (PC),
+`DUEÑOS/FIRMA` (shared by all 3 now, label/optionality driven by config).
 
 ### Data model & per-establishment isolation
 
@@ -113,20 +164,26 @@ María Laura and Pone Chico additionally have a `DUEÑOS` section near the top.
   to guarantee every paddock has an entry — see the initialization-order
   note below, it matters.
 - All three establishments key `animales` by `"categoria||dueño"`
-  (`claveAnimal()`/`partesClave()`/`detalleAnimales()`) instead of bare
-  category, since more than one owner/firm can have stock in the same
-  paddock. The only real difference is whether the field is required:
-  María Laura/Pone Chico's `opcionesDuenos()` has no blank option (the
-  field can't be left empty); La Vuelta's does (`<option value="">— sin
-  asignar —</option>`, selected by default) because its "Dueño" is
-  actually "Firma" (DICOSE bookkeeping) and most existing stock predates
-  it. La Vuelta's `partesClave()` deliberately returns the raw `dueno`
-  (possibly `""`), not a display fallback — several call sites round-trip
-  it back through `claveAnimal()` to build a new key, and baking a
-  display string like `"(sin firma)"` in there would corrupt that key. A
-  separate `textoFirma(dueno)` helper does the `dueno || '(sin firma)'`
-  formatting only at display sites. Bare-category legacy keys
-  (pre-11/9/2026) get migrated once on load by `migrarClavesSinFirma()`.
+  (`claveAnimal()`/`partesClave()`/`detalleAnimales()`, shared code since
+  12/9/2026) instead of bare category, since more than one owner/firm can
+  have stock in the same paddock. The only real difference is whether the
+  field is required, driven entirely by `CONFIG.duenoObligatorio`/
+  `CONFIG.duenoLabel`/`CONFIG.textoSinAsignar`: María Laura/Pone Chico's
+  `opcionesDuenos()` has no blank option (the field can't be left empty,
+  label "Dueño"); La Vuelta's does (`<option value="">— sin asignar
+  —</option>`, selected by default, label "Firma") because most existing
+  stock predates the Firma feature and it's DICOSE bookkeeping, not a
+  person-per-owner model. `partesClave()` deliberately returns the raw
+  `dueno` (possibly `""`), not a display fallback — several call sites
+  round-trip it back through `claveAnimal()` to build a new key, and baking
+  a display string like `"(sin firma)"` in there would corrupt that key. A
+  separate `textoFirma(dueno)` helper does the `dueno || CONFIG.textoSinAsignar`
+  formatting only at display sites — use it (not a raw `${dueno}` or
+  unconditional `" de " + dueno`) at every new display site, or it breaks
+  for La Vuelta the moment `dueno` is empty. Bare-category legacy keys
+  (pre-11/9/2026, La Vuelta only) get migrated once on load by
+  `migrarClavesSinFirma()` — a no-op for María Laura/Pone Chico, which
+  never had bare-category keys, so it's unconditional in the template.
 
 ### Sync: Supabase, event-sourced
 
@@ -172,13 +229,18 @@ devices. It's local to whichever phone/PC performed the import.
 replace.** María Laura's "Cerro" was renamed to "Rincon" (same land,
 mis-named since the original data load) — since `eventos_sync` rows are
 immutable and every device has its own `localStorage` cache keyed by the old
-name, the rename needed two mechanisms: a one-time migration in
-`cargarEstado()` (renames an already-cached `estado.potreros['Cerro']` key
-before the "ensure every `POTREROS_GEO` entry exists" loop would otherwise
-create an empty new one) and a `NOMBRES_VIEJOS_POTRERO` alias applied at the
-top of `aplicarEventoRemoto()` (so a device with no local cache replaying
-historical events that still say `"Cerro"` redirects them to `"Rincon"`
-instead of silently dropping them). Any future paddock rename needs both.
+name, the rename needed two mechanisms, both generic over
+`CONFIG.nombresViejosPotrero` (`{viejo: nuevo}`, `{}` for establishments with
+no renames — La Vuelta and Pone Chico today) so the template code needs no
+per-establishment branch: a one-time migration in `cargarEstado()` (renames
+an already-cached `estado.potreros[viejo]` key for every entry in
+`NOMBRES_VIEJOS_POTRERO`, before the "ensure every `POTREROS_GEO` entry
+exists" loop would otherwise create an empty new one) and a
+`renombrarPotrero()` alias applied at the top of `aplicarEventoRemoto()` (so
+a device with no local cache replaying historical events that still say
+`"Cerro"` redirects them to `"Rincon"` instead of silently dropping them).
+Any future paddock rename is a one-line addition to that establishment's
+`configs/<name>.js` — no code changes.
 
 ### Sanidad ("+ Cargar tratamiento")
 

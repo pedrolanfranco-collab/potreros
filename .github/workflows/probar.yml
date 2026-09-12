@@ -16,6 +16,9 @@ jobs:
         with:
           node-version: 24
 
+      - name: Template -- los 6 index.html coinciden con lo que generaría el template
+        run: node template/generar.js --check
+
       - name: Instalar jsdom
         working-directory: tests
         run: npm install
