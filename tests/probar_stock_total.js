@@ -5,6 +5,11 @@
  * Verifica: el resumen general, la tabla de categorías, la lista de
  * potreros (con saldo negativo en rojo si lo hay), y que nacimientos/
  * muertes de temporada sumen bien contra eventos_sync mockeado.
+ *
+ * También cubre la pestaña "Por dueño" (12/9/2026, pedido de Pedro): existe
+ * únicamente en establecimientos con más de un dueño obligatorio (hoy, solo
+ * María Laura vía @multiDueno en generar.js) y muestra categorías + UG +
+ * dotación por cada dueño con animales.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -163,6 +168,30 @@ async function probarArchivo(archivo, tieneDueno){
     chequear(`temporada: ${esperado.mue} muertes`, panelTemp.includes(`<strong>${esperado.mue}</strong> muertes`), panelTemp);
   } else {
     chequear('temporada: 0 muertes', panelTemp.includes('<strong>0</strong> muertes'), panelTemp);
+  }
+
+  // pestaña "Por dueño" -- solo existe en establecimientos con más de un
+  // dueño obligatorio (hoy: María Laura, ver @multiDueno en generar.js).
+  const tabDueno = doc.getElementById('stock-tabs').querySelector('[data-tab="3"]');
+  if(win.__establecimiento()==='maria_laura'){
+    chequear('Por dueño: la pestaña existe (María Laura)', !!tabDueno);
+    tabDueno.dispatchEvent(new win.Event('click', { bubbles: true }));
+    await new Promise(r=>setTimeout(r,30));
+    const panelDueno = doc.getElementById('stock-panel-3').innerHTML;
+    // el seed de este test (10 Vacas + 4 Terneros) quedó bajo dueño "Pedro"
+    // porque tieneDueno=true arma las claves como "Vacas||Pedro"/"Terneros||Pedro".
+    chequear('Por dueño: aparece "Pedro"', panelDueno.includes('Pedro'), panelDueno);
+    chequear('Por dueño: Vacas de Pedro figura con 10', /Vacas[\s\S]{0,40}>10</.test(panelDueno), panelDueno);
+    chequear('Por dueño: Terneros de Pedro figura con 4', /Terneros[\s\S]{0,40}>4</.test(panelDueno), panelDueno);
+    chequear('Por dueño: total de Pedro es 14', /Total[\s\S]{0,40}>14</.test(panelDueno), panelDueno);
+    const totalHa = parseFloat((doc.getElementById('stock-resumen').textContent.match(/([\d.]+) ha/)||[])[1]);
+    const ugEsperado = 10*1.0 + 4*0.5; // Vacas=1.0, Terneros=0.5 (UG_DEFAULT)
+    const dotEsperada = totalHa>0 ? (ugEsperado/totalHa) : 0;
+    chequear(`Por dueño: UG de Pedro es ${ugEsperado.toFixed(1)}`, panelDueno.includes(`${ugEsperado.toFixed(1)} UG`), panelDueno);
+    chequear(`Por dueño: dotación de Pedro es ${dotEsperada.toFixed(2)} UG/ha`, panelDueno.includes(`${dotEsperada.toFixed(2)} UG/ha`), panelDueno);
+    chequear('Por dueño: un dueño sin animales (ej. Fito) no aparece', !panelDueno.includes('Fito'));
+  } else {
+    chequear(`Por dueño: la pestaña NO existe (${win.__establecimiento()})`, !tabDueno);
   }
 }
 

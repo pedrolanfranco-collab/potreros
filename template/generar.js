@@ -90,6 +90,9 @@ function generar(templateText, config, variant) {
   activos.push(config.mapLabels ? 'mapLabels' : 'noMapLabels');
   activos.push(config.usaExcelBridge ? 'sanidadExcel' : 'sanidadNativa');
   activos.push(config.duenoObligatorio ? 'duenoVoz' : 'sinDuenoVoz');
+  // Desglose de Stock total por dueño: solo tiene sentido con dueño
+  // obligatorio y más de uno configurado -- hoy únicamente María Laura.
+  activos.push((config.duenoObligatorio && config.duenos.length > 1) ? 'multiDueno' : 'unDueno');
 
   let texto = stripMarkers(templateText, activos);
 

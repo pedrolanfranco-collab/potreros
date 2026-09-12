@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.54</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.55</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -495,10 +495,12 @@
       <button data-tab="0" class="stock-tab-btn">Categorías</button>
       <button data-tab="1" class="stock-tab-btn">Potreros</button>
       <button data-tab="2" class="stock-tab-btn">Temporada</button>
+      <button data-tab="3" class="stock-tab-btn">Por dueño</button>
     </div>
     <div data-panel="0" id="stock-panel-0"></div>
     <div data-panel="1" id="stock-panel-1" style="display:none;"></div>
     <div data-panel="2" id="stock-panel-2" style="display:none;"></div>
+    <div data-panel="3" id="stock-panel-3" style="display:none;"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="stock-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -532,7 +534,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.55","versionMovil":"2.54","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.56","versionMovil":"2.55","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -620,6 +622,31 @@ function detalleAnimales(animales){
     const {cat, dueno} = partesClave(key);
     return {cat, dueno, cant};
   });
+}
+/* Desglose de stock por dueño: categorías, UG y dotación (UG del dueño /
+   hectáreas TOTALES del establecimiento -- no hay "hectáreas propias" de
+   cada dueño porque los animales de varios dueños comparten los mismos
+   potreros; sumando la dotación de todos los dueños da la dotación general).
+   Solo se muestra en establecimientos con más de un dueño obligatorio (ver
+   @multiDueno en generar.js) -- hoy únicamente María Laura. */
+function resumenPorDueno(){
+  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  return DUENOS.map(dueno=>{
+    const categorias = {};
+    let ug = 0;
+    POTREROS_GEO.forEach(p=>{
+      Object.entries(estado.potreros[p.nombre].animales).forEach(([key,cant])=>{
+        const partes = partesClave(key);
+        if(partes.dueno===dueno && cant>0){
+          categorias[partes.cat] = (categorias[partes.cat]||0) + cant;
+          const coef = estado.ugCoef[partes.cat] !== undefined ? estado.ugCoef[partes.cat] : (UG_DEFAULT[partes.cat]||1);
+          ug += cant*coef;
+        }
+      });
+    });
+    const total = Object.values(categorias).reduce((s,c)=>s+c,0);
+    return {dueno, categorias, total, ug, dotacion: totalHa>0 ? ug/totalHa : 0};
+  }).filter(d=>d.total>0);
 }
 /* Migración de una sola vez: si alguna vez se guardó una clave de "animales"
    sin "||" (categoría pelada, de antes de que este establecimiento tuviera
@@ -3232,8 +3259,12 @@ function cambiarPestanaStock(indice){
   document.querySelectorAll('#stock-tabs .stock-tab-btn').forEach(b=>{
     b.classList.toggle('activo', b.dataset.tab === String(indice));
   });
-  [0,1,2].forEach(i=>{
-    document.getElementById('stock-panel-'+i).style.display = (i===indice) ? 'block' : 'none';
+  // Recorre los paneles que existan en el DOM (no un rango fijo [0,1,2]) --
+  // así el tab "Por dueño" (panel 3, ver @multiDueno) funciona solo con
+  // agregar su HTML, sin tocar esta función en los establecimientos donde
+  // no existe.
+  document.querySelectorAll('#modal-stock [data-panel]').forEach(el=>{
+    el.style.display = (el.dataset.panel === String(indice)) ? 'block' : 'none';
   });
 }
 document.getElementById('stock-tabs').addEventListener('click', (e)=>{
@@ -3243,7 +3274,7 @@ document.getElementById('stock-tabs').addEventListener('click', (e)=>{
 
 async function cargarStock(){
   cambiarPestanaStock(0);
-  [0,1,2].forEach(i=> document.getElementById('stock-panel-'+i).innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>');
+  document.querySelectorAll('#modal-stock [data-panel]').forEach(el=> el.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>');
 
   const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
   const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
@@ -3305,6 +3336,25 @@ async function cargarStock(){
   htmlTemporada += '<div style="height:14px;"></div>';
   htmlTemporada += seccionEstadisticaHTML(`Muertes — temporada ${muertes.anioTemporada}`, {...muertes, cantidadTemporada: muertes.muertesTemporada}, 'muertes');
   document.getElementById('stock-panel-2').innerHTML = htmlTemporada;
+
+  const panelDueno = document.getElementById('stock-panel-3');
+  if(panelDueno){
+    const porDueno = resumenPorDueno();
+    panelDueno.innerHTML = porDueno.length ? porDueno.map(d=>{
+      const filasCat = Object.entries(d.categorias).sort((a,b)=> b[1]-a[1]);
+      return `<div style="margin-bottom:16px;">
+        <div style="font-weight:600;font-size:13.5px;margin-bottom:4px;">${d.dueno}</div>
+        <table class="tabla-animales">
+          <thead><tr><th>Categoría</th><th style="text-align:right;">Animales</th></tr></thead>
+          <tbody>
+            ${filasCat.map(([cat,cant])=>`<tr><td>${cat}</td><td class="num">${cant}</td></tr>`).join('')}
+            <tr class="total"><td>Total</td><td class="num">${d.total}</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${d.ug.toFixed(1)} UG · ${d.dotacion.toFixed(2)} UG/ha de dotación</div>
+      </div>`;
+    }).join('') : '<p style="font-size:12.5px;color:var(--texto-suave);">Ningún dueño tiene animales cargados.</p>';
+  }
 }
 document.getElementById('btn-stock').addEventListener('click', ()=>{
   document.getElementById('modal-stock').style.display = 'flex';
