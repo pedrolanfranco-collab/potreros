@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.29</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.30</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -532,7 +532,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.29","versionMovil":"1.29","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.30","versionMovil":"1.30","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -3253,6 +3253,26 @@ function madresPorEspecie(){
   }
   return {vacas, ovejas};
 }
+/* Saldo por potrero de Terneros/Corderos-as, arrancando en 0 (SIN carga
+   inicial -- eso no nació esta temporada). Sirve para clampear una
+   corrección exactamente igual que aplicarAjusteReversion en el stock real:
+   si esos animales ya se movieron a otro potrero antes de corregir, la
+   resta no puede sacar más de lo que hay, así que se aplica solo lo que
+   realmente había ahí (tocarSaldoTemporada devuelve cuánto se aplicó de
+   verdad). Sin esto, una corrección resta el número completo aunque el
+   stock ya no lo tenga ahí -- bug real encontrado el 12/9/2026 en La
+   Vuelta (potreros 10 y 11): el stock (73, confirmado por Pedro contando
+   en el campo) no coincidía con la temporada (65) por exactamente los 4
+   animales que dos correcciones distintas no pudieron sacar de donde
+   ya no estaban. */
+function tocarSaldoTemporada(saldo, potrero, categoria, delta, clamp){
+  if(!potrero || (categoria!=='Terneros' && categoria!=='Corderos/as')) return 0;
+  saldo[potrero] = saldo[potrero] || {};
+  const antes = saldo[potrero][categoria] || 0;
+  const despues = clamp ? Math.max(0, antes + delta) : antes + delta;
+  saldo[potrero][categoria] = despues;
+  return despues - antes;
+}
 async function calcularEstadisticasNacimientos(){
   const hoy = new Date();
   const anioTemporada = (hoy.getMonth()+1) >= 8 ? hoy.getFullYear() : hoy.getFullYear()-1;
@@ -3263,8 +3283,10 @@ async function calcularEstadisticasNacimientos(){
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo')
-        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['nacimiento','correccion']);
+      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo,creado_en')
+        .eq('establecimiento', ESTABLECIMIENTO)
+        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo'])
+        .order('creado_en', {ascending:true});
       if(!res.error){
         eventos = res.data||[];
         localStorage.setItem(cacheKey, JSON.stringify(eventos));
@@ -3277,6 +3299,7 @@ async function calcularEstadisticasNacimientos(){
     if(guardado){ eventos = JSON.parse(guardado); fuente = 'cache'; }
   }
 
+  const saldo = {};
   const porMesCategoria = {'Terneros':{8:0,9:0,10:0,11:0,12:0}, 'Corderos/as':{8:0,9:0,10:0,11:0,12:0}};
   let nacidosTerneros = 0, nacidosCorderos = 0;
   const acumular = (categoria, fc, delta)=>{
@@ -3290,10 +3313,43 @@ async function calcularEstadisticasNacimientos(){
     if(categoria==='Terneros') nacidosTerneros += delta; else nacidosCorderos += delta;
   };
   (eventos||[]).forEach(ev=>{
+    const d = ev.detalle || {};
     if(ev.tipo==='nacimiento'){
-      acumular(ev.detalle && ev.detalle.categoria, ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
-    } else if(ev.tipo==='correccion' && ev.detalle && (ev.detalle.accion==='eliminar' || ev.detalle.accion==='editar') && ev.detalle.tipoOriginal==='nacimiento' && ev.detalle.reversar){
-      acumular(ev.detalle.reversar.categoria, ev.detalle.fechaOriginal || ev.fecha_cliente, -((ev.detalle.reversar.cantidad)||0));
+      tocarSaldoTemporada(saldo, ev.potrero, d.categoria, d.cantidad||0, false);
+      acumular(d.categoria, ev.fecha_cliente, d.cantidad||0);
+    } else if(ev.tipo==='muerte' || ev.tipo==='venta' || ev.tipo==='desaparecido'){
+      tocarSaldoTemporada(saldo, ev.potrero, d.categoria, -(d.cantidad||0), true);
+    } else if(ev.tipo==='ingreso' || ev.tipo==='compra' || ev.tipo==='encontrado'){
+      tocarSaldoTemporada(saldo, ev.potrero, d.categoria, d.cantidad||0, false);
+    } else if(ev.tipo==='movimiento'){
+      tocarSaldoTemporada(saldo, ev.potrero, d.categoria, -(d.cantidad||0), false);
+      tocarSaldoTemporada(saldo, d.destino, d.categoriaDestino || d.categoria, d.cantidad||0, false);
+    } else if(ev.tipo==='movimiento_multi' || ev.tipo==='movimiento_todo'){
+      (d.items||[]).forEach(it=>{
+        tocarSaldoTemporada(saldo, ev.potrero, it.categoria, -(it.cantidad||0), false);
+        tocarSaldoTemporada(saldo, d.destino, it.categoriaDestino || it.categoria, it.cantidad||0, false);
+      });
+    } else if(ev.tipo==='correccion' && d.reversar){
+      const r = d.reversar;
+      // Tanto "Borrar" como "Editar" reversan igual (aplicarAjusteReversion
+      // no distingue accion) -- solo lo que reversa un NACIMIENTO cuenta
+      // para la temporada; reversar un movimiento/muerte/etc. sí toca el
+      // saldo (para que una corrección futura clampee bien) pero no es un
+      // nacimiento que sumar o restar acá.
+      if(r.tipo==='restar'){
+        const aplicado = tocarSaldoTemporada(saldo, r.potrero, r.categoria, -(r.cantidad||0), true);
+        if(d.tipoOriginal==='nacimiento') acumular(r.categoria, d.fechaOriginal || ev.fecha_cliente, aplicado);
+      } else if(r.tipo==='sumar'){
+        tocarSaldoTemporada(saldo, r.potrero, r.categoria, r.cantidad||0, false);
+      } else if(r.tipo==='mover'){
+        tocarSaldoTemporada(saldo, r.origen, r.categoria, -(r.cantidad||0), true);
+        tocarSaldoTemporada(saldo, r.destino, r.categoriaDestino || r.categoria, r.cantidad||0, false);
+      } else if(r.tipo==='mover_todo' || r.tipo==='mover_multi'){
+        (r.items||[]).forEach(it=>{
+          tocarSaldoTemporada(saldo, r.origen, it.categoria, -(it.cantidad||0), true);
+          tocarSaldoTemporada(saldo, r.destino, it.categoriaDestino || it.categoria, it.cantidad||0, false);
+        });
+      }
     }
   });
 

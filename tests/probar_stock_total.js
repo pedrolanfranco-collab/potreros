@@ -62,10 +62,18 @@ function crearServidor(eventosSemilla){
     createClient(){
       return { from(tabla){
         const q = {
-          _filtros: [],
+          _filtros: [], _orden: null,
           select(){ return q; }, eq(col,val){ q._filtros.push(r=>r[col]===val); return q; },
           in(col,vals){ q._filtros.push(r=>vals.includes(r[col])); return q; },
-          then(res){ const data = (filas[tabla]||[]).filter(r=>q._filtros.every(f=>f(r))); return Promise.resolve(res({data, error:null})); }
+          order(col,opts){ q._orden = {col, asc: !opts || opts.ascending!==false}; return q; },
+          then(res){
+            let data = (filas[tabla]||[]).filter(r=>q._filtros.every(f=>f(r)));
+            if(q._orden) data = data.slice().sort((a,b)=>{
+              const av=a[q._orden.col], bv=b[q._orden.col];
+              return (av<bv?-1:av>bv?1:0) * (q._orden.asc?1:-1);
+            });
+            return Promise.resolve(res({data, error:null}));
+          }
         };
         return q;
       } };
