@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.26 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.27 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -540,7 +540,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.26","versionMovil":"1.26","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.27","versionMovil":"1.27","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -2673,12 +2673,17 @@ async function calcularEstadisticasNacimientos(){
   (eventos||[]).forEach(ev=>{
     if(ev.tipo==='nacimiento'){
       acumularMes(ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
-    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.accion==='eliminar' && ev.detalle.tipoOriginal==='nacimiento' && ev.detalle.reversar){
-      // solo "Borrar" (accion:'eliminar') significa que esa carga no
-      // deberia haber existido -- "Editar" revierte para volver a cargar
-      // corregido, el hecho sigue siendo real y no se descuenta. Se resta
-      // del mes original si se guardo (fechaOriginal), o si es una
-      // correccion vieja sin ese dato, del mes en que se hizo la correccion.
+    } else if(ev.tipo==='correccion' && ev.detalle && (ev.detalle.accion==='eliminar' || ev.detalle.accion==='editar') && ev.detalle.tipoOriginal==='nacimiento' && ev.detalle.reversar){
+      // Tanto "Borrar" como "Editar" ya restaron esta cantidad del stock real
+      // en el momento de corregir (aplicarAjusteReversion corre igual para
+      // los dos) -- si "Editar" no se resta acá, el contador queda inflado
+      // para siempre en los casos donde se cancela el formulario de recarga
+      // en vez de reenviarlo (bug real detectado el 12/9/2026, La Vuelta
+      // potrero OMBU: -7 Terneros nunca repuestos). Si el usuario sí reenvía
+      // el valor corregido, ese reenvío entra como un evento 'nacimiento'
+      // nuevo y se suma aparte, así que restar acá no descuenta de más. Se
+      // resta del mes original si se guardó (fechaOriginal), o si es una
+      // corrección vieja sin ese dato, del mes en que se hizo la corrección.
       acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -((ev.detalle.reversar.cantidad)||0));
     }
   });

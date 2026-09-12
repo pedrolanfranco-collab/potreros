@@ -1,9 +1,16 @@
 /*
- * Prueba ad-hoc: si se borra una carga de nacimiento (o muerte), el
+ * Prueba ad-hoc: si se borra O EDITA una carga de nacimiento (o muerte), el
  * conteo de "Temporada" tiene que descontarla -- antes solo restaba del
- * STOCK, nunca del total de nacimientos/muertes de la temporada. Bug
- * real encontrado el 9/9: el sistema mostraba 51 nacimientos cuando el
- * numero real (tras borrar una carga duplicada) era 49.
+ * STOCK, nunca del total de nacimientos/muertes de la temporada. Bug real
+ * encontrado el 9/9: el sistema mostraba 51 nacimientos cuando el numero
+ * real (tras borrar una carga duplicada) era 49.
+ *
+ * Segundo bug real, encontrado el 12/9/2026: "Editar" tampoco descontaba
+ * (a proposito, por diseño original) porque se asumia que el usuario
+ * siempre reenvia el formulario con el valor corregido -- pero "Editar" ya
+ * resta del stock real ANTES de esa recarga, y si el usuario cancela en vez
+ * de reenviar, esos animales quedan restados del stock para siempre sin que
+ * la temporada se entere. Corregido para descontar en los dos casos.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -133,9 +140,16 @@ async function probarArchivo(archivo){
   chequear('despues de borrar la carga de +2: sigue en 8 (no debe contar la que se borro)',
     despues.nacimientosTemporada === 8, 'dio: ' + despues.nacimientosTemporada);
 
-  // "Editar" (a diferencia de "Borrar") NO significa que el nacimiento no
-  // pasó -- el flujo revierte para volver a cargar corregido, el hecho
-  // sigue siendo real. No debe descontarse de la temporada.
+  // "Editar" resta del stock real apenas se confirma (aplicarAjusteReversion
+  // corre igual que en "Borrar"), ANTES de que el usuario llegue a reenviar
+  // el formulario con el valor corregido -- si cancela esa recarga en vez de
+  // reenviarla, la unica huella que queda es la correccion con esos animales
+  // restados. Bug real encontrado el 12/9/2026 (La Vuelta, potrero OMBU): un
+  // "Editar" sin reenvio dejo -7 Terneros afuera del stock que la temporada
+  // seguia contando como si hubieran nacido. Por eso "Editar" tiene que
+  // descontarse de la temporada igual que "Borrar" -- si el usuario SI
+  // reenvia el valor corregido, ese reenvio entra como un evento 'nacimiento'
+  // nuevo y se suma aparte (no se compensa de mas).
   const totalAntes2 = win.__totalPotrero(p);
   est.potreros[p].animales['Terneros'] = (est.potreros[p].animales['Terneros']||0) + 4;
   win.__registrarCambioOcupacion(p, totalAntes2);
@@ -145,8 +159,18 @@ async function probarArchivo(archivo){
   const entradaEditar = est.potreros[p].historial.find(h=>h.detalle==='nacimiento: +4 Terneros' && !h.eliminado);
   win.__editar(entradaEditar.id);
   const luegoDeEditar = await win.__calcNac();
-  chequear('editar (no borrar) una carga de nacimiento NO descuenta de la temporada',
-    luegoDeEditar.nacimientosTemporada === 12, 'esperaba 8+4=12, dio: ' + luegoDeEditar.nacimientosTemporada);
+  chequear('editar sin reenviar una carga de nacimiento SI descuenta de la temporada (vuelve a 8)',
+    luegoDeEditar.nacimientosTemporada === 8, 'esperaba 12-4=8, dio: ' + luegoDeEditar.nacimientosTemporada);
+
+  // Si despues de "Editar" el usuario SI reenvia el formulario con el valor
+  // corregido, ese reenvio es un evento 'nacimiento' nuevo e independiente:
+  // se suma aparte y el resultado final tiene que reflejar solo el valor
+  // corregido, no el original ni una resta doble.
+  const fechaCorregida = fechaHoyTemporada(3);
+  servidor.filas.eventos_sync.push({ establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaCorregida, detalle: { categoria:'Terneros', cantidad: 3 } });
+  const luegoDeReenviar = await win.__calcNac();
+  chequear('reenviar el valor corregido (3, en vez del 4 original) deja la temporada en 11',
+    luegoDeReenviar.nacimientosTemporada === 11, 'esperaba 8+3=11, dio: ' + luegoDeReenviar.nacimientosTemporada);
 }
 
 (async () => {
