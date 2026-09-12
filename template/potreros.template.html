@@ -895,11 +895,11 @@ function clienteSupabase(){
 }
 function enviarEvento(tipo, potrero, detalle, fecha){
 <!-- @pc:start -->
-  const evento = { tipo, potrero, detalle, fecha_cliente: fecha || fechaHoy() };
+  const evento = { event_id: generarIdHistorial(), tipo, potrero, detalle, fecha_cliente: fecha || fechaHoy() };
 <!-- @pc:end -->
 <!-- @movil:start -->
   const detalleConUsuario = Object.assign({}, detalle, { usuario: usuarioActual() });
-  const evento = { tipo, potrero, detalle: detalleConUsuario, fecha_cliente: fecha || fechaHoy() };
+  const evento = { event_id: generarIdHistorial(), tipo, potrero, detalle: detalleConUsuario, fecha_cliente: fecha || fechaHoy() };
 <!-- @movil:end -->
   pushEventoRemoto(evento);
 }
@@ -910,10 +910,15 @@ async function pushEventoRemoto(evento){
   }
   try{
     const { error } = await client.from('eventos_sync').insert({
-      establecimiento: ESTABLECIMIENTO, dispositivo: idDispositivo(),
+      event_id: evento.event_id, establecimiento: ESTABLECIMIENTO, dispositivo: idDispositivo(),
       tipo: evento.tipo, potrero: evento.potrero, detalle: evento.detalle, fecha_cliente: evento.fecha_cliente
     });
-    if(error){ estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync(); return false; }
+    // Un reintento (ej. corte de red justo después de que el insert ya
+    // había llegado a Supabase) manda el mismo event_id -- la violación de
+    // UNIQUE en esa columna significa que el evento ya está guardado, no
+    // que falló. Sin esto, el reintento crea una fila duplicada y el
+    // movimiento se aplica dos veces en los demás dispositivos.
+    if(error && error.code !== '23505'){ estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync(); return false; }
     return true;
   }catch(e){
     estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync(); return false;
@@ -4660,9 +4665,13 @@ if(navigator.onLine) setTimeout(()=> sincronizar(false), 1500);
 setInterval(()=>{ if(navigator.onLine) sincronizar(false); }, 3*60*1000);
 
 /* ======================= RESTABLECER DATOS DE FÁBRICA ======================= */
-/* Borra lo guardado en este navegador y vuelve a la carga inicial (CARGA_INICIAL_SEED).
-   Sirve para el caso típico: el navegador ya tenía un estado vacío guardado de antes
-   y por eso la carga inicial nunca se aplicó (borrar caché NO borra localStorage). */
+/* Borra lo guardado en este navegador (incluido el ID de dispositivo) y
+   recarga: al no tener ESTABLECIMIENTO ni historial propio, sincronizar()
+   trae de nuevo TODA la historia de eventos_sync como si fuera un
+   dispositivo nuevo, y la reconstruye sobre CARGA_INICIAL_SEED. Antes solo
+   se borraba el estado y no el ID de dispositivo, así que la propia
+   historia del dispositivo (la que sincronizar() descarta por venir de
+   "mi" ID) nunca volvía a aparecer -- el reset quedaba incompleto. */
 document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   const total = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
   const pendSync = (estado.colaSync||[]).length;
@@ -4679,6 +4688,7 @@ document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   );
   if(!confirmar) return;
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  try{ localStorage.removeItem(DISPOSITIVO_KEY); }catch(e){}
   location.reload();
 });
 

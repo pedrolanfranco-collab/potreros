@@ -76,3 +76,6 @@ jobs:
 
       - name: Firma en La Vuelta -- migracion de claves sin firma, formularios opcionales, Dueno sigue obligatorio en Maria Laura/Pone Chico
         run: node tests/probar_firma_la_vuelta.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: "Auditoria 12/9 (P0): event_id evita duplicar un reintento, Restablecer borra tambien el ID de dispositivo"
+        run: node tests/probar_idempotencia_reset.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html

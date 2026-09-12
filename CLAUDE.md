@@ -63,7 +63,7 @@ assuming an instant deploy.
 step: `node template/generar.js --check` — regenerates all 6 files in memory
 and fails the build if any committed `index.html` doesn't match (someone
 edited a generated file by hand, or edited the template/configs without
-regenerating). After that, 18 jsdom test scripts (`tests/probar_*.js`, using
+regenerating). After that, 19 jsdom test scripts (`tests/probar_*.js`, using
 `tests/package.json`'s pinned `jsdom@30.0.1`/`jszip@3.10.1`) run against the
 published `index.html` files of whichever folders each script targets. These
 are the same scripts as `scripts/probar_*.js` in the `apps-potreros` skill —
@@ -199,6 +199,32 @@ and replays them (`sincronizar()`), so replay order and offline queuing
 doesn't auto-pause after 7 days of inactivity — that ping isn't per-app, one
 covers the whole shared project.
 
+**Idempotencia (12/9/2026, auditoría de 3 IAs verificada contra el código):**
+cada evento lleva un `event_id` propio (`generarIdHistorial()`, generado una
+sola vez en `enviarEvento()` y reusado si el evento se reencola). El insert
+en `pushEventoRemoto()` incluye `event_id`, con una columna `UNIQUE` del
+mismo nombre en Supabase. Si un reintento (típicamente un corte de red justo
+después de que el insert original ya había llegado al servidor) manda el
+mismo `event_id`, Supabase devuelve una violación de unicidad (`error.code
+=== '23505'`) que se trata como éxito y NO se reencola — antes, ese mismo
+reintento creaba una fila duplicada y el movimiento se aplicaba dos veces en
+los demás dispositivos. **Requiere que la columna exista en Supabase antes
+de desplegar este código** (`ALTER TABLE eventos_sync ADD COLUMN event_id
+uuid; ALTER TABLE eventos_sync ADD CONSTRAINT eventos_sync_event_id_key
+UNIQUE (event_id);` — nullable, sin `NOT NULL`, para que un evento que
+quedó encolado en un dispositivo con una versión vieja de la app, sin
+`event_id`, siga insertando bien, aunque sin la protección de idempotencia)
+— mismo error que ya pasó una vez con `productos_catalogo` (columna nueva
+en el código antes que en la tabla → insert falla).
+
+**"Restablecer datos de fábrica" (mismo 12/9/2026):** además de borrar
+`STORAGE_KEY`, ahora también borra `DISPOSITIVO_KEY` antes de recargar. Con
+un ID de dispositivo nuevo, `sincronizar()` (que descarta los eventos cuyo
+`dispositivo === miId`, línea ~1292) trae de nuevo TODA la historia del
+establecimiento — incluida la que antes había generado este mismo
+dispositivo, que antes del fix quedaba perdida para siempre tras un reset.
+Ver `tests/probar_idempotencia_reset.js`.
+
 ### Editing paddock boundaries at runtime (`Importar KML/KMZ`)
 
 Since `POTREROS_GEO` is a fixed literal, boundary edits and new paddocks
@@ -259,13 +285,30 @@ called from `sincronizar()` right after `vaciarColaSync()`).
   (`sanidad_carga_maria_laura`, `sanidad_carga_pone_chico` — same schema
   minus `establecimiento` and `importado_en`, since the table itself
   identifies the establishment and there's no Excel bridge to track). The
-  app derives the table name as `TABLA_SANIDAD = 'sanidad_carga_' +
-  ESTABLECIMIENTO` and both reads and writes go straight there — no
-  tri-state UI, just one unified `sanidad-lista`.
+  table name comes from `CONFIG.tablaSanidad` (`TABLA_SANIDAD =
+  CONFIG.tablaSanidad`, set per establishment in `template/configs/*.js`)
+  and both reads and writes go straight there — no tri-state UI, just one
+  unified `sanidad-lista`.
 - `productos_catalogo` (product dropdown in the treatment form) **is**
   shared across all three establishments on purpose — it's a reference list,
   not an operational record, and María Laura/Pone Chico sync their catalog
   from La Vuelta's.
+- **`apto_desde`/costo (12/9/2026)**: `productos_catalogo` also carries
+  `dias_retiro`/`valor_dosis_ml` per product, published from the same
+  Excel sheet as the rest of the catalog (outside this repo — see memory
+  `planilla-sanitaria-v22`). `cargarCatalogoProductos()` loads them into
+  `catalogoDatos`, and `datosProducto()`/`calcularAptoDesde()`/
+  `calcularCostoAnimal()`/`lineaCalculoSanidad()` do the actual math in JS
+  (`apto_desde = fecha + dias_retiro`; `costo = dosis × cantidad ×
+  valor_dosis_ml`) — no Postgres view, matching how every other
+  calculation in this app is plain client-side JS. María Laura/Pone Chico
+  show it unconditionally in `renderSanidadLista()`; La Vuelta shows it in
+  `renderMisCargasSanidad()` labeled **"Estimado"**, since the actual
+  authoritative `apto_desde` for La Vuelta still comes from
+  `sanidad_ultimos` once the Excel bridge processes the record — this is
+  only a same-device preview to avoid the bridge's delay. A product typed
+  as free text (not in the catalog) shows nothing calculated, same
+  graceful-degradation as the dropdown itself.
 
 ### PWA / offline
 
