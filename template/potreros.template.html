@@ -3764,6 +3764,7 @@ document.getElementById('desaparecidos-cerrar').addEventListener('click', ()=>{
 async function cargarSanidad(){
   const cont = document.getElementById('sanidad-lista');
   cont.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>';
+  await cargarCatalogoProductos(); // trae dias_retiro/valor_dosis_ml para "Apto desde"
   const cacheKey = ESTABLECIMIENTO + '_sanidad_cache';
   let datos = null;
   const client = clienteSupabase();
@@ -3798,6 +3799,7 @@ function renderSanidadLista(cargas){
       <div class="potrero-card">
         <div class="nombre">${c.fecha||''} · ${c.categoria||'—'}${c.potrero?(' · potrero '+c.potrero):''}${c.dueno?(' · '+c.dueno):''}</div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${c.producto1||''}${c.dosis1?(' ('+c.dosis1+')'):''}${c.producto2?(' + '+c.producto2):''}${c.observaciones?(' — '+c.observaciones):''}</div>
+        ${lineaCalculoSanidad(c.fecha, c.producto1, c.dosis1, c.cantidad, '')}
       </div>`).join('');
     html += pendientes.map(p=>`
       <div class="potrero-card">
@@ -3821,6 +3823,7 @@ document.getElementById('sanidad-cerrar').addEventListener('click', ()=>{
 async function cargarSanidad(){
   const cont = document.getElementById('sanidad-lista');
   cont.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>';
+  await cargarCatalogoProductos(); // trae dias_retiro/valor_dosis_ml para el estimado de "Apto desde"
   const cacheKey = ESTABLECIMIENTO + '_sanidad_cache';
   let datos = null;
   const client = clienteSupabase();
@@ -3873,6 +3876,7 @@ async function renderMisCargasSanidad(){
   if(!cont) return;
   const historial = estado.historialSanidad || [];
   if(!historial.length){ cont.innerHTML = ''; return; }
+  await cargarCatalogoProductos(); // trae dias_retiro/valor_dosis_ml para el estimado de "Apto desde"
   const enCola = new Set((estado.colaSanidad||[]).map(r=>r.id));
   const procesados = {};
   const client = clienteSupabase();
@@ -3894,6 +3898,7 @@ async function renderMisCargasSanidad(){
     return `<div class="potrero-card">
         <div class="nombre">${h.fecha||''} · ${h.categoria||'—'}${h.potrero?(' · potrero '+h.potrero):''}</div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${h.producto1||''} — ${estadoTxt}</div>
+        ${lineaCalculoSanidad(h.fecha, h.producto1, h.dosis1, h.cantidad, 'Estimado')}
       </div>`;
   }).join('');
   cont.innerHTML = '<h4 style="margin:10px 0 6px;font-size:13px;">Mis cargas recientes</h4>' + html;
@@ -3920,21 +3925,70 @@ document.getElementById('sanidad-cerrar').addEventListener('click', ()=>{
    cacheo. "Otro (escribir)..." en el desplegable vuelve a texto libre para
    productos que todavia no estan en el catalogo del Excel. ===== */
 let catalogoProductos = [];
+/* Datos de plazo/costo por producto (12/9/2026), mismo catalogo de arriba --
+   dias_retiro y valor_dosis_ml se publican desde la misma hoja "Costo
+   productos" que ya alimenta el desplegable, nunca se cargan a mano acá.
+   Un producto sin esos campos (o en texto libre, "Otro") simplemente no
+   calcula nada -- no es un error, es degradar con gracia igual que ya hace
+   el desplegable cuando el catálogo no cargó. */
+let catalogoDatos = {};
+function datosProducto(nombre){
+  return catalogoDatos[nombre] || null;
+}
+function sumarDiasISO(fechaISO, dias){
+  if(!fechaISO || dias==null) return null;
+  const f = new Date(fechaISO+'T00:00:00');
+  f.setDate(f.getDate() + dias);
+  return f.toISOString().slice(0,10);
+}
+function calcularAptoDesde(fechaISO, nombreProducto){
+  const d = datosProducto(nombreProducto);
+  if(!d || d.dias_retiro==null) return null;
+  return sumarDiasISO(fechaISO, d.dias_retiro);
+}
+function calcularCostoAnimal(nombreProducto, dosis, cantidad){
+  const d = datosProducto(nombreProducto);
+  const dosisNum = parseFloat(dosis);
+  const cantNum = parseInt(cantidad, 10);
+  if(!d || d.valor_dosis_ml==null || isNaN(dosisNum) || isNaN(cantNum)) return null;
+  return d.valor_dosis_ml * dosisNum * cantNum;
+}
+/* HTML de la línea de "Apto desde"/costo para una tarjeta de Sanidad, o ''
+   si el producto no está en el catálogo (texto libre, "Otro", o el
+   catálogo no cargó) -- no es un error, simplemente no hay nada que
+   mostrar. `etiqueta` deja marcarla como "Estimado" en La Vuelta (ver
+   @sanidadExcel más abajo), donde esto es una previa local y el dato
+   oficial sigue viniendo de sanidad_ultimos vía el puente a Excel. */
+function lineaCalculoSanidad(fechaISO, producto, dosis, cantidad, etiqueta){
+  if(!producto) return '';
+  const apto = calcularAptoDesde(fechaISO, producto);
+  if(!apto) return '';
+  const costo = calcularCostoAnimal(producto, dosis, cantidad);
+  const prefijo = etiqueta ? `<strong>${etiqueta}:</strong> ` : '';
+  return `<div style="font-size:12px;color:var(--texto-suave);margin-top:2px;">${prefijo}Apto desde ${fechaISOaDisplay(apto)}${costo!=null ? ' · Costo USD '+costo.toFixed(2) : ''}</div>`;
+}
 async function cargarCatalogoProductos(){
   const cacheKey = 'productos_catalogo_cache';
+  const datosKey = 'productos_catalogo_datos_cache';
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const res = await client.from('productos_catalogo').select('producto').order('producto');
+      const res = await client.from('productos_catalogo').select('producto,dias_retiro,valor_dosis_ml').order('producto');
       if(!res.error){
-        catalogoProductos = (res.data||[]).map(r=>r.producto).filter(Boolean);
+        const filas = res.data||[];
+        catalogoProductos = filas.map(r=>r.producto).filter(Boolean);
+        catalogoDatos = {};
+        filas.forEach(r=>{ if(r.producto) catalogoDatos[r.producto] = {dias_retiro: r.dias_retiro, valor_dosis_ml: r.valor_dosis_ml}; });
         localStorage.setItem(cacheKey, JSON.stringify(catalogoProductos));
+        localStorage.setItem(datosKey, JSON.stringify(catalogoDatos));
         return;
       }
     }catch(e){ /* sigue con el cache */ }
   }
   const guardado = localStorage.getItem(cacheKey);
   if(guardado){ try{ catalogoProductos = JSON.parse(guardado); }catch(e){} }
+  const guardadoDatos = localStorage.getItem(datosKey);
+  if(guardadoDatos){ try{ catalogoDatos = JSON.parse(guardadoDatos); }catch(e){} }
 }
 function opcionesProductos(){
   let html = '<option value="">Elegir…</option>';
@@ -4037,7 +4091,7 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   // @sanidadExcel:start
   await guardarSanidadCarga(registro);
   estado.historialSanidad = estado.historialSanidad || [];
-  estado.historialSanidad.unshift({ id: registro.id, fecha: registro.fecha, categoria: registro.categoria, potrero: registro.potrero, producto1: registro.producto1 });
+  estado.historialSanidad.unshift({ id: registro.id, fecha: registro.fecha, categoria: registro.categoria, potrero: registro.potrero, producto1: registro.producto1, dosis1: registro.dosis1, cantidad: registro.cantidad });
   estado.historialSanidad = estado.historialSanidad.slice(0, 15);
   guardarEstado();
   document.getElementById('form-sanidad').style.display = 'none';

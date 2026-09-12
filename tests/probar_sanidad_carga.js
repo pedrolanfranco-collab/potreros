@@ -183,7 +183,7 @@ async function probarArchivo(archivo){
 
   // --- con catálogo cargado: producto1/2 se muestran como <select>, y
   // "Otro (escribir)…" vuelve a texto libre para algo que no está en el catálogo ---
-  servidor.filas.productos_catalogo = [{producto:'Aftosa'},{producto:'EON'},{producto:'MEXIVER'}];
+  servidor.filas.productos_catalogo = [{producto:'Aftosa'},{producto:'EON', dias_retiro:122, valor_dosis_ml:0.074},{producto:'MEXIVER'}];
   doc.getElementById('btn-cargar-sanidad').dispatchEvent(new win.Event('click', { bubbles: true }));
   await new Promise(r=>setTimeout(r,20));
   const selProd1 = doc.getElementById('sc-producto1');
@@ -228,6 +228,15 @@ async function probarArchivo(archivo){
     await new Promise(r=>setTimeout(r,20));
     chequear('una vez procesado por el puente figura "en la planilla"', doc.getElementById('sanidad-mis-cargas').innerHTML.includes('en la planilla'), doc.getElementById('sanidad-mis-cargas').innerHTML);
 
+    // 12/9/2026: el EON cargado antes (cantidad 12 x dosis 3 x 0.074 = USD 2.66)
+    // muestra el cálculo rotulado "Estimado" -- en La Vuelta el dato oficial
+    // sigue viniendo de sanidad_ultimos vía el puente, esto es solo una previa
+    // local para no esperar a que el puente corra.
+    const misCargasHtml = doc.getElementById('sanidad-mis-cargas').innerHTML;
+    chequear('EON en "Mis cargas" muestra el cálculo rotulado "Estimado"',
+      misCargasHtml.includes('Estimado') && misCargasHtml.includes('Apto desde') && misCargasHtml.includes('Costo USD 2.66'),
+      misCargasHtml);
+
     // sin señal: la carga nueva queda en colaSanidad y "Mis cargas" lo marca
     Object.defineProperty(win.navigator, 'onLine', { value: false, configurable: true });
     doc.getElementById('btn-cargar-sanidad').dispatchEvent(new win.Event('click', { bubbles: true }));
@@ -257,6 +266,17 @@ async function probarArchivo(archivo){
       listaHtml);
     chequear('"sanidad-lista" NO usa el lenguaje de puente/planilla (no aplica sin Excel)',
       !listaHtml.includes('esperando el puente') && !listaHtml.includes('en la planilla'));
+
+    // 12/9/2026: con dias_retiro/valor_dosis_ml en el catálogo, la tarjeta del
+    // producto conocido (EON, cantidad 12 x dosis 3 x 0.074 = USD 2.66) calcula
+    // "Apto desde"/costo; la del producto en texto libre (sin catálogo) no
+    // muestra nada calculado -- no es un error, es degradar con gracia.
+    chequear('producto del catálogo (EON) calcula "Apto desde" y costo',
+      listaHtml.includes('Apto desde') && listaHtml.includes('Costo USD 2.66'), listaHtml);
+    const filaLibre = listaHtml.split('Producto nuevo sin catalogar')[1] || '';
+    const filaLibreCorte = filaLibre.split('potrero-card')[0];
+    chequear('producto en texto libre (sin catálogo) NO calcula nada',
+      !filaLibreCorte.includes('Apto desde'), filaLibreCorte);
 
     // sin señal: la carga nueva queda en colaSanidad y aparece en la misma
     // lista, marcada aparte, sin esperar a ningun puente.

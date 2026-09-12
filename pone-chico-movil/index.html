@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.22</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.23</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -532,7 +532,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.22","versionMovil":"1.22","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.23","versionMovil":"1.23","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -2778,6 +2778,7 @@ document.getElementById('desaparecidos-cerrar').addEventListener('click', ()=>{
 async function cargarSanidad(){
   const cont = document.getElementById('sanidad-lista');
   cont.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>';
+  await cargarCatalogoProductos(); // trae dias_retiro/valor_dosis_ml para "Apto desde"
   const cacheKey = ESTABLECIMIENTO + '_sanidad_cache';
   let datos = null;
   const client = clienteSupabase();
@@ -2812,6 +2813,7 @@ function renderSanidadLista(cargas){
       <div class="potrero-card">
         <div class="nombre">${c.fecha||''} · ${c.categoria||'—'}${c.potrero?(' · potrero '+c.potrero):''}${c.dueno?(' · '+c.dueno):''}</div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${c.producto1||''}${c.dosis1?(' ('+c.dosis1+')'):''}${c.producto2?(' + '+c.producto2):''}${c.observaciones?(' — '+c.observaciones):''}</div>
+        ${lineaCalculoSanidad(c.fecha, c.producto1, c.dosis1, c.cantidad, '')}
       </div>`).join('');
     html += pendientes.map(p=>`
       <div class="potrero-card">
@@ -2841,21 +2843,70 @@ document.getElementById('sanidad-cerrar').addEventListener('click', ()=>{
    cacheo. "Otro (escribir)..." en el desplegable vuelve a texto libre para
    productos que todavia no estan en el catalogo del Excel. ===== */
 let catalogoProductos = [];
+/* Datos de plazo/costo por producto (12/9/2026), mismo catalogo de arriba --
+   dias_retiro y valor_dosis_ml se publican desde la misma hoja "Costo
+   productos" que ya alimenta el desplegable, nunca se cargan a mano acá.
+   Un producto sin esos campos (o en texto libre, "Otro") simplemente no
+   calcula nada -- no es un error, es degradar con gracia igual que ya hace
+   el desplegable cuando el catálogo no cargó. */
+let catalogoDatos = {};
+function datosProducto(nombre){
+  return catalogoDatos[nombre] || null;
+}
+function sumarDiasISO(fechaISO, dias){
+  if(!fechaISO || dias==null) return null;
+  const f = new Date(fechaISO+'T00:00:00');
+  f.setDate(f.getDate() + dias);
+  return f.toISOString().slice(0,10);
+}
+function calcularAptoDesde(fechaISO, nombreProducto){
+  const d = datosProducto(nombreProducto);
+  if(!d || d.dias_retiro==null) return null;
+  return sumarDiasISO(fechaISO, d.dias_retiro);
+}
+function calcularCostoAnimal(nombreProducto, dosis, cantidad){
+  const d = datosProducto(nombreProducto);
+  const dosisNum = parseFloat(dosis);
+  const cantNum = parseInt(cantidad, 10);
+  if(!d || d.valor_dosis_ml==null || isNaN(dosisNum) || isNaN(cantNum)) return null;
+  return d.valor_dosis_ml * dosisNum * cantNum;
+}
+/* HTML de la línea de "Apto desde"/costo para una tarjeta de Sanidad, o ''
+   si el producto no está en el catálogo (texto libre, "Otro", o el
+   catálogo no cargó) -- no es un error, simplemente no hay nada que
+   mostrar. `etiqueta` deja marcarla como "Estimado" en La Vuelta (ver
+   @sanidadExcel más abajo), donde esto es una previa local y el dato
+   oficial sigue viniendo de sanidad_ultimos vía el puente a Excel. */
+function lineaCalculoSanidad(fechaISO, producto, dosis, cantidad, etiqueta){
+  if(!producto) return '';
+  const apto = calcularAptoDesde(fechaISO, producto);
+  if(!apto) return '';
+  const costo = calcularCostoAnimal(producto, dosis, cantidad);
+  const prefijo = etiqueta ? `<strong>${etiqueta}:</strong> ` : '';
+  return `<div style="font-size:12px;color:var(--texto-suave);margin-top:2px;">${prefijo}Apto desde ${fechaISOaDisplay(apto)}${costo!=null ? ' · Costo USD '+costo.toFixed(2) : ''}</div>`;
+}
 async function cargarCatalogoProductos(){
   const cacheKey = 'productos_catalogo_cache';
+  const datosKey = 'productos_catalogo_datos_cache';
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const res = await client.from('productos_catalogo').select('producto').order('producto');
+      const res = await client.from('productos_catalogo').select('producto,dias_retiro,valor_dosis_ml').order('producto');
       if(!res.error){
-        catalogoProductos = (res.data||[]).map(r=>r.producto).filter(Boolean);
+        const filas = res.data||[];
+        catalogoProductos = filas.map(r=>r.producto).filter(Boolean);
+        catalogoDatos = {};
+        filas.forEach(r=>{ if(r.producto) catalogoDatos[r.producto] = {dias_retiro: r.dias_retiro, valor_dosis_ml: r.valor_dosis_ml}; });
         localStorage.setItem(cacheKey, JSON.stringify(catalogoProductos));
+        localStorage.setItem(datosKey, JSON.stringify(catalogoDatos));
         return;
       }
     }catch(e){ /* sigue con el cache */ }
   }
   const guardado = localStorage.getItem(cacheKey);
   if(guardado){ try{ catalogoProductos = JSON.parse(guardado); }catch(e){} }
+  const guardadoDatos = localStorage.getItem(datosKey);
+  if(guardadoDatos){ try{ catalogoDatos = JSON.parse(guardadoDatos); }catch(e){} }
 }
 function opcionesProductos(){
   let html = '<option value="">Elegir…</option>';
