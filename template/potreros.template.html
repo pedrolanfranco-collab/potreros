@@ -1556,6 +1556,20 @@ function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha, usuari
    contrario exacto y lo aplica local y a los demas dispositivos como un
    evento mas (tipo 'correccion'), sin tocar ni reinterpretar los eventos
    viejos en Supabase -- por eso nunca se pierde la idempotencia. */
+/* Hasta el 12/9/2026 esta función le ponía un piso de 0 a cada resta (no
+   podía dejar un potrero en negativo). Eso es anterior a que existiera
+   "saldo negativo" (que sí permite y avisa un potrero en rojo en un
+   movimiento común) -- y causaba un bug real: si Borrás/Editás un
+   nacimiento DESPUÉS de que esos animales ya se movieron a otro potrero, la
+   resta ya no los encuentra ahí, se topa con el piso, y esa parte de la
+   corrección queda "perdida" en silencio -- el stock queda con más
+   animales de los que debería, mientras que calcularEstadisticasNacimientos
+   (que no tiene piso) sí resta el total completo. Resultado real
+   encontrado en La Vuelta: el stock de Terneros (69) no coincidía con los
+   nacidos en la temporada (61). Sacar el piso hace que una corrección reste
+   exactamente lo mismo que ya resta la temporada -- si el potrero de origen
+   no tiene tanto porque los animales ya viajaron, ahora queda en negativo
+   (visible, en rojo) en vez de perder la resta en silencio. */
 function aplicarAjusteReversion(ajuste){
   if(!ajuste) return;
   if(ajuste.tipo==='sumar' || ajuste.tipo==='restar'){
@@ -1563,7 +1577,7 @@ function aplicarAjusteReversion(ajuste){
     const key = claveAnimal(ajuste.categoria, ajuste.dueno);
     const totalAntes = totalPotrero(ajuste.potrero);
     const delta = ajuste.tipo==='sumar' ? ajuste.cantidad : -ajuste.cantidad;
-    p.animales[key] = Math.max(0, (p.animales[key]||0) + delta);
+    p.animales[key] = (p.animales[key]||0) + delta;
     registrarCambioOcupacion(ajuste.potrero, totalAntes);
   } else if(ajuste.tipo==='mover'){
     const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
@@ -1571,7 +1585,7 @@ function aplicarAjusteReversion(ajuste){
     const keyOrigen = claveAnimal(ajuste.categoria, ajuste.dueno);
     const keyDestino = claveAnimal(ajuste.categoriaDestino || ajuste.categoria, ajuste.dueno);
     const totalAntesO = totalPotrero(ajuste.origen), totalAntesD = totalPotrero(ajuste.destino);
-    po.animales[keyOrigen] = Math.max(0, (po.animales[keyOrigen]||0) - ajuste.cantidad);
+    po.animales[keyOrigen] = (po.animales[keyOrigen]||0) - ajuste.cantidad;
     pd.animales[keyDestino] = (pd.animales[keyDestino]||0) + ajuste.cantidad;
     registrarCambioOcupacion(ajuste.origen, totalAntesO);
     registrarCambioOcupacion(ajuste.destino, totalAntesD);
@@ -1581,7 +1595,7 @@ function aplicarAjusteReversion(ajuste){
     const totalAntesO = totalPotrero(ajuste.origen), totalAntesD = totalPotrero(ajuste.destino);
     ajuste.items.forEach(it=>{
       const key = claveAnimal(it.categoria, it.dueno);
-      po.animales[key] = Math.max(0, (po.animales[key]||0) - it.cantidad);
+      po.animales[key] = (po.animales[key]||0) - it.cantidad;
       pd.animales[key] = (pd.animales[key]||0) + it.cantidad;
     });
     registrarCambioOcupacion(ajuste.origen, totalAntesO);
@@ -1593,7 +1607,7 @@ function aplicarAjusteReversion(ajuste){
     ajuste.items.forEach(it=>{
       const keyActual = claveAnimal(it.categoriaDestino || it.categoria, it.dueno);
       const keyOriginal = claveAnimal(it.categoria, it.dueno);
-      po.animales[keyActual] = Math.max(0, (po.animales[keyActual]||0) - it.cantidad);
+      po.animales[keyActual] = (po.animales[keyActual]||0) - it.cantidad;
       pd.animales[keyOriginal] = (pd.animales[keyOriginal]||0) + it.cantidad;
     });
     registrarCambioOcupacion(ajuste.origen, totalAntesO);

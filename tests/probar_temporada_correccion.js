@@ -117,8 +117,15 @@ async function probarArchivo(archivo){
   // cargar una entrada de nacimiento LOCAL (con extra) y borrarla
   const est = win.__est();
   const p = Object.keys(est.potreros)[0];
+  // aplicarAjusteReversion arma la clave con claveAnimal(categoria, dueno) --
+  // como el "extra" de este nacimiento no lleva dueno (undefined), la clave
+  // real es "Terneros||" (dueno vacio), no "Terneros" pelado. Se usa esa
+  // misma clave acá para tocar el estado a mano, igual que la haría el
+  // formulario real -- si no, un Borrar/Editar resta de una clave distinta
+  // a la que se cargó y la prueba no refleja lo que pasa en la app real.
+  const claveTerneros = 'Terneros||';
   const totalAntes = win.__totalPotrero(p);
-  est.potreros[p].animales['Terneros'] = (est.potreros[p].animales['Terneros']||0) + 2;
+  est.potreros[p].animales[claveTerneros] = (est.potreros[p].animales[claveTerneros]||0) + 2;
   win.__registrarCambioOcupacion(p, totalAntes);
   const fechaExtra = fechaHoyTemporada(1);
   win.__registrarHistorial(p, 'nacimiento', 'nacimiento: +2 Terneros', {potrero:p, categoria:'Terneros', cantidad:2}, undefined, fechaExtra);
@@ -151,7 +158,7 @@ async function probarArchivo(archivo){
   // reenvia el valor corregido, ese reenvio entra como un evento 'nacimiento'
   // nuevo y se suma aparte (no se compensa de mas).
   const totalAntes2 = win.__totalPotrero(p);
-  est.potreros[p].animales['Terneros'] = (est.potreros[p].animales['Terneros']||0) + 4;
+  est.potreros[p].animales[claveTerneros] = (est.potreros[p].animales[claveTerneros]||0) + 4;
   win.__registrarCambioOcupacion(p, totalAntes2);
   const fechaExtra2 = fechaHoyTemporada(3);
   win.__registrarHistorial(p, 'nacimiento', 'nacimiento: +4 Terneros', {potrero:p, categoria:'Terneros', cantidad:4}, undefined, fechaExtra2);
@@ -171,6 +178,34 @@ async function probarArchivo(archivo){
   const luegoDeReenviar = await win.__calcNac();
   chequear('reenviar el valor corregido (3, en vez del 4 original) deja la temporada en 11',
     luegoDeReenviar.bovino.nacidos === 11, 'esperaba 8+3=11, dio: ' + luegoDeReenviar.bovino.nacidos);
+
+  // Bug real encontrado el 12/9/2026 en La Vuelta (stock de Terneros 69 vs
+  // 61 en temporada): si se Borra un nacimiento DESPUES de que esos mismos
+  // animales ya se movieron a otro potrero, aplicarAjusteReversion le ponia
+  // un piso de 0 al potrero de origen -- la resta se "perdia" en silencio
+  // ahi, mientras que calcularEstadisticasNacimientos (sin piso) restaba
+  // igual el total completo. Sacamos ese piso (mismo criterio que ya usan
+  // los movimientos comunes con "saldo negativo"): ahora la correccion
+  // resta lo mismo en los dos lados, aunque el potrero de origen quede en
+  // negativo -- visible, no perdido.
+  const otroPotrero = Object.keys(est.potreros).find(n=>n!==p);
+  const totalAntes3 = win.__totalPotrero(p);
+  est.potreros[p].animales[claveTerneros] = (est.potreros[p].animales[claveTerneros]||0) + 6;
+  win.__registrarCambioOcupacion(p, totalAntes3);
+  const fechaNac3 = fechaHoyTemporada(4);
+  win.__registrarHistorial(p, 'nacimiento', 'nacimiento: +6 Terneros', {potrero:p, categoria:'Terneros', cantidad:6}, undefined, fechaNac3);
+  servidor.filas.eventos_sync.push({ establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaNac3, detalle: { categoria:'Terneros', cantidad: 6 } });
+  // los 6 Terneros ya se movieron a otro potrero ANTES de corregir el
+  // nacimiento original (simula un movimiento real ya aplicado)
+  est.potreros[p].animales[claveTerneros] -= 6;
+  est.potreros[otroPotrero].animales[claveTerneros] = (est.potreros[otroPotrero].animales[claveTerneros]||0) + 6;
+  const entradaNac3 = est.potreros[p].historial.find(h=>h.detalle==='nacimiento: +6 Terneros' && !h.eliminado);
+  win.__borrar(entradaNac3.id);
+  chequear('borrar un nacimiento ya movido a otro potrero NO le pone piso de 0 (queda en -6)',
+    est.potreros[p].animales[claveTerneros] === -6, JSON.stringify(est.potreros[p].animales));
+  const luegoDelPiso = await win.__calcNac();
+  chequear('la temporada sigue coincidiendo con el neto real (11, sin cambios: +6-6=0 de este caso)',
+    luegoDelPiso.bovino.nacidos === 11, 'esperaba 11, dio: ' + luegoDelPiso.bovino.nacidos);
 }
 
 (async () => {
