@@ -107,11 +107,12 @@ async function probarArchivo(archivo){
   win.mostrarFormulario(nombre, 'agregar');
   chequear('se puede usar "Agregar animales" como carga inicial en el potrero recien creado', !!doc.getElementById('f-confirmar'));
 
-  const cat = doc.getElementById('f-cat').options[0].value;
-  doc.getElementById('f-cat').value = cat;
-  const due = doc.getElementById('f-dueno');
+  const fila = doc.querySelector('.agregar-fila');
+  const cat = fila.querySelector('.ag-cat').options[0].value;
+  fila.querySelector('.ag-cat').value = cat;
+  const due = fila.querySelector('.ag-dueno');
   if(due) due.value = due.options[0].value;
-  doc.getElementById('f-cant').value = '30';
+  fila.querySelector('.ag-cant').value = '30';
   doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
   chequear('la carga inicial se aplico', win.totalPotrero(nombre) === 30, 'quedo ' + win.totalPotrero(nombre));
 

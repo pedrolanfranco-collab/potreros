@@ -1,12 +1,16 @@
 /*
  * Prueba ad-hoc: "Agregar animales" pasa a servir solo como carga inicial.
  * Verifica, por archivo:
- *  A) potrero con stock -> el boton/form de "agregar" se bloquea con mensaje,
- *     no cambia nada.
- *  B) potrero vacio -> "agregar" sigue funcionando igual que antes.
- *  C) corregir un historial (prefill) sigue funcionando aunque haya stock.
+ *  A) potrero con stock -> primero un aviso (no el formulario), con un botón
+ *     "Agregar igual" que sí lo abre si se confirma (12/9/2026: antes esto
+ *     bloqueaba sin dar la opción de continuar).
+ *  B) potrero vacio -> el formulario aparece directo, y admite cargar varias
+ *     categorías de una sola vez ("+ Agregar otra categoría", 12/9/2026).
+ *  C) corregir un historial (prefill) sigue funcionando aunque haya stock --
+ *     sigue siendo de una sola categoría, no cambia con lo de arriba.
  *  D) "nacimiento" nunca se bloquea, tenga o no stock el potrero.
- *  E) comando de voz: "agregar" se bloquea con stock (toast), "nacimiento" no.
+ *  E) comando de voz: "agregar" se bloquea con stock (toast), "nacimiento" no
+ *     -- el camino de voz es independiente del formulario y no se tocó.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -91,6 +95,17 @@ function llenarFormAgregar(doc, cat, cant, dueno){
   if(due) due.value = dueno || due.options[0].value;
   doc.getElementById('f-cant').value = String(cant);
 }
+// Llena una fila del formulario de carga inicial (multi-categoría) por índice
+// -- devuelve el dueño realmente usado, para poder armar la clave y verificar.
+function llenarFilaAgregar(doc, idx, cat, cant, dueno){
+  const fila = doc.querySelectorAll('.agregar-fila')[idx];
+  fila.querySelector('.ag-cat').value = cat;
+  const due = fila.querySelector('.ag-dueno');
+  const duenoUsado = dueno || (due ? due.options[0].value : '');
+  if(due) due.value = duenoUsado;
+  fila.querySelector('.ag-cant').value = String(cant);
+  return duenoUsado;
+}
 
 async function probarArchivo(archivo){
   console.log('\n=== ' + archivo + ' ===');
@@ -101,7 +116,7 @@ async function probarArchivo(archivo){
   if(!conStock){ chequear('hay al menos un potrero con stock para probar el bloqueo', false, 'ningun potrero tiene animales'); return; }
   const cat = Object.keys(winBase.__est().potreros[conStock].animales)[0];
 
-  // A) potrero con stock -> "agregar" se bloquea
+  // A) potrero con stock -> primero un aviso, con opción de continuar igual
   {
     const { win, errores } = await levantar(archivo);
     if(errores.length){ chequear('A: carga sin errores', false, errores[0]); return; }
@@ -109,12 +124,20 @@ async function probarArchivo(archivo){
     const totalAntes = win.totalPotrero(conStock);
     win.seleccionarPotrero(conStock);
     win.mostrarFormulario(conStock, 'agregar');
-    chequear('A: no se muestra el formulario en un potrero con stock', !doc.getElementById('f-confirmar'));
-    chequear('A: el mensaje de bloqueo menciona "stock inicial"', /stock inicial/.test(doc.getElementById('form-zona').innerHTML));
+    chequear('A: no se muestra el formulario de carga directo en un potrero con stock', !doc.getElementById('f-confirmar'));
+    chequear('A: el aviso menciona "stock inicial"', /stock inicial/.test(doc.getElementById('form-zona').innerHTML));
     chequear('A: el stock no cambio', win.totalPotrero(conStock) === totalAntes);
+    const btnIgual = doc.getElementById('f-agregar-igual');
+    chequear('A: el aviso ofrece un botón para continuar igual', !!btnIgual);
+    if(btnIgual){
+      btnIgual.dispatchEvent(new win.Event('click', { bubbles: true }));
+      chequear('A: al confirmar "Agregar igual" aparece el formulario de carga', !!doc.getElementById('f-confirmar'));
+      chequear('A: el formulario arranca con una sola fila de categoría', doc.querySelectorAll('.agregar-fila').length === 1);
+      chequear('A: el stock sigue sin cambiar (todavía no se confirmó nada)', win.totalPotrero(conStock) === totalAntes);
+    }
   }
 
-  // B) potrero vacio -> "agregar" sigue funcionando
+  // B) potrero vacio -> el formulario aparece directo, y admite varias categorías de una
   let idNuevoIngreso = null;
   {
     const { win, errores } = await levantar(archivo);
@@ -124,15 +147,27 @@ async function probarArchivo(archivo){
     chequear('B: el potrero quedo vacio', win.totalPotrero(conStock) === 0);
     win.seleccionarPotrero(conStock);
     win.mostrarFormulario(conStock, 'agregar');
-    chequear('B: se muestra el formulario en un potrero vacio', !!doc.getElementById('f-confirmar'));
+    chequear('B: se muestra el formulario directo en un potrero vacio', !!doc.getElementById('f-confirmar'));
     if(doc.getElementById('f-confirmar')){
-      llenarFormAgregar(doc, cat, 5);
-      doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
-      chequear('B: la carga inicial se aplico', win.totalPotrero(conStock) === 5, 'quedo ' + win.totalPotrero(conStock));
-      const hist = win.__est().potreros[conStock].historial;
-      const entradaIngreso = hist.find(h => h.tipo === 'ingreso' && h.extra);
-      chequear('B: quedo un historial de ingreso con datos para poder corregirlo despues', !!entradaIngreso);
-      idNuevoIngreso = entradaIngreso ? entradaIngreso.id : null;
+      const opcionesCat = Array.from(doc.querySelector('.ag-cat').options).map(o=>o.value);
+      if(opcionesCat.length < 2){
+        chequear('B: hay al menos 2 categorías disponibles para probar la carga múltiple', false, JSON.stringify(opcionesCat));
+      } else {
+        const cat1 = opcionesCat[0], cat2 = opcionesCat[1];
+        const dueno1 = llenarFilaAgregar(doc, 0, cat1, 5);
+        doc.getElementById('f-agregar-fila').dispatchEvent(new win.Event('click', { bubbles: true }));
+        chequear('B: "+ Agregar otra categoría" agrega una segunda fila', doc.querySelectorAll('.agregar-fila').length === 2);
+        const dueno2 = llenarFilaAgregar(doc, 1, cat2, 3);
+        doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
+        chequear('B: la carga inicial de las 2 categorías se aplicó (total)', win.totalPotrero(conStock) === 8, 'quedo ' + win.totalPotrero(conStock));
+        const animales = win.__est().potreros[conStock].animales;
+        chequear('B: la 1ra categoría quedó con su cantidad', animales[win.claveAnimal(cat1, dueno1)] === 5, JSON.stringify(animales));
+        chequear('B: la 2da categoría quedó con su cantidad', animales[win.claveAnimal(cat2, dueno2)] === 3, JSON.stringify(animales));
+        const hist = win.__est().potreros[conStock].historial;
+        const entradasIngreso = hist.filter(h => h.tipo === 'ingreso' && h.extra);
+        chequear('B: quedó una entrada de historial por categoría (no una sola agrupada)', entradasIngreso.length === 2, JSON.stringify(entradasIngreso));
+        idNuevoIngreso = entradasIngreso[0] ? entradasIngreso[0].id : null;
+      }
     }
   }
 

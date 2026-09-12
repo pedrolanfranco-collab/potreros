@@ -223,9 +223,15 @@ async function probar(archivo){
     !!doc.querySelector('[data-accion="agregar"]') === (variante === 'PC'));
   const antes = win.totalPotrero(p1);
   win.mostrarFormulario(p1, 'agregar');
-  const cat = doc.getElementById('f-cat');
-  const due = doc.getElementById('f-dueno');
-  const cnt = doc.getElementById('f-cant');
+  // 12/9/2026: la carga inicial pasó a admitir varias categorías de una vez
+  // -- cada fila usa clases (.ag-cat/.ag-dueno/.ag-cant), no los ids sueltos
+  // f-cat/f-dueno/f-cant (esos siguen existiendo, pero solo para el
+  // formulario de UNA sola categoría que arma "editar" sobre un ingreso ya
+  // cargado -- ver probar_agregar_solo_inicial.js).
+  const primeraFila = doc.querySelector('.agregar-fila');
+  const cat = primeraFila && primeraFila.querySelector('.ag-cat');
+  const due = primeraFila && primeraFila.querySelector('.ag-dueno');
+  const cnt = primeraFila && primeraFila.querySelector('.ag-cant');
   chequear('el formulario de agregar se arma', !!cat && !!cnt);
   let catUsada = null, dueUsado = null;
   if(cat && cnt){

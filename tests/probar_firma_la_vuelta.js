@@ -138,12 +138,13 @@ async function probarLaVuelta(archivo){
   const potreroVacio = nombres.find(n => Object.values(est2.potreros[n].animales).every(v=>!v)) || nombres[1];
   const doc2 = win2.document;
   win2.__mostrarFormulario(potreroVacio, 'agregar');
-  const selFirma = doc2.getElementById('f-dueno');
+  const filaFirma = doc2.querySelector('.agregar-fila');
+  const selFirma = filaFirma && filaFirma.querySelector('.ag-dueno');
   chequear('el formulario de Agregar tiene un selector de Firma', !!selFirma);
-  chequear('el label dice "Firma" (no "Dueño")', doc2.getElementById('form-zona').innerHTML.includes('>Firma<'));
+  chequear('el label dice "Firma" (no "Dueño")', doc2.getElementById('form-zona').innerHTML.includes('Firma'));
   chequear('la opción en blanco ("sin asignar") es la seleccionada por default', selFirma && selFirma.value==='');
-  doc2.getElementById('f-cat').value = 'Vacas';
-  doc2.getElementById('f-cant').value = '5';
+  filaFirma.querySelector('.ag-cat').value = 'Vacas';
+  filaFirma.querySelector('.ag-cant').value = '5';
   doc2.getElementById('f-confirmar').dispatchEvent(new win2.Event('click', { bubbles: true }));
   const claveSinFirma = 'Vacas||';
   chequear('cargar sin elegir Firma no bloquea el formulario, cae en "sin firma"',

@@ -89,11 +89,12 @@ async function probarArchivo(archivo){
     win.seleccionarPotrero(p1);
     win.__vaciar(p1);
     win.mostrarFormulario(p1, 'agregar');
-    const cat = doc.getElementById('f-cat').options[0].value;
-    doc.getElementById('f-cat').value = cat;
-    const due = doc.getElementById('f-dueno');
+    const fila = doc.querySelector('.agregar-fila');
+    const cat = fila.querySelector('.ag-cat').options[0].value;
+    fila.querySelector('.ag-cat').value = cat;
+    const due = fila.querySelector('.ag-dueno');
     if(due) due.value = due.options[0].value;
-    doc.getElementById('f-cant').value = '5';
+    fila.querySelector('.ag-cant').value = '5';
     doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
     const disponibles = win.totalPotrero(p1);
 
@@ -119,11 +120,12 @@ async function probarArchivo(archivo){
     win.seleccionarPotrero(p1);
     win.__vaciar(p1);
     win.mostrarFormulario(p1, 'agregar');
-    const cat = doc.getElementById('f-cat').options[0].value;
-    doc.getElementById('f-cat').value = cat;
-    const due = doc.getElementById('f-dueno');
+    const fila = doc.querySelector('.agregar-fila');
+    const cat = fila.querySelector('.ag-cat').options[0].value;
+    fila.querySelector('.ag-cat').value = cat;
+    const due = fila.querySelector('.ag-dueno');
     if(due) due.value = due.options[0].value;
-    doc.getElementById('f-cant').value = '5';
+    fila.querySelector('.ag-cant').value = '5';
     doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
     const disponibles = win.totalPotrero(p1);
     const exceso = disponibles + 20;

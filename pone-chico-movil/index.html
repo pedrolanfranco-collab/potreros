@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.24</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.25</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -532,7 +532,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.24","versionMovil":"1.24","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.25","versionMovil":"1.25","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1985,45 +1985,127 @@ function filasCategoriasMover(nombre){
   }).join('');
 }
 
+/* Una fila de "Agregar animales" (carga inicial) -- categoría/dueño/cantidad
+   sueltos, se agregan tantas como categorías se quieran cargar de una vez
+   (12/9/2026, a pedido: antes había que reabrir el formulario una vez por
+   categoría). Cada fila se envía como su propio evento 'ingreso' -- no un
+   tipo "multi" nuevo -- para no tocar aplicarEventoRemoto/construirAjusteInverso/
+   editarHistorial: cada categoría queda como una entrada de historial
+   independiente, editable/borrable igual que si se hubiera cargado sola. */
+function filaAgregarAnimales(idx){
+  return `<div class="form-row agregar-fila" data-idx="${idx}" style="display:flex;align-items:center;gap:6px;">
+    <select class="ag-cat" style="flex:2;">${opcionesCategorias()}</select>
+    <select class="ag-dueno" style="flex:2;">${opcionesDuenos()}</select>
+    <input type="number" class="ag-cant" min="1" value="1" style="flex:1;min-width:56px;">
+    <button type="button" class="ag-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+  </div>`;
+}
+function actualizarBotonesQuitarAgregar(){
+  const filas = document.querySelectorAll('#f-filas-agregar .agregar-fila');
+  filas.forEach(f=>{ f.querySelector('.ag-quitar').style.visibility = filas.length>1 ? 'visible' : 'hidden'; });
+}
+function mostrarFormularioAgregarInicial(nombre){
+  const zona = document.getElementById('form-zona');
+  let filaIdx = 1;
+  zona.innerHTML = `
+    <div class="form-accion">
+      <h3>Agregar animales a ${nombre}</h3>
+      <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Categoría · ${CONFIG.duenoLabel} · Cantidad</label>
+      <div id="f-filas-agregar">${filaAgregarAnimales(0)}</div>
+      <button type="button" class="btn btn-secundario" id="f-agregar-fila" style="margin:8px 0;">+ Agregar otra categoría</button>
+      <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+      <div class="form-botones">
+        <button class="btn btn-agregar" id="f-confirmar">Agregar</button>
+        <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+      </div>
+    </div>`;
+  document.getElementById('f-agregar-fila').addEventListener('click', ()=>{
+    document.getElementById('f-filas-agregar').insertAdjacentHTML('beforeend', filaAgregarAnimales(filaIdx++));
+    actualizarBotonesQuitarAgregar();
+  });
+  document.getElementById('f-filas-agregar').addEventListener('click', (e)=>{
+    if(e.target.classList.contains('ag-quitar')){
+      e.target.closest('.agregar-fila').remove();
+      actualizarBotonesQuitarAgregar();
+    }
+  });
+  document.getElementById('f-confirmar').addEventListener('click', ()=>{
+    const fechaISO = document.getElementById('f-fecha').value;
+    if(!fechaISO){ toast('Elegí una fecha'); return; }
+    const filas = Array.from(document.querySelectorAll('#f-filas-agregar .agregar-fila')).map(f=>({
+      cat: f.querySelector('.ag-cat').value,
+      dueno: f.querySelector('.ag-dueno').value,
+      cant: parseInt(f.querySelector('.ag-cant').value,10)
+    })).filter(f=>f.cant && f.cant>0);
+    if(!filas.length){ toast('Ingresá al menos una categoría con cantidad válida'); return; }
+    const fecha = fechaISOaDisplay(fechaISO);
+    filas.forEach(f=>{
+      const totalAntes = totalPotrero(nombre);
+      const a = estado.potreros[nombre].animales;
+      const key = claveAnimal(f.cat, f.dueno);
+      a[key] = (a[key]||0) + f.cant;
+      registrarCambioOcupacion(nombre, totalAntes);
+      registrarHistorial(nombre, 'ingreso', `+${f.cant} ${f.cat}${f.dueno?' de '+f.dueno:''} (ingreso)`, {potrero: nombre, categoria: f.cat, dueno: f.dueno, cantidad: f.cant}, undefined, fecha);
+      enviarEvento('ingreso', nombre, {categoria: f.cat, dueno: f.dueno, cantidad: f.cant}, fecha);
+    });
+    guardarEstado(); actualizarTodo(); cerrarDetalle();
+    toast(`Se agregaron: ${filas.map(f=>`${f.cant} ${f.cat}`).join(', ')}`);
+  });
+  document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+}
+
 function mostrarFormulario(nombre, accion, prefill){
   const zona = document.getElementById('form-zona');
 
   if(accion==='agregar'){
-    if(!prefill && totalPotrero(nombre)>0){
-      zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">"＋ Agregar animales" es solo para cargar el stock inicial de un potrero vacío. Para sumar animales a ${nombre} ahora, usá 💰 Compra, 🐄 Nacimiento, o ⇄ Mover si vienen de otro potrero.</p></div>`;
+    if(prefill){
+      zona.innerHTML = `
+        <div class="form-accion">
+          <h3>Agregar animales a ${nombre}</h3>
+          <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill.categoria)}</select></div>
+          <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill.dueno)}</select></div>
+          <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill.cantidad}"></div>
+          <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+          <div class="form-botones">
+            <button class="btn btn-agregar" id="f-confirmar">Guardar corrección</button>
+            <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+          </div>
+        </div>`;
+      document.getElementById('f-confirmar').addEventListener('click', ()=>{
+        const cat = document.getElementById('f-cat').value;
+        const dueno = document.getElementById('f-dueno').value;
+        const cant = parseInt(document.getElementById('f-cant').value,10);
+        const fechaISO = document.getElementById('f-fecha').value;
+        if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+        if(!fechaISO){ toast('Elegí una fecha'); return; }
+        const fecha = fechaISOaDisplay(fechaISO);
+        const totalAntes = totalPotrero(nombre);
+        const a = estado.potreros[nombre].animales;
+        const key = claveAnimal(cat, dueno);
+        a[key] = (a[key]||0) + cant;
+        registrarCambioOcupacion(nombre, totalAntes);
+        registrarHistorial(nombre, 'ingreso', `+${cant} ${cat}${dueno?' de '+dueno:''} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
+        enviarEvento('ingreso', nombre, {categoria: cat, dueno, cantidad: cant}, fecha);
+        guardarEstado(); actualizarTodo(); cerrarDetalle();
+        toast(`Se agregaron ${cant} ${cat}${dueno?' ('+dueno+')':''} a ${nombre}`);
+      });
+      document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
       return;
     }
-    zona.innerHTML = `
-      <div class="form-accion">
-        <h3>Agregar animales a ${nombre}</h3>
-        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
-        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
-        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+    if(totalPotrero(nombre)>0){
+      zona.innerHTML = `<div class="form-accion">
+        <p style="font-size:13px;color:var(--texto-suave);margin:0 0 10px 0;">"＋ Agregar animales" es para cargar el stock inicial de un potrero vacío. ${nombre} ya tiene animales cargados — para sumar más adelante preferí 💰 Compra, 🐄 Nacimiento, o ⇄ Mover si vienen de otro potrero.</p>
         <div class="form-botones">
-          <button class="btn btn-agregar" id="f-confirmar">${prefill?'Guardar corrección':'Agregar'}</button>
+          <button class="btn btn-agregar" id="f-agregar-igual">Agregar igual</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
-    document.getElementById('f-confirmar').addEventListener('click', ()=>{
-      const cat = document.getElementById('f-cat').value;
-      const dueno = document.getElementById('f-dueno').value;
-      const cant = parseInt(document.getElementById('f-cant').value,10);
-      const fechaISO = document.getElementById('f-fecha').value;
-      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
-      if(!fechaISO){ toast('Elegí una fecha'); return; }
-      const fecha = fechaISOaDisplay(fechaISO);
-      const totalAntes = totalPotrero(nombre);
-      const a = estado.potreros[nombre].animales;
-      const key = claveAnimal(cat, dueno);
-      a[key] = (a[key]||0) + cant;
-      registrarCambioOcupacion(nombre, totalAntes);
-      registrarHistorial(nombre, 'ingreso', `+${cant} ${cat}${dueno?' de '+dueno:''} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
-      enviarEvento('ingreso', nombre, {categoria: cat, dueno, cantidad: cant}, fecha);
-      guardarEstado(); actualizarTodo(); cerrarDetalle();
-      toast(`Se agregaron ${cant} ${cat}${dueno?' ('+dueno+')':''} a ${nombre}`);
-    });
-    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+      document.getElementById('f-agregar-igual').addEventListener('click', ()=> mostrarFormularioAgregarInicial(nombre));
+      document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+      return;
+    }
+    mostrarFormularioAgregarInicial(nombre);
+    return;
   }
 
   if(accion==='mover'){
