@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.28</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.29</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -532,7 +532,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.28","versionMovil":"1.28","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.29","versionMovil":"1.29","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -684,10 +684,11 @@ function usuarioActual(){ return (localStorage.getItem(USUARIO_KEY) || '').trim(
 const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
 const ESTABLECIMIENTO = CONFIG.establecimiento;
-/* Vacas preñadas de la temporada, según el tacto -- si el establecimiento no
-   lo declara (0 u opcional), se estima contando la categoría "Vacas" del stock
-   (no distingue preñadas de vacías, pero es lo único disponible). */
-const VACAS_PRENADAS_TEMPORADA = CONFIG.vacasPrenadasTemporada || 0;
+/* Vacas preñadas / ovejas encarneradas de la temporada -- bases para el % de
+   nacidos de cada especie en 📊 Stock total › Temporada. Arrancan del valor
+   de CONFIG (por si nunca se editaron) pero viven en `estado` porque Pedro
+   las tiene que poder cambiar él mismo cada temporada sin que alguien le
+   toque código (12/9/2026) -- ver el editor en la pestaña Temporada (PC). */
 
 /* Potreros creados por "Importar KML/KMZ" cuando un nombre del archivo no
    coincidía con ninguno existente (ver más abajo, importarLimitesKML). Se
@@ -748,7 +749,12 @@ function estadoInicial(){
       fechaSalida: null
     };
   });
-  return { potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], config: {...CONFIG_DEFAULT}, colaSync: [], colaSanidad: [], historialSanidad: [], ultimaSincronizacion: null };
+  return {
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], config: {...CONFIG_DEFAULT},
+    colaSync: [], colaSanidad: [], historialSanidad: [], ultimaSincronizacion: null,
+    vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
+    ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0
+  };
 }
 
 function cargarEstado(){
@@ -794,6 +800,8 @@ function cargarEstado(){
       if(!parsed.colaSanidad) parsed.colaSanidad = [];
       if(!parsed.historialSanidad) parsed.historialSanidad = [];
       if(parsed.ultimaSincronizacion===undefined) parsed.ultimaSincronizacion = null;
+      if(parsed.vacasPrenadasTemporada===undefined) parsed.vacasPrenadasTemporada = CONFIG.vacasPrenadasTemporada || 0;
+      if(parsed.ovejasEncarneradasTemporada===undefined) parsed.ovejasEncarneradasTemporada = CONFIG.ovejasEncarneradasTemporada || 0;
       return parsed;
     }
   }catch(e){ console.warn("No se pudo leer el estado guardado", e); }
@@ -1991,7 +1999,11 @@ function opcionesCategorias(seleccionada){
 }
 /* Solo las categorías que pueden ser una cría recién nacida -- el desplegable
    de "Nacimiento" no necesita las otras 16 categorías de adultos. */
-const CATEGORIAS_CRIA = ['Terneros','Terneras','Corderos/as','Potros/as'];
+// 12/9/2026: se sacaron "Terneras" y "Potros/as" a pedido de Pedro -- el
+// contador de nacimientos de temporada pasó a discriminar por especie
+// (bovino=Terneros, ovino=Corderos/as, ver calcularEstadisticasNacimientos)
+// y esas dos categorías nunca se usaron en la práctica.
+const CATEGORIAS_CRIA = ['Terneros','Corderos/as'];
 function opcionesCategoriasNacimiento(seleccionada){
   return CATEGORIAS_CRIA.map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
 }
@@ -3215,9 +3227,15 @@ async function leerEventosTemporada(tipo){
   });
   return {anioTemporada, cantidadTemporada, filasPorMes, fuente};
 }
-async function calcularEstadisticasNacimientos(){
-  const base = await leerEventosTemporada('nacimiento');
-  let vacas = VACAS_PRENADAS_TEMPORADA || 0;
+/* Nacimientos discrimina por especie desde el 12/9/2026 (a pedido de Pedro):
+   "Terneros" (bovino, % sobre vacas preñadas) y "Corderos/as" (ovino, % sobre
+   ovejas encarneradas) -- ya no pasa por leerEventosTemporada() genérico
+   (que solo sabe sumar UN tipo sin distinguir categoría) sino que hace su
+   propia consulta, igual que la versión PC. "Terneras"/"Potros/as" no se
+   ofrecen más como categoría de nacimiento (ver CATEGORIAS_CRIA) y no se
+   cuentan acá aunque queden eventos viejos con esa categoría. */
+function madresPorEspecie(){
+  let vacas = estado.vacasPrenadasTemporada || 0;
   if(!vacas){
     POTREROS_GEO.forEach(p=>{
       Object.entries(estado.potreros[p.nombre].animales).forEach(([key,cant])=>{
@@ -3225,18 +3243,99 @@ async function calcularEstadisticasNacimientos(){
       });
     });
   }
-  const pct = vacas>0 ? (base.cantidadTemporada/vacas*100) : 0;
-  return {...base, nacimientosTemporada: base.cantidadTemporada, vacas, pct};
+  let ovejas = estado.ovejasEncarneradasTemporada || 0;
+  if(!ovejas){
+    POTREROS_GEO.forEach(p=>{
+      Object.entries(estado.potreros[p.nombre].animales).forEach(([key,cant])=>{
+        if(partesClave(key).cat==='Ovejas') ovejas += (cant||0);
+      });
+    });
+  }
+  return {vacas, ovejas};
+}
+async function calcularEstadisticasNacimientos(){
+  const hoy = new Date();
+  const anioTemporada = (hoy.getMonth()+1) >= 8 ? hoy.getFullYear() : hoy.getFullYear()-1;
+  const {vacas, ovejas} = madresPorEspecie();
+
+  const cacheKey = ESTABLECIMIENTO + '_nacimientos_cache';
+  let eventos = null, fuente = 'sin_datos';
+  const client = clienteSupabase();
+  if(client && navigator.onLine){
+    try{
+      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo')
+        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['nacimiento','correccion']);
+      if(!res.error){
+        eventos = res.data||[];
+        localStorage.setItem(cacheKey, JSON.stringify(eventos));
+        fuente = 'online';
+      }
+    }catch(e){ /* sigue con el cache */ }
+  }
+  if(!eventos){
+    const guardado = localStorage.getItem(cacheKey);
+    if(guardado){ eventos = JSON.parse(guardado); fuente = 'cache'; }
+  }
+
+  const porMesCategoria = {'Terneros':{8:0,9:0,10:0,11:0,12:0}, 'Corderos/as':{8:0,9:0,10:0,11:0,12:0}};
+  let nacidosTerneros = 0, nacidosCorderos = 0;
+  const acumular = (categoria, fc, delta)=>{
+    if(!porMesCategoria[categoria]) return; // Terneras/Potros/as viejos: ya no se cuentan
+    if(!fc || typeof fc !== 'string') return;
+    const partes = fc.split('/');
+    if(partes.length!==3) return;
+    const m = parseInt(partes[1],10), y = parseInt(partes[2],10);
+    if(!m || !y || m<8 || m>12 || y!==anioTemporada) return;
+    porMesCategoria[categoria][m] += delta;
+    if(categoria==='Terneros') nacidosTerneros += delta; else nacidosCorderos += delta;
+  };
+  (eventos||[]).forEach(ev=>{
+    if(ev.tipo==='nacimiento'){
+      acumular(ev.detalle && ev.detalle.categoria, ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
+    } else if(ev.tipo==='correccion' && ev.detalle && (ev.detalle.accion==='eliminar' || ev.detalle.accion==='editar') && ev.detalle.tipoOriginal==='nacimiento' && ev.detalle.reversar){
+      acumular(ev.detalle.reversar.categoria, ev.detalle.fechaOriginal || ev.fecha_cliente, -((ev.detalle.reversar.cantidad)||0));
+    }
+  });
+
+  const filasPorCategoria = ['Terneros','Corderos/as'].map(cat=>{
+    const m = porMesCategoria[cat];
+    return [cat, m[8], m[9], m[10], m[11], m[12], m[8]+m[9]+m[10]+m[11]+m[12]];
+  });
+
+  return {
+    anioTemporada, fuente, filasPorCategoria,
+    bovino: {madres: vacas, nacidos: nacidosTerneros, pct: vacas>0 ? (nacidosTerneros/vacas*100) : 0},
+    ovino: {madres: ovejas, nacidos: nacidosCorderos, pct: ovejas>0 ? (nacidosCorderos/ovejas*100) : 0}
+  };
 }
 async function calcularEstadisticasMuertes(){
   const base = await leerEventosTemporada('muerte');
   return {...base, muertesTemporada: base.cantidadTemporada};
 }
+/* Nacimientos discrimina por especie (ver calcularEstadisticasNacimientos) --
+   estructura distinta a seccionEstadisticaHTML así que tiene su propio
+   render. En móvil es de solo lectura -- vacas preñadas/ovejas encarneradas
+   se editan desde PC (mismo criterio que "⚙ Coeficientes UG"). */
+function renderNacimientosTemporadaHTML(nac){
+  let html = `<h4 style="margin:0 0 6px;font-size:13px;">Nacimientos — temporada ${nac.anioTemporada}</h4>`;
+  if(nac.fuente==='sin_datos'){
+    html += '<p style="font-size:12.5px;color:var(--texto-suave);">Sin conexión y sin datos guardados todavía.</p>';
+    return html;
+  }
+  const pctBovinoTxt = nac.bovino.madres>0 ? nac.bovino.pct.toFixed(1)+'% s/ vacas' : 'sin vacas preñadas cargadas';
+  const pctOvinoTxt = nac.ovino.madres>0 ? nac.ovino.pct.toFixed(1)+'% s/ ovejas encarneradas' : 'sin ovejas encarneradas cargadas';
+  html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.nacidos}</strong> Terneros (${pctBovinoTxt})</p>`;
+  html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
+  if(nac.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
+  html += tablaMesesHTML(nac.filasPorCategoria, 'Categoría');
+  return html;
+}
 
-function tablaMesesHTML(filas){
+function tablaMesesHTML(filas, etiquetaCol){
+  etiquetaCol = etiquetaCol || 'Año';
   if(!filas.length) return '<p style="font-size:12.5px;color:var(--texto-suave);">Sin datos históricos todavía.</p>';
   return `<table class="tabla-animales">
-    <thead><tr><th>Año</th><th style="text-align:right;">Ago</th><th style="text-align:right;">Sep</th><th style="text-align:right;">Oct</th><th style="text-align:right;">Nov</th><th style="text-align:right;">Dic</th><th style="text-align:right;">Total</th></tr></thead>
+    <thead><tr><th>${etiquetaCol}</th><th style="text-align:right;">Ago</th><th style="text-align:right;">Sep</th><th style="text-align:right;">Oct</th><th style="text-align:right;">Nov</th><th style="text-align:right;">Dic</th><th style="text-align:right;">Total</th></tr></thead>
     <tbody>${filas.map(f=>`<tr><td>${f[0]}</td><td class="num">${f[1]}</td><td class="num">${f[2]}</td><td class="num">${f[3]}</td><td class="num">${f[4]}</td><td class="num">${f[5]}</td><td class="num">${f[6]}</td></tr>`).join('')}</tbody>
   </table>`;
 }
@@ -3270,6 +3369,29 @@ document.getElementById('stock-tabs').addEventListener('click', (e)=>{
   if(btn) cambiarPestanaStock(Number(btn.dataset.tab));
 });
 
+/* Separado de cargarStock() para poder refrescar solo el panel de Temporada
+   al guardar vacas preñadas/ovejas encarneradas -- cargarStock() completo
+   vuelve siempre a la pestaña 0 (Categorías), lo que sacaría a Pedro de
+   Temporada justo después de guardar. */
+async function actualizarPanelTemporada(){
+  const [nac, muertes] = await Promise.all([calcularEstadisticasNacimientos(), calcularEstadisticasMuertes()]);
+  let htmlTemporada = renderNacimientosTemporadaHTML(nac);
+  htmlTemporada += '<div style="height:14px;"></div>';
+  htmlTemporada += seccionEstadisticaHTML(`Muertes — temporada ${muertes.anioTemporada}`, {...muertes, cantidadTemporada: muertes.muertesTemporada}, 'muertes');
+  document.getElementById('stock-panel-2').innerHTML = htmlTemporada;
+  const btnGuardarMadres = document.getElementById('temporada-madres-guardar');
+  if(btnGuardarMadres){
+    btnGuardarMadres.addEventListener('click', ()=>{
+      const v = parseInt(document.getElementById('temporada-vacas').value,10);
+      const o = parseInt(document.getElementById('temporada-ovejas').value,10);
+      estado.vacasPrenadasTemporada = isNaN(v) ? 0 : v;
+      estado.ovejasEncarneradasTemporada = isNaN(o) ? 0 : o;
+      guardarEstado();
+      toast('Cantidad de madres actualizada');
+      actualizarPanelTemporada();
+    });
+  }
+}
 async function cargarStock(){
   cambiarPestanaStock(0);
   document.querySelectorAll('#modal-stock [data-panel]').forEach(el=> el.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>');
@@ -3328,12 +3450,7 @@ async function cargarStock(){
   if(vacios) htmlPotreros += `<p style="font-size:11.5px;color:var(--texto-suave);margin-top:6px;">+ ${vacios} potrero${vacios===1?'':'s'} vacío${vacios===1?'':'s'}.</p>`;
   document.getElementById('stock-panel-1').innerHTML = htmlPotreros;
 
-  const [nac, muertes] = await Promise.all([calcularEstadisticasNacimientos(), calcularEstadisticasMuertes()]);
-  const pctTxt = nac.vacas>0 ? nac.pct.toFixed(1)+'% s/ vacas' : 'sin vacas cargadas';
-  let htmlTemporada = seccionEstadisticaHTML(`Nacimientos — temporada ${nac.anioTemporada}`, {...nac, cantidadTemporada: nac.nacimientosTemporada}, `nacimientos (${pctTxt})`);
-  htmlTemporada += '<div style="height:14px;"></div>';
-  htmlTemporada += seccionEstadisticaHTML(`Muertes — temporada ${muertes.anioTemporada}`, {...muertes, cantidadTemporada: muertes.muertesTemporada}, 'muertes');
-  document.getElementById('stock-panel-2').innerHTML = htmlTemporada;
+  await actualizarPanelTemporada();
 
   const panelDueno = document.getElementById('stock-panel-3');
   if(panelDueno){

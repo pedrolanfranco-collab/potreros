@@ -105,14 +105,14 @@ function fechaHoyTemporada(diaOffset){
 async function probarArchivo(archivo){
   console.log('\n=== ' + archivo + ' ===');
   const servidor = crearServidor([
-    { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaHoyTemporada(1), detalle: { cantidad: 5 } },
-    { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaHoyTemporada(2), detalle: { cantidad: 3 } },
+    { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaHoyTemporada(1), detalle: { cantidad: 5, categoria: 'Terneros' } },
+    { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaHoyTemporada(2), detalle: { cantidad: 3, categoria: 'Terneros' } },
   ]);
   const { win, errores } = await levantar(archivo, servidor);
   if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
 
   const antes = await win.__calcNac();
-  chequear('antes de borrar nada: 8 nacimientos (5+3)', antes.nacimientosTemporada === 8, JSON.stringify(antes.nacimientosTemporada));
+  chequear('antes de borrar nada: 8 Terneros (5+3)', antes.bovino.nacidos === 8, JSON.stringify(antes.bovino));
 
   // cargar una entrada de nacimiento LOCAL (con extra) y borrarla
   const est = win.__est();
@@ -138,7 +138,7 @@ async function probarArchivo(archivo){
   // ya habria llegado sola por el insert real) y recalculamos
   const despues = await win.__calcNac();
   chequear('despues de borrar la carga de +2: sigue en 8 (no debe contar la que se borro)',
-    despues.nacimientosTemporada === 8, 'dio: ' + despues.nacimientosTemporada);
+    despues.bovino.nacidos === 8, 'dio: ' + despues.bovino.nacidos);
 
   // "Editar" resta del stock real apenas se confirma (aplicarAjusteReversion
   // corre igual que en "Borrar"), ANTES de que el usuario llegue a reenviar
@@ -160,7 +160,7 @@ async function probarArchivo(archivo){
   win.__editar(entradaEditar.id);
   const luegoDeEditar = await win.__calcNac();
   chequear('editar sin reenviar una carga de nacimiento SI descuenta de la temporada (vuelve a 8)',
-    luegoDeEditar.nacimientosTemporada === 8, 'esperaba 12-4=8, dio: ' + luegoDeEditar.nacimientosTemporada);
+    luegoDeEditar.bovino.nacidos === 8, 'esperaba 12-4=8, dio: ' + luegoDeEditar.bovino.nacidos);
 
   // Si despues de "Editar" el usuario SI reenvia el formulario con el valor
   // corregido, ese reenvio es un evento 'nacimiento' nuevo e independiente:
@@ -170,7 +170,7 @@ async function probarArchivo(archivo){
   servidor.filas.eventos_sync.push({ establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaCorregida, detalle: { categoria:'Terneros', cantidad: 3 } });
   const luegoDeReenviar = await win.__calcNac();
   chequear('reenviar el valor corregido (3, en vez del 4 original) deja la temporada en 11',
-    luegoDeReenviar.nacimientosTemporada === 11, 'esperaba 8+3=11, dio: ' + luegoDeReenviar.nacimientosTemporada);
+    luegoDeReenviar.bovino.nacidos === 11, 'esperaba 8+3=11, dio: ' + luegoDeReenviar.bovino.nacidos);
 }
 
 (async () => {

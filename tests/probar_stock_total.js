@@ -109,11 +109,11 @@ function fechaEnTemporada(diaOffset){
 async function probarArchivo(archivo, tieneDueno){
   console.log('\n=== ' + archivo + ' ===');
   const eventos = [
-    { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 3 } },
-    { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(2), detalle: { cantidad: 2 } },
+    { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 3, categoria: 'Terneros' } },
+    { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(2), detalle: { cantidad: 2, categoria: 'Terneros' } },
     { establecimiento: 'la_vuelta', tipo: 'muerte', fecha_cliente: fechaEnTemporada(3), detalle: { cantidad: 1 } },
-    { establecimiento: 'maria_laura', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 4 } },
-    { establecimiento: 'pone_chico', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 9 } },
+    { establecimiento: 'maria_laura', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 4, categoria: 'Terneros' } },
+    { establecimiento: 'pone_chico', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 9, categoria: 'Terneros' } },
   ];
   const servidor = crearServidor(eventos);
   const { win, errores } = await levantar(archivo, servidor);
@@ -163,11 +163,33 @@ async function probarArchivo(archivo, tieneDueno){
   await new Promise(r=>setTimeout(r,30));
   const panelTemp = doc.getElementById('stock-panel-2').innerHTML;
   const esperado = { la_vuelta: {nac:5, mue:1}, maria_laura: {nac:4, mue:0}, pone_chico: {nac:9, mue:0} }[win.__establecimiento()];
-  chequear(`temporada: ${esperado.nac} nacimientos (solo de este establecimiento)`, panelTemp.includes(`<strong>${esperado.nac}</strong> nacimientos`), panelTemp);
+  chequear(`temporada: ${esperado.nac} Terneros (solo de este establecimiento)`, panelTemp.includes(`<strong>${esperado.nac}</strong> Terneros`), panelTemp);
+  chequear('temporada: 0 Corderos/Corderas (nadie cargó ovino en este seed)', panelTemp.includes('<strong>0</strong> Corderos/Corderas'), panelTemp);
   if(esperado.mue>0){
     chequear(`temporada: ${esperado.mue} muertes`, panelTemp.includes(`<strong>${esperado.mue}</strong> muertes`), panelTemp);
   } else {
     chequear('temporada: 0 muertes', panelTemp.includes('<strong>0</strong> muertes'), panelTemp);
+  }
+
+  // Editor de "vacas preñadas / ovejas encarneradas" -- solo en PC (mismo
+  // criterio que "⚙ Coeficientes UG"); en móvil el panel es de solo lectura.
+  const esPC = archivo.includes('-pc/');
+  const btnGuardarMadres = doc.getElementById('temporada-madres-guardar');
+  if(esPC){
+    chequear('editor de madres: existe en PC', !!btnGuardarMadres);
+    doc.getElementById('temporada-vacas').value = '20';
+    doc.getElementById('temporada-ovejas').value = '8';
+    btnGuardarMadres.dispatchEvent(new win.Event('click', { bubbles: true }));
+    await new Promise(r=>setTimeout(r,30));
+    chequear('editor de madres: guardó en estado.vacasPrenadasTemporada', est.vacasPrenadasTemporada === 20, est.vacasPrenadasTemporada);
+    chequear('editor de madres: guardó en estado.ovejasEncarneradasTemporada', est.ovejasEncarneradasTemporada === 8, est.ovejasEncarneradasTemporada);
+    const panelTempLuego = doc.getElementById('stock-panel-2').innerHTML;
+    const pctEsperado = (esperado.nac/20*100).toFixed(1);
+    chequear(`editor de madres: el % de Terneros se recalculó sobre 20 vacas (${pctEsperado}%)`, panelTempLuego.includes(`${pctEsperado}% s/ vacas`), panelTempLuego);
+    chequear('editor de madres: sigue en la pestaña Temporada (no vuelve a Categorías)',
+      doc.getElementById('stock-panel-2').style.display !== 'none' && doc.getElementById('stock-panel-0').style.display === 'none');
+  } else {
+    chequear('editor de madres: NO existe en móvil (solo lectura)', !btnGuardarMadres);
   }
 
   // pestaña "Por dueño" -- solo existe en establecimientos con más de un
