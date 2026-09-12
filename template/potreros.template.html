@@ -894,12 +894,17 @@ function clienteSupabase(){
   return supabaseClient;
 }
 function enviarEvento(tipo, potrero, detalle, fecha){
+  // event_id es columna `uuid` en Supabase -- tiene que ser un UUID real
+  // (crypto.randomUUID()), NO generarIdHistorial() (que arma "h_<timestamp>_
+  // <random>", un formato invalido para esa columna). Confundir los dos
+  // hizo fallar TODOS los inserts con "invalid input syntax for type uuid"
+  // (22P02) el mismo dia que se agrego la columna -- ver memoria apps-potreros.
 <!-- @pc:start -->
-  const evento = { event_id: generarIdHistorial(), tipo, potrero, detalle, fecha_cliente: fecha || fechaHoy() };
+  const evento = { event_id: crypto.randomUUID(), tipo, potrero, detalle, fecha_cliente: fecha || fechaHoy() };
 <!-- @pc:end -->
 <!-- @movil:start -->
   const detalleConUsuario = Object.assign({}, detalle, { usuario: usuarioActual() });
-  const evento = { event_id: generarIdHistorial(), tipo, potrero, detalle: detalleConUsuario, fecha_cliente: fecha || fechaHoy() };
+  const evento = { event_id: crypto.randomUUID(), tipo, potrero, detalle: detalleConUsuario, fecha_cliente: fecha || fechaHoy() };
 <!-- @movil:end -->
   pushEventoRemoto(evento);
 }

@@ -213,8 +213,11 @@ doesn't auto-pause after 7 days of inactivity — that ping isn't per-app, one
 covers the whole shared project.
 
 **Idempotencia (12/9/2026, auditoría de 3 IAs verificada contra el código):**
-cada evento lleva un `event_id` propio (`generarIdHistorial()`, generado una
-sola vez en `enviarEvento()` y reusado si el evento se reencola). El insert
+cada evento lleva un `event_id` propio (`crypto.randomUUID()` — **no**
+`generarIdHistorial()`, que arma "h_&lt;timestamp&gt;_&lt;random&gt;" y no es un
+UUID válido; confundir los dos rompió todos los inserts el mismo día que se
+agregó la columna, ver el bug real más abajo — generado una sola vez en
+`enviarEvento()` y reusado si el evento se reencola). El insert
 en `pushEventoRemoto()` incluye `event_id`, con una columna `UNIQUE` del
 mismo nombre en Supabase. Si un reintento (típicamente un corte de red justo
 después de que el insert original ya había llegado al servidor) manda el
@@ -229,6 +232,23 @@ quedó encolado en un dispositivo con una versión vieja de la app, sin
 `event_id`, siga insertando bien, aunque sin la protección de idempotencia)
 — mismo error que ya pasó una vez con `productos_catalogo` (columna nueva
 en el código antes que en la tabla → insert falla).
+
+**Bug real el mismo día del deploy: `event_id` generado con la función
+equivocada rompió TODOS los inserts.** El primer código shippeado usaba
+`generarIdHistorial()` (el generador local ya existente, `"h_" + Date.now()
++ "_" + random`) para `event_id` — un string que no es un UUID válido, y la
+columna es de tipo `uuid`. Resultado: cada insert a `eventos_sync` fallaba
+con `code: "22P02"` ("invalid input syntax for type uuid"), en **todos los
+dispositivos por igual** (PC y móvil comparten `enviarEvento()`), sin que
+nada lo mostrara en pantalla — el usuario solo veía "N movimientos sin
+sincronizar" sin crecer más allá de eso. Detectado por Pedro con la consola
+del navegador (`chrome://inspect` + DevTools Network, viendo el 400 de
+`eventos_sync`) varias horas después del deploy. Fix: `crypto.randomUUID()`
+en vez de `generarIdHistorial()` — esta última sigue usándose para los ids
+de historial local, que no van a una columna `uuid`. Lección: cuando un
+`event_id`/id nuevo va a una columna tipada (`uuid`, no `text`), verificar
+el formato exacto que exige esa columna, no asumir que cualquier generador
+de id ya existente en el código sirve.
 
 **"Restablecer datos de fábrica" (mismo 12/9/2026):** además de borrar
 `STORAGE_KEY`, ahora también borra `DISPOSITIVO_KEY` antes de recargar. Con

@@ -113,8 +113,16 @@ async function probarEventoIdYReintentoNoDuplica(archivo){
   win.__enviarEvento('ingreso', p, { categoria: 'Vacas', cantidad: 5 }, '01/01/2026');
   await new Promise(r=>setTimeout(r,20));
   const primerEnvio = win.__inserted[0];
-  chequear('el insert incluye un event_id propio y no vacío',
-    !!primerEnvio && typeof primerEnvio.event_id === 'string' && primerEnvio.event_id.length>0, JSON.stringify(primerEnvio));
+  // 12/9/2026: event_id es columna `uuid` en Supabase -- un string cualquiera
+  // (ej. el formato de generarIdHistorial(), "h_<timestamp>_<random>") pasa
+  // este chequeo si solo se mira "no vacío", pero Postgres lo rechaza con
+  // 22P02 al insertar. Este bug real rompió TODOS los inserts un día entero
+  // sin que ningún test lo detectara -- por eso se valida el formato UUID
+  // real, no solo la presencia del campo.
+  const esUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  chequear('el insert incluye un event_id con formato UUID válido (columna `uuid` en Supabase)',
+    !!primerEnvio && typeof primerEnvio.event_id === 'string' && esUUID.test(primerEnvio.event_id),
+    JSON.stringify(primerEnvio));
 
   // Reintento manual del MISMO evento (mismo event_id): simula que el
   // insert anterior sí había llegado a Supabase pero el cliente no se
