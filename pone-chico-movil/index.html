@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.31</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.32</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -532,7 +532,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.31","versionMovil":"1.31","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.32","versionMovil":"1.32","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -3335,18 +3335,41 @@ function madresPorEspecie(){
   }
   return {vacas, ovejas};
 }
-/* Saldo por potrero de Terneros/Corderos-as, arrancando en 0 (SIN carga
-   inicial -- eso no nació esta temporada). Sirve para clampear una
+/* Saldo por potrero de Terneros/Corderos-as. Sirve para clampear una
    corrección exactamente igual que aplicarAjusteReversion en el stock real:
    si esos animales ya se movieron a otro potrero antes de corregir, la
    resta no puede sacar más de lo que hay, así que se aplica solo lo que
    realmente había ahí (tocarSaldoTemporada devuelve cuánto se aplicó de
    verdad). Sin esto, una corrección resta el número completo aunque el
    stock ya no lo tenga ahí -- bug real encontrado el 12/9/2026 en La
-   Vuelta (potreros 10 y 11): el stock (73, confirmado por Pedro contando
-   en el campo) no coincidía con la temporada (65) por exactamente los 4
-   animales que dos correcciones distintas no pudieron sacar de donde
-   ya no estaban. */
+   Vuelta (potreros 10 y 11): el stock no coincidía con la temporada por
+   exactamente los animales que dos correcciones distintas no pudieron sacar
+   de donde ya no estaban.
+
+   13/9/2026: el saldo tiene que ARRANCAR de la carga inicial (no de 0),
+   igual que estadoInicial() para el stock real -- si no, un potrero con
+   carga inicial (ej. el 8, con 4 Terneros de antes de esta app) queda con
+   saldo interno en 0 mientras el stock real tiene 4, y el primer movimiento
+   que saca esos animales del potrero deja el saldo interno NEGATIVO (algo
+   que nunca le pasa al stock real, que clampea en 0). Ese negativo se
+   arrastra y hace que una corrección posterior en el potrero de destino
+   clampee mal, perdiendo nacimientos reales de la cuenta. La carga inicial
+   en sí NO se cuenta como "nacida" (eso lo sigue garantizando que sólo
+   'nacimiento' llama a acumular()) -- lo que cambia acá es solo la base
+   sobre la que se clampea, para que sea la misma que usa el stock real. */
+function saldoInicialTemporada(){
+  const saldo = {};
+  Object.keys(CARGA_INICIAL_SEED||{}).forEach(potrero=>{
+    const animales = (CARGA_INICIAL_SEED[potrero]||{}).animales || {};
+    Object.keys(animales).forEach(clave=>{
+      const categoria = clave.split('||')[0];
+      if(categoria!=='Terneros' && categoria!=='Corderos/as') return;
+      saldo[potrero] = saldo[potrero] || {};
+      saldo[potrero][categoria] = (saldo[potrero][categoria]||0) + (animales[clave]||0);
+    });
+  });
+  return saldo;
+}
 function tocarSaldoTemporada(saldo, potrero, categoria, delta, clamp){
   if(!potrero || (categoria!=='Terneros' && categoria!=='Corderos/as')) return 0;
   saldo[potrero] = saldo[potrero] || {};
@@ -3381,7 +3404,7 @@ async function calcularEstadisticasNacimientos(){
     if(guardado){ eventos = JSON.parse(guardado); fuente = 'cache'; }
   }
 
-  const saldo = {};
+  const saldo = saldoInicialTemporada();
   const porMesCategoria = {'Terneros':{8:0,9:0,10:0,11:0,12:0}, 'Corderos/as':{8:0,9:0,10:0,11:0,12:0}};
   let nacidosTerneros = 0, nacidosCorderos = 0;
   const acumular = (categoria, fc, delta)=>{
@@ -3442,6 +3465,7 @@ async function calcularEstadisticasNacimientos(){
 
   return {
     anioTemporada, fuente, filasPorCategoria,
+    totalEventos: (eventos||[]).length,
     bovino: {madres: vacas, nacidos: nacidosTerneros, pct: vacas>0 ? (nacidosTerneros/vacas*100) : 0},
     ovino: {madres: ovejas, nacidos: nacidosCorderos, pct: ovejas>0 ? (nacidosCorderos/ovejas*100) : 0}
   };
@@ -3464,6 +3488,7 @@ function renderNacimientosTemporadaHTML(nac){
   const pctOvinoTxt = nac.ovino.madres>0 ? nac.ovino.pct.toFixed(1)+'% s/ ovejas encarneradas' : 'sin ovejas encarneradas cargadas';
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.nacidos}</strong> Terneros (${pctBovinoTxt})</p>`;
   html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
+  html += `<p style="font-size:11px;color:var(--texto-suave);margin:0 0 8px;">(diagnóstico: ${nac.totalEventos} eventos leídos, fuente: ${nac.fuente})</p>`;
   if(nac.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
   html += tablaMesesHTML(nac.filasPorCategoria, 'Categoría');
   return html;
