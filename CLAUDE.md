@@ -258,6 +258,34 @@ establecimiento — incluida la que antes había generado este mismo
 dispositivo, que antes del fix quedaba perdida para siempre tras un reset.
 Ver `tests/probar_idempotencia_reset.js`.
 
+**Tipos de evento en `eventos_sync`** (`tipo` column): `nacimiento`,
+`correccion`, `muerte`, `venta`, `compra`, `ingreso`, `desaparecido`,
+`encontrado`, `movimiento`, `movimiento_multi`, `movimiento_todo`,
+`lluvia`, y (desde el 13/9/2026) `potrero_creado`,
+`potrero_limite_actualizado`, `potrero_limite_revertido`,
+`potrero_eliminado` — estos últimos cuatro sincronizan lo que hace
+"Importar KML/KMZ"/"Eliminar potrero" (antes 100% local, ver esa sección
+más abajo). Todos se manejan en `aplicarEventoRemoto()`; los que no
+requieren que el potrero ya exista localmente (`lluvia`,
+`potrero_creado`) se procesan **antes** del guard `if(!potrero ||
+!estado.potreros[potrero]) return;`, no después.
+
+**Cuidado al escribir un `.select(...)` nuevo contra `eventos_sync`:
+listar explícitamente TODAS las columnas que la función va a leer,
+incluida `potrero`.** Es una columna de la fila (no vive dentro de
+`detalle`), fácil de olvidar si solo se piensa en el contenido del evento.
+Bug real el 13/9/2026: `calcularEstadisticasNacimientos()` pedía
+`select('fecha_cliente,detalle,tipo,creado_en')` sin `potrero`, pese a que
+el saldo-por-potrero que clampea las correcciones (`tocarSaldoTemporada`)
+depende de `ev.potrero` para nacimiento/muerte/ingreso/movimiento. Con
+`potrero` en `undefined`, el guard de esa función (`if(!potrero) return
+0;`) cortaba en silencio — sin ningún error, sin que cambiara el conteo de
+filas — y el cálculo daba un número real pero equivocado (71 en vez de
+69) en producción. Invisible durante horas de debugging porque cada
+prueba armaba los datos con esa columna ya presente (`select=*`, o
+reconstruidos a mano) en vez de reproducir la consulta exacta — ver la
+memoria `verificar-select-exacto-no-reconstruir-datos.md`.
+
 ### Editing paddock boundaries at runtime (`Importar KML/KMZ`)
 
 Since `POTREROS_GEO` is a fixed literal, boundary edits and new paddocks
@@ -281,8 +309,16 @@ import) or just clears its `LIMITES_KEY` entry (paddock existed, only its
 shape was overwritten by mistake) — it never mutates the original
 `POTREROS_GEO` literal, it only clears the overlay and reloads.
 
-None of this — new paddocks, edited boundaries, or deletions — syncs across
-devices. It's local to whichever phone/PC performed the import.
+**Since 13/9/2026, this DOES sync across devices** (it didn't before —
+Pedro hit a real bug where a paddock imported on the phone was invisible
+on PC, and asked for it to be fixed). `importarLimitesKML()`/
+`eliminarPotrero()` send `potrero_creado`/`potrero_limite_actualizado`/
+`potrero_limite_revertido`/`potrero_eliminado` events (see "Sync:
+Supabase" above) alongside the local `LIMITES_KEY`/`POTREROS_NUEVOS_KEY`
+writes, so another device picks up the paddock (with geometry) just by
+syncing, no need to re-import the same KML there. `eliminarPotrero()` is
+now `async` and awaits the event send before its `location.reload()` — a
+fire-and-forget send there could get cut off mid-flight by the reload.
 
 **Renaming a paddock already in `POTREROS_GEO` is not a plain string
 replace.** María Laura's "Cerro" was renamed to "Rincon" (same land,
