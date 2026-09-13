@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.32 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.33 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -540,7 +540,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.32","versionMovil":"1.32","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.33","versionMovil":"1.33","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -2821,7 +2821,15 @@ async function calcularEstadisticasNacimientos(){
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo,creado_en')
+      // 13/9/2026: 'potrero' es columna de la fila (no vive en detalle) y
+      // tocarSaldoTemporada la necesita para nacimiento/muerte/ingreso/
+      // movimiento -- faltaba en el select de este fetch (a diferencia del
+      // resto de la app, que sí la trae) y quedaba undefined, rompiendo en
+      // silencio el saldo por potrero: cada corrección clampeaba contra un
+      // saldo que nunca se había movido de 0. Bug real que hizo que La
+      // Vuelta mostrara 71 Terneros en vez de 69 -- verificado de punta a
+      // punta contra Supabase real antes y después del fix.
+      const res = await client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
         .eq('establecimiento', ESTABLECIMIENTO)
         .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo'])
         .order('creado_en', {ascending:true});
@@ -2916,7 +2924,6 @@ function renderNacimientosTemporadaHTML(nac){
   const pctOvinoTxt = nac.ovino.madres>0 ? nac.ovino.pct.toFixed(1)+'% s/ ovejas encarneradas' : 'sin ovejas encarneradas cargadas';
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.nacidos}</strong> Terneros (${pctBovinoTxt})</p>`;
   html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
-  html += `<p style="font-size:11px;color:var(--texto-suave);margin:0 0 8px;">(diagnóstico: ${nac.totalEventos} eventos leídos, fuente: ${nac.fuente})</p>`;
   html += `<details style="margin-bottom:8px;"><summary style="font-size:12px;color:var(--texto-suave);cursor:pointer;">✎ Editar vacas preñadas / ovejas encarneradas</summary>
     <div style="margin-top:6px;">
       <div class="form-row"><label>Vacas preñadas (temporada)</label><input type="number" min="0" id="temporada-vacas" value="${nac.bovino.madres}"></div>

@@ -3100,7 +3100,15 @@ async function calcularEstadisticasNacimientos(){
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo,creado_en')
+      // 13/9/2026: 'potrero' es columna de la fila (no vive en detalle) y
+      // tocarSaldoTemporada la necesita para nacimiento/muerte/ingreso/
+      // movimiento -- faltaba en el select de este fetch (a diferencia del
+      // resto de la app, que sí la trae) y quedaba undefined, rompiendo en
+      // silencio el saldo por potrero: cada corrección clampeaba contra un
+      // saldo que nunca se había movido de 0. Bug real que hizo que La
+      // Vuelta mostrara 71 Terneros en vez de 69 -- verificado de punta a
+      // punta contra Supabase real antes y después del fix.
+      const res = await client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
         .eq('establecimiento', ESTABLECIMIENTO)
         .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo'])
         .order('creado_en', {ascending:true});
@@ -3195,7 +3203,6 @@ function renderNacimientosTemporadaHTML(nac){
   const pctOvinoTxt = nac.ovino.madres>0 ? nac.ovino.pct.toFixed(1)+'% s/ ovejas encarneradas' : 'sin ovejas encarneradas cargadas';
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.nacidos}</strong> Terneros (${pctBovinoTxt})</p>`;
   html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
-  html += `<p style="font-size:11px;color:var(--texto-suave);margin:0 0 8px;">(diagnóstico: ${nac.totalEventos} eventos leídos, fuente: ${nac.fuente})</p>`;
   html += `<details style="margin-bottom:8px;"><summary style="font-size:12px;color:var(--texto-suave);cursor:pointer;">✎ Editar vacas preñadas / ovejas encarneradas</summary>
     <div style="margin-top:6px;">
       <div class="form-row"><label>Vacas preñadas (temporada)</label><input type="number" min="0" id="temporada-vacas" value="${nac.bovino.madres}"></div>
@@ -4663,7 +4670,15 @@ async function calcularEstadisticasNacimientos(){
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo,creado_en')
+      // 13/9/2026: 'potrero' es columna de la fila (no vive en detalle) y
+      // tocarSaldoTemporada la necesita para nacimiento/muerte/ingreso/
+      // movimiento -- faltaba en el select de este fetch (a diferencia del
+      // resto de la app, que sí la trae) y quedaba undefined, rompiendo en
+      // silencio el saldo por potrero: cada corrección clampeaba contra un
+      // saldo que nunca se había movido de 0. Bug real que hizo que La
+      // Vuelta mostrara 71 Terneros en vez de 69 -- verificado de punta a
+      // punta contra Supabase real antes y después del fix.
+      const res = await client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
         .eq('establecimiento', ESTABLECIMIENTO)
         .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo'])
         .order('creado_en', {ascending:true});
@@ -4763,7 +4778,6 @@ function renderNacimientosTemporadaHTML(nac){
   const pctOvinoTxt = nac.ovino.madres>0 ? nac.ovino.pct.toFixed(1)+'% s/ ovejas encarneradas' : 'sin ovejas encarneradas cargadas';
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.nacidos}</strong> Terneros (${pctBovinoTxt})</p>`;
   html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
-  html += `<p style="font-size:11px;color:var(--texto-suave);margin:0 0 8px;">(diagnóstico: ${nac.totalEventos} eventos leídos, fuente: ${nac.fuente})</p>`;
   if(nac.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
   html += tablaMesesHTML(nac.filasPorCategoria, 'Categoría');
   return html;
