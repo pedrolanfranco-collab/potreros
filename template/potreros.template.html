@@ -945,7 +945,7 @@ function enviarEvento(tipo, potrero, detalle, fecha){
   const detalleConUsuario = Object.assign({}, detalle, { usuario: usuarioActual() });
   const evento = { event_id: crypto.randomUUID(), tipo, potrero, detalle: detalleConUsuario, fecha_cliente: fecha || fechaHoy() };
 <!-- @movil:end -->
-  pushEventoRemoto(evento);
+  return pushEventoRemoto(evento);
 }
 async function pushEventoRemoto(evento){
   const client = clienteSupabase();
@@ -1048,6 +1048,75 @@ function aplicarEventoRemoto(row){
     if(!estado.lluvias.some(l=>l.id===d.id)){
       estado.lluvias.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), mm: d.mm, dispositivo: row.dispositivo, usuario: d.usuario||null});
     }
+    return;
+  }
+
+  // "Importar KML/KMZ" y "Eliminar potrero" mandan estos 4 tipos para que un
+  // potrero cargado en un dispositivo (ej. el Piquete importado en el
+  // celular) quede incorporado al mapa de TODOS los demás, no solo del que
+  // lo importó -- antes esto era 100% local y el resto de los dispositivos
+  // ignoraba en silencio cualquier evento sobre un potrero que no conocían
+  // (guard de abajo). Van antes del guard porque, para 'potrero_creado', el
+  // potrero todavía no existe en este dispositivo -- es lo que este bloque crea.
+  if(row.tipo === 'potrero_creado'){
+    if(!potrero || POTREROS_GEO.some(x=>x.nombre===potrero)) return; // ya lo tengo (evento repetido o creado localmente)
+    const p = {nombre: potrero, coords: d.coords, area: d.area||null};
+    POTREROS_GEO.push(p);
+    try{
+      const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
+      if(!nuevosGuardados.some(x=>x.nombre===potrero)){
+        nuevosGuardados.push(p);
+        localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevosGuardados));
+      }
+    }catch(e){}
+    estado.potreros[potrero] = {animales:{}, historial:[], fechaIngreso:null, fechaSalida:null};
+    AREA_CALCULADA[potrero] = calcAreaHa(p.coords);
+    dibujarPotrero(p);
+    return;
+  }
+  if(row.tipo === 'potrero_limite_actualizado'){
+    const p = potrero && POTREROS_GEO.find(x=>x.nombre===potrero);
+    if(!p) return;
+    p.coords = d.coords; p.area = d.area||null;
+    AREA_CALCULADA[potrero] = calcAreaHa(p.coords);
+    try{
+      const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
+      limitesGuardados[potrero] = {coords: p.coords, area: p.area};
+      localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados));
+    }catch(e){}
+    const entry = poligonos[potrero];
+    if(entry){ entry.layer.setLatLngs(p.coords); entry.label.setLatLng(entry.layer.getBounds().getCenter()); entry.area = p.area; }
+    return;
+  }
+  if(row.tipo === 'potrero_limite_revertido'){
+    const p = potrero && POTREROS_GEO.find(x=>x.nombre===potrero);
+    const original = potrero && COORDS_ORIGINALES[potrero];
+    if(!p || !original) return;
+    p.coords = original.coords; p.area = original.area;
+    AREA_CALCULADA[potrero] = calcAreaHa(p.coords);
+    try{
+      const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
+      delete limitesGuardados[potrero];
+      localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados));
+    }catch(e){}
+    const entry = poligonos[potrero];
+    if(entry){ entry.layer.setLatLngs(p.coords); entry.label.setLatLng(entry.layer.getBounds().getCenter()); entry.area = p.area; }
+    return;
+  }
+  if(row.tipo === 'potrero_eliminado'){
+    const idx = potrero ? POTREROS_GEO.findIndex(x=>x.nombre===potrero) : -1;
+    if(idx===-1) return;
+    POTREROS_GEO.splice(idx,1);
+    try{
+      const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
+      localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevosGuardados.filter(x=>x.nombre!==potrero)));
+      const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
+      if(limitesGuardados[potrero]){ delete limitesGuardados[potrero]; localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados)); }
+    }catch(e){}
+    delete estado.potreros[potrero];
+    delete AREA_CALCULADA[potrero];
+    const entry = poligonos[potrero];
+    if(entry){ map.removeLayer(entry.layer); map.removeLayer(entry.label); delete poligonos[potrero]; }
     return;
   }
 
@@ -1810,6 +1879,11 @@ const bounds = [];
    ANTES de calcular AREA_CALCULADA y dibujar los polígonos, para que todo
    el resto del arranque ya trabaje con el límite más reciente. */
 const LIMITES_KEY = ESTABLECIMIENTO + '_limites_potreros';
+// Snapshot del límite tal como viene en el archivo (antes de aplicar el
+// override de abajo) -- lo necesita "potrero_limite_revertido" al llegar de
+// otro dispositivo, para saber a qué contorno volver sin tener que recargar.
+const COORDS_ORIGINALES = {};
+POTREROS_GEO.forEach(p=>{ COORDS_ORIGINALES[p.nombre] = {coords: p.coords, area: p.area}; });
 try{
   const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
   POTREROS_GEO.forEach(p=>{
@@ -2118,9 +2192,10 @@ function renderDetalle(nombre){
 /* Contraparte de "Importar KML/KMZ": deshace una importación equivocada.
    Si el potrero fue CREADO por un import (está en POTREROS_NUEVOS_KEY), lo
    elimina del todo. Si ya existía y solo se le pisó el límite (está en
-   LIMITES_KEY), revierte el límite y lo deja como estaba. No sincroniza
-   entre dispositivos -- mismo alcance que ya tiene "Importar KML/KMZ". */
-function eliminarPotrero(nombre){
+   LIMITES_KEY), revierte el límite y lo deja como estaba. Sincroniza entre
+   dispositivos igual que "Importar KML/KMZ" (13/9/2026, a pedido: un potrero
+   importado en un solo aparato tiene que verse en todos). */
+async function eliminarPotrero(nombre){
   const animales = estado.potreros[nombre].animales;
   if(Object.values(animales).some(v => v !== 0)){
     alert(`"${nombre}" todavía tiene animales cargados. Movelos o dalos de baja antes de poder tocar este potrero.`);
@@ -2142,10 +2217,15 @@ function eliminarPotrero(nombre){
     if(teniaLimiteImportado){ delete limitesGuardados[nombre]; localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados)); }
     delete estado.potreros[nombre];
     guardarEstado();
+    // Se espera el envío ANTES de recargar -- location.reload() corta
+    // cualquier pedido de red en curso, y esto es lo único que le avisa al
+    // resto de los dispositivos que el potrero se borró.
+    await enviarEvento('potrero_eliminado', nombre, {});
   } else {
     if(!confirm(`"${nombre}" es un potrero original: no se va a eliminar, pero se va a deshacer el límite importado y volver al contorno de siempre. ¿Continuar?`)) return;
     delete limitesGuardados[nombre];
     localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados));
+    await enviarEvento('potrero_limite_revertido', nombre, {});
   }
   alert('Listo. La página se va a recargar para aplicar el cambio.');
   location.reload();
@@ -3631,6 +3711,7 @@ async function importarLimitesKML(archivo){
       estado.potreros[p.nombre] = {animales:{}, historial:[], fechaIngreso:null, fechaSalida:null};
       AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords);
       dibujarPotrero(p);
+      enviarEvento('potrero_creado', p.nombre, {coords: p.coords, area: p.area});
       creados++;
       return;
     }
@@ -3644,6 +3725,7 @@ async function importarLimitesKML(archivo){
       entry.label.setLatLng(entry.layer.getBounds().getCenter());
       entry.area = p.area;
     }
+    enviarEvento('potrero_limite_actualizado', p.nombre, {coords: p.coords, area: p.area});
     actualizados++;
   });
   localStorage.setItem(LIMITES_KEY, JSON.stringify(guardados));

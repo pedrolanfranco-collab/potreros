@@ -65,13 +65,13 @@ function stubLeaflet(win){
   };
 }
 
-async function levantar(archivo, seedLocalStorage){
+async function levantar(archivo, seedLocalStorage, servidorCompartido){
   const html = fs.readFileSync(archivo, 'utf-8').replace(/<script src="https?:\/\/[^"]*"><\/script>/g, '');
   const errores = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', e => errores.push('jsdomError: ' + (e.stack || e.message)));
   vc.on('error', (...a) => errores.push('console.error: ' + a.join(' ')));
-  const servidor = crearServidor();
+  const servidor = servidorCompartido || crearServidor();
   const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true, url: 'https://local.test/', virtualConsole: vc });
   const win = dom.window;
   stubLeaflet(win);
@@ -96,10 +96,11 @@ async function levantar(archivo, seedLocalStorage){
   try { win.eval(codigo + '\n;window.__est = function(){ return estado; };' +
     '\nwindow.__potreros = function(){ return POTREROS_GEO; };' +
     '\nwindow.__potrerosNuevosKey = function(){ return POTREROS_NUEVOS_KEY; };' +
-    '\nwindow.__limitesKey = function(){ return LIMITES_KEY; };'); }
+    '\nwindow.__limitesKey = function(){ return LIMITES_KEY; };' +
+    '\nwindow.__sync = sincronizar;'); }
   catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await new Promise(r => setTimeout(r, 80));
-  return { win, errores };
+  return { win, errores, servidor };
 }
 
 function archivoFalso(nombre, contenidoBuffer){
@@ -113,11 +114,12 @@ function kmlConPlacemarks(placemarks){
 // --- Caso 1: La Vuelta (con potreros originales de fábrica) ---
 async function probarLaVuelta(archivo){
   console.log('\n=== ' + archivo + ' (con potreros originales) ===');
-  const { win, errores } = await levantar(archivo);
+  const { win, errores, servidor } = await levantar(archivo);
   if(errores.length){ chequear('carga sin errores de JS', false, errores[0]); return; }
   chequear('carga sin errores de JS', true);
 
   const nombreOriginal = win.__potreros()[0].nombre;
+  const coordsOriginales = win.__potreros()[0].coords;
 
   // 1a. Bloqueado por tener animales
   win.__est().potreros[nombreOriginal].animales['Vacas'] = 3;
@@ -133,7 +135,8 @@ async function probarLaVuelta(archivo){
     win.__alerts.some(a=>a.includes('no fue creado ni modificado')) && !win.__alerts.some(a=>a.includes('recargar')));
   win.__alerts = [];
 
-  // 1c. Revertir límite importado sobre un potrero original
+  // 1c. Actualizar límite de un potrero original -- tiene que subir como evento
+  // (13/9/2026, a pedido: antes esto era 100% local, ver "potrero_limite_actualizado")
   chequear('al arrancar con potreros ya se fijó un límite de paneo', win.__mapa._maxBoundsCalls >= 1);
   const llamadasAntes = win.__mapa._maxBoundsCalls;
   const coordsNuevas = '-55.400,-31.390,0 -55.401,-31.391,0 -55.402,-31.389,0 -55.400,-31.390,0';
@@ -142,19 +145,40 @@ async function probarLaVuelta(archivo){
   chequear('Importar KML/KMZ recalcula el límite de paneo', win.__mapa._maxBoundsCalls > llamadasAntes);
   let guardado = JSON.parse(win.localStorage.getItem(win.__limitesKey()) || '{}');
   chequear('(previo) el límite importado quedó guardado', !!guardado[nombreOriginal]);
+  chequear('actualizar límite: se mandó el evento potrero_limite_actualizado',
+    servidor.filas.some(e=>e.tipo==='potrero_limite_actualizado' && e.potrero===nombreOriginal));
 
+  // 1d. Un SEGUNDO dispositivo (de fábrica) que sincroniza tiene que recibir
+  // el límite nuevo -- esto es lo que Pedro pidió: "si se importa un mapa
+  // desde cualquier app se tiene que subir al mapa original como evento".
+  const remoto1 = await levantar(archivo, null, servidor);
+  await remoto1.win.__sync(false);
+  const pRemoto1 = remoto1.win.__potreros().find(p=>p.nombre===nombreOriginal);
+  chequear('otro dispositivo recibe el límite actualizado por sync',
+    JSON.stringify(pRemoto1 && pRemoto1.coords) === JSON.stringify(win.__potreros().find(p=>p.nombre===nombreOriginal).coords));
+
+  // 1e. Revertir límite importado sobre un potrero original
   win.__confirmRespuesta = true;
-  win.eliminarPotrero(nombreOriginal);
+  await win.eliminarPotrero(nombreOriginal);
   guardado = JSON.parse(win.localStorage.getItem(win.__limitesKey()) || '{}');
   chequear('revertir: el límite importado se sacó de localStorage', !guardado[nombreOriginal]);
   chequear('revertir: el potrero NO se borra de POTREROS_GEO', win.__potreros().some(p=>p.nombre===nombreOriginal));
   chequear('revertir: pide recargar la página', win.__alerts.some(a=>a.includes('recargar')));
+  chequear('revertir: se mandó el evento potrero_limite_revertido',
+    servidor.filas.some(e=>e.tipo==='potrero_limite_revertido' && e.potrero===nombreOriginal));
+
+  // 1f. Ese mismo segundo dispositivo, al volver a sincronizar, tiene que
+  // volver al contorno original -- sin haber tenido que recargar la página.
+  await remoto1.win.__sync(false);
+  const pRemoto1b = remoto1.win.__potreros().find(p=>p.nombre===nombreOriginal);
+  chequear('otro dispositivo revierte al límite original por sync',
+    JSON.stringify(pRemoto1b.coords) === JSON.stringify(coordsOriginales));
 }
 
 // --- Caso 2: establecimiento sin potreros originales (Pone Chico) ---
 async function probarPoneChico(archivo){
   console.log('\n=== ' + archivo + ' (todo creado por import) ===');
-  const { win, errores } = await levantar(archivo);
+  const { win, errores, servidor } = await levantar(archivo);
   if(errores.length){ chequear('carga sin errores de JS', false, errores[0]); return; }
   chequear('carga sin errores de JS', true);
 
@@ -165,14 +189,36 @@ async function probarPoneChico(archivo){
   await win.importarLimitesKML(archivoFalso('limites.kml', Buffer.from(kmlTxt, 'utf-8')));
   chequear('(previo) el potrero de prueba quedó creado', win.__potreros().some(p=>p.nombre==='Potrero Mal Importado'));
   chequear('al crear el primer potrero por KML se fija el límite de paneo', win.__mapa._maxBoundsCalls >= 1);
+  chequear('crear: se mandó el evento potrero_creado',
+    servidor.filas.some(e=>e.tipo==='potrero_creado' && e.potrero==='Potrero Mal Importado'));
+
+  // Un dispositivo que NUNCA importó este KML (el caso real de "Piquete" en
+  // La Vuelta: importado en el celular, la PC nunca lo vio) tiene que verlo
+  // aparecer solo con sincronizar, coordenadas incluidas -- sin tener que
+  // importar el KML de nuevo ahí.
+  const remoto = await levantar(archivo, null, servidor);
+  await remoto.win.__sync(false);
+  chequear('otro dispositivo recibe el potrero nuevo por sync (sin re-importar)',
+    remoto.win.__potreros().some(p=>p.nombre==='Potrero Mal Importado'));
+  chequear('otro dispositivo puede cargarle animales tras el sync (no lo ignora)',
+    !!remoto.win.__est().potreros['Potrero Mal Importado']);
 
   win.__confirmRespuesta = true;
   win.__alerts = [];
-  win.eliminarPotrero('Potrero Mal Importado');
+  await win.eliminarPotrero('Potrero Mal Importado');
   const nuevos = JSON.parse(win.localStorage.getItem(win.__potrerosNuevosKey()) || '[]');
   chequear('eliminar: se sacó de POTREROS_NUEVOS_KEY', !nuevos.some(p=>p.nombre==='Potrero Mal Importado'));
   chequear('eliminar: se borró estado.potreros[...]', !win.__est().potreros['Potrero Mal Importado']);
   chequear('eliminar: pide recargar la página', win.__alerts.some(a=>a.includes('recargar')));
+  chequear('eliminar: se mandó el evento potrero_eliminado',
+    servidor.filas.some(e=>e.tipo==='potrero_eliminado' && e.potrero==='Potrero Mal Importado'));
+
+  // El dispositivo remoto, que ya lo tenía, tiene que perderlo también.
+  await remoto.win.__sync(false);
+  chequear('otro dispositivo pierde el potrero eliminado por sync',
+    !remoto.win.__potreros().some(p=>p.nombre==='Potrero Mal Importado'));
+  chequear('otro dispositivo: estado.potreros[...] también se borra',
+    !remoto.win.__est().potreros['Potrero Mal Importado']);
 }
 
 (async () => {
