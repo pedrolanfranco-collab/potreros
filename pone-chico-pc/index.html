@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.33 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.34 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -540,7 +540,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.33","versionMovil":"1.33","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.34","versionMovil":"1.34","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1072,7 +1072,7 @@ function aplicarEventoRemoto(row){
       if(hDestino) tachar(hDestino);
       marcado = !!(hOrigen || hDestino);
     }
-    aplicarAjusteReversion(d.reversar);
+    aplicarAjusteReversion(d.reversar, fechaEvt);
     if(!marcado){
       const texto = d.accion==='eliminar'
         ? `Corrección (sincronizada): se eliminó un movimiento de ${d.tipoOriginal}`
@@ -1096,8 +1096,8 @@ function aplicarEventoRemoto(row){
     origenAnimales[keyOrigen] = (origenAnimales[keyOrigen]||0) - d.cantidad;
     const destAnimales = estado.potreros[d.destino].animales;
     destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + d.cantidad;
-    registrarCambioOcupacion(potrero, totalAntesOrigen);
-    registrarCambioOcupacion(d.destino, totalAntesDestino);
+    registrarCambioOcupacion(potrero, totalAntesOrigen, fechaEvt);
+    registrarCambioOcupacion(d.destino, totalAntesDestino, fechaEvt);
     const sufObsMov = d.obs ? ` (${d.obs})` : '';
     // Mismo objeto para las dos entradas (origen y destino) -- asi una
     // correccion futura las encuentra a las dos con un solo emparejamiento,
@@ -1127,8 +1127,8 @@ function aplicarEventoRemoto(row){
       origenAnimales[key] = (origenAnimales[key]||0) - it.cantidad;
       destAnimales[key] = (destAnimales[key]||0) + it.cantidad;
     });
-    registrarCambioOcupacion(potrero, totalAntesOrigen);
-    registrarCambioOcupacion(d.destino, totalAntesDestino);
+    registrarCambioOcupacion(potrero, totalAntesOrigen, fechaEvt);
+    registrarCambioOcupacion(d.destino, totalAntesDestino, fechaEvt);
     const origDatosTodo = {potrero, destino: d.destino, items: d.items};
     // tipo 'movimiento_todo' (no 'movimiento'): tiene que coincidir con lo
     // que carga el dispositivo de origen, o d.tipoOriginal de una futura
@@ -1154,8 +1154,8 @@ function aplicarEventoRemoto(row){
         ? `${it.cantidad} ${it.categoria}${it.dueno?' de '+it.dueno:''} → ${it.categoriaDestino}`
         : `${it.cantidad} ${it.categoria}${it.dueno?' de '+it.dueno:''}`);
     });
-    registrarCambioOcupacion(potrero, totalAntesOrigen);
-    registrarCambioOcupacion(d.destino, totalAntesDestino);
+    registrarCambioOcupacion(potrero, totalAntesOrigen, fechaEvt);
+    registrarCambioOcupacion(d.destino, totalAntesDestino, fechaEvt);
     const sufObsMov = d.obs ? ` (${d.obs})` : '';
     const origDatosMulti = {potrero, destino: d.destino, items: d.items};
     if(d.destino === potrero){
@@ -1172,7 +1172,7 @@ function aplicarEventoRemoto(row){
     const a = estado.potreros[potrero].animales;
     const totalAntes = totalPotrero(potrero);
     a[key] = Math.max(0, (a[key]||0) - d.cantidad);
-    registrarCambioOcupacion(potrero, totalAntes);
+    registrarCambioOcupacion(potrero, totalAntes, fechaEvt);
     const detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}${d.obs?' — '+d.obs:''}`;
     const entry = registrarHistorial(potrero, 'desaparecido', `Desaparecido (sincronizado): ${detalleTxt} (buscando)`, undefined, undefined, fechaEvt);
     entry.origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, obs: d.obs||null};
@@ -1189,7 +1189,7 @@ function aplicarEventoRemoto(row){
       const a = estado.potreros[potrero].animales;
       const totalAntes = totalPotrero(potrero);
       a[key] = (a[key]||0) + d.cantidad;
-      registrarCambioOcupacion(potrero, totalAntes);
+      registrarCambioOcupacion(potrero, totalAntes, fechaEvt);
     }
     const detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}`;
     const texto = row.tipo==='encontrado'
@@ -1212,7 +1212,7 @@ function aplicarEventoRemoto(row){
   } else {
     return;
   }
-  registrarCambioOcupacion(potrero, totalAntes);
+  registrarCambioOcupacion(potrero, totalAntes, fechaEvt);
 
   let detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}`;
   if(d.precio) detalleTxt += ` a USD ${d.precio}/cab`;
@@ -1347,15 +1347,21 @@ function parseFechaDMY(fecha){
   return new Date(y,m-1,d).getTime();
 }
 /* Registra el cambio de estado (ocupado/vacío) de un potrero comparando el total
-   de animales antes y después de una operación, para poder contar días de ocupación/descanso. */
-function registrarCambioOcupacion(nombre, totalAntes){
+   de animales antes y después de una operación, para poder contar días de ocupación/descanso.
+   `fecha` (formato DMY, igual que fechaEvt/fechaHoy) es la fecha REAL del
+   movimiento que causó el cambio -- no la fecha en que se aplica. Sin esto,
+   un evento remoto sincronizado días después de ocurrir (o un nacimiento
+   cargado con fecha retroactiva) quedaba marcado como "ocupado hace 0 días"
+   aunque el movimiento real fuera de hace semanas (14/9/2026). */
+function registrarCambioOcupacion(nombre, totalAntes, fecha){
   const totalDespues = totalPotrero(nombre);
   const p = estado.potreros[nombre];
+  const fechaISO = fecha ? fecha.split('/').reverse().join('-') : fechaISOHoy();
   if(totalAntes===0 && totalDespues>0){
-    p.fechaIngreso = fechaISOHoy();
+    p.fechaIngreso = fechaISO;
     p.fechaSalida = null;
   }else if(totalAntes>0 && totalDespues===0){
-    p.fechaSalida = fechaISOHoy();
+    p.fechaSalida = fechaISO;
     p.fechaIngreso = null;
   }
 }
@@ -1451,7 +1457,7 @@ function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha){
    contrario exacto y lo aplica local y a los demas dispositivos como un
    evento mas (tipo 'correccion'), sin tocar ni reinterpretar los eventos
    viejos en Supabase -- por eso nunca se pierde la idempotencia. */
-function aplicarAjusteReversion(ajuste){
+function aplicarAjusteReversion(ajuste, fecha){
   if(!ajuste) return;
   if(ajuste.tipo==='sumar' || ajuste.tipo==='restar'){
     const p = estado.potreros[ajuste.potrero]; if(!p) return;
@@ -1459,7 +1465,7 @@ function aplicarAjusteReversion(ajuste){
     const totalAntes = totalPotrero(ajuste.potrero);
     const delta = ajuste.tipo==='sumar' ? ajuste.cantidad : -ajuste.cantidad;
     p.animales[key] = Math.max(0, (p.animales[key]||0) + delta);
-    registrarCambioOcupacion(ajuste.potrero, totalAntes);
+    registrarCambioOcupacion(ajuste.potrero, totalAntes, fecha);
   } else if(ajuste.tipo==='mover'){
     const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
     if(!po || !pd) return;
@@ -1468,8 +1474,8 @@ function aplicarAjusteReversion(ajuste){
     const totalAntesO = totalPotrero(ajuste.origen), totalAntesD = totalPotrero(ajuste.destino);
     po.animales[keyOrigen] = Math.max(0, (po.animales[keyOrigen]||0) - ajuste.cantidad);
     pd.animales[keyDestino] = (pd.animales[keyDestino]||0) + ajuste.cantidad;
-    registrarCambioOcupacion(ajuste.origen, totalAntesO);
-    registrarCambioOcupacion(ajuste.destino, totalAntesD);
+    registrarCambioOcupacion(ajuste.origen, totalAntesO, fecha);
+    registrarCambioOcupacion(ajuste.destino, totalAntesD, fecha);
   } else if(ajuste.tipo==='mover_todo'){
     const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
     if(!po || !pd || !Array.isArray(ajuste.items)) return;
@@ -1479,8 +1485,8 @@ function aplicarAjusteReversion(ajuste){
       po.animales[key] = Math.max(0, (po.animales[key]||0) - it.cantidad);
       pd.animales[key] = (pd.animales[key]||0) + it.cantidad;
     });
-    registrarCambioOcupacion(ajuste.origen, totalAntesO);
-    registrarCambioOcupacion(ajuste.destino, totalAntesD);
+    registrarCambioOcupacion(ajuste.origen, totalAntesO, fecha);
+    registrarCambioOcupacion(ajuste.destino, totalAntesD, fecha);
   } else if(ajuste.tipo==='mover_multi'){
     const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
     if(!po || !pd || !Array.isArray(ajuste.items)) return;
@@ -1491,8 +1497,8 @@ function aplicarAjusteReversion(ajuste){
       po.animales[keyActual] = Math.max(0, (po.animales[keyActual]||0) - it.cantidad);
       pd.animales[keyOriginal] = (pd.animales[keyOriginal]||0) + it.cantidad;
     });
-    registrarCambioOcupacion(ajuste.origen, totalAntesO);
-    registrarCambioOcupacion(ajuste.destino, totalAntesD);
+    registrarCambioOcupacion(ajuste.origen, totalAntesO, fecha);
+    registrarCambioOcupacion(ajuste.destino, totalAntesD, fecha);
   }
 }
 function construirAjusteInverso(h){
@@ -2072,7 +2078,7 @@ function mostrarFormularioAgregarInicial(nombre){
       const a = estado.potreros[nombre].animales;
       const key = claveAnimal(f.cat, f.dueno);
       a[key] = (a[key]||0) + f.cant;
-      registrarCambioOcupacion(nombre, totalAntes);
+      registrarCambioOcupacion(nombre, totalAntes, fecha);
       registrarHistorial(nombre, 'ingreso', `+${f.cant} ${f.cat}${f.dueno?' de '+f.dueno:''} (ingreso)`, {potrero: nombre, categoria: f.cat, dueno: f.dueno, cantidad: f.cant}, undefined, fecha);
       enviarEvento('ingreso', nombre, {categoria: f.cat, dueno: f.dueno, cantidad: f.cant}, fecha);
     });
@@ -2111,7 +2117,7 @@ function mostrarFormulario(nombre, accion, prefill){
         const a = estado.potreros[nombre].animales;
         const key = claveAnimal(cat, dueno);
         a[key] = (a[key]||0) + cant;
-        registrarCambioOcupacion(nombre, totalAntes);
+        registrarCambioOcupacion(nombre, totalAntes, fecha);
         registrarHistorial(nombre, 'ingreso', `+${cant} ${cat}${dueno?' de '+dueno:''} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
         enviarEvento('ingreso', nombre, {categoria: cat, dueno, cantidad: cant}, fecha);
         guardarEstado(); actualizarTodo(); cerrarDetalle();
@@ -2195,8 +2201,8 @@ function mostrarFormulario(nombre, accion, prefill){
         items.push({categoria: f.cat, categoriaDestino: catDestino, dueno: f.dueno, cantidad: f.cant});
         detalleTxt.push(catDestino!==f.cat ? `${f.cant} ${f.cat} (${textoFirma(f.dueno)}) → ${catDestino}` : `${f.cant} ${f.cat} (${textoFirma(f.dueno)})`);
       });
-      registrarCambioOcupacion(nombre, totalAntesOrigen);
-      registrarCambioOcupacion(destino, totalAntesDestino);
+      registrarCambioOcupacion(nombre, totalAntesOrigen, fecha);
+      registrarCambioOcupacion(destino, totalAntesDestino, fecha);
       const grupoIdMov = generarIdHistorial();
       const extraMov = {potrero: nombre, destino, items, obs: obs||null};
       const sufObs = obs ? ` (${obs})` : '';
@@ -2252,8 +2258,8 @@ function mostrarFormulario(nombre, accion, prefill){
           origenAnimales[key] = 0;
         }
       });
-      registrarCambioOcupacion(nombre, totalAntesOrigen);
-      registrarCambioOcupacion(destino, totalAntesDestino);
+      registrarCambioOcupacion(nombre, totalAntesOrigen, fecha);
+      registrarCambioOcupacion(destino, totalAntesDestino, fecha);
       const detalleMov = movidos.join(', ');
       const grupoIdMov = generarIdHistorial();
       const extraMov = {potrero: nombre, destino, items};
@@ -2311,7 +2317,7 @@ function mostrarFormulario(nombre, accion, prefill){
       } else {
         a[key] = (a[key]||0) + cant;
       }
-      registrarCambioOcupacion(nombre, totalAntes);
+      registrarCambioOcupacion(nombre, totalAntes, fecha);
 
       const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
       let detalle = `${tipoOp}: ${tipoOp==='Venta'?'-':'+'}${cant} ${cat}${dueno?' de '+dueno:''}`;
@@ -2360,7 +2366,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const a = estado.potreros[nombre].animales;
       const key = claveAnimal(cat, dueno);
       a[key] = (a[key]||0) + cant;
-      registrarCambioOcupacion(nombre, totalAntes);
+      registrarCambioOcupacion(nombre, totalAntes, fecha);
       registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
       enviarEvento('nacimiento', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
@@ -2398,7 +2404,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const fecha = fechaISOaDisplay(fechaISO);
       const totalAntes = totalPotrero(nombre);
       a[key] -= cant;
-      registrarCambioOcupacion(nombre, totalAntes);
+      registrarCambioOcupacion(nombre, totalAntes, fecha);
       registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
       enviarEvento('muerte', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
@@ -2437,7 +2443,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const fecha = fechaISOaDisplay(fechaISO);
       const totalAntes = totalPotrero(nombre);
       a[key] -= cant;
-      registrarCambioOcupacion(nombre, totalAntes);
+      registrarCambioOcupacion(nombre, totalAntes, fecha);
       const entry = registrarHistorial(nombre, 'desaparecido', `Desaparecido: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''} (buscando)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
       enviarEvento('desaparecido', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null, casoId: entry.id}, fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle();
@@ -3830,7 +3836,7 @@ function abrirFormularioEncontrado(caso){
     const a = estado.potreros[destino].animales;
     const key = claveAnimal(caso.categoria, caso.dueno);
     a[key] = (a[key]||0) + cant;
-    registrarCambioOcupacion(destino, totalAntes);
+    registrarCambioOcupacion(destino, totalAntes, fecha);
     const entry = registrarHistorial(destino, 'encontrado', `Encontrado: +${cant} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''} (de la desaparición del ${caso.fecha} en ${caso.potreroOrigen})`, {potrero: destino, categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
     entry.casoId = caso.casoId;
     enviarEvento('encontrado', destino, {categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, casoId: caso.casoId}, fecha);
