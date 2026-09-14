@@ -275,8 +275,8 @@
     padding:9px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;
   }
   .btn-herramientas:hover{filter:brightness(1.08);}
-  #modal-herramientas .modal-box{max-width:540px;padding:24px 28px;}
-  #menu-herramientas .btn{width:100%;margin-bottom:9px;font-size:14px;padding:11px 12px;}
+  #modal-herramientas .modal-box{max-width:620px;padding:28px 32px;}
+  #menu-herramientas .btn{width:100%;margin-bottom:10px;font-size:15.5px;padding:13px 14px;}
   #menu-herramientas .btn-kmz{background:var(--verde-monte);color:#fff;}
   #menu-herramientas .btn-json{background:#fff;color:var(--texto);border:1px solid var(--linea);}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
@@ -389,7 +389,8 @@
 <!-- @movil:end -->
     </div>
     <div id="sidebar">
-      <input type="text" id="buscador" placeholder="Buscar potrero...">
+      <input type="text" id="buscador" placeholder="Buscar potrero..." list="lista-potreros-datalist">
+      <datalist id="lista-potreros-datalist"></datalist>
       <div id="lista-wrap">
         <div id="lista-potreros"></div>
       </div>
@@ -637,7 +638,9 @@
     <div class="form-row"><label>Subtipo</label><select id="np-subtipo"></select></div>
     <div class="form-row"><label>Nombre (opcional)</label><input type="text" id="np-nombre" placeholder="Ej: Represa grande"></div>
     <button class="btn btn-agregar btn-full" id="np-colocar" style="width:100%;margin-bottom:6px;">📍 Elegir ubicación en el mapa</button>
+    <button class="btn btn-kmz btn-full" id="np-importar" style="width:100%;margin-bottom:6px;">⬆ Importar de archivo (KML/KMZ/GPX)</button>
     <button class="btn btn-json btn-full" id="np-cargar-seed" style="width:100%;margin-bottom:10px;">📥 Cargar bebederos y llaves de referencia</button>
+    <input type="file" id="input-puntos" accept=".kml,.kmz,.gpx">
     <div id="lista-puntos"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="puntos-cerrar">Cerrar</button></div>
   </div>
@@ -2096,6 +2099,12 @@ function renderLista(filtro=''){
   cont.innerHTML = '';
   const f = filtro.trim().toLowerCase();
   const nombres = POTREROS_GEO.map(p=>p.nombre).filter(n=> n.toLowerCase().includes(f));
+  // El desplegable nativo necesita SIEMPRE la lista completa (no la
+  // filtrada) para sugerir mientras se escribe -- se repuebla acá porque
+  // renderLista() ya se llama en todos los puntos donde POTREROS_GEO
+  // cambia (importar KML, crear/eliminar potrero remoto o local).
+  const datalist = document.getElementById('lista-potreros-datalist');
+  if(datalist) datalist.innerHTML = POTREROS_GEO.map(p=>`<option value="${p.nombre}">`).join('');
   const casosAbiertos = listarCasosDesaparecidos();
 
   nombres.forEach(nombre=>{
