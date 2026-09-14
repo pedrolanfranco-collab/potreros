@@ -1,9 +1,12 @@
 /*
- * Prueba ad-hoc: registro de lluvias.
+ * Prueba ad-hoc: registro de lluvias y otros eventos climáticos.
  * Verifica: cargar una lluvia local queda en estado.lluvias y se manda como
  * evento a Supabase; un evento 'lluvia' de otro dispositivo se aplica sin
  * requerir un potrero real; sin señal se encola y se vacía al reconectar;
- * un evento con id repetido no duplica (aplicarEventoRemoto).
+ * un evento con id repetido no duplica (aplicarEventoRemoto);
+ * agruparLluviasPorMesYAnio() suma bien por mes y separa por año (14/9/2026);
+ * "otros eventos" (helada, granizo, etc., 14/9/2026) sigue el mismo patrón
+ * que lluvia pero con su propio tipo de evento ('evento_clima'), sin mm.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -112,6 +115,30 @@ async function probarArchivo(archivo){
   const lluvias = win.__est().lluvias;
   chequear('la lluvia queda en estado.lluvias', lluvias.length === 1 && lluvias[0].mm === 23.5, JSON.stringify(lluvias));
   chequear('la lista se re-renderiza con la carga', /23\.5 mm/.test(doc.getElementById('lluvias-lista').innerHTML));
+  chequear('el resumen mensual/anual se renderiza con la carga', /23\.5/.test(doc.getElementById('lluvias-resumen').innerHTML));
+
+  // --- acumulado por mes y año: 3-4 lluvias en meses/años distintos ---
+  const hoyISO = win.fechaISOHoy();
+  const anioActual = parseInt(hoyISO.split('-')[0], 10);
+  win.__est().lluvias.length = 0;
+  win.__est().lluvias.push(
+    { id:'r1', fecha:`05/01/${anioActual}`, mm:10, dispositivo:'x', usuario:null },
+    { id:'r2', fecha:`20/01/${anioActual}`, mm:5, dispositivo:'x', usuario:null },
+    { id:'r3', fecha:`10/06/${anioActual}`, mm:30, dispositivo:'x', usuario:null },
+    { id:'r4', fecha:`15/01/${anioActual-1}`, mm:100, dispositivo:'x', usuario:null }
+  );
+  const agrupado = win.agruparLluviasPorMesYAnio();
+  const filaActual = agrupado.find(f=>f.anio===anioActual);
+  const filaAnterior = agrupado.find(f=>f.anio===anioActual-1);
+  chequear('agrupa enero del año actual sumando las dos cargas (15mm)',
+    !!filaActual && filaActual.meses[0]===15, JSON.stringify(filaActual));
+  chequear('agrupa junio del año actual por separado (30mm)',
+    !!filaActual && filaActual.meses[5]===30, JSON.stringify(filaActual));
+  chequear('el total del año actual es 45 (15+30)',
+    !!filaActual && filaActual.total===45, JSON.stringify(filaActual));
+  chequear('el año anterior queda en una fila aparte (100mm en enero)',
+    !!filaAnterior && filaAnterior.meses[0]===100 && filaAnterior.total===100, JSON.stringify(filaAnterior));
+  chequear('el año más reciente aparece primero', agrupado[0].anio === anioActual);
 
   await new Promise(r=>setTimeout(r, 30));
   chequear('se mandó como evento a Supabase', servidor.filas.some(f=>f.tipo==='lluvia' && f.detalle && f.detalle.mm===23.5));
@@ -152,6 +179,38 @@ async function probarArchivo(archivo){
   await win.vaciarColaSync();
   chequear('al volver la señal la cola se vacía', (win.__est().colaSync||[]).length === 0);
   chequear('ese evento en cola también llegó al servidor', servidor.filas.some(f=>f.tipo==='lluvia' && f.detalle && f.detalle.mm===5));
+
+  // --- otros eventos climáticos (helada, granizo, etc.) ---
+  chequear('estado.eventosClima arranca vacío', Array.isArray(win.__est().eventosClima) && win.__est().eventosClima.length===0);
+  chequear('boton ev-guardar presente', !!doc.getElementById('ev-guardar'));
+
+  doc.getElementById('ev-tipo').value = 'Granizo';
+  doc.getElementById('ev-obs').value = 'Piedra grande, dañó pasturas del 8';
+  doc.getElementById('ev-guardar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  const eventosClima = win.__est().eventosClima;
+  chequear('el evento climático queda en estado.eventosClima',
+    eventosClima.length === 1 && eventosClima[0].tipo === 'Granizo' && eventosClima[0].obs === 'Piedra grande, dañó pasturas del 8',
+    JSON.stringify(eventosClima));
+  chequear('la lista de otros eventos se re-renderiza con la carga',
+    /Granizo/.test(doc.getElementById('eventos-clima-lista').innerHTML));
+
+  await new Promise(r=>setTimeout(r, 30));
+  chequear('el evento climático se mandó a Supabase con su propio tipo',
+    servidor.filas.some(f=>f.tipo==='evento_clima' && f.detalle && f.detalle.tipo==='Granizo'));
+
+  const totalPotrerosAntesClima = Object.keys(win.__est().potreros).map(p=>win.totalPotrero(p));
+  win.aplicarEventoRemoto({ tipo:'evento_clima', potrero: 'esto-no-es-un-potrero', dispositivo:'otro',
+    fecha_cliente: '03/01/2026', detalle: { id:'clima-remoto1', tipo:'Helada', obs:'heló fuerte', usuario:'Otro' } });
+  chequear('un evento climático remoto se aplica sin requerir un potrero válido',
+    win.__est().eventosClima.some(ev=>ev.id==='clima-remoto1' && ev.tipo==='Helada'));
+  const totalPotrerosDespuesClima = Object.keys(win.__est().potreros).map(p=>win.totalPotrero(p));
+  chequear('un evento climático no toca el stock de ningún potrero',
+    JSON.stringify(totalPotrerosAntesClima)===JSON.stringify(totalPotrerosDespuesClima));
+
+  const cantesDeRepetirClima = win.__est().eventosClima.length;
+  win.aplicarEventoRemoto({ tipo:'evento_clima', potrero: 'esto-no-es-un-potrero', dispositivo:'otro',
+    fecha_cliente: '03/01/2026', detalle: { id:'clima-remoto1', tipo:'Sequía', obs:'otra cosa', usuario:'Otro' } });
+  chequear('no duplica un evento climático con el mismo id', win.__est().eventosClima.length === cantesDeRepetirClima);
 }
 
 (async () => {

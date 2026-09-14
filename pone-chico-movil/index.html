@@ -361,7 +361,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.36</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.37</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -495,6 +495,23 @@
       <button class="btn btn-agregar" id="ll-guardar">Cargar lluvia</button>
     </div>
     <div id="lluvias-lista"></div>
+    <div id="lluvias-resumen"></div>
+    <h4 style="margin:16px 0 6px;font-size:13px;">❄️ Otros eventos (helada, granizo...)</h4>
+    <div class="form-row"><label>Tipo</label>
+      <select id="ev-tipo">
+        <option value="Helada">Helada</option>
+        <option value="Granizo">Granizo</option>
+        <option value="Sequía">Sequía</option>
+        <option value="Viento fuerte">Viento fuerte</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Fecha</label><input type="date" id="ev-fecha"></div>
+    <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="ev-obs" placeholder="Ej: heló fuerte, se quemaron las pasturas bajas"></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="ev-guardar">Registrar evento</button>
+    </div>
+    <div id="eventos-clima-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -548,7 +565,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.36","versionMovil":"1.36","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.37","versionMovil":"1.37","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -767,7 +784,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], eventosClima: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], historialSanidad: [], ultimaSincronizacion: null,
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
     ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0
@@ -957,6 +974,16 @@ function aplicarEventoRemoto(row){
     estado.lluvias = estado.lluvias || [];
     if(!estado.lluvias.some(l=>l.id===d.id)){
       estado.lluvias.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), mm: d.mm, dispositivo: row.dispositivo, usuario: d.usuario||null});
+    }
+    return;
+  }
+
+  if(row.tipo === 'evento_clima'){
+    // Mismo criterio que "lluvia": es del establecimiento entero, sin
+    // potrero -- se aplica antes del guard de abajo.
+    estado.eventosClima = estado.eventosClima || [];
+    if(!estado.eventosClima.some(ev=>ev.id===d.id)){
+      estado.eventosClima.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), tipo: d.tipo, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
     }
     return;
   }
@@ -3257,11 +3284,63 @@ function renderLluviasLista(){
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${l.mm} mm${l.usuario?(' — '+l.usuario):''}</div>
       </div>`).join('');
 }
+const MESES_ABREV_LLUVIA = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+/* Acumulado de mm por mes y año, a partir de estado.lluvias -- es a nivel
+   establecimiento (sin potrero), así que se agrupa directo por la fecha
+   del registro, sin ningún saldo por potrero de por medio. */
+function agruparLluviasPorMesYAnio(){
+  const porAnio = {};
+  (estado.lluvias||[]).forEach(l=>{
+    const partes = (l.fecha||'').split('/');
+    if(partes.length!==3) return;
+    const m = parseInt(partes[1],10), y = parseInt(partes[2],10);
+    if(!m || m<1 || m>12 || !y) return;
+    porAnio[y] = porAnio[y] || Array(12).fill(0);
+    porAnio[y][m-1] += (l.mm||0);
+  });
+  return Object.keys(porAnio).map(Number).sort((a,b)=>b-a).map(anio=>{
+    const meses = porAnio[anio];
+    return {anio, meses, total: meses.reduce((s,v)=>s+v,0)};
+  });
+}
+function renderLluviasResumen(){
+  const cont = document.getElementById('lluvias-resumen');
+  const filas = agruparLluviasPorMesYAnio();
+  if(!filas.length){ cont.innerHTML = ''; return; }
+  cont.innerHTML = `
+    <h4 style="margin:14px 0 6px;font-size:13px;">Acumulado por mes y año</h4>
+    <div style="overflow-x:auto;">
+      <table class="tabla-animales" style="font-size:11px;white-space:nowrap;">
+        <thead><tr><th>Año</th>${MESES_ABREV_LLUVIA.map(m=>`<th style="text-align:right;">${m}</th>`).join('')}<th style="text-align:right;">Total</th></tr></thead>
+        <tbody>${filas.map(f=>`<tr><td>${f.anio}</td>${f.meses.map(mm=>`<td class="num">${mm?mm.toFixed(1):'—'}</td>`).join('')}<td class="num"><strong>${f.total.toFixed(1)}</strong></td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+/* Eventos climáticos aparte de la lluvia (helada, granizo, etc.) -- mismo
+   criterio que estado.lluvias: del establecimiento entero, no de un
+   potrero, sincronizado con su propio tipo de evento ('evento_clima')
+   para no mezclarlo con los milímetros de lluvia. */
+function renderEventosClimaLista(){
+  const cont = document.getElementById('eventos-clima-lista');
+  const lista = (estado.eventosClima||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha)).slice(0,20);
+  cont.innerHTML = !lista.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Sin otros eventos registrados todavía.</p>'
+    : lista.map(ev=>`
+      <div class="potrero-card">
+        <div class="nombre">${ev.fecha} — ${ev.tipo}</div>
+        ${ev.obs || ev.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${ev.obs||''}${ev.obs && ev.usuario?' — ':''}${ev.usuario||''}</div>` : ''}
+      </div>`).join('');
+}
 document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ll-fecha').value = fechaISOHoy();
   document.getElementById('ll-fecha').max = fechaISOHoy();
   document.getElementById('ll-mm').value = '';
+  document.getElementById('ev-fecha').value = fechaISOHoy();
+  document.getElementById('ev-fecha').max = fechaISOHoy();
+  document.getElementById('ev-obs').value = '';
   renderLluviasLista();
+  renderLluviasResumen();
+  renderEventosClimaLista();
   document.getElementById('modal-lluvias').style.display = 'flex';
 });
 document.getElementById('lluvias-cerrar').addEventListener('click', ()=>{
@@ -3284,7 +3363,26 @@ document.getElementById('ll-guardar').addEventListener('click', ()=>{
   // usa para esta rama, así que el valor exacto no importa funcionalmente.
   enviarEvento('lluvia', ESTABLECIMIENTO, {id, mm, usuario: usuario||null}, fecha);
   renderLluviasLista();
+  renderLluviasResumen();
   toast(`Se cargó ${mm} mm del ${fecha}`);
+});
+document.getElementById('ev-guardar').addEventListener('click', ()=>{
+  const fechaISO = document.getElementById('ev-fecha').value;
+  const tipo = document.getElementById('ev-tipo').value;
+  const obs = document.getElementById('ev-obs').value.trim();
+  if(!fechaISO){ toast('Elegí una fecha'); return; }
+  const fecha = fechaISOaDisplay(fechaISO);
+  const id = generarIdHistorial();
+  const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
+  estado.eventosClima = estado.eventosClima || [];
+  estado.eventosClima.unshift({id, fecha, tipo, obs: obs||null, dispositivo: idDispositivo(), usuario: usuario||null});
+  guardarEstado();
+  // Mismo truco que "lluvia": ESTABLECIMIENTO como placeholder de "potrero"
+  // (enviarEvento/eventos_sync siempre esperan ese campo, aunque este
+  // evento no sea de ningún potrero en particular).
+  enviarEvento('evento_clima', ESTABLECIMIENTO, {id, tipo, obs: obs||null, usuario: usuario||null}, fecha);
+  renderEventosClimaLista();
+  toast(`Se registró: ${tipo} del ${fecha}`);
 });
 
 /* ======================= STOCK TOTAL: CATEGORÍAS, POR POTRERO, NACIMIENTOS Y MUERTES =======================
