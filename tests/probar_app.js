@@ -137,7 +137,8 @@ async function levantar(archivo){
   // "estado" es un let de nivel superior: no queda en window, así que le
   // agregamos un accesor para poder inspeccionarlo desde las pruebas.
   try { win.eval(codigo + '\n;window.__est = function(){ return estado; };' +
-    '\n;window.__vaciar = function(n){ estado.potreros[n].animales = {}; guardarEstado(); };'); }
+    '\n;window.__vaciar = function(n){ estado.potreros[n].animales = {}; guardarEstado(); };' +
+    '\n;window.__seleccion = function(){ return seleccionActual; };'); }
   catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
 
   await new Promise(r => setTimeout(r, 60));
@@ -221,6 +222,26 @@ async function probar(archivo){
   doc.getElementById('usuario-guardar').dispatchEvent(new win.Event('click', { bubbles: true }));
   chequear('guardar Quien soy queda en localStorage (' + variante + ')', win.usuarioActual() === 'Prueba Automática');
   chequear('el modal se cierra al guardar', doc.getElementById('modal-usuario').style.display === 'none');
+
+  // --- buscador: desplegable propio, no <datalist> nativo (14/9/2026) ---
+  // Reemplaza un intento con <datalist> que no se mostraba de forma
+  // confiable en varios celulares reales -- esto anda igual en cualquier
+  // navegador porque es HTML/JS armado a mano, no un control nativo.
+  const bus = doc.getElementById('buscador');
+  bus.value = potreros[0].slice(0, 1);
+  bus.dispatchEvent(new win.Event('input', { bubbles: true }));
+  const sug = doc.getElementById('buscador-sugerencias');
+  chequear('escribir en el buscador muestra el desplegable propio',
+    sug.style.display === 'block' && sug.children.length > 0, sug.innerHTML.slice(0, 200));
+  const primeraSugerencia = sug.querySelector('[data-potrero]');
+  if(primeraSugerencia){
+    const nombreSugerido = primeraSugerencia.dataset.potrero;
+    primeraSugerencia.dispatchEvent(new win.Event('mousedown', { bubbles: true }));
+    chequear('tocar una sugerencia selecciona ese potrero', win.__seleccion() === nombreSugerido);
+    chequear('el desplegable se cierra al elegir', sug.style.display === 'none');
+  }
+  bus.value = '';
+  bus.dispatchEvent(new win.Event('input', { bubbles: true }));
 
   // --- alta de hacienda ---
   const p1 = potreros[0], p2 = potreros[1] || potreros[0];

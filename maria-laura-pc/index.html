@@ -110,6 +110,22 @@
     width:calc(100% - 20px);
   }
   #buscador:focus{outline:2px solid var(--verde-campo);outline-offset:1px;}
+  /* Desplegable de sugerencias propio (14/9/2026) -- el <datalist> nativo
+     no se mostraba de forma confiable en varios celulares reales, así que
+     esto reemplaza esa idea con una lista armada a mano, igual en
+     cualquier navegador. */
+  #buscador-sugerencias{
+    position:absolute; left:10px; right:10px; top:100%;
+    background:#fff; border:1px solid var(--linea); border-top:none;
+    border-radius:0 0 8px 8px; box-shadow:0 8px 20px rgba(0,0,0,0.18);
+    max-height:220px; overflow-y:auto; z-index:500;
+  }
+  .sugerencia-potrero{
+    padding:11px 13px; font-size:14.5px; font-family:'Inter',sans-serif;
+    cursor:pointer; border-bottom:1px solid var(--linea);
+  }
+  .sugerencia-potrero:last-child{border-bottom:none;}
+  .sugerencia-potrero:hover, .sugerencia-potrero:active{background:var(--crema);}
 
   .potrero-card{
     border:1px solid var(--linea);
@@ -282,9 +298,10 @@
      que ahí lo que hace falta agrandar son los botones (font-size/padding),
      no el ancho de la caja. Confirmado con Pedro el 14/9/2026 (v2.63/2.64:
      "sigue del mismo tamaño" en móvil). */
-  #modal-herramientas{padding:10px;}
-  #modal-herramientas .modal-box{max-width:640px;padding:26px 18px;}
-  #menu-herramientas .btn{width:100%;margin-bottom:11px;font-size:17px;padding:15px 16px;}
+  #modal-herramientas{padding:8px;}
+  #modal-herramientas .modal-box{max-width:680px;padding:24px 16px;max-height:92vh;}
+  #modal-herramientas h3{font-size:22px;}
+  #menu-herramientas .btn{width:100%;margin-bottom:12px;font-size:19px;padding:18px 16px;}
   #menu-herramientas .btn-kmz{background:var(--verde-monte);color:#fff;}
   #menu-herramientas .btn-json{background:#fff;color:var(--texto);border:1px solid var(--linea);}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
@@ -368,7 +385,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.67 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.68 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -388,8 +405,10 @@
       <button id="btn-satelital" style="position:absolute;top:14px;right:14px;z-index:800;background:var(--verde-monte);color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🛰 Satelital: ON</button>
     </div>
     <div id="sidebar">
-      <input type="text" id="buscador" placeholder="Buscar potrero..." list="lista-potreros-datalist">
-      <datalist id="lista-potreros-datalist"></datalist>
+      <div style="position:relative;">
+        <input type="text" id="buscador" placeholder="Buscar potrero..." autocomplete="off">
+        <div id="buscador-sugerencias" style="display:none;"></div>
+      </div>
       <div id="lista-wrap">
         <div id="lista-potreros"></div>
       </div>
@@ -599,7 +618,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.67","versionMovil":"2.66","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.68","versionMovil":"2.67","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1867,12 +1886,6 @@ function renderLista(filtro=''){
   cont.innerHTML = '';
   const f = filtro.trim().toLowerCase();
   const nombres = POTREROS_GEO.map(p=>p.nombre).filter(n=> n.toLowerCase().includes(f));
-  // El desplegable nativo necesita SIEMPRE la lista completa (no la
-  // filtrada) para sugerir mientras se escribe -- se repuebla acá porque
-  // renderLista() ya se llama en todos los puntos donde POTREROS_GEO
-  // cambia (importar KML, crear/eliminar potrero remoto o local).
-  const datalist = document.getElementById('lista-potreros-datalist');
-  if(datalist) datalist.innerHTML = POTREROS_GEO.map(p=>`<option value="${p.nombre}">`).join('');
   const casosAbiertos = listarCasosDesaparecidos();
 
   nombres.forEach(nombre=>{
@@ -1907,7 +1920,38 @@ function renderLista(filtro=''){
   });
 }
 
-document.getElementById('buscador').addEventListener('input', e=> renderLista(e.target.value));
+/* Desplegable de sugerencias propio (14/9/2026) -- reemplaza un intento
+   con <datalist> nativo que no se mostraba de forma confiable en varios
+   celulares reales. Muestra hasta 8 coincidencias; tocar una sugerencia
+   selecciona ese potrero directo (no solo filtra la lista de abajo). */
+function renderSugerenciasBuscador(filtro){
+  const cont = document.getElementById('buscador-sugerencias');
+  const f = filtro.trim().toLowerCase();
+  if(!f){ cont.style.display = 'none'; cont.innerHTML = ''; return; }
+  const nombres = POTREROS_GEO.map(p=>p.nombre).filter(n=> n.toLowerCase().includes(f)).slice(0,8);
+  if(!nombres.length){ cont.style.display = 'none'; cont.innerHTML = ''; return; }
+  cont.innerHTML = nombres.map(n=>`<div class="sugerencia-potrero" data-potrero="${n}">${n}</div>`).join('');
+  cont.style.display = 'block';
+  cont.querySelectorAll('[data-potrero]').forEach(el=>{
+    el.addEventListener('mousedown', (e)=>{
+      // mousedown (no click) para que dispare ANTES del blur del input
+      e.preventDefault();
+      const nombre = el.dataset.potrero;
+      document.getElementById('buscador').value = nombre;
+      cont.style.display = 'none';
+      renderLista(nombre);
+      seleccionarPotrero(nombre);
+    });
+  });
+}
+document.getElementById('buscador').addEventListener('input', e=>{
+  renderLista(e.target.value);
+  renderSugerenciasBuscador(e.target.value);
+});
+document.getElementById('buscador').addEventListener('focus', e=> renderSugerenciasBuscador(e.target.value));
+document.getElementById('buscador').addEventListener('blur', ()=>{
+  document.getElementById('buscador-sugerencias').style.display = 'none';
+});
 
 /* ======================= SELECCIÓN Y DETALLE ======================= */
 function seleccionarPotrero(nombre){
