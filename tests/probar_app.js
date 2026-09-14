@@ -228,9 +228,12 @@ async function probar(archivo){
   // confiable en varios celulares reales -- esto anda igual en cualquier
   // navegador porque es HTML/JS armado a mano, no un control nativo.
   const bus = doc.getElementById('buscador');
+  const sug = doc.getElementById('buscador-sugerencias');
+  bus.dispatchEvent(new win.Event('focus', { bubbles: true }));
+  chequear('tocar el buscador vacío ya muestra todos los potreros',
+    sug.style.display === 'block' && sug.children.length === potreros.length, sug.children.length + ' vs ' + potreros.length);
   bus.value = potreros[0].slice(0, 1);
   bus.dispatchEvent(new win.Event('input', { bubbles: true }));
-  const sug = doc.getElementById('buscador-sugerencias');
   chequear('escribir en el buscador muestra el desplegable propio',
     sug.style.display === 'block' && sug.children.length > 0, sug.innerHTML.slice(0, 200));
   const primeraSugerencia = sug.querySelector('[data-potrero]');

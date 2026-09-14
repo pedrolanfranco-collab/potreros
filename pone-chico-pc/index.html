@@ -287,9 +287,9 @@
   #estado-compacto{flex:1;min-width:0;font-size:11px;line-height:1.5;}
   #estado-compacto div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .btn-herramientas{
-    font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;
-    background:var(--verde-monte);color:#fff;border:none;border-radius:6px;
-    padding:9px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;
+    font-family:'Inter',sans-serif;font-weight:700;font-size:15px;
+    background:var(--verde-monte);color:#fff;border:none;border-radius:8px;
+    padding:13px 18px;cursor:pointer;white-space:nowrap;flex-shrink:0;
   }
   .btn-herramientas:hover{filter:brightness(1.08);}
   /* max-width solo se nota en pantallas más anchas que el tope (PC/tablet) --
@@ -385,7 +385,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.40 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.41 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -616,7 +616,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.40","versionMovil":"1.40","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.41","versionMovil":"1.41","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1925,8 +1925,13 @@ function renderLista(filtro=''){
 function renderSugerenciasBuscador(filtro){
   const cont = document.getElementById('buscador-sugerencias');
   const f = filtro.trim().toLowerCase();
-  if(!f){ cont.style.display = 'none'; cont.innerHTML = ''; return; }
-  const nombres = POTREROS_GEO.map(p=>p.nombre).filter(n=> n.toLowerCase().includes(f)).slice(0,8);
+  // Con el campo vacío (recién tocado, sin escribir nada) muestra TODOS los
+  // potreros (la caja ya es scrolleable) -- no solo mientras se escribe --
+  // para que funcione también como una lista para elegir directo, no solo
+  // autocompletar. Mientras se escribe, sí se acota a 8 para no tapar la
+  // pantalla con coincidencias parciales.
+  const todos = POTREROS_GEO.map(p=>p.nombre);
+  const nombres = f ? todos.filter(n=> n.toLowerCase().includes(f)).slice(0,8) : todos;
   if(!nombres.length){ cont.style.display = 'none'; cont.innerHTML = ''; return; }
   cont.innerHTML = nombres.map(n=>`<div class="sugerencia-potrero" data-potrero="${n}">${n}</div>`).join('');
   cont.style.display = 'block';
