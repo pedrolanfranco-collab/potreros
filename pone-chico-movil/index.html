@@ -276,8 +276,15 @@
     padding:9px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;
   }
   .btn-herramientas:hover{filter:brightness(1.08);}
-  #modal-herramientas .modal-box{max-width:620px;padding:28px 32px;}
-  #menu-herramientas .btn{width:100%;margin-bottom:10px;font-size:15.5px;padding:13px 14px;}
+  /* max-width solo se nota en pantallas más anchas que el tope (PC/tablet) --
+     en el celular la caja ya usa todo el ancho disponible (limitado por
+     #modal-herramientas{padding} de acá abajo, no por este max-width), así
+     que ahí lo que hace falta agrandar son los botones (font-size/padding),
+     no el ancho de la caja. Confirmado con Pedro el 14/9/2026 (v2.63/2.64:
+     "sigue del mismo tamaño" en móvil). */
+  #modal-herramientas{padding:10px;}
+  #modal-herramientas .modal-box{max-width:640px;padding:26px 18px;}
+  #menu-herramientas .btn{width:100%;margin-bottom:11px;font-size:17px;padding:15px 16px;}
   #menu-herramientas .btn-kmz{background:var(--verde-monte);color:#fff;}
   #menu-herramientas .btn-json{background:#fff;color:var(--texto);border:1px solid var(--linea);}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
@@ -361,7 +368,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.38</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.39</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -568,7 +575,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.38","versionMovil":"1.38","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.39","versionMovil":"1.39","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 

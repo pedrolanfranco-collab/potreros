@@ -275,8 +275,15 @@
     padding:9px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;
   }
   .btn-herramientas:hover{filter:brightness(1.08);}
-  #modal-herramientas .modal-box{max-width:620px;padding:28px 32px;}
-  #menu-herramientas .btn{width:100%;margin-bottom:10px;font-size:15.5px;padding:13px 14px;}
+  /* max-width solo se nota en pantallas más anchas que el tope (PC/tablet) --
+     en el celular la caja ya usa todo el ancho disponible (limitado por
+     #modal-herramientas{padding} de acá abajo, no por este max-width), así
+     que ahí lo que hace falta agrandar son los botones (font-size/padding),
+     no el ancho de la caja. Confirmado con Pedro el 14/9/2026 (v2.63/2.64:
+     "sigue del mismo tamaño" en móvil). */
+  #modal-herramientas{padding:10px;}
+  #modal-herramientas .modal-box{max-width:640px;padding:26px 18px;}
+  #menu-herramientas .btn{width:100%;margin-bottom:11px;font-size:17px;padding:15px 16px;}
   #menu-herramientas .btn-kmz{background:var(--verde-monte);color:#fff;}
   #menu-herramientas .btn-json{background:#fff;color:var(--texto);border:1px solid var(--linea);}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
