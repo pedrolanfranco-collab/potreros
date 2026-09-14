@@ -203,10 +203,24 @@ async function probar(archivo){
   // se reemplazó por "Importar KML/KMZ" (ver memoria importar-kml-limites-potreros).
   // Desde v2.21 "Importar KML/KMZ" tambien existe en PC, al lado de las
   // exportaciones existentes (no las reemplaza ahi).
+  // Desde 14/9/2026 (reorden de toolbox, pedido de Pedro) "Importar KML/KMZ"
+  // se saca de movil -- queda solo en PC.
   if(variante === 'PC'){
     ['btn-exportar-kmz','btn-exportar-md'].forEach(id => chequear('boton ' + id + ' presente', tiene(id)));
+    chequear('boton btn-importar-kml presente', tiene('btn-importar-kml'));
+  } else {
+    chequear('boton btn-importar-kml ausente en movil', !tiene('btn-importar-kml'));
   }
-  chequear('boton btn-importar-kml presente', tiene('btn-importar-kml'));
+  chequear('boton btn-usuario presente (Quien soy, compartido desde 14/9/2026)', tiene('btn-usuario'));
+  chequear('modal-usuario presente (compartido desde 14/9/2026)', tiene('modal-usuario'));
+
+  // --- Quién soy: ahora funciona igual en PC y movil (14/9/2026) ---
+  doc.getElementById('btn-usuario').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('click en Quien soy abre el modal', doc.getElementById('modal-usuario').style.display === 'flex');
+  doc.getElementById('usuario-nombre-input').value = 'Prueba Automática';
+  doc.getElementById('usuario-guardar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('guardar Quien soy queda en localStorage (' + variante + ')', win.usuarioActual() === 'Prueba Automática');
+  chequear('el modal se cierra al guardar', doc.getElementById('modal-usuario').style.display === 'none');
 
   // --- alta de hacienda ---
   const p1 = potreros[0], p2 = potreros[1] || potreros[0];

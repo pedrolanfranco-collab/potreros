@@ -411,27 +411,33 @@
       <button class="btn btn-kmz" id="btn-exportar-excel">⬇ Exportar Excel</button>
       <button class="btn btn-json" id="btn-exportar-md">⬇ Exportar MD</button>
 <!-- @pc:end -->
-<!-- @movil:start -->
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
-      <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
-<!-- @movil:end -->
-      <button class="btn btn-json" id="btn-exportar-json">⬇ Backup (JSON)</button>
-      <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
-<!-- @pc:start -->
-      <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
-      <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
-      <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
-<!-- @pc:end -->
 <!-- @movil:start -->
-      <button class="btn btn-json" id="btn-puntos" style="display:none;">📍 Aguadas / instalaciones</button>
-<!-- @movil:end -->
-      <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
-      <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias</button>
+      <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
+      <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
+      <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
+      <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
+      <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
+      <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
+      <button class="btn btn-json" id="btn-puntos" style="display:none;">📍 Aguadas / instalaciones</button>
+<!-- @movil:end -->
+<!-- @pc:start -->
+      <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
+      <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
+      <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias</button>
+      <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
+      <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
+      <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
+      <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
+      <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
+      <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
+      <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
+<!-- @pc:end -->
       <input type="file" id="input-json" accept=".json">
       <input type="file" id="input-kml" accept=".kml,.kmz">
     </div>
@@ -526,7 +532,6 @@
   </div>
 </div>
 <!-- @sanidadExcel:end -->
-<!-- @movil:start -->
 <div id="modal-lluvias" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🌧 Lluvias</h3>
@@ -539,7 +544,6 @@
     <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
   </div>
 </div>
-<!-- @movil:end -->
 <div id="modal-stock" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>📊 Stock total</h3>
@@ -563,33 +567,15 @@
     <div class="form-botones"><button class="btn btn-secundario" id="stock-cerrar">Cerrar</button></div>
   </div>
 </div>
-<!-- @pc:start -->
-<div id="modal-lluvias" class="modal-overlay" style="display:none;">
-<!-- @pc:end -->
-<!-- @movil:start -->
 <div id="modal-usuario" class="modal-overlay" style="display:none;">
-<!-- @movil:end -->
   <div class="modal-box">
-<!-- @pc:start -->
-    <h3>🌧 Lluvias</h3>
-    <div class="form-row"><label>Fecha</label><input type="date" id="ll-fecha"></div>
-    <div class="form-row"><label>Milímetros</label><input type="number" id="ll-mm" min="0" step="0.1"></div>
-    <div class="form-botones" style="margin-bottom:12px;">
-      <button class="btn btn-agregar" id="ll-guardar">Cargar lluvia</button>
-<!-- @pc:end -->
-<!-- @movil:start -->
     <h3>👤 ¿Quién sos?</h3>
-    <p class="modal-info">Tu nombre queda guardado en este celular y se agrega a cada movimiento que cargues, para saber quién hizo qué.</p>
+    <p class="modal-info">Tu nombre queda guardado en este dispositivo y se agrega a cada movimiento que cargues, para saber quién hizo qué.</p>
     <div class="form-row"><label>Nombre</label><input type="text" id="usuario-nombre-input" placeholder="Ej: Pedro"></div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="usuario-guardar">Guardar</button>
       <button class="btn btn-secundario" id="usuario-cancelar">Cancelar</button>
-<!-- @movil:end -->
     </div>
-<!-- @pc:start -->
-    <div id="lluvias-lista"></div>
-    <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
-<!-- @pc:end -->
   </div>
 </div>
 <div id="toast"></div>
@@ -768,16 +754,15 @@ function migrarClavesSinFirma(potreros){
    se cargan una sola vez con el botón "Cargar puntos de referencia" en el modal de puntos. */
 const PUNTOS_SEED = CONFIG.puntosSeed;
 const STORAGE_KEY = CONFIG.storageKey;
-<!-- @movil:start -->
 
-/* Nombre de quién usa este celular — no depende del establecimiento (misma
-   clave para todas las apps del proyecto, todas en el mismo origen) para que
-   alguien que usa La Vuelta y María Laura desde el mismo teléfono lo cargue
-   una sola vez. Se agrega a cada evento enviado y a cada línea de historial
-   creada localmente (ver enviarEvento y registrarHistorial). */
+/* Nombre de quién usa este dispositivo — no depende del establecimiento
+   (misma clave para todas las apps del proyecto, todas en el mismo origen)
+   para que alguien que usa La Vuelta y María Laura desde el mismo
+   dispositivo lo cargue una sola vez. Se agrega a cada evento enviado y a
+   cada línea de historial creada localmente (ver enviarEvento y
+   registrarHistorial). Compartido entre PC y móvil desde el 14/9/2026. */
 const USUARIO_KEY = 'potreros_nombre_usuario';
 function usuarioActual(){ return (localStorage.getItem(USUARIO_KEY) || '').trim(); }
-<!-- @movil:end -->
 
 /* ======================= SINCRONIZACIÓN (Supabase) ======================= */
 const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
@@ -3789,9 +3774,11 @@ async function importarLimitesKML(archivo){
   }
 }
 
+<!-- @pc:start -->
 document.getElementById('btn-importar-kml').addEventListener('click', ()=>{
   document.getElementById('input-kml').click();
 });
+<!-- @pc:end -->
 document.getElementById('input-kml').addEventListener('change', (e)=>{
   const archivo = e.target.files[0];
   if(!archivo) return;
@@ -5300,7 +5287,6 @@ document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   location.reload();
 });
 
-<!-- @movil:start -->
 /* ======================= QUIÉN SOY (identificación de usuario) ======================= */
 document.getElementById('btn-usuario').addEventListener('click', ()=>{
   document.getElementById('usuario-nombre-input').value = usuarioActual();
@@ -5316,13 +5302,11 @@ document.getElementById('usuario-guardar').addEventListener('click', ()=>{
   document.getElementById('modal-usuario').style.display = 'none';
   toast('Usuario guardado: ' + nombre);
 });
-// La primera vez que se abre en este celular (o si nunca se cargó un nombre), lo pide solo.
+// La primera vez que se abre en este dispositivo (o si nunca se cargó un nombre), lo pide solo.
 if(!usuarioActual()){
   document.getElementById('usuario-nombre-input').value = '';
   document.getElementById('modal-usuario').style.display = 'flex';
 }
-
-<!-- @movil:end -->
 /* ======================= INICIO ======================= */
 actualizarTodo();
 actualizarEstadoSync();

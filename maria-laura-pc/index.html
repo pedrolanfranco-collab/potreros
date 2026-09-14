@@ -353,7 +353,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.62 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.63 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -401,18 +401,19 @@
       <button class="btn btn-kmz" id="btn-exportar-pdf-historial">⬇ PDF: Historial por potrero</button>
       <button class="btn btn-kmz" id="btn-exportar-excel">⬇ Exportar Excel</button>
       <button class="btn btn-json" id="btn-exportar-md">⬇ Exportar MD</button>
-      <button class="btn btn-json" id="btn-exportar-json">⬇ Backup (JSON)</button>
-      <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
-      <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
-      <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
-      <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
-      <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
-      <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
+      <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias</button>
+      <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
+      <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
+      <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
+      <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
+      <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
+      <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
+      <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
       <input type="file" id="input-json" accept=".json">
       <input type="file" id="input-kml" accept=".kml,.kmz">
     </div>
@@ -477,6 +478,18 @@
     <div class="form-botones"><button class="btn btn-secundario" id="sanidad-cerrar">Cerrar</button></div>
   </div>
 </div>
+<div id="modal-lluvias" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🌧 Lluvias</h3>
+    <div class="form-row"><label>Fecha</label><input type="date" id="ll-fecha"></div>
+    <div class="form-row"><label>Milímetros</label><input type="number" id="ll-mm" min="0" step="0.1"></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="ll-guardar">Cargar lluvia</button>
+    </div>
+    <div id="lluvias-lista"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
+  </div>
+</div>
 <div id="modal-stock" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>📊 Stock total</h3>
@@ -496,16 +509,15 @@
     <div class="form-botones"><button class="btn btn-secundario" id="stock-cerrar">Cerrar</button></div>
   </div>
 </div>
-<div id="modal-lluvias" class="modal-overlay" style="display:none;">
+<div id="modal-usuario" class="modal-overlay" style="display:none;">
   <div class="modal-box">
-    <h3>🌧 Lluvias</h3>
-    <div class="form-row"><label>Fecha</label><input type="date" id="ll-fecha"></div>
-    <div class="form-row"><label>Milímetros</label><input type="number" id="ll-mm" min="0" step="0.1"></div>
-    <div class="form-botones" style="margin-bottom:12px;">
-      <button class="btn btn-agregar" id="ll-guardar">Cargar lluvia</button>
+    <h3>👤 ¿Quién sos?</h3>
+    <p class="modal-info">Tu nombre queda guardado en este dispositivo y se agrega a cada movimiento que cargues, para saber quién hizo qué.</p>
+    <div class="form-row"><label>Nombre</label><input type="text" id="usuario-nombre-input" placeholder="Ej: Pedro"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="usuario-guardar">Guardar</button>
+      <button class="btn btn-secundario" id="usuario-cancelar">Cancelar</button>
     </div>
-    <div id="lluvias-lista"></div>
-    <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -542,7 +554,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.62","versionMovil":"2.61","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.63","versionMovil":"2.62","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -681,6 +693,15 @@ function migrarClavesSinFirma(potreros){
    se cargan una sola vez con el botón "Cargar puntos de referencia" en el modal de puntos. */
 const PUNTOS_SEED = CONFIG.puntosSeed;
 const STORAGE_KEY = CONFIG.storageKey;
+
+/* Nombre de quién usa este dispositivo — no depende del establecimiento
+   (misma clave para todas las apps del proyecto, todas en el mismo origen)
+   para que alguien que usa La Vuelta y María Laura desde el mismo
+   dispositivo lo cargue una sola vez. Se agrega a cada evento enviado y a
+   cada línea de historial creada localmente (ver enviarEvento y
+   registrarHistorial). Compartido entre PC y móvil desde el 14/9/2026. */
+const USUARIO_KEY = 'potreros_nombre_usuario';
+function usuarioActual(){ return (localStorage.getItem(USUARIO_KEY) || '').trim(); }
 
 /* ======================= SINCRONIZACIÓN (Supabase) ======================= */
 const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
@@ -4473,6 +4494,26 @@ document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   location.reload();
 });
 
+/* ======================= QUIÉN SOY (identificación de usuario) ======================= */
+document.getElementById('btn-usuario').addEventListener('click', ()=>{
+  document.getElementById('usuario-nombre-input').value = usuarioActual();
+  document.getElementById('modal-usuario').style.display = 'flex';
+});
+document.getElementById('usuario-cancelar').addEventListener('click', ()=>{
+  document.getElementById('modal-usuario').style.display = 'none';
+});
+document.getElementById('usuario-guardar').addEventListener('click', ()=>{
+  const nombre = document.getElementById('usuario-nombre-input').value.trim();
+  if(!nombre){ toast('Escribí un nombre'); return; }
+  localStorage.setItem(USUARIO_KEY, nombre);
+  document.getElementById('modal-usuario').style.display = 'none';
+  toast('Usuario guardado: ' + nombre);
+});
+// La primera vez que se abre en este dispositivo (o si nunca se cargó un nombre), lo pide solo.
+if(!usuarioActual()){
+  document.getElementById('usuario-nombre-input').value = '';
+  document.getElementById('modal-usuario').style.display = 'flex';
+}
 /* ======================= INICIO ======================= */
 actualizarTodo();
 actualizarEstadoSync();
