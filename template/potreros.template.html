@@ -309,8 +309,16 @@
     max-height:82vh;overflow-y:auto;
     box-shadow:0 12px 40px rgba(0,0,0,0.3);
     border-top:3px solid var(--ocre);
+    position:relative;
   }
-  .modal-box h3{font-family:'Fraunces',serif;font-size:17px;margin:0 0 6px 0;color:var(--verde-monte);}
+  .modal-box h3{font-family:'Fraunces',serif;font-size:17px;margin:0 6px 6px 0;color:var(--verde-monte);padding-right:22px;}
+  .btn-cerrar-x{
+    position:absolute;top:14px;right:14px;
+    background:none;border:none;cursor:pointer;
+    font-size:19px;line-height:1;color:var(--texto-suave);
+    padding:2px 4px;
+  }
+  .btn-cerrar-x:hover{color:var(--rojo-hacienda);}
   .modal-info{font-size:12px;color:var(--texto-suave);margin:0 0 12px 0;line-height:1.4;}
   .stock-tab-btn{flex:1;font-size:12px;padding:7px 4px;border-radius:6px;border:1px solid var(--linea);background:transparent;color:var(--texto);font-family:'Inter',sans-serif;cursor:pointer;}
   .stock-tab-btn.activo{border-color:var(--ocre);background:var(--ocre);color:#fff;}
@@ -402,6 +410,7 @@
 <div id="modal-herramientas" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🛠 Herramientas</h3>
+    <button class="btn-cerrar-x" id="herramientas-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <div id="menu-herramientas">
 <!-- @pc:start -->
       <button class="btn btn-kmz" id="btn-exportar-kmz">⬇ Exportar KMZ</button>
@@ -448,6 +457,7 @@
 <div id="modal-voz" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🎤 Carga por voz</h3>
+    <button class="btn-cerrar-x" id="voz-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info" id="voz-estado">Tocá el micrófono y decí algo como: "mover 45 vacas del 12 al 15", "agregar 20 ovejas al 8", "nació un ternero en el 9", "vendí 10 novillos del 7".</p>
     <div id="voz-transcript" style="background:var(--crema);border-radius:6px;padding:10px;font-size:13px;min-height:20px;margin-bottom:10px;color:var(--texto-suave);">—</div>
     <button class="btn btn-muerte btn-full" id="voz-grabar" style="width:100%;margin-bottom:10px;">🎤 Empezar a hablar</button>
@@ -458,6 +468,7 @@
 <div id="modal-alertas" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🔔 Alertas y umbrales</h3>
+    <button class="btn-cerrar-x" id="alertas-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Se calculan solas con cada movimiento — no hace falta revisarlas a mano.</p>
     <div class="form-row"><label>Carga máxima recomendada (UG/ha)</label><input type="number" id="al-carga-max" min="0" step="0.05"></div>
     <div class="form-row"><label>Días máximos de ocupación</label><input type="number" id="al-dias-max" min="1" step="1"></div>
@@ -471,6 +482,7 @@
 <div id="modal-desaparecidos" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>❓ Desaparecidos</h3>
+    <button class="btn-cerrar-x" id="desaparecidos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Animales que salieron del potrero sin que sepas dónde están (cruzaron a otro campo, etc.) — resolvé acá cuando aparezcan, o dalos por perdidos si no vuelven.</p>
     <div id="desaparecidos-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="desaparecidos-cerrar">Cerrar</button></div>
@@ -480,6 +492,7 @@
 <div id="modal-sanidad" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🏥 Sanidad</h3>
+    <button class="btn-cerrar-x" id="sanidad-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Se guarda directo en la base de datos, en vivo.</p>
     <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento</button>
     <div id="form-sanidad" style="display:none;margin-bottom:12px;">
@@ -508,6 +521,7 @@
 <div id="modal-sanidad" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🏥 Sanidad</h3>
+    <button class="btn-cerrar-x" id="sanidad-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Es una foto del sistema de Sanidad (Excel), no un dato en vivo.</p>
     <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento</button>
     <div id="form-sanidad" style="display:none;margin-bottom:12px;">
@@ -535,6 +549,7 @@
 <div id="modal-lluvias" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🌧 Lluvias</h3>
+    <button class="btn-cerrar-x" id="lluvias-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <div class="form-row"><label>Fecha</label><input type="date" id="ll-fecha"></div>
     <div class="form-row"><label>Milímetros</label><input type="number" id="ll-mm" min="0" step="0.1"></div>
     <div class="form-botones" style="margin-bottom:12px;">
@@ -547,6 +562,7 @@
 <div id="modal-stock" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>📊 Stock total</h3>
+    <button class="btn-cerrar-x" id="stock-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Categorías, animales por potrero, nacimientos y muertes de la temporada.</p>
     <div id="stock-resumen" style="font-size:12.5px;color:var(--texto-suave);margin-bottom:10px;"></div>
     <div id="stock-desaparecidos-aviso"></div>
@@ -570,6 +586,7 @@
 <div id="modal-usuario" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>👤 ¿Quién sos?</h3>
+    <button class="btn-cerrar-x" id="usuario-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Tu nombre queda guardado en este dispositivo y se agrega a cada movimiento que cargues, para saber quién hizo qué.</p>
     <div class="form-row"><label>Nombre</label><input type="text" id="usuario-nombre-input" placeholder="Ej: Pedro"></div>
     <div class="form-botones">
@@ -583,6 +600,7 @@
 <div id="modal-coef" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>Coeficientes de Unidad Ganadera (UG)</h3>
+    <button class="btn-cerrar-x" id="coef-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Valores de referencia habituales en Uruguay (1 UG ≈ 1 vaca de cría). Ajustalos si tu establecimiento usa otros criterios.</p>
     <div id="coef-lista"></div>
     <div class="form-botones">
@@ -596,6 +614,7 @@
 <div id="modal-puntos" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>Aguadas, instalaciones y caminos</h3>
+    <button class="btn-cerrar-x" id="puntos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Estos puntos se agregan al mapa y salen como capas aparte en el KMZ exportado.</p>
     <div class="form-row"><label>Tipo</label><select id="np-tipo"></select></div>
     <div class="form-row"><label>Subtipo</label><select id="np-subtipo"></select></div>
@@ -2240,6 +2259,26 @@ document.getElementById('herramientas-cerrar').addEventListener('click', ()=>{
 });
 document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   if(e.target.id === 'modal-herramientas') document.getElementById('modal-herramientas').style.display = 'none';
+});
+/* Botón ✕ arriba a la derecha de cada modal (14/9/2026) -- dispara el mismo
+   click que el botón "Cerrar"/"Cancelar" que ya existe en cada uno, así
+   nunca se desincroniza de la lógica de cierre real (algunos, como
+   voz-cerrar, tienen side-effects propios). coef-cerrar-x es PC-only, el
+   resto es compartido -- el `if` cubre los dos casos sin necesitar marcador. */
+[
+  ['herramientas-cerrar-x', 'herramientas-cerrar'],
+  ['voz-cerrar-x', 'voz-cerrar'],
+  ['alertas-cerrar-x', 'alertas-cerrar'],
+  ['desaparecidos-cerrar-x', 'desaparecidos-cerrar'],
+  ['sanidad-cerrar-x', 'sanidad-cerrar'],
+  ['lluvias-cerrar-x', 'lluvias-cerrar'],
+  ['stock-cerrar-x', 'stock-cerrar'],
+  ['usuario-cerrar-x', 'usuario-cancelar'],
+  ['coef-cerrar-x', 'coef-cerrar'],
+  ['puntos-cerrar-x', 'puntos-cerrar'],
+].forEach(([xId, targetId])=>{
+  const xBtn = document.getElementById(xId);
+  if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
 });
 document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
   if(e.target.tagName === 'BUTTON') document.getElementById('modal-herramientas').style.display = 'none';
