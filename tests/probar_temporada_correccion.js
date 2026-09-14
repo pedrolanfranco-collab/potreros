@@ -123,7 +123,7 @@ async function levantar(archivo, servidor){
   win.alert = () => {}; win.confirm = () => true; win.prompt = () => null;
   win.URL.createObjectURL = () => 'blob:x'; win.URL.revokeObjectURL = () => {};
   const codigo = Array.from(win.document.querySelectorAll('script')).map(s => s.textContent).filter(Boolean).join('\n');
-  try { win.eval(codigo + ';window.__est = function(){ return estado; };window.__calcNac = calcularEstadisticasNacimientos; window.__borrar = borrarHistorial; window.__editar = editarHistorial; window.__registrarHistorial = registrarHistorial; window.__registrarCambioOcupacion = registrarCambioOcupacion; window.__totalPotrero = totalPotrero; window.__establecimiento = function(){ return ESTABLECIMIENTO; };'); }
+  try { win.eval(codigo + ';window.__est = function(){ return estado; };window.__calcNac = calcularEstadisticasNacimientos; window.__borrar = borrarHistorial; window.__editar = editarHistorial; window.__registrarHistorial = registrarHistorial; window.__registrarCambioOcupacion = registrarCambioOcupacion; window.__totalPotrero = totalPotrero; window.__establecimiento = function(){ return ESTABLECIMIENTO; }; window.__CARGA_INICIAL_SEED = CARGA_INICIAL_SEED;'); }
   catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await new Promise(r => setTimeout(r, 60));
   return { win, errores };
@@ -233,11 +233,25 @@ async function probarArchivo(archivo){
   // servidor simulado (no al estado local), así que reusar `p` acá
   // mezclaría dos saldos que no son el mismo número por diseño del test,
   // no por un problema real.
+  //
+  // OJO (bug de este test, encontrado el 14/9/2026): elegir p3/p4 por
+  // índice fijo (nombresPotreros[2]/[3]) no garantiza un saldo limpio --
+  // saldoInicialTemporada() lee CARGA_INICIAL_SEED directo, no estado.potreros,
+  // así que poner en 0 el stock LOCAL de un potrero (más abajo) no le pega
+  // en nada al saldo de temporada si ese potrero YA traía Terneros de la
+  // carga inicial real (en La Vuelta, el potrero "3" trae 60 -- el índice
+  // [2] caía justo ahí, y una resta de 6 contra un saldo real de 60 nunca
+  // clampea, porque hay de sobra: eso no es un bug de la app, es un dato de
+  // producción real que el test no tuvo en cuenta). Para que "arranca en 0"
+  // sea cierto de verdad, hay que elegir explícitamente dos potreros cuya
+  // carga inicial de Terneros sea 0.
   const nombresPotreros = Object.keys(est.potreros);
-  const p3 = nombresPotreros[2], p4 = nombresPotreros[3];
-  // p3/p4 pueden traer Terneros de la carga inicial de fábrica -- se ponen
-  // en 0 primero para que el clampeo de esta prueba se vea con un saldo
-  // limpio, no mezclado con stock que no tiene nada que ver con el caso.
+  const seedTerneros = (nombre)=>{
+    const animales = (win.__CARGA_INICIAL_SEED[nombre]||{}).animales || {};
+    return Object.keys(animales).filter(k=>k.split('||')[0]==='Terneros').reduce((s,k)=>s+(animales[k]||0), 0);
+  };
+  const limpios = nombresPotreros.filter(n=>n!==p && seedTerneros(n)===0);
+  const p3 = limpios[0], p4 = limpios[1];
   const totalAntesLimpiar3 = win.__totalPotrero(p3), totalAntesLimpiar4 = win.__totalPotrero(p4);
   est.potreros[p3].animales[claveTerneros] = 0;
   est.potreros[p4].animales[claveTerneros] = 0;
