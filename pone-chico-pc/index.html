@@ -385,7 +385,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.42 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.43 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -616,7 +616,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.42","versionMovil":"1.42","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.43","versionMovil":"1.43","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1327,13 +1327,22 @@ function aplicarEventoRemoto(row, potrerosSucios){
     const totalAntesDestino = totalPotrero(d.destino);
     const detalleTxt = [];
     d.items.forEach(it=>{
+      // it.duenoDestino puede valer '' (sin asignar, elegido a proposito) --
+      // comparar contra undefined, nunca "||" (ver la misma trampa en el
+      // formulario local de "Mover").
+      const duenoDestino = it.duenoDestino !== undefined ? it.duenoDestino : it.dueno;
       const keyOrigen = claveAnimal(it.categoria, it.dueno);
-      const keyDestino = claveAnimal(it.categoriaDestino || it.categoria, it.dueno);
+      const keyDestino = claveAnimal(it.categoriaDestino || it.categoria, duenoDestino);
       origenAnimales[keyOrigen] = (origenAnimales[keyOrigen]||0) - it.cantidad;
       destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + it.cantidad;
-      detalleTxt.push((it.categoriaDestino && it.categoriaDestino!==it.categoria)
-        ? `${it.cantidad} ${it.categoria}${it.dueno?' de '+it.dueno:''} → ${it.categoriaDestino}`
-        : `${it.cantidad} ${it.categoria}${it.dueno?' de '+it.dueno:''}`);
+      const cambioCat = it.categoriaDestino && it.categoriaDestino!==it.categoria;
+      const cambioDueno = it.duenoDestino !== undefined && duenoDestino!==it.dueno;
+      let txt = `${it.cantidad} ${it.categoria}`;
+      if(cambioCat && cambioDueno) txt += `${it.dueno?' de '+it.dueno:''} → ${it.categoriaDestino}${duenoDestino?' de '+duenoDestino:''}`;
+      else if(cambioCat) txt += `${it.dueno?' de '+it.dueno:''} → ${it.categoriaDestino}`;
+      else if(cambioDueno) txt += `: ${it.dueno||'(sin asignar)'} → ${duenoDestino||'(sin asignar)'}`;
+      else txt += `${it.dueno?' de '+it.dueno:''}`;
+      detalleTxt.push(txt);
     });
     registrarCambioOcupacion(potrero, totalAntesOrigen, fechaEvt);
     registrarCambioOcupacion(d.destino, totalAntesDestino, fechaEvt);
@@ -1687,7 +1696,13 @@ function aplicarAjusteReversion(ajuste, fecha){
     if(!po || !pd || !Array.isArray(ajuste.items)) return;
     const totalAntesO = totalPotrero(ajuste.origen), totalAntesD = totalPotrero(ajuste.destino);
     ajuste.items.forEach(it=>{
-      const keyActual = claveAnimal(it.categoriaDestino || it.categoria, it.dueno);
+      // keyActual = donde estan AHORA (potrero+categoria+dueño post-mover,
+      // incluido un posible duenoDestino) -- keyOriginal = donde tienen que
+      // volver (el dueño ORIGINAL, nunca el destino, aunque se haya
+      // reasignado). Mismo cuidado de comparar contra undefined que en
+      // aplicarEventoRemoto().
+      const duenoActual = it.duenoDestino !== undefined ? it.duenoDestino : it.dueno;
+      const keyActual = claveAnimal(it.categoriaDestino || it.categoria, duenoActual);
       const keyOriginal = claveAnimal(it.categoria, it.dueno);
       po.animales[keyActual] = Math.max(0, (po.animales[keyActual]||0) - it.cantidad);
       pd.animales[keyOriginal] = (pd.animales[keyOriginal]||0) + it.cantidad;
@@ -2406,11 +2421,12 @@ function mostrarFormulario(nombre, accion, prefill){
         <h3>Mover animales desde ${nombre}</h3>
         <div class="form-row"><label>Potrero destino</label><select id="f-destino"><option value="${nombre}">(sin mover — recategorizar en ${nombre})</option>${opcionesPotreros(nombre)}</select></div>
         <div class="form-row"><label>Categoría destino (opcional)</label><select id="f-cat-destino"><option value="">— mantener la categoría de cada una —</option>${opcionesCategorias()}</select></div>
+        <div class="form-row"><label>Dueño destino (opcional)</label><select id="f-dueno-destino"><option value="__mantener__" selected>— mantener el dueño de cada una —</option>${opcionesDuenos()}</select></div>
         <label style="font-size:13px;font-weight:600;display:block;margin:10px 0 4px;">Categorías a mover</label>
         <div id="f-categorias-mover">${filasCategoriasMover(nombre)}</div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: arreo por sequía, pastoreo rotativo..." value=""></div>
-        <p style="font-size:11px;color:var(--texto-suave);margin:2px 0 0 0;">Tildá una o más categorías. Si elegís una categoría destino, todas las tildadas pasan a esa categoría (el dueño no cambia); si la dejás en blanco, cada una mantiene su nombre.</p>
+        <p style="font-size:11px;color:var(--texto-suave);margin:2px 0 0 0;">Tildá una o más categorías. Si elegís una categoría destino, todas las tildadas pasan a esa categoría; si elegís un dueño destino, todas las tildadas pasan a ese dueño (sirve para asignarle el dueño a animales "sin asignar" a medida que los identificás); dejar cualquiera de los dos en blanco mantiene lo que ya tenía cada una.</p>
         <div class="form-botones">
           <button class="btn btn-mover" id="f-confirmar">Mover</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -2419,6 +2435,8 @@ function mostrarFormulario(nombre, accion, prefill){
     document.getElementById('f-confirmar').addEventListener('click', ()=>{
       const destino = document.getElementById('f-destino').value;
       const catDestinoCompartida = document.getElementById('f-cat-destino').value;
+      const duenoDestinoSel = document.getElementById('f-dueno-destino').value;
+      const huboEleccionDueno = duenoDestinoSel !== '__mantener__';
       const fechaISO = document.getElementById('f-fecha').value;
       const obs = document.getElementById('f-obs').value.trim();
       const filas = Array.from(document.querySelectorAll('.mov-check')).filter(chk=>chk.checked).map(chk=>{
@@ -2430,7 +2448,7 @@ function mostrarFormulario(nombre, accion, prefill){
       });
       if(!filas.length){ toast('Elegí al menos una categoría para mover'); return; }
       if(filas.some(f=>!f.cant || f.cant<1)){ toast('Ingresá una cantidad válida en cada categoría elegida'); return; }
-      if(destino===nombre && !catDestinoCompartida){ toast('Para recategorizar en el mismo potrero, elegí una categoría destino'); return; }
+      if(destino===nombre && !catDestinoCompartida && !huboEleccionDueno){ toast('Para recategorizar en el mismo potrero, elegí una categoría destino o un dueño destino'); return; }
       if(!fechaISO){ toast('Elegí una fecha'); return; }
       const origenAnimales = estado.potreros[nombre].animales;
       const faltantes = filas.filter(f => f.cant > (origenAnimales[f.key]||0));
@@ -2449,11 +2467,21 @@ function mostrarFormulario(nombre, accion, prefill){
       const detalleTxt = [];
       filas.forEach(f=>{
         const catDestino = catDestinoCompartida || f.cat;
-        const keyDestino = claveAnimal(catDestino, f.dueno);
+        // huboEleccionDueno puede valer '' (elegido "sin asignar" a propósito
+        // en La Vuelta) -- comparar contra undefined, nunca con "||", o se
+        // pierde esa elección tratándola como "no elegido".
+        const duenoDestino = huboEleccionDueno ? duenoDestinoSel : f.dueno;
+        const keyDestino = claveAnimal(catDestino, duenoDestino);
         origenAnimales[f.key] = (origenAnimales[f.key]||0) - f.cant;
         destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + f.cant;
-        items.push({categoria: f.cat, categoriaDestino: catDestino, dueno: f.dueno, cantidad: f.cant});
-        detalleTxt.push(catDestino!==f.cat ? `${f.cant} ${f.cat} (${textoFirma(f.dueno)}) → ${catDestino}` : `${f.cant} ${f.cat} (${textoFirma(f.dueno)})`);
+        items.push({categoria: f.cat, categoriaDestino: catDestino, dueno: f.dueno, duenoDestino: huboEleccionDueno ? duenoDestinoSel : undefined, cantidad: f.cant});
+        const cambioCat = catDestino!==f.cat, cambioDueno = huboEleccionDueno && duenoDestino!==f.dueno;
+        let txt = `${f.cant} ${f.cat}`;
+        if(cambioCat && cambioDueno) txt += ` (${textoFirma(f.dueno)}) → ${catDestino} (${textoFirma(duenoDestino)})`;
+        else if(cambioCat) txt += ` (${textoFirma(f.dueno)}) → ${catDestino}`;
+        else if(cambioDueno) txt += `: ${textoFirma(f.dueno)} → ${textoFirma(duenoDestino)}`;
+        else txt += ` (${textoFirma(f.dueno)})`;
+        detalleTxt.push(txt);
       });
       registrarCambioOcupacion(nombre, totalAntesOrigen, fecha);
       registrarCambioOcupacion(destino, totalAntesDestino, fecha);

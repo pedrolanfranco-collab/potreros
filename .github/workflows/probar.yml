@@ -82,3 +82,6 @@ jobs:
 
       - name: "Stock por potrero publicado en Supabase (stock_potreros) -- rollout gradual por CONFIG.stockSupabase"
         run: node tests/probar_stock_potreros.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: "Asignar dueño destino en Mover una categoria (sin cambiar de potrero ni categoria)"
+        run: node tests/probar_asignar_dueno.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
