@@ -79,3 +79,6 @@ jobs:
 
       - name: "Auditoria 12/9 (P0): event_id evita duplicar un reintento, Restablecer borra tambien el ID de dispositivo"
         run: node tests/probar_idempotencia_reset.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: "Stock por potrero publicado en Supabase (stock_potreros) -- rollout gradual por CONFIG.stockSupabase"
+        run: node tests/probar_stock_potreros.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html

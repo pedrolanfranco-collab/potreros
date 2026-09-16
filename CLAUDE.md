@@ -381,7 +381,7 @@ called from `sincronizar()` right after `vaciarColaSync()`).
 
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
-RLS está **activado** (`relrowsecurity = true`) en las 7 tablas de este
+RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este
 proyecto. Ninguna política filtra por `establecimiento` a nivel de base de
 datos — ese filtro (`.eq('establecimiento', ...)`) es solo del lado del
 cliente; la key pública puede en teoría leer/escribir filas de cualquier
@@ -399,6 +399,22 @@ no implícito.
 | `sanidad_carga_pone_chico` | ✅ | ✅ | ❌ | ❌ |
 | `sanidad_ultimos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
 | `sanidad_proximos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
+| `stock_potreros` (16/9/2026) | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL", igual criterio que `eventos_sync`)* |
+
+**`stock_potreros`** (16/9/2026): foto del stock actual por
+`establecimiento+potrero+categoria+dueño` (clave `establecimiento,potrero,
+clave`, donde `clave` es el mismo formato que `claveAnimal()` en el
+cliente), publicada por la propia app en cada acción local que toca
+animales y en cada sincronización — nunca leída por la app, solo escrita,
+para consultar desde afuera (SQL directo, AppSheet, el conector Hermes).
+No es un log que se acumula como `eventos_sync`: cada publicación hace
+`upsert` de las categorías con stock y `delete` de las que llegaron a 0, así
+que necesita política de `UPDATE`/`DELETE` igual que `eventos_sync` — de
+ahí la política "ALL" en vez del patrón sin `UPDATE` de `productos_catalogo`
+(que causó el incidente de abajo). **Rollout gradual por
+`CONFIG.stockSupabase`**: solo `true` en La Vuelta por ahora; en María
+Laura/Pone Chico el código está pero es un no-op hasta que se confirme el
+funcionamiento real y se les active el flag.
 
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del
