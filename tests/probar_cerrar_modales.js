@@ -91,6 +91,9 @@ async function levantar(archivo){
 }
 
 // [id del modal, id del boton X, id del boton "Cerrar/Cancelar" original]
+// modal-usuario queda AFUERA de esta lista a propósito (18/9/2026): ahí la
+// ✕ no dispara "Cancelar" como el resto, dispara "Guardar" -- se prueba
+// aparte, más abajo.
 const MODALES = [
   ['modal-herramientas', 'herramientas-cerrar-x', 'herramientas-cerrar'],
   ['modal-voz', 'voz-cerrar-x', 'voz-cerrar'],
@@ -99,7 +102,6 @@ const MODALES = [
   ['modal-sanidad', 'sanidad-cerrar-x', 'sanidad-cerrar'],
   ['modal-lluvias', 'lluvias-cerrar-x', 'lluvias-cerrar'],
   ['modal-stock', 'stock-cerrar-x', 'stock-cerrar'],
-  ['modal-usuario', 'usuario-cerrar-x', 'usuario-cancelar'],
   ['modal-coef', 'coef-cerrar-x', 'coef-cerrar'],
   ['modal-puntos', 'puntos-cerrar-x', 'puntos-cerrar'],
 ];
@@ -122,6 +124,45 @@ async function probarArchivo(archivo){
     chequear(`${modalId}: la ✕ cierra igual que "${cerrarId}"`, modal.style.display === 'none',
       'quedó en: ' + modal.style.display);
   });
+
+  // modal-usuario: la ✕ apunta a "Guardar", no a "Cancelar" (18/9/2026).
+  // Antes, cerrar con la ✕ sin cargar nombre dejaba la app preguntando
+  // "¿Quién sos?" para siempre -- era el único modal donde cerrar con la ✕
+  // no era inofensivo. Ahora la ✕ intenta guardar: si no hay nombre, avisa
+  // y NO cierra (fuerza a cargar uno la primera vez); si hay nombre, guarda
+  // y cierra, igual que tocar "Guardar" a mano.
+  const modalUsuario = doc.getElementById('modal-usuario');
+  const usuarioX = doc.getElementById('usuario-cerrar-x');
+  const usuarioInput = doc.getElementById('usuario-nombre-input');
+  const usuarioCancelar = doc.getElementById('usuario-cancelar');
+  const toastEl = doc.getElementById('toast');
+  if(modalUsuario && usuarioX && usuarioInput){
+    usuarioInput.value = '';
+    modalUsuario.style.display = 'flex';
+    usuarioX.dispatchEvent(new win.Event('click', { bubbles: true }));
+    chequear('modal-usuario: la ✕ sin nombre NO cierra (evita quedar preguntando para siempre)',
+      modalUsuario.style.display === 'flex', 'quedó en: ' + modalUsuario.style.display);
+    chequear('modal-usuario: la ✕ sin nombre avisa "Escribí un nombre"',
+      toastEl && toastEl.textContent === 'Escribí un nombre', 'toast: ' + (toastEl && toastEl.textContent));
+
+    usuarioInput.value = 'Pedro Test';
+    usuarioX.dispatchEvent(new win.Event('click', { bubbles: true }));
+    chequear('modal-usuario: la ✕ con nombre SÍ guarda y cierra',
+      modalUsuario.style.display === 'none', 'quedó en: ' + modalUsuario.style.display);
+    chequear('modal-usuario: el nombre quedó guardado en localStorage',
+      win.localStorage.getItem('potreros_nombre_usuario') === 'Pedro Test',
+      'guardado: ' + win.localStorage.getItem('potreros_nombre_usuario'));
+
+    // Regresión: "Cancelar" (el botón de texto, no la ✕) sigue sin guardar.
+    usuarioInput.value = 'Otro Nombre';
+    modalUsuario.style.display = 'flex';
+    usuarioCancelar.dispatchEvent(new win.Event('click', { bubbles: true }));
+    chequear('modal-usuario: "Cancelar" (botón de texto) sigue sin guardar',
+      win.localStorage.getItem('potreros_nombre_usuario') === 'Pedro Test',
+      'guardado: ' + win.localStorage.getItem('potreros_nombre_usuario'));
+  } else {
+    console.log('  · modal-usuario no está en esta variante, se salta.');
+  }
 }
 
 (async () => {

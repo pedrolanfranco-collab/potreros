@@ -85,3 +85,6 @@ jobs:
 
       - name: "Asignar dueño destino en Mover una categoria (sin cambiar de potrero ni categoria)"
         run: node tests/probar_asignar_dueno.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: "Boton X de cada modal cierra igual que Cerrar/Cancelar -- excepto Quien soy, donde cierra como Guardar"
+        run: node tests/probar_cerrar_modales.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html

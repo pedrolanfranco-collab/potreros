@@ -2474,7 +2474,19 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
    click que el botón "Cerrar"/"Cancelar" que ya existe en cada uno, así
    nunca se desincroniza de la lógica de cierre real (algunos, como
    voz-cerrar, tienen side-effects propios). coef-cerrar-x es PC-only, el
-   resto es compartido -- el `if` cubre los dos casos sin necesitar marcador. */
+   resto es compartido -- el `if` cubre los dos casos sin necesitar marcador.
+   usuario-cerrar-x es la excepción: apunta a "Guardar", no a "Cancelar"
+   (18/9/2026) -- en todo otro modal cerrar con la X es inofensivo (no hay
+   nada que perder), pero acá cerrar sin guardar un nombre hace que la app
+   vuelva a preguntar "¿Quién sos?" cada vez que se abre, para siempre. Como
+   el reflejo natural en el celular es tocar la X para cerrar cualquier
+   aviso, Pedro nunca llegaba a guardar su nombre. Al apuntar a "Guardar" en
+   vez de "Cancelar", cerrar con la X sin escribir nada muestra el mismo
+   aviso "Escribí un nombre" que ya tenía el botón Guardar y NO cierra el
+   modal -- fuerza a cargar un nombre antes de poder salir la primera vez.
+   Al editar el nombre después (vía "👤 Quién soy" en Herramientas) el campo
+   ya viene precargado con el nombre actual, así que cerrar con la X ahí
+   simplemente lo vuelve a guardar igual, sin cambiar nada. */
 [
   ['herramientas-cerrar-x', 'herramientas-cerrar'],
   ['voz-cerrar-x', 'voz-cerrar'],
@@ -2483,7 +2495,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['sanidad-cerrar-x', 'sanidad-cerrar'],
   ['lluvias-cerrar-x', 'lluvias-cerrar'],
   ['stock-cerrar-x', 'stock-cerrar'],
-  ['usuario-cerrar-x', 'usuario-cancelar'],
+  ['usuario-cerrar-x', 'usuario-guardar'],
   ['coef-cerrar-x', 'coef-cerrar'],
   ['puntos-cerrar-x', 'puntos-cerrar'],
 ].forEach(([xId, targetId])=>{
