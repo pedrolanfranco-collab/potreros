@@ -119,14 +119,25 @@ def _num(v):
 def leer_catalogo_productos(ruta):
     """Lee la hoja 'Costo productos' directo del .xlsm (read-only, no toca el
     archivo). Fila 4 = encabezados, datos desde la fila 5. Columnas fijas
-    (B=Producto, C=Tipo, G=Categoria, L=T espera, N=Valor dosis $/ml) --
-    confirmado leyendo la hoja a mano, no hay una fila de encabezados
-    machine-readable mas arriba que valga la pena parsear para esto.
+    (B=Producto, C=Tipo, G=Categoria, K=T_Residual, L=T espera, N=Valor
+    dosis $/ml) -- confirmado leyendo la hoja a mano, no hay una fila de
+    encabezados machine-readable mas arriba que valga la pena parsear para
+    esto.
 
     L (T espera, indice 11) es el plazo para FAENA -- no confundir con K
     (T_Residual, indice 10), que es cada cuanto se REPITE el tratamiento.
-    Son dos plazos distintos (ver memoria planilla-sanitaria-v22, Bug 11);
-    esta funcion solo lee L a proposito.
+    Son dos plazos distintos (ver memoria planilla-sanitaria-v22, Bug 11).
+
+    18/9/2026: se agrega dias_residual (K/T_Residual) -- hasta ahora solo se
+    leia L. Lo usa la app de potreros para "Próximo tratamiento", que a
+    diferencia de "Apto desde" (T espera, todos los productos) SOLO aplica
+    a garrapaticidas. Requiere que la columna ya exista en Supabase
+    (`ALTER TABLE productos_catalogo ADD COLUMN dias_residual integer NULL;`
+    corrido por Pedro) ANTES de desplegar este cambio -- si no, el DELETE de
+    reemplazar_catalogo() corre igual pero el POST siguiente falla por la
+    columna inexistente y la tabla queda vacia hasta la proxima corrida
+    (mismo incidente que ya paso una vez con dias_retiro/valor_dosis_ml el
+    12/9/2026, ver memoria planilla-sanitaria-v22).
 
     N (Valor dosis $/ml, indice 13) ya viene calculado por el Excel a partir
     de Importe/Presentacion -- se lee ese valor final tal cual, no se
@@ -144,11 +155,13 @@ def leer_catalogo_productos(ruta):
         if not nombre or nombre in vistos:
             continue
         vistos.add(nombre)
+        dias_residual = _num(row[10]) if len(row) > 10 else None
         dias_retiro = _num(row[11]) if len(row) > 11 else None
         productos.append({
             "producto": nombre,
             "tipo": (str(row[2]).strip() if len(row) > 2 and row[2] else None),
             "categoria": (str(row[6]).strip() if len(row) > 6 and row[6] else None),
+            "dias_residual": int(dias_residual) if dias_residual is not None else None,
             "dias_retiro": int(dias_retiro) if dias_retiro is not None else None,
             "valor_dosis_ml": _num(row[13]) if len(row) > 13 else None,
         })
