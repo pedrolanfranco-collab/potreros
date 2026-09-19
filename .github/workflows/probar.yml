@@ -91,3 +91,6 @@ jobs:
 
       - name: "Fase 7 -- importador de aguadas/instalaciones por KML/KMZ/GPX, sincronizado (punto_creado/punto_eliminado)"
         run: node tests/probar_importar_puntos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: "Sanidad sin Excel -- No apto (T espera, todos los productos) y Proximo tratamiento (T_Residual, solo garrapaticidas)"
+        run: node tests/probar_sanidad_calculos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html

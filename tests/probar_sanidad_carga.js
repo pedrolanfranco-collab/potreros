@@ -70,7 +70,8 @@ function crearServidor(){
             return Promise.resolve({ error: null });
           },
           select(){ return q; }, eq(col,val){ q._filtros.push(r=>r[col]===val); return q; },
-          gt(col,val){ q._filtros.push(r=>r[col]>val); return q; }, order(){ return q; }, limit(){ return q; },
+          gt(col,val){ q._filtros.push(r=>r[col]>val); return q; },
+          gte(col,val){ q._filtros.push(r=>r[col]>=val); return q; }, order(){ return q; }, limit(){ return q; },
           in(col,vals){ q._filtros.push(r=>vals.includes(r[col])); return q; },
           then(res){ const data = (filas[tabla]||[]).filter(r=>q._filtros.every(f=>f(r))); return Promise.resolve(res({data, error:null})); }
         };
@@ -216,26 +217,37 @@ async function probarArchivo(archivo){
   if(esBaseCompartida){
     // --- "Mis cargas recientes" (P1.2, solo La Vuelta): historial local +
     // estado real segun importado_en, que llena bajar_sanidad_de_potreros.py
-    // en Supabase ---
+    // en Supabase. 18/9/2026: el Excel se mantiene como respaldo (decisión de
+    // Pedro), pero ya no es "el dato oficial" -- el texto se actualizó acá
+    // para reflejarlo. ---
     const misCargasCont = doc.getElementById('sanidad-mis-cargas');
     chequear('div sanidad-mis-cargas presente', !!misCargasCont);
-    chequear('recien cargado (sin importado_en) figura "esperando el puente"', misCargasCont.innerHTML.includes('esperando el puente'), misCargasCont.innerHTML);
+    chequear('recien cargado (sin importado_en) figura "esperando el respaldo"', misCargasCont.innerHTML.includes('esperando el respaldo'), misCargasCont.innerHTML);
 
     // el puente ya lo proceso: marcamos importado_en directo en el servidor
     // simulado y volvemos a abrir el modal (btn-sanidad dispara el refresco)
     ultimaFila.importado_en = new Date().toISOString();
     doc.getElementById('btn-sanidad').dispatchEvent(new win.Event('click', { bubbles: true }));
     await new Promise(r=>setTimeout(r,20));
-    chequear('una vez procesado por el puente figura "en la planilla"', doc.getElementById('sanidad-mis-cargas').innerHTML.includes('en la planilla'), doc.getElementById('sanidad-mis-cargas').innerHTML);
+    chequear('una vez procesado por el puente figura "en el respaldo (Excel)"', doc.getElementById('sanidad-mis-cargas').innerHTML.includes('en el respaldo (Excel)'), doc.getElementById('sanidad-mis-cargas').innerHTML);
 
-    // 12/9/2026: el EON cargado antes (cantidad 12 x dosis 3 x 0.074 = USD 2.66)
-    // muestra el cálculo rotulado "Estimado" -- en La Vuelta el dato oficial
-    // sigue viniendo de sanidad_ultimos vía el puente, esto es solo una previa
-    // local para no esperar a que el puente corra.
+    // 18/9/2026: el cálculo ya NO se rotula "Estimado" -- desde que se
+    // desvinculó Excel del cálculo, esto ES el dato oficial (se calcula acá,
+    // no se espera a que vuelva del Excel). El EON cargado antes (cantidad
+    // 12 x dosis 3 x 0.074 = USD 2.66) tiene que seguir mostrando el cálculo,
+    // sin la etiqueta.
     const misCargasHtml = doc.getElementById('sanidad-mis-cargas').innerHTML;
-    chequear('EON en "Mis cargas" muestra el cálculo rotulado "Estimado"',
-      misCargasHtml.includes('Estimado') && misCargasHtml.includes('Apto desde') && misCargasHtml.includes('Costo USD 2.66'),
+    chequear('EON en "Mis cargas" calcula "Apto desde"/costo SIN la etiqueta "Estimado"',
+      !misCargasHtml.includes('Estimado') && misCargasHtml.includes('Apto desde') && misCargasHtml.includes('Costo USD 2.66'),
       misCargasHtml);
+
+    // 18/9/2026: "sanidad-lista" (compartida con las otras 2 apps) ahora lee
+    // directo de sanidad_carga -- ya NO depende de sanidad_ultimos (que ni
+    // siquiera está en el servidor simulado de este test).
+    await win.__cargarSanidad();
+    const listaHtml = doc.getElementById('sanidad-lista').innerHTML;
+    chequear('"sanidad-lista" (La Vuelta) muestra lo cargado, leído de sanidad_carga directo (sin depender de sanidad_ultimos)',
+      listaHtml.includes('MEXIVER') && listaHtml.includes('EON'), listaHtml);
 
     // sin señal: la carga nueva queda en colaSanidad y "Mis cargas" lo marca
     Object.defineProperty(win.navigator, 'onLine', { value: false, configurable: true });
