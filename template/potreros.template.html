@@ -1265,6 +1265,24 @@ function aplicarEventoRemoto(row, potrerosSucios){
   const fechaEvt = row.fecha_cliente || fechaHoy();
 
   if(row.tipo === 'correccion'){
+    if(d.accion === 'reclasificar'){
+      // Un evento mal tipeado (ej. una "Muerte" que en realidad fue un
+      // ajuste de conteo, no un animal real) se saca del conteo de
+      // temporada sin tocar el stock -- a diferencia de eliminar/editar,
+      // esta corrección no lleva `reversar` ni busca un movimiento que
+      // tachar: el evento original queda intacto (el stock que generó
+      // sigue siendo el correcto), solo se anota la aclaración. 19/9/2026,
+      // caso BOMBA (La Vuelta): ver apps-potreros.md.
+      const texto = `Corrección: lo cargado como ${d.tipoOriginal} el ${d.fechaOriginal||fechaEvt} no fue real (${d.obs||'error de carga'}) — no cambia el stock.`;
+<!-- @pc:start -->
+      registrarHistorial(potrero, 'correccion', texto, undefined, undefined, fechaEvt);
+<!-- @pc:end -->
+<!-- @movil:start -->
+      registrarHistorial(potrero, 'correccion', texto, undefined, undefined, fechaEvt, d.usuario);
+<!-- @movil:end -->
+      if(potrerosSucios) potrerosSucios.add(potrero);
+      return;
+    }
     const r = d.reversar || {};
     let marcado = false;
     const fechaObjetivo = parseFechaDMY(d.fechaOriginal || fechaEvt);
@@ -3519,6 +3537,12 @@ async function calcularEstadisticasMuertes(){
       acumularMes(ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
     } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.accion==='eliminar' && ev.detalle.tipoOriginal==='muerte' && ev.detalle.reversar){
       acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -((ev.detalle.reversar.cantidad)||0));
+    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.accion==='reclasificar' && ev.detalle.tipoOriginal==='muerte'){
+      // 19/9/2026: reclasificación sin `reversar` -- no fue una muerte real
+      // (ej. un ajuste de conteo cargado como Muerte) pero el stock que
+      // generó ya está bien como está, así que no hay nada que revertir:
+      // solo se descuenta del conteo, con la cantidad propia del evento.
+      acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -(ev.detalle.cantidad||0));
     }
   });
 
@@ -5004,6 +5028,13 @@ async function leerEventosTemporada(tipo){
   (eventos||[]).forEach(ev=>{
     if(ev.tipo===tipo){
       acumularMes(ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
+    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.accion==='reclasificar' && ev.detalle.tipoOriginal===tipo){
+      // 19/9/2026: reclasificación sin `reversar` -- no fue un evento real
+      // (ej. una "Muerte" que en realidad fue un ajuste de conteo) pero el
+      // stock que generó ya está bien como está, así que no hay nada que
+      // revertir: solo se descuenta del conteo, con la cantidad propia del
+      // evento de corrección. Caso BOMBA (La Vuelta), ver apps-potreros.md.
+      acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -(ev.detalle.cantidad||0));
     } else if(ev.tipo==='correccion' && ev.detalle && (ev.detalle.accion==='eliminar' || ev.detalle.accion==='editar') && ev.detalle.tipoOriginal===tipo && ev.detalle.reversar){
       // Tanto "Borrar" como "Editar" ya restaron esta cantidad del stock real
       // en el momento de corregir (aplicarAjusteReversion corre igual para

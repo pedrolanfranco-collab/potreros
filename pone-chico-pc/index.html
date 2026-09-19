@@ -385,7 +385,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.46 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.47 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -616,7 +616,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.46","versionMovil":"1.46","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.47","versionMovil":"1.47","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1219,6 +1219,19 @@ function aplicarEventoRemoto(row, potrerosSucios){
   const fechaEvt = row.fecha_cliente || fechaHoy();
 
   if(row.tipo === 'correccion'){
+    if(d.accion === 'reclasificar'){
+      // Un evento mal tipeado (ej. una "Muerte" que en realidad fue un
+      // ajuste de conteo, no un animal real) se saca del conteo de
+      // temporada sin tocar el stock -- a diferencia de eliminar/editar,
+      // esta corrección no lleva `reversar` ni busca un movimiento que
+      // tachar: el evento original queda intacto (el stock que generó
+      // sigue siendo el correcto), solo se anota la aclaración. 19/9/2026,
+      // caso BOMBA (La Vuelta): ver apps-potreros.md.
+      const texto = `Corrección: lo cargado como ${d.tipoOriginal} el ${d.fechaOriginal||fechaEvt} no fue real (${d.obs||'error de carga'}) — no cambia el stock.`;
+      registrarHistorial(potrero, 'correccion', texto, undefined, undefined, fechaEvt);
+      if(potrerosSucios) potrerosSucios.add(potrero);
+      return;
+    }
     const r = d.reversar || {};
     let marcado = false;
     const fechaObjetivo = parseFechaDMY(d.fechaOriginal || fechaEvt);
@@ -3301,6 +3314,12 @@ async function calcularEstadisticasMuertes(){
       acumularMes(ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
     } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.accion==='eliminar' && ev.detalle.tipoOriginal==='muerte' && ev.detalle.reversar){
       acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -((ev.detalle.reversar.cantidad)||0));
+    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.accion==='reclasificar' && ev.detalle.tipoOriginal==='muerte'){
+      // 19/9/2026: reclasificación sin `reversar` -- no fue una muerte real
+      // (ej. un ajuste de conteo cargado como Muerte) pero el stock que
+      // generó ya está bien como está, así que no hay nada que revertir:
+      // solo se descuenta del conteo, con la cantidad propia del evento.
+      acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -(ev.detalle.cantidad||0));
     }
   });
 

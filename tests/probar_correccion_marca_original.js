@@ -253,6 +253,40 @@ async function probarArchivo(archivo){
   chequear('movimiento_multi: no quedo ninguna linea "correccion" suelta (ni origen ni destino)',
     nuevasOrigen7.length === 1 && nuevasOrigen7[0].eliminado && nuevasDestino7.length === 1 && nuevasDestino7[0].eliminado,
     JSON.stringify({nuevasOrigen7, nuevasDestino7}));
+
+  // Caso 8 (19/9/2026, caso BOMBA en La Vuelta): "reclasificar" -- una
+  // correccion SIN `reversar`, para un evento mal tipeado (ej. una "Muerte"
+  // que en realidad fue un ajuste de conteo) cuyo efecto en el stock ya es
+  // el correcto. A diferencia de eliminar/editar, NO debe tocar `animales`
+  // (ni de más ni de menos) ni tachar la carga original -- solo agregar
+  // una linea de aclaracion.
+  const claveVacas8 = 'Vacas||';
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'muerte', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '26/08/2026', detalle: { categoria: 'Vacas', cantidad: 1, obs: 'Estaba mal la cuenta' }
+  });
+  const animalesLuegoDeMuerte8 = est.potreros[potrero].animales[claveVacas8];
+  const antes8 = est.potreros[potrero].historial.length;
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'correccion', potrero, dispositivo: 'correccion_manual_claude',
+    fecha_cliente: '26/08/2026',
+    detalle: { tipoOriginal: 'muerte', accion: 'reclasificar', cantidad: 1,
+      fechaOriginal: '26/08/2026', obs: 'Estaba mal la cuenta' }
+  });
+  chequear('reclasificar: no cambia el stock (ni resta ni devuelve el animal)',
+    est.potreros[potrero].animales[claveVacas8] === animalesLuegoDeMuerte8,
+    `antes=${animalesLuegoDeMuerte8} despues=${est.potreros[potrero].animales[claveVacas8]}`);
+  const nuevas8 = est.potreros[potrero].historial.slice(0, est.potreros[potrero].historial.length - antes8);
+  chequear('reclasificar: agrega exactamente 1 linea nueva de historial',
+    nuevas8.length === 1, JSON.stringify(nuevas8));
+  chequear('reclasificar: la linea nueva es de tipo correccion, sin marcar eliminado',
+    !!(nuevas8[0] && nuevas8[0].tipo === 'correccion' && !nuevas8[0].eliminado), JSON.stringify(nuevas8));
+  chequear('reclasificar: el texto explica que no fue real y que no cambia el stock',
+    !!(nuevas8[0] && /no fue real/.test(nuevas8[0].detalle) && /no cambia el stock/.test(nuevas8[0].detalle)),
+    JSON.stringify(nuevas8[0] && nuevas8[0].detalle));
+  const muerte8 = est.potreros[potrero].historial.find(h=>h.tipo==='muerte' && h.detalle.includes('Estaba mal la cuenta'));
+  chequear('reclasificar: la carga original de "Muerte" queda SIN tachar (el hecho quedó registrado igual)',
+    !!(muerte8 && !muerte8.eliminado), JSON.stringify(muerte8));
 }
 
 (async () => {

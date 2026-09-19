@@ -120,6 +120,12 @@ async function probarArchivo(archivo, tieneDueno){
     { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 3, categoria: 'Terneros' } },
     { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(2), detalle: { cantidad: 2, categoria: 'Terneros' } },
     { establecimiento: 'la_vuelta', tipo: 'muerte', fecha_cliente: fechaEnTemporada(3), detalle: { cantidad: 1 } },
+    // 19/9/2026, caso BOMBA: una "muerte" que en realidad fue un ajuste de
+    // conteo, reclasificada con una correccion SIN `reversar` -- tiene que
+    // netear a 0 (si no anduviera el reconocimiento de 'reclasificar', esta
+    // muerte quedaria sumando y el total de La Vuelta daria 2, no 1).
+    { establecimiento: 'la_vuelta', tipo: 'muerte', fecha_cliente: fechaEnTemporada(4), potrero: 'BOMBA', detalle: { cantidad: 1, categoria: 'Vacas', obs: 'Estaba mal la cuenta' } },
+    { establecimiento: 'la_vuelta', tipo: 'correccion', fecha_cliente: fechaEnTemporada(4), potrero: 'BOMBA', detalle: { accion: 'reclasificar', tipoOriginal: 'muerte', cantidad: 1, fechaOriginal: fechaEnTemporada(4), obs: 'Estaba mal la cuenta' } },
     { establecimiento: 'maria_laura', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 4, categoria: 'Terneros' } },
     { establecimiento: 'pone_chico', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 9, categoria: 'Terneros' } },
   ];
