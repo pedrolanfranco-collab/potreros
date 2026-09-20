@@ -266,6 +266,39 @@ async function probarArchivo(archivo, tieneDueno){
   chequear('borrar "muerte_desaparecido" reabre el caso como pendiente',
     win.__listarCasos().length===1 && win.__listarCasos()[0].pendiente===4, JSON.stringify(win.__listarCasos()));
 
+  // 6b) 20/9/2026: "Dar muerte" con cantidad parcial -- caso real de Pedro:
+  //     2 desaparecidas en un potrero, apareció 1 muerta, la otra sigue
+  //     el caso abierto (no hay que cerrar las 2 de una).
+  [origen, destino].forEach(n => { est.potreros[n].animales = {}; est.potreros[n].historial = []; });
+  est.potreros[origen].animales[key] = 2;
+  win.__mostrarFormulario(origen, 'desaparecido');
+  doc.getElementById('f-cat').value = categoria;
+  if(tieneDueno) doc.getElementById('f-dueno').value = 'Pedro';
+  doc.getElementById('f-cant').value = '2';
+  doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  casos = win.__listarCasos();
+  win.__renderDesaparecidos();
+  win.__abrirMuerteDesap(casos[0]);
+  chequear('el campo Cantidad muerta arranca con el total pendiente (2)',
+    doc.getElementById('md-cant').value === '2');
+  doc.getElementById('md-cant').value = '1';
+  doc.getElementById('md-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  casos = win.__listarCasos();
+  chequear('confirmar la muerte de 1 de 2 deja el caso abierto con 1 pendiente',
+    casos.length===1 && casos[0].pendiente===1, JSON.stringify(casos));
+  chequear('"Dar muerte" parcial no toca el stock (seguía en 0 desde que desapareció)',
+    (est.potreros[origen].animales[key]||0)===0);
+  // La segunda, resuelta como "Encontrado" -- el caso puede cerrarse con
+  // resoluciones distintas (una murió, la otra apareció).
+  win.__renderDesaparecidos();
+  win.__abrirEncontrado(casos[0]);
+  doc.getElementById('fe-potrero').value = origen;
+  doc.getElementById('fe-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('la segunda, encontrada, cierra el caso del todo', win.__listarCasos().length===0,
+    JSON.stringify(win.__listarCasos()));
+  chequear('"Encontrado" sí devolvió esa 1 al stock', (est.potreros[origen].animales[key]||0)===1,
+    JSON.stringify(est.potreros[origen].animales));
+
   // 7) Sincronizado: un segundo dispositivo que recibe desaparecido +
   //    muerte_desaparecido llega al mismo resultado, sin sumar stock.
   [origen, destino].forEach(n => { est.potreros[n].animales = {}; est.potreros[n].historial = []; });

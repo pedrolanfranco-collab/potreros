@@ -386,7 +386,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.49 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.50 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -644,7 +644,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.49","versionMovil":"1.49","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.50","versionMovil":"1.50","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -4437,32 +4437,37 @@ function renderDesaparecidosLista(){
    No toca stock (ya se restó al declarar la desaparición, igual que
    "perdida") y entra en el conteo de "muertes" de temporada -- ver
    calcularEstadisticasMuertes(). Caravana opcional, mínimo 8 dígitos si
-   se completa. */
+   se completa. 20/9/2026: cantidad editable (parcial), igual que
+   "Encontrado" -- caso real de Pedro: 2 desaparecidas en un potrero,
+   apareció 1 muerta, la otra sigue el caso abierto. */
 function abrirFormularioMuerteDesaparecido(caso){
   const cont = document.getElementById(`form-resolver-${caso.casoId}`);
   cont.style.display = 'block';
   cont.innerHTML = `
+    <div class="form-row"><label>Cantidad muerta</label><input type="number" id="md-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
     <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="md-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="md-confirmar">Confirmar muerte</button>
       <button class="btn btn-secundario" id="md-cancelar">Cancelar</button>
     </div>`;
   document.getElementById('md-confirmar').addEventListener('click', ()=>{
+    const cant = parseInt(document.getElementById('md-cant').value,10);
+    if(!cant || cant<1 || cant>caso.pendiente){ toast(`Ingresá una cantidad entre 1 y ${caso.pendiente}`); return; }
     const caravanaRaw = document.getElementById('md-caravana').value.trim();
     if(caravanaRaw && !/^\d{8,}$/.test(caravanaRaw)){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
-    if(!confirm(`¿Confirmar muerte de ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}? No se puede deshacer.`)) return;
+    if(!confirm(`¿Confirmar muerte de ${cant} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}? No se puede deshacer.`)) return;
     const caravana = caravanaRaw || null;
     const fecha = fechaHoy();
     const caravanaTxt = caravana ? ` — caravana ${caravana}` : '';
     const entry = registrarHistorial(caso.potreroOrigen, 'muerte_desaparecido',
-      `Muerte (desaparecido): ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}${caravanaTxt} (no vuelven)`,
-      {potrero: caso.potreroOrigen, categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, caravana, _fechaISO: fechaISOHoy()},
+      `Muerte (desaparecido): ${cant} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}${caravanaTxt} (no vuelven)`,
+      {potrero: caso.potreroOrigen, categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, caravana, _fechaISO: fechaISOHoy()},
       undefined, fecha);
     entry.casoId = caso.casoId;
-    enviarEvento('muerte_desaparecido', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, caravana, casoId: caso.casoId}, fecha);
+    enviarEvento('muerte_desaparecido', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, caravana, casoId: caso.casoId}, fecha);
     guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
     if(seleccionActual) renderDetalle(seleccionActual);
-    toast('Caso cerrado como muerte');
+    toast(cant<caso.pendiente ? `Se confirmó la muerte de ${cant}, sigue el caso abierto por ${caso.pendiente-cant}` : 'Caso cerrado como muerte');
   });
   document.getElementById('md-cancelar').addEventListener('click', ()=>{
     cont.style.display = 'none'; cont.innerHTML = '';
