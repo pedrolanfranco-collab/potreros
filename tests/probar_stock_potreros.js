@@ -184,6 +184,12 @@ async function probarArchivo(archivo){
     filasA = (servidor.filas.stock_potreros||[]).filter(r=>r.potrero===potreroA);
     chequear('la categoría que llegó a 0 desaparece, no queda "en 0"', filasA.length === 1 && filasA[0].categoria === 'Terneros', JSON.stringify(filasA));
 
+    // --- B2: un saldo negativo (movimiento de más, confirmado igual) SÍ se publica ---
+    est.potreros[potreroA].animales['Terneros||'] = -4;
+    await win.publicarStockPotrero(potreroA);
+    filasA = (servidor.filas.stock_potreros||[]).filter(r=>r.potrero===potreroA);
+    chequear('un saldo negativo llega a la tabla en vez de desaparecer', filasA.length === 1 && filasA[0].cantidad === -4, JSON.stringify(filasA));
+
     // --- C: offline encola por nombre, y recalcula el estado más reciente al vaciar ---
     Object.defineProperty(win.navigator, 'onLine', { value: false, configurable: true });
     est.potreros[potreroA].animales['Terneros||'] = 1; // cambia mientras está offline

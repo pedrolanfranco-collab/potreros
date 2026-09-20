@@ -1075,7 +1075,7 @@ async function publicarStockPotrero(nombre){
     return false;
   }
   const filas = Object.entries(p.animales)
-    .filter(([,cant])=>cant>0)
+    .filter(([,cant])=>cant!==0)
     .map(([key,cant])=>{
       const {cat, dueno} = partesClave(key);
       const especie = CATEGORIA_ESPECIE[cat] || null;
