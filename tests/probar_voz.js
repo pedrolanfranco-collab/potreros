@@ -113,6 +113,17 @@ async function probarArchivo(archivo){
   // pero un animal real que empieza con "potr" (potrillo) sigue funcionando
   const catPotro = win.__detectarCategoria(`nació un potrillo en el ${pNum}`);
   chequear('"potrillo" sigue detectando Potros/as', catPotro === 'Potros/as', 'detectó: ' + catPotro);
+
+  // 19/9/2026: categoría nueva "Vaquillona de invernada" -- no debe
+  // confundirse con "Vaquillonas 1-2 años" (matchea /vaquillona/ primero
+  // si no se intercepta antes) ni con "Vacas de invernada" (matchea
+  // "invernada" sola).
+  const catVaqInv = win.__detectarCategoria(`agregar 5 vaquillonas de invernada al ${pNum}`);
+  chequear('"vaquillona de invernada" detecta la categoría nueva, no "Vaquillonas 1-2 años"',
+    catVaqInv === 'Vaquillona de invernada', 'detectó: ' + catVaqInv);
+  const catVaq12 = win.__detectarCategoria(`agregar 5 vaquillonas al ${pNum}`);
+  chequear('"vaquillonas" sin más sigue detectando "Vaquillonas 1-2 años" (sin regresión)',
+    catVaq12 === 'Vaquillonas 1-2 años', 'detectó: ' + catVaq12);
 }
 
 (async () => {

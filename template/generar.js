@@ -90,9 +90,11 @@ function generar(templateText, config, variant) {
   activos.push(config.mapLabels ? 'mapLabels' : 'noMapLabels');
   activos.push(config.usaExcelBridge ? 'sanidadExcel' : 'sanidadNativa');
   activos.push(config.duenoObligatorio ? 'duenoVoz' : 'sinDuenoVoz');
-  // Desglose de Stock total por dueño: solo tiene sentido con dueño
-  // obligatorio y más de uno configurado -- hoy únicamente María Laura.
-  activos.push((config.duenoObligatorio && config.duenos.length > 1) ? 'multiDueno' : 'unDueno');
+  // Desglose de Stock total por dueño: alcanza con tener más de un dueño
+  // configurado, sea o no obligatorio cargarlo (19/9/2026 -- antes exigía
+  // duenoObligatorio, lo que dejaba afuera a La Vuelta pese a tener 4+
+  // dueños, porque ahí la Firma es opcional a propósito).
+  activos.push(config.duenos.length > 1 ? 'multiDueno' : 'unDueno');
 
   let texto = stripMarkers(templateText, activos);
 

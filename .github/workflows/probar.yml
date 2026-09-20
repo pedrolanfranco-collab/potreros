@@ -94,3 +94,6 @@ jobs:
 
       - name: "Sanidad sin Excel -- No apto (T espera, todos los productos) y Proximo tratamiento (T_Residual, solo garrapaticidas)"
         run: node tests/probar_sanidad_calculos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+      - name: "Abortos en Herramientas -- registro sin potrero, sincronizado, y % junto al de nacidos"
+        run: node tests/probar_abortos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html

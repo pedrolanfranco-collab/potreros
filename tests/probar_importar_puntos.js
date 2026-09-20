@@ -195,6 +195,33 @@ async function probarArchivo(archivo){
   const antesLen = win.__puntos().length;
   await win.importarPuntosArchivo(archivoFalso('vacio.kml', Buffer.from(kmlVacio, 'utf-8')));
   chequear('un archivo sin puntos no agrega nada ni rompe', win.__puntos().length === antesLen);
+
+  // --- I: backfill (19/9/2026) -- un punto que quedó SOLO en localStorage,
+  //     sin su punto_creado en eventos_sync (caso real: cargado antes de
+  //     que Fase 7 agregara sincronización), se reenvía con el botón
+  //     "🔄 Resincronizar mis puntos" -- reenvía TODOS de forma idempotente.
+  const puntoHuerfano = {id: 'punto_huerfano_test', tipo: 'agua', subtipo: 'Bebedero', nombre: 'Huérfano sin enviar', lat: -31.43, lon: -55.46};
+  win.__est().puntos.push(puntoHuerfano);
+  const enviadosAntes = servidor.filas.filter(e=>e.tipo==='punto_creado').length;
+  const totalPuntosLocales = win.__puntos().length;
+  chequear('el botón "🔄 Resincronizar mis puntos" está presente', !!doc.getElementById('btn-resync-puntos'));
+  doc.getElementById('btn-resync-puntos').dispatchEvent(new win.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 80));
+  const enviadosDespues = servidor.filas.filter(e=>e.tipo==='punto_creado').length;
+  chequear('resincronizar: reenvía un punto_creado por cada punto local (incluido el huérfano)',
+    enviadosDespues === enviadosAntes + totalPuntosLocales,
+    `antes=${enviadosAntes} despues=${enviadosDespues} totalLocal=${totalPuntosLocales}`);
+  chequear('resincronizar: el punto huérfano ahora tiene su evento en el servidor',
+    servidor.filas.some(e=>e.tipo==='punto_creado' && e.detalle.id==='punto_huerfano_test'));
+
+  // --- J: el reenvío es idempotente -- el otro dispositivo ya tenía los
+  //     puntos "no huérfanos" (por sync normal); tras el resync, solo debe
+  //     sumar el huérfano, no duplicar los demás.
+  const totalRemotoAntes = remoto.win.__puntos().length;
+  await remoto.win.__sync(false);
+  chequear('el reenvío del resync no duplica en el otro dispositivo (idempotente por id)',
+    remoto.win.__puntos().length === totalRemotoAntes + 1 && remoto.win.__puntos().some(p=>p.id==='punto_huerfano_test'),
+    JSON.stringify(remoto.win.__puntos()));
 }
 
 (async () => {

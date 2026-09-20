@@ -280,6 +280,28 @@ async function probar(archivo){
     doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
     chequear('agregar suma 7 animales', win.totalPotrero(p1) === antes + 7,
       'quedo ' + win.totalPotrero(p1));
+
+    // 19/9/2026: el detalle del potrero agrupa por especie (Bovinos/Ovinos/
+    // Equinos) con subtotal, SIN columna de dueño -- el desglose por dueño
+    // se movió a una ventana aparte ("👤 Ver por dueño").
+    win.seleccionarPotrero(p1);
+    const tablaDetalle = doc.getElementById('detalle-caja').querySelector('.tabla-animales');
+    chequear('detalle: la tabla NO tiene columna de dueño', tablaDetalle.querySelectorAll('thead th').length === 2,
+      tablaDetalle.innerHTML);
+    chequear('detalle: aparece el encabezado de especie (Bovinos)', /Bovinos/.test(tablaDetalle.innerHTML), tablaDetalle.innerHTML);
+    chequear('detalle: aparece una fila de subtotal', tablaDetalle.querySelector('tr.subtotal') !== null, tablaDetalle.innerHTML);
+    const btnPorDueno = doc.getElementById('btn-detalle-por-dueno');
+    chequear('detalle: botón "👤 Ver por dueño" presente', !!btnPorDueno);
+    btnPorDueno.dispatchEvent(new win.Event('click', { bubbles: true }));
+    const modalDueno = doc.getElementById('modal-detalle-dueno');
+    chequear('detalle: "Ver por dueño" abre la ventana aparte', modalDueno.style.display === 'flex');
+    const tablaDuenoDetalle = doc.getElementById('detalle-dueno-tabla');
+    chequear('detalle: la ventana "por dueño" SÍ tiene columna de dueño (3 columnas)',
+      tablaDuenoDetalle.querySelectorAll('thead th').length === 3, tablaDuenoDetalle.innerHTML);
+    chequear('detalle: la categoría cargada aparece en la ventana por dueño',
+      tablaDuenoDetalle.innerHTML.includes(catUsada), tablaDuenoDetalle.innerHTML);
+    doc.getElementById('detalle-dueno-cerrar').dispatchEvent(new win.Event('click', { bubbles: true }));
+    chequear('detalle: "Ver por dueño" se cierra con el botón Cerrar', modalDueno.style.display === 'none');
   }
 
   // --- movimiento entre potreros ---

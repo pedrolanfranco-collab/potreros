@@ -87,6 +87,7 @@ async function levantar(archivo){
       '\n;window.__borrarHistorial = function(id){ return borrarHistorial(id); };' +
       '\n;window.__renderDesaparecidos = function(){ return renderDesaparecidosLista(); };' +
       '\n;window.__abrirEncontrado = function(caso){ return abrirFormularioEncontrado(caso); };' +
+      '\n;window.__abrirMuerteDesap = function(caso){ return abrirFormularioMuerteDesaparecido(caso); };' +
       '\n;window.__potrerosGeo = POTREROS_GEO;' +
       '\n;window.__dibujarPotrero = function(p){ return dibujarPotrero(p); };' +
       '\n;window.__cargarStock = function(){ return cargarStock(); };' +
@@ -223,6 +224,56 @@ async function probarArchivo(archivo, tieneDueno){
   chequear('borrar una desaparición sin resolver devuelve el stock completo', (est.potreros[origen].animales[key]||0)===5,
     JSON.stringify(est.potreros[origen].animales));
   chequear('el caso ya no figura como pendiente tras borrarlo', win.__listarCasos().length===0);
+
+  // 6) 19/9/2026: tercera resolución "🪦 Dar muerte" -- NO devuelve stock
+  //    (igual que "perdida"), pide un motivo, valida la caravana (mínimo 8
+  //    dígitos si se completa), y cierra el caso.
+  [origen, destino].forEach(n => { est.potreros[n].animales = {}; est.potreros[n].historial = []; });
+  est.potreros[origen].animales[key] = 4;
+  win.__mostrarFormulario(origen, 'desaparecido');
+  doc.getElementById('f-cat').value = categoria;
+  if(tieneDueno) doc.getElementById('f-dueno').value = 'Pedro';
+  doc.getElementById('f-cant').value = '4';
+  doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  casos = win.__listarCasos();
+  win.__renderDesaparecidos();
+  const btnMuerteDesap = doc.querySelector('[data-muerte-desap]');
+  chequear('el botón "🪦 Dar muerte" está presente', !!btnMuerteDesap);
+  win.__abrirMuerteDesap(casos[0]);
+
+  // Caravana inválida (menos de 8 dígitos) rechaza el guardado.
+  doc.getElementById('md-caravana').value = '1234567';
+  doc.getElementById('md-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('caravana de menos de 8 dígitos rechaza el guardado (el caso sigue abierto)',
+    win.__listarCasos().length===1 && win.__listarCasos()[0].pendiente===4, JSON.stringify(win.__listarCasos()));
+
+  // Caravana válida (8+ dígitos) sí cierra el caso.
+  doc.getElementById('md-caravana').value = '12345678';
+  doc.getElementById('md-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('"Dar muerte" NO devuelve stock (sigue en 0, ya se había restado al desaparecer)',
+    (est.potreros[origen].animales[key]||0)===0, JSON.stringify(est.potreros[origen].animales));
+  chequear('el caso se cierra del todo tras "Dar muerte"', win.__listarCasos().length===0, JSON.stringify(win.__listarCasos()));
+  const entradaMuerteDesap = est.potreros[origen].historial.find(h=>h.tipo==='muerte_desaparecido' && !h.eliminado);
+  chequear('queda una entrada de historial "muerte_desaparecido" con la caravana',
+    !!entradaMuerteDesap && /12345678/.test(entradaMuerteDesap.detalle), entradaMuerteDesap && entradaMuerteDesap.detalle);
+  chequear('"Dar muerte" no ofrece el botón ✏️ Editar (hay que borrar y recargar)',
+    !doc.querySelector(`[data-hist-editar="${entradaMuerteDesap.id}"]`));
+
+  // Borrar una "muerte_desaparecido" tampoco toca stock (mismo criterio que "perdida").
+  win.__borrarHistorial(entradaMuerteDesap.id);
+  chequear('borrar "muerte_desaparecido" no cambia el stock', (est.potreros[origen].animales[key]||0)===0);
+  chequear('borrar "muerte_desaparecido" reabre el caso como pendiente',
+    win.__listarCasos().length===1 && win.__listarCasos()[0].pendiente===4, JSON.stringify(win.__listarCasos()));
+
+  // 7) Sincronizado: un segundo dispositivo que recibe desaparecido +
+  //    muerte_desaparecido llega al mismo resultado, sin sumar stock.
+  [origen, destino].forEach(n => { est.potreros[n].animales = {}; est.potreros[n].historial = []; });
+  win.__aplicarRemoto({ tipo:'desaparecido', potrero: origen, fecha_cliente:'01/09/2026',
+    detalle:{ categoria, dueno, cantidad:4, casoId:'caso_test_muerte' } });
+  win.__aplicarRemoto({ tipo:'muerte_desaparecido', potrero: origen, fecha_cliente:'02/09/2026',
+    detalle:{ categoria, dueno, cantidad:4, caravana:'99999999', motivo:'feto_visto', casoId:'caso_test_muerte' } });
+  chequear('sincronizado: "muerte_desaparecido" no suma stock', (est.potreros[origen].animales[key]||0)===0);
+  chequear('sincronizado: el caso queda resuelto', win.__listarCasos().length===0, JSON.stringify(win.__listarCasos()));
 }
 
 (async () => {

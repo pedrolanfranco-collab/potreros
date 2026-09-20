@@ -206,6 +206,7 @@
   .tabla-animales td{padding:5px 4px;border-bottom:1px solid #eee6cd;}
   .tabla-animales td.num{font-family:'JetBrains Mono',monospace;font-weight:600;text-align:right;}
   .tabla-animales tr.total td{font-weight:700;border-top:1.5px solid var(--verde-campo);border-bottom:none;}
+  .tabla-animales tr.subtotal td{font-weight:600;border-top:1px solid var(--linea);color:var(--texto-suave);}
 
   .acciones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
   .btn{
@@ -385,7 +386,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.75 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.76 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -414,6 +415,14 @@
       </div>
       <div id="detalle" style="display:none;">
         <div id="detalle-caja"></div>
+      </div>
+      <div id="modal-detalle-dueno" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+          <h3 id="detalle-dueno-titulo">👤 Por dueño</h3>
+          <button class="btn-cerrar-x" id="detalle-dueno-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+          <div id="detalle-dueno-tabla"></div>
+          <div class="form-botones"><button class="btn btn-secundario" id="detalle-dueno-cerrar">Cerrar</button></div>
+        </div>
       </div>
       <div id="footer-tools">
         <div id="estado-compacto">
@@ -446,6 +455,7 @@
       <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
       <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
       <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
+      <button class="btn btn-json" id="btn-resync-puntos">🔄 Resincronizar mis puntos</button>
       <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
       <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
@@ -486,8 +496,13 @@
   <div class="modal-box">
     <h3>❓ Desaparecidos</h3>
     <button class="btn-cerrar-x" id="desaparecidos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
-    <p class="modal-info">Animales que salieron del potrero sin que sepas dónde están (cruzaron a otro campo, etc.) — resolvé acá cuando aparezcan, o dalos por perdidos si no vuelven.</p>
+    <p class="modal-info">Animales que salieron del potrero sin que sepas dónde están (cruzaron a otro campo, etc.) — resolvé acá cuando aparezcan, dalos por perdidos si no vuelven, o confirmá la muerte si corresponde.</p>
     <div id="desaparecidos-lista"></div>
+    <details style="margin-top:14px;">
+      <summary style="font-size:12.5px;color:var(--texto-suave);cursor:pointer;">🪦 Ver registro de muertes por categoría</summary>
+      <div class="form-row" style="margin-top:8px;"><label>Dueño</label><select id="muertes-filtro-dueno"><option value="">Todos</option></select></div>
+      <div id="muertes-tabla"></div>
+    </details>
     <div class="form-botones"><button class="btn btn-secundario" id="desaparecidos-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -545,6 +560,19 @@
       <button class="btn btn-agregar" id="ev-guardar">Registrar evento</button>
     </div>
     <div id="eventos-clima-lista"></div>
+    <h4 style="margin:16px 0 6px;font-size:13px;">🐄 Abortos</h4>
+    <div class="form-row"><label>Motivo</label>
+      <select id="ab-motivo">
+        <option value="feto_visto">Se vio el feto</option>
+        <option value="no_prenada">Vaca diagnosticada preñada que no lo está</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Fecha</label><input type="date" id="ab-fecha"></div>
+    <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="ab-obs" placeholder="Ej: potrero 9, vaca de Silvia"></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="ab-guardar">Registrar aborto</button>
+    </div>
+    <div id="abortos-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -618,7 +646,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.75","versionMovil":"2.74","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":false,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.76","versionMovil":"2.75","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":false,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -634,6 +662,7 @@ const ESPECIES = {
     "Novillos +3 años":    1.1,
     "Vaquillonas 1-2 años":0.6,
     "Vaquillonas 2-3 años":0.8,
+    "Vaquillona de invernada":0.8,
     "Vacas":               1.0,
     "Vacas de invernada":  1.0,
     "Toros":               1.5,
@@ -673,6 +702,23 @@ function totalPorEspecie(nombre){
   });
   return out;
 }
+/* 19/9/2026: filas de tabla <tr> agrupadas por especie (Bovinos/Ovinos/
+   Equinos, mismo orden que ESPECIES) con subtotal por grupo, a partir de
+   un objeto {categoria: cantidad} ya totalizado (resumenPorCategoria() o
+   equivalente) -- reusado por "Stock total" (todo el establecimiento) y
+   por el detalle de un potrero individual, para no mantener la misma
+   lógica de agrupado en dos lugares. */
+function filasCategoriaPorEspecieHTML(totalesPorCategoria){
+  return Object.entries(ESPECIES).map(([esp,cats])=>{
+    const catsConDatos = Object.keys(cats).filter(c=>totalesPorCategoria[c]);
+    if(!catsConDatos.length) return '';
+    const subtotal = catsConDatos.reduce((s,c)=>s+totalesPorCategoria[c],0);
+    const filas = catsConDatos.sort((a,b)=>totalesPorCategoria[b]-totalesPorCategoria[a])
+      .map(c=>`<tr${totalesPorCategoria[c]<0?' style="color:#d32f2f;font-weight:700;"':''}><td>${c}</td><td class="num">${totalesPorCategoria[c]}</td></tr>`).join('');
+    return `<tr><td colspan="2" style="font-weight:600;padding-top:8px;">${ESPECIE_LABEL[esp]}</td></tr>${filas}
+      <tr class="subtotal"><td>Subtotal</td><td class="num">${subtotal}</td></tr>`;
+  }).join('');
+}
 
 /* ======================= DUEÑOS/FIRMA (config por establecimiento -- ver CONFIG.duenoLabel/duenoObligatorio) ======================= */
 /* Cada animal es de un único dueño. Se guarda como clave compuesta "categoria||dueño"
@@ -685,9 +731,30 @@ function partesClave(key){
   return {cat, dueno: dueno || ''};
 }
 function textoFirma(dueno){ return dueno || CONFIG.textoSinAsignar; }
-function opcionesDuenos(seleccionado){
+function opcionesDuenos(seleccionado, permitirOtro){
   const enBlanco = CONFIG.duenoObligatorio ? '' : `<option value="" ${!seleccionado?'selected':''}>— sin asignar —</option>`;
-  return enBlanco + DUENOS.map(d=>`<option value="${d}" ${d===seleccionado?'selected':''}>${d}</option>`).join('');
+  const opts = DUENOS.map(d=>`<option value="${d}" ${d===seleccionado?'selected':''}>${d}</option>`).join('');
+  // 19/9/2026: "Otro (escribir)…" -- para animales de terceros que entran
+  // transitoriamente (mismo patrón ya usado en Sanidad para productos, ver
+  // opcionesProductos()/prepararCampoProducto()/valorProducto()). Solo lo
+  // usan los formularios que pasan permitirOtro=true (hoy, "＋ Agregar
+  // animales") -- el resto sigue con la lista fija, sin cambios.
+  if(!permitirOtro) return enBlanco + opts;
+  const esOtro = seleccionado && !DUENOS.includes(seleccionado);
+  const otro = `<option value="__otro__" ${esOtro?'selected':''}>Otro (escribir)…</option>`;
+  return enBlanco + opts + otro;
+}
+function prepararCampoDueno(idBase, valorInicial){
+  const libre = document.getElementById(idBase + '-otro');
+  if(!libre) return;
+  const esOtro = valorInicial && !DUENOS.includes(valorInicial);
+  libre.style.display = esOtro ? '' : 'none';
+  libre.value = esOtro ? valorInicial : '';
+}
+function valorDueno(idBase){
+  const sel = document.getElementById(idBase);
+  const libre = document.getElementById(idBase + '-otro');
+  return sel.value === '__otro__' ? libre.value.trim() : sel.value;
 }
 /* Agrupa el objeto "animales" (claves compuestas) en totales por categoría, para las
    vistas que solo necesitan el total (mini-cats, tabla resumen, KMZ, MD, exportaciones). */
@@ -715,7 +782,13 @@ function detalleAnimales(animales){
    @multiDueno en generar.js) -- hoy únicamente María Laura. */
 function resumenPorDueno(){
   const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
-  return DUENOS.map(dueno=>{
+  // 19/9/2026: se agrega '' (sin asignar) a los grupos -- en La Vuelta la
+  // Firma es opcional, así que la mayoría del stock (existencias previas)
+  // tiene dueno==='' y antes quedaba totalmente afuera de este reporte.
+  // Comparar siempre contra el dueno CRUDO (partes.dueno, ya normalizado a
+  // '' por partesClave -- nunca undefined); textoFirma() solo para mostrar.
+  const grupos = DUENOS.includes('') ? DUENOS : [...DUENOS, ''];
+  return grupos.map(dueno=>{
     const categorias = {};
     let ug = 0;
     POTREROS_GEO.forEach(p=>{
@@ -729,7 +802,7 @@ function resumenPorDueno(){
       });
     });
     const total = Object.values(categorias).reduce((s,c)=>s+c,0);
-    return {dueno, categorias, total, ug, dotacion: totalHa>0 ? ug/totalHa : 0};
+    return {dueno: textoFirma(dueno), categorias, total, ug, dotacion: totalHa>0 ? ug/totalHa : 0};
   }).filter(d=>d.total>0);
 }
 /* Migración de una sola vez: si alguna vez se guardó una clave de "animales"
@@ -837,7 +910,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], eventosClima: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], eventosClima: [], abortos: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
     ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0
@@ -1119,6 +1192,18 @@ function aplicarEventoRemoto(row, potrerosSucios){
     estado.eventosClima = estado.eventosClima || [];
     if(!estado.eventosClima.some(ev=>ev.id===d.id)){
       estado.eventosClima.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), tipo: d.tipo, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
+    }
+    return;
+  }
+
+  if(row.tipo === 'aborto'){
+    // 19/9/2026: mismo criterio que "lluvia"/"evento_clima" -- del
+    // establecimiento entero, sin potrero, antes del guard de abajo. No
+    // toca stock (el feto nunca se contó como animal vivo); solo cuenta
+    // para el % de abortos junto al de nacidos (calcularEstadisticasNacimientos).
+    estado.abortos = estado.abortos || [];
+    if(!estado.abortos.some(ab=>ab.id===d.id)){
+      estado.abortos.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), motivo: d.motivo, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
     }
     return;
   }
@@ -1414,7 +1499,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
-  if(row.tipo === 'encontrado' || row.tipo === 'perdida'){
+  if(row.tipo === 'encontrado' || row.tipo === 'perdida' || row.tipo === 'muerte_desaparecido'){
     if(row.tipo === 'encontrado'){
       const key = claveAnimal(d.categoria, d.dueno);
       const a = estado.potreros[potrero].animales;
@@ -1423,12 +1508,20 @@ function aplicarEventoRemoto(row, potrerosSucios){
       registrarCambioOcupacion(potrero, totalAntes, fechaEvt);
       if(potrerosSucios) potrerosSucios.add(potrero);
     }
+    // "Dar por perdido" y "Dar muerte" (19/9/2026: caso de un desaparecido
+    // que se confirma muerto, ej. se ve el feto o la vaca diagnosticada
+    // preñada no lo está) NO tocan stock -- ya se había restado al
+    // declarar la desaparición.
     const detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}`;
+    const caravanaTxt = d.caravana ? ` — caravana ${d.caravana}` : '';
+    const motivoTxt = d.motivo==='feto_visto' ? 'se vio el feto' : d.motivo==='no_prenada' ? 'vaca diagnosticada preñada que no lo está' : null;
     const texto = row.tipo==='encontrado'
       ? `Encontrado (sincronizado): +${detalleTxt}`
-      : `Pérdida confirmada (sincronizada): ${detalleTxt} (no vuelven)`;
+      : row.tipo==='perdida'
+      ? `Pérdida confirmada (sincronizada): ${detalleTxt} (no vuelven)`
+      : `Muerte (desaparecido, sincronizada${motivoTxt?', '+motivoTxt:''}): ${detalleTxt}${caravanaTxt} (no vuelven)`;
     const entry = registrarHistorial(potrero, row.tipo, texto, undefined, undefined, fechaEvt);
-    entry.origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null};
+    entry.origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, caravana: d.caravana||null, motivo: d.motivo||null};
     entry.casoId = d.casoId;
     return;
   }
@@ -1666,7 +1759,7 @@ function listarCasosDesaparecidos(){
     let resuelto = 0;
     POTREROS_GEO.forEach(p=>{
       (estado.potreros[p.nombre].historial||[]).forEach(h=>{
-        if((h.tipo==='encontrado' || h.tipo==='perdida') && h.casoId===caso.casoId && !h.eliminado){
+        if((h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido') && h.casoId===caso.casoId && !h.eliminado){
           const datos = h.extra || h.origDatos || {};
           resuelto += datos.cantidad || 0;
         }
@@ -1778,8 +1871,8 @@ function construirAjusteInverso(h){
     // el caso original vuelve a quedar pendiente por esa cantidad.
     return {tipo:'restar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
   }
-  if(h.tipo==='perdida'){
-    // "Pérdida" nunca tocó el stock (ya se había restado al declarar la
+  if(h.tipo==='perdida' || h.tipo==='muerte_desaparecido'){
+    // Ninguna de las dos tocó el stock (ya se había restado al declarar la
     // desaparición) -- no hay nada que revertir en los animales, solo se
     // tacha la entrada, y el caso vuelve a aparecer como pendiente.
     return null;
@@ -1823,7 +1916,7 @@ function editarHistorial(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || !ub.entry.extra) return;
   const h = ub.entry;
-  if(h.tipo==='movimiento' || h.tipo==='movimiento_todo' || h.tipo==='movimiento_multi' || h.tipo==='encontrado' || h.tipo==='perdida'){
+  if(h.tipo==='movimiento' || h.tipo==='movimiento_todo' || h.tipo==='movimiento_multi' || h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido'){
     toast('Para corregir esto, borralo y volvé a cargarlo.');
     return;
   }
@@ -2131,8 +2224,11 @@ function renderDetalle(nombre){
   const total = totalPotrero(nombre);
   const historial = estado.potreros[nombre].historial;
 
-  const detalle = detalleAnimales(animales).sort((a,b)=> a.cat.localeCompare(b.cat,'es') || a.dueno.localeCompare(b.dueno,'es'));
-  const filasCat = detalle.map(d=>`<tr${d.cant<0?' style="color:#d32f2f;font-weight:700;"':''}><td>${d.cat}</td><td>${textoFirma(d.dueno)}</td><td class="num">${d.cant}</td></tr>`).join('');
+  // 19/9/2026: la tabla del detalle ya no desglosa por dueño (categorías
+  // agrupadas por especie, con subtotal, mismo criterio y helper que
+  // "Stock total" -- filasCategoriaPorEspecieHTML()) -- el desglose por
+  // dueño se movió a una ventana aparte (botón "👤 Ver por dueño").
+  const totalesPorCategoriaPotrero = resumenPorCategoria(animales);
 
   const ha = areaHa(nombre);
   const ug = totalUG(nombre);
@@ -2151,12 +2247,13 @@ function renderDetalle(nombre){
     ${casosPotrero.length ? `<div style="background:#fdf1de;border-left:3px solid #c68a3b;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a5220;">${casosPotrero.map(c=>`❓ ${c.pendiente} de ${c.cantidadOriginal} ${c.categoria}${c.dueno?' de '+c.dueno:''} desaparecidos desde ${c.fecha} — <span style="cursor:pointer;text-decoration:underline;" data-abrir-desaparecidos="1">resolver</span>`).join('<br>')}</div>` : ''}
 
     <table class="tabla-animales">
-      <thead><tr><th>Categoría</th><th>${CONFIG.duenoLabel}</th><th style="text-align:right;">Cant.</th></tr></thead>
+      <thead><tr><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead>
       <tbody>
-        ${filasCat || '<tr><td colspan="3" style="color:#8a8465;">Sin animales registrados</td></tr>'}
-        <tr class="total"${total<0?' style="color:#d32f2f;"':''}><td colspan="2">Total (${ug.toFixed(1)} UG)</td><td class="num">${total}</td></tr>
+        ${filasCategoriaPorEspecieHTML(totalesPorCategoriaPotrero) || '<tr><td colspan="2" style="color:#8a8465;">Sin animales registrados</td></tr>'}
+        <tr class="total"${total<0?' style="color:#d32f2f;"':''}><td>Total (${ug.toFixed(1)} UG)</td><td class="num">${total}</td></tr>
       </tbody>
     </table>
+    <button class="btn btn-secundario btn-full" id="btn-detalle-por-dueno" style="margin-bottom:10px;">👤 Ver por dueño</button>
 
     <div class="acciones">
       <button class="btn btn-agregar" data-accion="agregar">＋ Agregar animales</button>
@@ -2178,7 +2275,7 @@ function renderDetalle(nombre){
           <span class="fecha">${h.fecha}</span> — ${h.detalle}
           ${(h.id && h.extra && !h.eliminado) ? `
           <span class="hist-acciones">
-            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida') ? `<button class="hist-btn" data-hist-editar="${h.id}" title="Editar">✏️</button>` : ''}
+            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido') ? `<button class="hist-btn" data-hist-editar="${h.id}" title="Editar">✏️</button>` : ''}
             <button class="hist-btn" data-hist-borrar="${h.id}" title="Borrar">🗑</button>
           </span>` : ''}
         </div>
@@ -2203,7 +2300,25 @@ function renderDetalle(nombre){
   });
   document.getElementById('detalle-cerrar').addEventListener('click', cerrarDetalle);
   document.getElementById('btn-eliminar-potrero').addEventListener('click', ()=> eliminarPotrero(nombre));
+  document.getElementById('btn-detalle-por-dueno').addEventListener('click', ()=> abrirDetalleDuenoPotrero(nombre));
 }
+/* 19/9/2026: ventana aparte con el desglose por dueño+categoría de UN
+   potrero -- es exactamente la tabla que el detalle mostraba antes de
+   agruparlo por especie (ver renderDetalle). */
+function abrirDetalleDuenoPotrero(nombre){
+  const animales = estado.potreros[nombre].animales;
+  const detalle = detalleAnimales(animales).sort((a,b)=> a.cat.localeCompare(b.cat,'es') || a.dueno.localeCompare(b.dueno,'es'));
+  const filas = detalle.map(d=>`<tr${d.cant<0?' style="color:#d32f2f;font-weight:700;"':''}><td>${d.cat}</td><td>${textoFirma(d.dueno)}</td><td class="num">${d.cant}</td></tr>`).join('');
+  document.getElementById('detalle-dueno-titulo').textContent = `👤 ${nombre} — por dueño`;
+  document.getElementById('detalle-dueno-tabla').innerHTML = `<table class="tabla-animales">
+    <thead><tr><th>Categoría</th><th>${CONFIG.duenoLabel}</th><th style="text-align:right;">Cant.</th></tr></thead>
+    <tbody>${filas || '<tr><td colspan="3" style="color:#8a8465;">Sin animales registrados</td></tr>'}</tbody>
+  </table>`;
+  document.getElementById('modal-detalle-dueno').style.display = 'flex';
+}
+document.getElementById('detalle-dueno-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-detalle-dueno').style.display = 'none';
+});
 
 /* Contraparte de "Importar KML/KMZ": deshace una importación equivocada.
    Si el potrero fue CREADO por un import (está en POTREROS_NUEVOS_KEY), lo
@@ -2295,6 +2410,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['usuario-cerrar-x', 'usuario-guardar'],
   ['coef-cerrar-x', 'coef-cerrar'],
   ['puntos-cerrar-x', 'puntos-cerrar'],
+  ['detalle-dueno-cerrar-x', 'detalle-dueno-cerrar'],
 ].forEach(([xId, targetId])=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
@@ -2348,9 +2464,10 @@ function filasCategoriasMover(nombre){
    editarHistorial: cada categoría queda como una entrada de historial
    independiente, editable/borrable igual que si se hubiera cargado sola. */
 function filaAgregarAnimales(idx){
-  return `<div class="form-row agregar-fila" data-idx="${idx}" style="display:flex;align-items:center;gap:6px;">
+  return `<div class="form-row agregar-fila" data-idx="${idx}" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
     <select class="ag-cat" style="flex:2;">${opcionesCategorias()}</select>
-    <select class="ag-dueno" style="flex:2;">${opcionesDuenos()}</select>
+    <select class="ag-dueno" style="flex:2;">${opcionesDuenos(undefined, true)}</select>
+    <input type="text" class="ag-dueno-otro" placeholder="Escribir dueño/procedencia" style="display:none;flex:2;">
     <input type="number" class="ag-cant" min="1" value="1" style="flex:1;min-width:56px;">
     <button type="button" class="ag-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
   </div>`;
@@ -2384,12 +2501,21 @@ function mostrarFormularioAgregarInicial(nombre){
       actualizarBotonesQuitarAgregar();
     }
   });
+  // 19/9/2026: animales de terceros en tránsito -- "Otro (escribir)…" en
+  // dueño muestra el campo de texto libre de esa fila (ver opcionesDuenos).
+  document.getElementById('f-filas-agregar').addEventListener('change', (e)=>{
+    if(e.target.classList.contains('ag-dueno')){
+      const libre = e.target.closest('.agregar-fila').querySelector('.ag-dueno-otro');
+      libre.style.display = e.target.value === '__otro__' ? '' : 'none';
+      if(e.target.value !== '__otro__') libre.value = '';
+    }
+  });
   document.getElementById('f-confirmar').addEventListener('click', ()=>{
     const fechaISO = document.getElementById('f-fecha').value;
     if(!fechaISO){ toast('Elegí una fecha'); return; }
     const filas = Array.from(document.querySelectorAll('#f-filas-agregar .agregar-fila')).map(f=>({
       cat: f.querySelector('.ag-cat').value,
-      dueno: f.querySelector('.ag-dueno').value,
+      dueno: f.querySelector('.ag-dueno').value === '__otro__' ? f.querySelector('.ag-dueno-otro').value.trim() : f.querySelector('.ag-dueno').value,
       cant: parseInt(f.querySelector('.ag-cant').value,10)
     })).filter(f=>f.cant && f.cant>0);
     if(!filas.length){ toast('Ingresá al menos una categoría con cantidad válida'); return; }
@@ -2418,7 +2544,10 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-accion">
           <h3>Agregar animales a ${nombre}</h3>
           <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill.categoria)}</select></div>
-          <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill.dueno)}</select></div>
+          <div class="form-row"><label>${CONFIG.duenoLabel}</label>
+            <select id="f-dueno">${opcionesDuenos(prefill.dueno, true)}</select>
+            <input type="text" id="f-dueno-otro" placeholder="Escribir dueño/procedencia" style="display:none;margin-top:6px;">
+          </div>
           <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill.cantidad}"></div>
           <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
           <div class="form-botones">
@@ -2426,9 +2555,15 @@ function mostrarFormulario(nombre, accion, prefill){
             <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
           </div>
         </div>`;
+      prepararCampoDueno('f-dueno', prefill.dueno);
+      document.getElementById('f-dueno').addEventListener('change', (e)=>{
+        const libre = document.getElementById('f-dueno-otro');
+        libre.style.display = e.target.value === '__otro__' ? '' : 'none';
+        if(e.target.value !== '__otro__') libre.value = '';
+      });
       document.getElementById('f-confirmar').addEventListener('click', ()=>{
         const cat = document.getElementById('f-cat').value;
-        const dueno = document.getElementById('f-dueno').value;
+        const dueno = valorDueno('f-dueno');
         const cant = parseInt(document.getElementById('f-cant').value,10);
         const fechaISO = document.getElementById('f-fecha').value;
         if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
@@ -3171,7 +3306,7 @@ async function calcularEstadisticasNacimientos(){
       // punta contra Supabase real antes y después del fix.
       const res = await client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
         .eq('establecimiento', ESTABLECIMIENTO)
-        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo'])
+        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto'])
         .order('creado_en', {ascending:true});
       if(!res.error){
         eventos = res.data||[];
@@ -3187,7 +3322,7 @@ async function calcularEstadisticasNacimientos(){
 
   const saldo = saldoInicialTemporada();
   const porMesCategoria = {'Terneros':{8:0,9:0,10:0,11:0,12:0}, 'Corderos/as':{8:0,9:0,10:0,11:0,12:0}};
-  let nacidosTerneros = 0, nacidosCorderos = 0;
+  let nacidosTerneros = 0, nacidosCorderos = 0, abortosTemporada = 0;
   const acumular = (categoria, fc, delta)=>{
     if(!porMesCategoria[categoria]) return; // Terneras/Potros/as viejos: ya no se cuentan
     if(!fc || typeof fc !== 'string') return;
@@ -3198,11 +3333,23 @@ async function calcularEstadisticasNacimientos(){
     porMesCategoria[categoria][m] += delta;
     if(categoria==='Terneros') nacidosTerneros += delta; else nacidosCorderos += delta;
   };
+  // 19/9/2026: Abortos no toca ningún potrero/categoría -- solo cuenta
+  // ocurrencias dentro de la temporada (mismo criterio de mes 8-12/año que
+  // el resto de esta función), para el % junto al de nacidos (bovino).
+  const enTemporada = (fc)=>{
+    if(!fc || typeof fc !== 'string') return false;
+    const partes = fc.split('/');
+    if(partes.length!==3) return false;
+    const m = parseInt(partes[1],10), y = parseInt(partes[2],10);
+    return !!(m && y && m>=8 && m<=12 && y===anioTemporada);
+  };
   (eventos||[]).forEach(ev=>{
     const d = ev.detalle || {};
     if(ev.tipo==='nacimiento'){
       tocarSaldoTemporada(saldo, ev.potrero, d.categoria, d.cantidad||0, false);
       acumular(d.categoria, ev.fecha_cliente, d.cantidad||0);
+    } else if(ev.tipo==='aborto'){
+      if(enTemporada(ev.fecha_cliente)) abortosTemporada++;
     } else if(ev.tipo==='muerte' || ev.tipo==='venta' || ev.tipo==='desaparecido'){
       tocarSaldoTemporada(saldo, ev.potrero, d.categoria, -(d.cantidad||0), true);
     } else if(ev.tipo==='ingreso' || ev.tipo==='compra' || ev.tipo==='encontrado'){
@@ -3247,7 +3394,8 @@ async function calcularEstadisticasNacimientos(){
   return {
     anioTemporada, fuente, filasPorCategoria,
     totalEventos: (eventos||[]).length,
-    bovino: {madres: vacas, nacidos: nacidosTerneros, pct: vacas>0 ? (nacidosTerneros/vacas*100) : 0},
+    bovino: {madres: vacas, nacidos: nacidosTerneros, pct: vacas>0 ? (nacidosTerneros/vacas*100) : 0,
+      abortos: abortosTemporada, pctAbortos: vacas>0 ? (abortosTemporada/vacas*100) : 0},
     ovino: {madres: ovejas, nacidos: nacidosCorderos, pct: ovejas>0 ? (nacidosCorderos/ovejas*100) : 0}
   };
 }
@@ -3262,7 +3410,9 @@ function renderNacimientosTemporadaHTML(nac){
   }
   const pctBovinoTxt = nac.bovino.madres>0 ? nac.bovino.pct.toFixed(1)+'% s/ vacas' : 'sin vacas preñadas cargadas';
   const pctOvinoTxt = nac.ovino.madres>0 ? nac.ovino.pct.toFixed(1)+'% s/ ovejas encarneradas' : 'sin ovejas encarneradas cargadas';
+  const pctAbortosTxt = nac.bovino.madres>0 ? nac.bovino.pctAbortos.toFixed(1)+'% s/ vacas' : 'sin vacas preñadas cargadas';
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.nacidos}</strong> Terneros (${pctBovinoTxt})</p>`;
+  html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.abortos}</strong> Abortos (${pctAbortosTxt})</p>`;
   html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
   html += `<details style="margin-bottom:8px;"><summary style="font-size:12px;color:var(--texto-suave);cursor:pointer;">✎ Editar vacas preñadas / ovejas encarneradas</summary>
     <div style="margin-top:6px;">
@@ -3285,8 +3435,10 @@ async function calcularEstadisticasMuertes(){
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
+      // 19/9/2026: 'muerte_desaparecido' (tercera resolución de un caso
+      // Desaparecido) cuenta acá también, igual que 'muerte' directa.
       const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo')
-        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','correccion']);
+        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido','correccion']);
       if(!res.error){
         eventos = res.data||[];
         localStorage.setItem(cacheKey, JSON.stringify(eventos));
@@ -3299,38 +3451,50 @@ async function calcularEstadisticasMuertes(){
     if(guardado){ eventos = JSON.parse(guardado); fuente = 'cache'; }
   }
 
-  let muertesTemporada = 0;
-  const porMesAnio = {};
-  const acumularMes = (fc, delta)=>{
-    if(!fc || typeof fc !== 'string') return;
+  // 19/9/2026: discriminado por especie (una muerte puede ser de cualquier
+  // categoría, a diferencia de nacimientos que solo cuenta cría) -- usa el
+  // mismo mapeo CATEGORIA_ESPECIE que opcionesCategorias()/Stock total.
+  const porMesEspecie = {bovino:{}, ovino:{}, equino:{}};
+  const muertesTemporadaEsp = {bovino:0, ovino:0, equino:0};
+  const acumularMes = (fc, delta, especie)=>{
+    if(!especie || !porMesEspecie[especie] || !fc || typeof fc !== 'string') return;
     const partes = fc.split('/');
     if(partes.length!==3) return;
     const m = parseInt(partes[1],10), y = parseInt(partes[2],10);
     if(!m || !y || m<8 || m>12) return;
-    porMesAnio[y] = porMesAnio[y] || {8:0,9:0,10:0,11:0,12:0};
-    porMesAnio[y][m] += delta;
-    if(y===anioTemporada) muertesTemporada += delta;
+    porMesEspecie[especie][y] = porMesEspecie[especie][y] || {8:0,9:0,10:0,11:0,12:0};
+    porMesEspecie[especie][y][m] += delta;
+    if(y===anioTemporada) muertesTemporadaEsp[especie] += delta;
   };
   (eventos||[]).forEach(ev=>{
-    if(ev.tipo==='muerte'){
-      acumularMes(ev.fecha_cliente, (ev.detalle && ev.detalle.cantidad) || 0);
-    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.accion==='eliminar' && ev.detalle.tipoOriginal==='muerte' && ev.detalle.reversar){
-      acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -((ev.detalle.reversar.cantidad)||0));
-    } else if(ev.tipo==='correccion' && ev.detalle && ev.detalle.accion==='reclasificar' && ev.detalle.tipoOriginal==='muerte'){
+    const d = ev.detalle || {};
+    if(ev.tipo==='muerte' || ev.tipo==='muerte_desaparecido'){
+      acumularMes(ev.fecha_cliente, d.cantidad||0, CATEGORIA_ESPECIE[d.categoria]);
+    } else if(ev.tipo==='correccion' && d.accion==='eliminar' && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido') && d.reversar){
+      acumularMes(d.fechaOriginal || ev.fecha_cliente, -((d.reversar.cantidad)||0), CATEGORIA_ESPECIE[d.reversar.categoria]);
+    } else if(ev.tipo==='correccion' && d.accion==='reclasificar' && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido')){
       // 19/9/2026: reclasificación sin `reversar` -- no fue una muerte real
       // (ej. un ajuste de conteo cargado como Muerte) pero el stock que
       // generó ya está bien como está, así que no hay nada que revertir:
       // solo se descuenta del conteo, con la cantidad propia del evento.
-      acumularMes(ev.detalle.fechaOriginal || ev.fecha_cliente, -(ev.detalle.cantidad||0));
+      // Requiere que el evento manual de corrección incluya `categoria` --
+      // si no la trae, se descarta en silencio (no hay a qué especie restar).
+      acumularMes(d.fechaOriginal || ev.fecha_cliente, -(d.cantidad||0), CATEGORIA_ESPECIE[d.categoria]);
     }
   });
 
-  const filasPorMes = Object.keys(porMesAnio).map(Number).sort((a,b)=>b-a).map(y=>{
-    const m = porMesAnio[y];
-    return [y, m[8], m[9], m[10], m[11], m[12], m[8]+m[9]+m[10]+m[11]+m[12]];
+  const filasPorMes = [];
+  ['bovino','ovino','equino'].forEach(esp=>{
+    Object.keys(porMesEspecie[esp]).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      const m = porMesEspecie[esp][y];
+      const total = m[8]+m[9]+m[10]+m[11]+m[12];
+      if(!total) return;
+      filasPorMes.push([`${ESPECIE_LABEL[esp]} ${y}`, m[8], m[9], m[10], m[11], m[12], total]);
+    });
   });
 
-  return {anioTemporada, muertesTemporada, filasPorMes, fuente};
+  return {anioTemporada, fuente, filasPorMes,
+    bovino: muertesTemporadaEsp.bovino, ovino: muertesTemporadaEsp.ovino, equino: muertesTemporadaEsp.equino};
 }
 
 function tablaMesesHTML(filas, etiquetaCol){
@@ -3342,15 +3506,20 @@ function tablaMesesHTML(filas, etiquetaCol){
   </table>`;
 }
 
-function seccionEstadisticaHTML(titulo, stat, unidad){
-  let html = `<h4 style="margin:0 0 6px;font-size:13px;">${titulo}</h4>`;
-  if(stat.fuente==='sin_datos'){
+/* 19/9/2026: muertes discrimina por especie (Bovinos/Ovinos/Equinos, ver
+   calcularEstadisticasMuertes) -- reemplaza la genérica seccionEstadisticaHTML
+   (un solo número), que quedó sin otro uso. */
+function renderMuertesTemporadaHTML(muertes){
+  let html = `<h4 style="margin:0 0 6px;font-size:13px;">Muertes — temporada ${muertes.anioTemporada}</h4>`;
+  if(muertes.fuente==='sin_datos'){
     html += '<p style="font-size:12.5px;color:var(--texto-suave);">Sin conexión y sin datos guardados todavía.</p>';
     return html;
   }
-  html += `<p style="font-size:13px;"><strong>${stat.cantidadTemporada}</strong> ${unidad}</p>`;
-  if(stat.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
-  html += tablaMesesHTML(stat.filasPorMes);
+  html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${muertes.bovino}</strong> Bovinos</p>`;
+  html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${muertes.ovino}</strong> Ovinos</p>`;
+  html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${muertes.equino}</strong> Equinos</p>`;
+  if(muertes.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
+  html += tablaMesesHTML(muertes.filasPorMes, 'Especie / Año');
   return html;
 }
 
@@ -3379,7 +3548,7 @@ async function actualizarPanelTemporada(){
   const [nac, muertes] = await Promise.all([calcularEstadisticasNacimientos(), calcularEstadisticasMuertes()]);
   let htmlTemporada = renderNacimientosTemporadaHTML(nac);
   htmlTemporada += '<div style="height:14px;"></div>';
-  htmlTemporada += seccionEstadisticaHTML(`Muertes — temporada ${muertes.anioTemporada}`, {...muertes, cantidadTemporada: muertes.muertesTemporada}, 'muertes');
+  htmlTemporada += renderMuertesTemporadaHTML(muertes);
   document.getElementById('stock-panel-2').innerHTML = htmlTemporada;
   const btnGuardarMadres = document.getElementById('temporada-madres-guardar');
   if(btnGuardarMadres){
@@ -3427,11 +3596,13 @@ async function cargarStock(){
       totalesPorCategoria[x.cat] = (totalesPorCategoria[x.cat]||0) + x.cant;
     });
   });
-  const filasCategoria = Object.entries(totalesPorCategoria).sort((a,b)=> b[1]-a[1]);
+  // 19/9/2026: agrupado por especie (Bovinos/Ovinos/Equinos, mismo orden y
+  // mismo mapeo que ya usan opcionesCategorias()/renderCoefLista()), con
+  // subtotal por grupo -- antes era una tabla plana ordenada por cantidad.
   document.getElementById('stock-panel-0').innerHTML = `<table class="tabla-animales">
     <thead><tr><th>Categoría</th><th style="text-align:right;">Animales</th></tr></thead>
     <tbody>
-      ${filasCategoria.length ? filasCategoria.map(([cat,cant])=>`<tr><td>${cat}</td><td class="num">${cant}</td></tr>`).join('') : '<tr><td colspan="2" style="color:#8a8465;">Sin animales registrados</td></tr>'}
+      ${filasCategoriaPorEspecieHTML(totalesPorCategoria) || '<tr><td colspan="2" style="color:#8a8465;">Sin animales registrados</td></tr>'}
       <tr class="total"><td>Total</td><td class="num">${totalAnimales}</td></tr>
     </tbody>
   </table>`;
@@ -4103,6 +4274,22 @@ document.getElementById('btn-puntos').addEventListener('click', ()=>{
   renderListaPuntos();
   document.getElementById('modal-puntos').style.display = 'flex';
 });
+/* 19/9/2026: backfill para puntos cargados ANTES de que estado.puntos
+   sincronizara (Fase 7, 18/9/2026) -- quedaron solo en el localStorage de
+   ese dispositivo, sin evento en eventos_sync. Reenviar TODOS de forma
+   idempotente es seguro: aplicarEventoRemoto ya ignora un punto_creado
+   cuyo id ya existe en el destino (rama 'punto_creado', más arriba). */
+document.getElementById('btn-resync-puntos').addEventListener('click', async ()=>{
+  if(!navigator.onLine){ toast('Sin conexión — no se puede resincronizar ahora'); return; }
+  if(!estado.puntos.length){ toast('No hay puntos guardados en este dispositivo'); return; }
+  if(!confirm(`Se van a reenviar ${estado.puntos.length} puntos a los demás dispositivos. Si ya estaban sincronizados no pasa nada (se ignoran duplicados). ¿Continuar?`)) return;
+  let enviados = 0;
+  for(const p of estado.puntos){
+    await enviarEvento('punto_creado', ESTABLECIMIENTO, {id: p.id, tipo: p.tipo, subtipo: p.subtipo, nombre: p.nombre, lat: p.lat, lon: p.lon});
+    enviados++;
+  }
+  toast(`Se reenviaron ${enviados} puntos`);
+});
 document.getElementById('np-tipo').addEventListener('change', poblarSelectSubtipo);
 document.getElementById('puntos-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-puntos').style.display = 'none';
@@ -4214,6 +4401,7 @@ function renderDesaparecidosLista(){
       <div class="form-botones" style="margin-top:8px;">
         <button class="btn btn-agregar" data-encontrado="${c.casoId}">✅ Encontrado</button>
         <button class="btn btn-secundario" data-perdido="${c.casoId}" style="color:var(--rojo-hacienda);">❌ Dar por perdido</button>
+        <button class="btn btn-secundario" data-muerte-desap="${c.casoId}" style="color:var(--rojo-hacienda);">🪦 Dar muerte</button>
       </div>
       <div id="form-resolver-${c.casoId}" style="display:none;margin-top:8px;"></div>
     </div>
@@ -4237,6 +4425,57 @@ function renderDesaparecidosLista(){
       if(seleccionActual) renderDetalle(seleccionActual);
       toast('Caso cerrado como pérdida');
     });
+  });
+  cont.querySelectorAll('[data-muerte-desap]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const caso = casos.find(c=>c.casoId===btn.dataset.muerteDesap);
+      if(caso) abrirFormularioMuerteDesaparecido(caso);
+    });
+  });
+}
+/* 19/9/2026: tercera resolución de un caso "Desaparecido" -- se confirma
+   que el animal murió (se vio el feto, o la vaca diagnosticada preñada
+   no lo está), en vez de aparecer o darse por perdido sin más. No toca
+   stock (ya se restó al declarar la desaparición, igual que "perdida")
+   y entra en el conteo de "muertes" de temporada -- ver
+   calcularEstadisticasMuertes(). Caravana opcional, mínimo 8 dígitos si
+   se completa. */
+function abrirFormularioMuerteDesaparecido(caso){
+  const cont = document.getElementById(`form-resolver-${caso.casoId}`);
+  cont.style.display = 'block';
+  cont.innerHTML = `
+    <div class="form-row"><label>Motivo</label>
+      <select id="md-motivo">
+        <option value="feto_visto">Se vio el feto</option>
+        <option value="no_prenada">Vaca diagnosticada preñada que no lo está</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="md-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="md-confirmar">Confirmar muerte</button>
+      <button class="btn btn-secundario" id="md-cancelar">Cancelar</button>
+    </div>`;
+  document.getElementById('md-confirmar').addEventListener('click', ()=>{
+    const motivo = document.getElementById('md-motivo').value;
+    const motivoTxt = motivo==='feto_visto' ? 'se vio el feto' : 'vaca diagnosticada preñada que no lo está';
+    const caravanaRaw = document.getElementById('md-caravana').value.trim();
+    if(caravanaRaw && !/^\d{8,}$/.test(caravanaRaw)){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
+    if(!confirm(`¿Confirmar muerte de ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}? No se puede deshacer.`)) return;
+    const caravana = caravanaRaw || null;
+    const fecha = fechaHoy();
+    const caravanaTxt = caravana ? ` — caravana ${caravana}` : '';
+    const entry = registrarHistorial(caso.potreroOrigen, 'muerte_desaparecido',
+      `Muerte (desaparecido, ${motivoTxt}): ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}${caravanaTxt} (no vuelven)`,
+      {potrero: caso.potreroOrigen, categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, motivo, caravana, _fechaISO: fechaISOHoy()},
+      undefined, fecha);
+    entry.casoId = caso.casoId;
+    enviarEvento('muerte_desaparecido', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, motivo, caravana, casoId: caso.casoId}, fecha);
+    guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
+    if(seleccionActual) renderDetalle(seleccionActual);
+    toast('Caso cerrado como muerte');
+  });
+  document.getElementById('md-cancelar').addEventListener('click', ()=>{
+    cont.style.display = 'none'; cont.innerHTML = '';
   });
 }
 function abrirFormularioEncontrado(caso){
@@ -4273,12 +4512,55 @@ function abrirFormularioEncontrado(caso){
     cont.style.display = 'none'; cont.innerHTML = '';
   });
 }
+/* 19/9/2026: tabla de registro de muertes por categoría (incluye
+   "muerte" directa y "muerte_desaparecido"), con filtro opcional por
+   dueño -- reporte de solo lectura, independiente del conteo de
+   temporada (calcularEstadisticasMuertes), consulta directa a
+   eventos_sync así no hace falta reconstruir nada del historial local. */
+async function cargarTablaMuertes(filtroDueno){
+  const cont = document.getElementById('muertes-tabla');
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine){
+    cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Sin conexión — no se puede traer el registro ahora.</p>';
+    return;
+  }
+  cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Cargando…</p>';
+  const res = await client.from('eventos_sync').select('detalle,fecha_cliente,tipo')
+    .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido']);
+  if(res.error){
+    cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">No se pudo traer el registro.</p>';
+    return;
+  }
+  const filas = {};
+  (res.data||[]).forEach(ev=>{
+    const d = ev.detalle || {};
+    if(filtroDueno && (d.dueno||'') !== filtroDueno) return;
+    const clave = `${d.categoria||'(sin categoría)'}||${d.dueno||''}`;
+    filas[clave] = filas[clave] || {categoria: d.categoria||'(sin categoría)', dueno: d.dueno||'', cantidad: 0, ultima: null};
+    filas[clave].cantidad += d.cantidad||0;
+    if(!filas[clave].ultima || parseFechaDMY(ev.fecha_cliente) > parseFechaDMY(filas[clave].ultima)) filas[clave].ultima = ev.fecha_cliente;
+  });
+  const lista = Object.values(filas).sort((a,b)=> a.categoria.localeCompare(b.categoria) || b.cantidad-a.cantidad);
+  if(!lista.length){ cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Sin muertes registradas.</p>'; return; }
+  cont.innerHTML = `<table class="tabla-animales">
+    <thead><tr><th>Categoría</th><th>Dueño</th><th style="text-align:right;">Cantidad</th><th>Último registro</th></tr></thead>
+    <tbody>${lista.map(f=>`<tr><td>${f.categoria}</td><td>${textoFirma(f.dueno)}</td><td class="num">${f.cantidad}</td><td>${f.ultima||''}</td></tr>`).join('')}</tbody>
+  </table>`;
+}
 document.getElementById('btn-desaparecidos').addEventListener('click', ()=>{
   renderDesaparecidosLista();
+  const selDueno = document.getElementById('muertes-filtro-dueno');
+  selDueno.innerHTML = '<option value="">Todos</option>' + opcionesDuenos();
   document.getElementById('modal-desaparecidos').style.display = 'flex';
 });
 document.getElementById('desaparecidos-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-desaparecidos').style.display = 'none';
+});
+document.querySelector('#modal-desaparecidos details').addEventListener('toggle', (e)=>{
+  if(e.target.open) cargarTablaMuertes(document.getElementById('muertes-filtro-dueno').value);
+});
+document.getElementById('muertes-filtro-dueno').addEventListener('change', (e)=>{
+  cargarTablaMuertes(e.target.value);
 });
 
 /* ======================= SANIDAD (base propia en Supabase, sin Excel) =======================
@@ -4633,6 +4915,22 @@ function renderEventosClimaLista(){
         ${ev.obs || ev.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${ev.obs||''}${ev.obs && ev.usuario?' — ':''}${ev.usuario||''}</div>` : ''}
       </div>`).join('');
 }
+/* Abortos -- mismo criterio que "evento_clima": del establecimiento
+   entero, no de un potrero. No resta stock (el feto nunca se contó como
+   animal vivo); solo entra al % de abortos junto al de nacidos
+   (ver calcularEstadisticasNacimientos()). */
+function renderAbortosLista(){
+  const cont = document.getElementById('abortos-lista');
+  const lista = (estado.abortos||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha)).slice(0,20);
+  const MOTIVO_TXT = {feto_visto: 'Se vio el feto', no_prenada: 'Vaca diagnosticada preñada que no lo está'};
+  cont.innerHTML = !lista.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Sin abortos registrados todavía.</p>'
+    : lista.map(ab=>`
+      <div class="potrero-card">
+        <div class="nombre">${ab.fecha} — ${MOTIVO_TXT[ab.motivo]||ab.motivo}</div>
+        ${ab.obs || ab.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${ab.obs||''}${ab.obs && ab.usuario?' — ':''}${ab.usuario||''}</div>` : ''}
+      </div>`).join('');
+}
 document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ll-fecha').value = fechaISOHoy();
   document.getElementById('ll-fecha').max = fechaISOHoy();
@@ -4640,9 +4938,13 @@ document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ev-fecha').value = fechaISOHoy();
   document.getElementById('ev-fecha').max = fechaISOHoy();
   document.getElementById('ev-obs').value = '';
+  document.getElementById('ab-fecha').value = fechaISOHoy();
+  document.getElementById('ab-fecha').max = fechaISOHoy();
+  document.getElementById('ab-obs').value = '';
   renderLluviasLista();
   renderLluviasResumen();
   renderEventosClimaLista();
+  renderAbortosLista();
   document.getElementById('modal-lluvias').style.display = 'flex';
 });
 document.getElementById('lluvias-cerrar').addEventListener('click', ()=>{
@@ -4685,6 +4987,24 @@ document.getElementById('ev-guardar').addEventListener('click', ()=>{
   enviarEvento('evento_clima', ESTABLECIMIENTO, {id, tipo, obs: obs||null, usuario: usuario||null}, fecha);
   renderEventosClimaLista();
   toast(`Se registró: ${tipo} del ${fecha}`);
+});
+document.getElementById('ab-guardar').addEventListener('click', ()=>{
+  const fechaISO = document.getElementById('ab-fecha').value;
+  const motivo = document.getElementById('ab-motivo').value;
+  const obs = document.getElementById('ab-obs').value.trim();
+  if(!fechaISO){ toast('Elegí una fecha'); return; }
+  const fecha = fechaISOaDisplay(fechaISO);
+  const id = generarIdHistorial();
+  const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
+  estado.abortos = estado.abortos || [];
+  estado.abortos.unshift({id, fecha, motivo, obs: obs||null, dispositivo: idDispositivo(), usuario: usuario||null});
+  guardarEstado();
+  // Mismo truco que "lluvia"/"evento_clima": ESTABLECIMIENTO como
+  // placeholder de "potrero" (enviarEvento/eventos_sync siempre esperan
+  // ese campo, aunque un aborto no sea de ningún potrero en particular).
+  enviarEvento('aborto', ESTABLECIMIENTO, {id, motivo, obs: obs||null, usuario: usuario||null}, fecha);
+  renderAbortosLista();
+  toast('Aborto registrado');
 });
 
 /* ======================= CARGA POR VOZ (sin IA — reglas + reconocimiento del navegador) ======================= */
@@ -4729,6 +5049,7 @@ const PALABRAS_CATEGORIA = [
   [/ternera/, "Terneras"], [/ternero/, "Terneros"],
   [/novillito/, "Novillitos 1-2 años"],
   [/novillo/, "Novillos 2-3 años"],
+  [/vaquillona.*invern|invern.*vaquillona/, "Vaquillona de invernada"],
   [/vaquillona/, "Vaquillonas 1-2 años"],
   [/vaca.*invern|invernada/, "Vacas de invernada"],
   [/vaca/, "Vacas"], [/toro/, "Toros"], [/buey/, "Bueyes"],

@@ -96,7 +96,7 @@ async function levantar(archivo, servidor){
   win.URL.createObjectURL = () => 'blob:x'; win.URL.revokeObjectURL = () => {};
   win.HTMLElement.prototype.scrollIntoView = function(){};
   const codigo = Array.from(win.document.querySelectorAll('script')).map(s => s.textContent).filter(Boolean).join('\n');
-  try { win.eval(codigo + '\n;window.__est = function(){ return estado; };window.__establecimiento = function(){ return ESTABLECIMIENTO; };'); }
+  try { win.eval(codigo + '\n;window.__est = function(){ return estado; };window.__establecimiento = function(){ return ESTABLECIMIENTO; };window.__cargarTablaMuertes = function(f){ return cargarTablaMuertes(f); };'); }
   catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await new Promise(r => setTimeout(r, 60));
   return { win, errores };
@@ -119,13 +119,24 @@ async function probarArchivo(archivo, tieneDueno){
   const eventos = [
     { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 3, categoria: 'Terneros' } },
     { establecimiento: 'la_vuelta', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(2), detalle: { cantidad: 2, categoria: 'Terneros' } },
-    { establecimiento: 'la_vuelta', tipo: 'muerte', fecha_cliente: fechaEnTemporada(3), detalle: { cantidad: 1 } },
-    // 19/9/2026, caso BOMBA: una "muerte" que en realidad fue un ajuste de
-    // conteo, reclasificada con una correccion SIN `reversar` -- tiene que
-    // netear a 0 (si no anduviera el reconocimiento de 'reclasificar', esta
-    // muerte quedaria sumando y el total de La Vuelta daria 2, no 1).
+    // 19/9/2026: muertes discriminadas por especie -- una bovina y una
+    // ovina, para confirmar que el panel las separa (antes era un solo
+    // número "muertes" sin importar la categoría).
+    { establecimiento: 'la_vuelta', tipo: 'muerte', fecha_cliente: fechaEnTemporada(3), detalle: { cantidad: 1, categoria: 'Vacas' } },
+    { establecimiento: 'la_vuelta', tipo: 'muerte', fecha_cliente: fechaEnTemporada(3), detalle: { cantidad: 1, categoria: 'Ovejas' } },
+    // caso BOMBA: una "muerte" que en realidad fue un ajuste de conteo,
+    // reclasificada con una correccion SIN `reversar` (pero CON categoria,
+    // a diferencia del evento real de producción que se cargó sin ella --
+    // ver apps-potreros.md) -- tiene que netear a 0 en el balde Bovinos.
     { establecimiento: 'la_vuelta', tipo: 'muerte', fecha_cliente: fechaEnTemporada(4), potrero: 'BOMBA', detalle: { cantidad: 1, categoria: 'Vacas', obs: 'Estaba mal la cuenta' } },
-    { establecimiento: 'la_vuelta', tipo: 'correccion', fecha_cliente: fechaEnTemporada(4), potrero: 'BOMBA', detalle: { accion: 'reclasificar', tipoOriginal: 'muerte', cantidad: 1, fechaOriginal: fechaEnTemporada(4), obs: 'Estaba mal la cuenta' } },
+    { establecimiento: 'la_vuelta', tipo: 'correccion', fecha_cliente: fechaEnTemporada(4), potrero: 'BOMBA', detalle: { accion: 'reclasificar', tipoOriginal: 'muerte', categoria: 'Vacas', cantidad: 1, fechaOriginal: fechaEnTemporada(4), obs: 'Estaba mal la cuenta' } },
+    // "Dar muerte" desde Desaparecidos (muerte_desaparecido) también tiene
+    // que sumar al balde de su especie, igual que una "muerte" directa.
+    { establecimiento: 'la_vuelta', tipo: 'muerte_desaparecido', fecha_cliente: fechaEnTemporada(5), potrero: '9', detalle: { cantidad: 1, categoria: 'Vacas', caravana: '12345678', motivo: 'feto_visto' } },
+    // 19/9/2026: Abortos -- % junto al de nacidos, misma base (vacas
+    // preñadas). No lleva categoria/potrero (evento del establecimiento
+    // entero, como lluvia/evento_clima).
+    { establecimiento: 'la_vuelta', tipo: 'aborto', fecha_cliente: fechaEnTemporada(1), detalle: { motivo: 'no_prenada' } },
     { establecimiento: 'maria_laura', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 4, categoria: 'Terneros' } },
     { establecimiento: 'pone_chico', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 9, categoria: 'Terneros' } },
   ];
@@ -176,13 +187,29 @@ async function probarArchivo(archivo, tieneDueno){
   doc.getElementById('stock-tabs').querySelector('[data-tab="2"]').dispatchEvent(new win.Event('click', { bubbles: true }));
   await new Promise(r=>setTimeout(r,30));
   const panelTemp = doc.getElementById('stock-panel-2').innerHTML;
-  const esperado = { la_vuelta: {nac:5, mue:1}, maria_laura: {nac:4, mue:0}, pone_chico: {nac:9, mue:0} }[win.__establecimiento()];
+  const esperado = {
+    la_vuelta: {nac:5, bovino:2, ovino:1, equino:0}, // 1 muerte directa + 1 muerte_desaparecido (BOMBA netea a 0)
+    maria_laura: {nac:4, bovino:0, ovino:0, equino:0},
+    pone_chico: {nac:9, bovino:0, ovino:0, equino:0}
+  }[win.__establecimiento()];
   chequear(`temporada: ${esperado.nac} Terneros (solo de este establecimiento)`, panelTemp.includes(`<strong>${esperado.nac}</strong> Terneros`), panelTemp);
   chequear('temporada: 0 Corderos/Corderas (nadie cargó ovino en este seed)', panelTemp.includes('<strong>0</strong> Corderos/Corderas'), panelTemp);
-  if(esperado.mue>0){
-    chequear(`temporada: ${esperado.mue} muertes`, panelTemp.includes(`<strong>${esperado.mue}</strong> muertes`), panelTemp);
-  } else {
-    chequear('temporada: 0 muertes', panelTemp.includes('<strong>0</strong> muertes'), panelTemp);
+  // 19/9/2026: muertes discriminadas por especie (antes era un solo número).
+  // El caso BOMBA (bovina + reclasificar con categoria) tiene que netear a 0
+  // y no sumarse a la muerte bovina real de fechaEnTemporada(3).
+  chequear(`temporada: ${esperado.bovino} Bovinos muertos (neteando el caso BOMBA)`, panelTemp.includes(`<strong>${esperado.bovino}</strong> Bovinos`), panelTemp);
+  chequear(`temporada: ${esperado.ovino} Ovinos muertos`, panelTemp.includes(`<strong>${esperado.ovino}</strong> Ovinos`), panelTemp);
+  chequear(`temporada: ${esperado.equino} Equinos muertos`, panelTemp.includes(`<strong>${esperado.equino}</strong> Equinos`), panelTemp);
+
+  // 19/9/2026: Abortos -- % junto al de nacidos, sobre la MISMA base
+  // (vacas preñadas). Solo La Vuelta tiene el evento sembrado (1 aborto).
+  const abortosEsperados = win.__establecimiento()==='la_vuelta' ? 1 : 0;
+  chequear(`temporada: ${abortosEsperados} Abortos`, panelTemp.includes(`<strong>${abortosEsperados}</strong> Abortos`), panelTemp);
+  if(abortosEsperados>0){
+    const vacasBase = est.vacasPrenadasTemporada;
+    const pctAbortosEsperado = (abortosEsperados/vacasBase*100).toFixed(1);
+    chequear(`temporada: % de abortos calculado sobre la misma base que nacidos (${pctAbortosEsperado}% s/ vacas)`,
+      panelTemp.includes(`Abortos (${pctAbortosEsperado}% s/ vacas)`), panelTemp);
   }
 
   // Editor de "vacas preñadas / ovejas encarneradas" -- solo en PC (mismo
@@ -206,9 +233,15 @@ async function probarArchivo(archivo, tieneDueno){
     chequear('editor de madres: NO existe en móvil (solo lectura)', !btnGuardarMadres);
   }
 
-  // pestaña "Por dueño" -- solo existe en establecimientos con más de un
-  // dueño obligatorio (hoy: María Laura, ver @multiDueno en generar.js).
+  // pestaña "Por dueño" -- desde el 19/9/2026 alcanza con tener más de un
+  // dueño configurado (config.duenos.length > 1), ya no hace falta que sea
+  // obligatorio -- por eso ahora también existe en La Vuelta (Firma
+  // opcional, 4+ duenos), no solo en María Laura. Pone Chico sigue sin
+  // ella (1 solo dueño placeholder).
   const tabDueno = doc.getElementById('stock-tabs').querySelector('[data-tab="3"]');
+  const totalHa = parseFloat((doc.getElementById('stock-resumen').textContent.match(/([\d.]+) ha/)||[])[1]);
+  const ugEsperado = 10*1.0 + 4*0.5; // Vacas=1.0, Terneros=0.5 (UG_DEFAULT)
+  const dotEsperada = totalHa>0 ? (ugEsperado/totalHa) : 0;
   if(win.__establecimiento()==='maria_laura'){
     chequear('Por dueño: la pestaña existe (María Laura)', !!tabDueno);
     tabDueno.dispatchEvent(new win.Event('click', { bubbles: true }));
@@ -220,12 +253,33 @@ async function probarArchivo(archivo, tieneDueno){
     chequear('Por dueño: Vacas de Pedro figura con 10', /Vacas[\s\S]{0,40}>10</.test(panelDueno), panelDueno);
     chequear('Por dueño: Terneros de Pedro figura con 4', /Terneros[\s\S]{0,40}>4</.test(panelDueno), panelDueno);
     chequear('Por dueño: total de Pedro es 14', /Total[\s\S]{0,40}>14</.test(panelDueno), panelDueno);
-    const totalHa = parseFloat((doc.getElementById('stock-resumen').textContent.match(/([\d.]+) ha/)||[])[1]);
-    const ugEsperado = 10*1.0 + 4*0.5; // Vacas=1.0, Terneros=0.5 (UG_DEFAULT)
-    const dotEsperada = totalHa>0 ? (ugEsperado/totalHa) : 0;
     chequear(`Por dueño: UG de Pedro es ${ugEsperado.toFixed(1)}`, panelDueno.includes(`${ugEsperado.toFixed(1)} UG`), panelDueno);
     chequear(`Por dueño: dotación de Pedro es ${dotEsperada.toFixed(2)} UG/ha`, panelDueno.includes(`${dotEsperada.toFixed(2)} UG/ha`), panelDueno);
     chequear('Por dueño: un dueño sin animales (ej. Fito) no aparece', !panelDueno.includes('Fito'));
+  } else if(win.__establecimiento()==='la_vuelta'){
+    chequear('Por dueño: la pestaña existe en La Vuelta (Firma opcional, ya no bloquea)', !!tabDueno);
+    tabDueno.dispatchEvent(new win.Event('click', { bubbles: true }));
+    await new Promise(r=>setTimeout(r,30));
+    const panelDueno = doc.getElementById('stock-panel-3').innerHTML;
+    // El seed de este test usa claves SIN firma ('Vacas', 'Terneros') --
+    // tienen que agruparse bajo "(sin firma)" (CONFIG.textoSinAsignar), no
+    // quedar afuera del reporte como pasaba antes del 19/9/2026.
+    chequear('Por dueño: aparece el grupo "(sin firma)"', panelDueno.includes('(sin firma)'), panelDueno);
+    chequear('Por dueño: Vacas sin firma figura con 10', /Vacas[\s\S]{0,40}>10</.test(panelDueno), panelDueno);
+    chequear('Por dueño: Terneros sin firma figura con 4', /Terneros[\s\S]{0,40}>4</.test(panelDueno), panelDueno);
+    chequear('Por dueño: total sin firma es 14', /Total[\s\S]{0,40}>14</.test(panelDueno), panelDueno);
+    chequear(`Por dueño: UG sin firma es ${ugEsperado.toFixed(1)}`, panelDueno.includes(`${ugEsperado.toFixed(1)} UG`), panelDueno);
+
+    // 19/9/2026: tabla de registro de muertes (Herramientas/Desaparecidos),
+    // independiente del conteo de temporada -- no netea correcciones, es un
+    // log crudo agrupado por categoría+dueño. El seed tiene 3 muertes de
+    // "Vacas" (directa + BOMBA + muerte_desaparecido, sin dueño) y 1 de
+    // "Ovejas".
+    await win.__cargarTablaMuertes('');
+    const tablaMuertes = doc.getElementById('muertes-tabla').innerHTML;
+    chequear('tabla de muertes: Vacas suma 3 (directa + BOMBA + muerte_desaparecido)',
+      /Vacas[\s\S]{0,60}>3</.test(tablaMuertes), tablaMuertes);
+    chequear('tabla de muertes: Ovejas suma 1', /Ovejas[\s\S]{0,60}>1</.test(tablaMuertes), tablaMuertes);
   } else {
     chequear(`Por dueño: la pestaña NO existe (${win.__establecimiento()})`, !tabDueno);
   }
