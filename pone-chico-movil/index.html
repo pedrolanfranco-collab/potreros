@@ -386,7 +386,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.48</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.49</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -622,7 +622,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.48","versionMovil":"1.48","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Pedro"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.49","versionMovil":"1.49","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1485,19 +1485,17 @@ function aplicarEventoRemoto(row, potrerosSucios){
       if(potrerosSucios) potrerosSucios.add(potrero);
     }
     // "Dar por perdido" y "Dar muerte" (19/9/2026: caso de un desaparecido
-    // que se confirma muerto, ej. se ve el feto o la vaca diagnosticada
-    // preñada no lo está) NO tocan stock -- ya se había restado al
-    // declarar la desaparición.
+    // que se confirma muerto -- cualquier categoría, no solo vacas) NO
+    // tocan stock -- ya se había restado al declarar la desaparición.
     const detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}`;
     const caravanaTxt = d.caravana ? ` — caravana ${d.caravana}` : '';
-    const motivoTxt = d.motivo==='feto_visto' ? 'se vio el feto' : d.motivo==='no_prenada' ? 'vaca diagnosticada preñada que no lo está' : null;
     const texto = row.tipo==='encontrado'
       ? `Encontrado (sincronizado): +${detalleTxt}`
       : row.tipo==='perdida'
       ? `Pérdida confirmada (sincronizada): ${detalleTxt} (no vuelven)`
-      : `Muerte (desaparecido, sincronizada${motivoTxt?', '+motivoTxt:''}): ${detalleTxt}${caravanaTxt} (no vuelven)`;
+      : `Muerte (desaparecido, sincronizada): ${detalleTxt}${caravanaTxt} (no vuelven)`;
     const entry = registrarHistorial(potrero, row.tipo, texto, undefined, undefined, fechaEvt, d.usuario);
-    entry.origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, caravana: d.caravana||null, motivo: d.motivo||null};
+    entry.origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, caravana: d.caravana||null};
     entry.casoId = d.casoId;
     return;
   }
@@ -3495,30 +3493,24 @@ function renderDesaparecidosLista(){
   });
 }
 /* 19/9/2026: tercera resolución de un caso "Desaparecido" -- se confirma
-   que el animal murió (se vio el feto, o la vaca diagnosticada preñada
-   no lo está), en vez de aparecer o darse por perdido sin más. No toca
-   stock (ya se restó al declarar la desaparición, igual que "perdida")
-   y entra en el conteo de "muertes" de temporada -- ver
+   que el animal murió, en vez de aparecer o darse por perdido sin más.
+   Sirve para cualquier categoría (no es un caso especial de vacas) --
+   el motivo de embarazo/aborto es un punto totalmente distinto, ver
+   'aborto' (Herramientas > Lluvias) y calcularEstadisticasNacimientos().
+   No toca stock (ya se restó al declarar la desaparición, igual que
+   "perdida") y entra en el conteo de "muertes" de temporada -- ver
    calcularEstadisticasMuertes(). Caravana opcional, mínimo 8 dígitos si
    se completa. */
 function abrirFormularioMuerteDesaparecido(caso){
   const cont = document.getElementById(`form-resolver-${caso.casoId}`);
   cont.style.display = 'block';
   cont.innerHTML = `
-    <div class="form-row"><label>Motivo</label>
-      <select id="md-motivo">
-        <option value="feto_visto">Se vio el feto</option>
-        <option value="no_prenada">Vaca diagnosticada preñada que no lo está</option>
-      </select>
-    </div>
     <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="md-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="md-confirmar">Confirmar muerte</button>
       <button class="btn btn-secundario" id="md-cancelar">Cancelar</button>
     </div>`;
   document.getElementById('md-confirmar').addEventListener('click', ()=>{
-    const motivo = document.getElementById('md-motivo').value;
-    const motivoTxt = motivo==='feto_visto' ? 'se vio el feto' : 'vaca diagnosticada preñada que no lo está';
     const caravanaRaw = document.getElementById('md-caravana').value.trim();
     if(caravanaRaw && !/^\d{8,}$/.test(caravanaRaw)){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
     if(!confirm(`¿Confirmar muerte de ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}? No se puede deshacer.`)) return;
@@ -3526,11 +3518,11 @@ function abrirFormularioMuerteDesaparecido(caso){
     const fecha = fechaHoy();
     const caravanaTxt = caravana ? ` — caravana ${caravana}` : '';
     const entry = registrarHistorial(caso.potreroOrigen, 'muerte_desaparecido',
-      `Muerte (desaparecido, ${motivoTxt}): ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}${caravanaTxt} (no vuelven)`,
-      {potrero: caso.potreroOrigen, categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, motivo, caravana, _fechaISO: fechaISOHoy()},
+      `Muerte (desaparecido): ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''}${caravanaTxt} (no vuelven)`,
+      {potrero: caso.potreroOrigen, categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, caravana, _fechaISO: fechaISOHoy()},
       undefined, fecha);
     entry.casoId = caso.casoId;
-    enviarEvento('muerte_desaparecido', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, motivo, caravana, casoId: caso.casoId}, fecha);
+    enviarEvento('muerte_desaparecido', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, caravana, casoId: caso.casoId}, fecha);
     guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
     if(seleccionActual) renderDetalle(seleccionActual);
     toast('Caso cerrado como muerte');

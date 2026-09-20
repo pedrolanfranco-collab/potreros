@@ -225,9 +225,10 @@ async function probarArchivo(archivo, tieneDueno){
     JSON.stringify(est.potreros[origen].animales));
   chequear('el caso ya no figura como pendiente tras borrarlo', win.__listarCasos().length===0);
 
-  // 6) 19/9/2026: tercera resolución "🪦 Dar muerte" -- NO devuelve stock
-  //    (igual que "perdida"), pide un motivo, valida la caravana (mínimo 8
-  //    dígitos si se completa), y cierra el caso.
+  // 6) 19/9/2026: tercera resolución "🪦 Dar muerte" -- sirve para cualquier
+  //    categoría (no pide motivo, eso es un punto aparte: ver Abortos).
+  //    NO devuelve stock (igual que "perdida"), valida la caravana (mínimo
+  //    8 dígitos si se completa), y cierra el caso.
   [origen, destino].forEach(n => { est.potreros[n].animales = {}; est.potreros[n].historial = []; });
   est.potreros[origen].animales[key] = 4;
   win.__mostrarFormulario(origen, 'desaparecido');
@@ -271,7 +272,7 @@ async function probarArchivo(archivo, tieneDueno){
   win.__aplicarRemoto({ tipo:'desaparecido', potrero: origen, fecha_cliente:'01/09/2026',
     detalle:{ categoria, dueno, cantidad:4, casoId:'caso_test_muerte' } });
   win.__aplicarRemoto({ tipo:'muerte_desaparecido', potrero: origen, fecha_cliente:'02/09/2026',
-    detalle:{ categoria, dueno, cantidad:4, caravana:'99999999', motivo:'feto_visto', casoId:'caso_test_muerte' } });
+    detalle:{ categoria, dueno, cantidad:4, caravana:'99999999', casoId:'caso_test_muerte' } });
   chequear('sincronizado: "muerte_desaparecido" no suma stock', (est.potreros[origen].animales[key]||0)===0);
   chequear('sincronizado: el caso queda resuelto', win.__listarCasos().length===0, JSON.stringify(win.__listarCasos()));
 }
