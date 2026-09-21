@@ -103,7 +103,7 @@ function generar(templateText, config, variant) {
 
   texto = texto.replace('__TITULO__', config.titulo);
   texto = texto.replace('__THEME_COLOR__', config.themeColor);
-  texto = texto.replace('__NOMBRE__', config.nombre);
+  texto = texto.replace(/__NOMBRE__/g, config.nombre);
   texto = texto.replace('__SUBTITULO__', config.subtitulo);
   texto = texto.replace(variant === 'pc' ? '__VERSION_PC__' : '__VERSION_MOVIL__', variant === 'pc' ? config.versionPc : config.versionMovil);
 
