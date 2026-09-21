@@ -287,6 +287,65 @@ async function probarArchivo(archivo){
   const muerte8 = est.potreros[potrero].historial.find(h=>h.tipo==='muerte' && h.detalle.includes('Estaba mal la cuenta'));
   chequear('reclasificar: la carga original de "Muerte" queda SIN tachar (el hecho quedó registrado igual)',
     !!(muerte8 && !muerte8.eliminado), JSON.stringify(muerte8));
+
+  // Caso 9 (20/9/2026): "agregar_caravana" -- otra correccion SIN
+  // `reversar`, para agregar/editar la caravana de una muerte YA
+  // confirmada (directa o de un desaparecido) sin tocar stock ni tachar
+  // nada, solo el texto/extra de esa fila puntual.
+  const claveTerneros9 = 'Terneros||';
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'muerte', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '27/08/2026', detalle: { categoria: 'Terneros', cantidad: 2 }
+  });
+  const animalesLuegoDeMuerte9 = est.potreros[potrero].animales[claveTerneros9];
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'correccion', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '27/08/2026',
+    detalle: { tipoOriginal: 'muerte', accion: 'agregar_caravana', categoria: 'Terneros', cantidad: 2, dueno: null,
+      caravana: '11112222', fechaOriginal: '27/08/2026' }
+  });
+  chequear('agregar_caravana (muerte directa): no cambia el stock',
+    est.potreros[potrero].animales[claveTerneros9] === animalesLuegoDeMuerte9);
+  const muerte9 = est.potreros[potrero].historial.find(h=>h.tipo==='muerte' && h.origDatos && h.origDatos.categoria==='Terneros' && h.origDatos.cantidad===2);
+  chequear('agregar_caravana (muerte directa): el texto ahora incluye la caravana',
+    !!(muerte9 && /11112222/.test(muerte9.detalle)), muerte9 && muerte9.detalle);
+  chequear('agregar_caravana (muerte directa): origDatos.caravana queda seteado',
+    !!(muerte9 && muerte9.origDatos && muerte9.origDatos.caravana === '11112222'), JSON.stringify(muerte9 && muerte9.origDatos));
+
+  // La misma corrección, mandada de nuevo con OTRA caravana -- reemplaza,
+  // no duplica el sufijo.
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'correccion', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '27/08/2026',
+    detalle: { tipoOriginal: 'muerte', accion: 'agregar_caravana', categoria: 'Terneros', cantidad: 2, dueno: null,
+      caravana: '99998888', fechaOriginal: '27/08/2026' }
+  });
+  chequear('agregar_caravana: la segunda corrección reemplaza la caravana, no la duplica',
+    !!(muerte9 && /99998888/.test(muerte9.detalle) && !/11112222/.test(muerte9.detalle)), muerte9 && muerte9.detalle);
+
+  // Ahora para "muerte_desaparecido": un caso con casoId estable entre
+  // dispositivos (a diferencia del id de historial, que cada uno genera
+  // el suyo) -- se busca por casoId, no por id.
+  win.__aplicarRemoto({ establecimiento, tipo:'desaparecido', potrero, dispositivo:'disp_origen',
+    fecha_cliente:'28/08/2026', detalle:{ categoria:'Vacas', dueno:null, cantidad:1, casoId:'caso_test_caravana' } });
+  const vacasTrasDesaparecer = est.potreros[potrero].animales['Vacas||'] || 0;
+  win.__aplicarRemoto({ establecimiento, tipo:'muerte_desaparecido', potrero, dispositivo:'disp_origen',
+    fecha_cliente:'29/08/2026', detalle:{ categoria:'Vacas', dueno:null, cantidad:1, casoId:'caso_test_caravana' } });
+  win.__aplicarRemoto({
+    establecimiento, tipo: 'correccion', potrero, dispositivo: 'disp_origen',
+    fecha_cliente: '29/08/2026',
+    detalle: { tipoOriginal: 'muerte_desaparecido', accion: 'agregar_caravana', casoId: 'caso_test_caravana',
+      caravana: '55556666', fechaOriginal: '29/08/2026' }
+  });
+  const muerteDesap9 = est.potreros[potrero].historial.find(h=>h.tipo==='muerte_desaparecido' && h.casoId==='caso_test_caravana');
+  chequear('agregar_caravana (muerte_desaparecido): se encuentra por casoId y actualiza el texto',
+    !!(muerteDesap9 && /55556666/.test(muerteDesap9.detalle)), muerteDesap9 && muerteDesap9.detalle);
+  chequear('agregar_caravana (muerte_desaparecido): origDatos.caravana queda seteado',
+    !!(muerteDesap9 && muerteDesap9.origDatos && muerteDesap9.origDatos.caravana === '55556666'),
+    JSON.stringify(muerteDesap9 && muerteDesap9.origDatos));
+  chequear('agregar_caravana (muerte_desaparecido): no toca el stock (queda igual que tras desaparecer)',
+    (est.potreros[potrero].animales['Vacas||']||0) === vacasTrasDesaparecer,
+    `tras desaparecer=${vacasTrasDesaparecer} despues=${est.potreros[potrero].animales['Vacas||']}`);
 }
 
 (async () => {

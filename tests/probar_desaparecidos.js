@@ -260,6 +260,31 @@ async function probarArchivo(archivo, tieneDueno){
   chequear('"Dar muerte" no ofrece el botón ✏️ Editar (hay que borrar y recargar)',
     !doc.querySelector(`[data-hist-editar="${entradaMuerteDesap.id}"]`));
 
+  // 20/9/2026: la caravana SÍ se puede agregar/editar después con 🏷️, sin
+  // pasar por borrar y recargar -- caso real de Pedro ("se puede agregar
+  // la caravana después"). Registrar la desaparición cerró el panel de
+  // detalle (cerrarDetalle(), comportamiento normal) y con eso perdió
+  // seleccionActual -- hay que volver a abrir el potrero para que
+  // renderDetalle() dibuje el historial de nuevo.
+  win.__seleccionar(origen);
+  const btnCaravana = doc.querySelector(`[data-hist-caravana="${entradaMuerteDesap.id}"]`);
+  chequear('"Dar muerte" SÍ ofrece el botón 🏷️ Caravana', !!btnCaravana);
+  win.prompt = () => '99990000';
+  btnCaravana.dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('🏷️ reemplaza la caravana vieja por la nueva, no la duplica',
+    /99990000/.test(entradaMuerteDesap.detalle) && !/12345678/.test(entradaMuerteDesap.detalle),
+    entradaMuerteDesap.detalle);
+  chequear('🏷️ no toca el stock (sigue en 0)', (est.potreros[origen].animales[key]||0)===0);
+  win.prompt = () => '123'; // menos de 8 dígitos
+  btnCaravana.dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('🏷️ rechaza una caravana de menos de 8 dígitos (queda la anterior)',
+    /99990000/.test(entradaMuerteDesap.detalle), entradaMuerteDesap.detalle);
+  win.prompt = () => '';
+  btnCaravana.dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('🏷️ con el campo vacío borra la caravana',
+    !/\d{8,}/.test(entradaMuerteDesap.detalle), entradaMuerteDesap.detalle);
+  win.prompt = () => null; // vuelve al default (cancelar) para el resto de la prueba
+
   // Borrar una "muerte_desaparecido" tampoco toca stock (mismo criterio que "perdida").
   win.__borrarHistorial(entradaMuerteDesap.id);
   chequear('borrar "muerte_desaparecido" no cambia el stock', (est.potreros[origen].animales[key]||0)===0);
