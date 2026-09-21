@@ -90,6 +90,7 @@ async function levantar(archivo, fallarPrimeraVez){
       }
     }
     window.__est = function(){ return estado; };
+    window.__establecimiento = function(){ return ESTABLECIMIENTO; };
     window.__vaciarColaSync = vaciarColaSync;
     window.__borrarHistorial = borrarHistorial;
     window.__parseVoz = parseComandoVoz;
@@ -131,13 +132,18 @@ async function probarVozBorrable(archivo, tieneDueno){
   // 11/9/2026: las 6 apps ya usan clave compuesta "categoria||firma" -- la
   // voz no pregunta la firma en ninguna, así que sin "tieneDueno" (María
   // Laura/Pone Chico) la carga cae en la firma vacía "Vacas||" en vez de
-  // la clave pelada vieja "Vacas".
-  const claveVacas = tieneDueno ? 'Vacas||Pedro' : 'Vacas||';
+  // la clave pelada vieja "Vacas". 20/9/2026: el nombre del dueño de
+  // prueba tiene que ser uno REALMENTE configurado en CONFIG.duenos de
+  // ese establecimiento -- Pone Chico dejó de tener "Pedro" (ahora Chico/
+  // Pablo/Kelbi), así que un <select> puesto en "Pedro" ahí caía en
+  // blanco en silencio.
+  const nombreDueno = win.__establecimiento()==='pone_chico' ? 'Chico' : 'Pedro';
+  const claveVacas = tieneDueno ? `Vacas||${nombreDueno}` : 'Vacas||';
 
   win.renderInterpretacionVoz(win.__parseVoz(`agregar 8 vacas en el ${p}`));
   doc.getElementById('vz-accion').value = 'nacimiento';
   doc.getElementById('vz-cat').value = 'Vacas';
-  if(tieneDueno) doc.getElementById('vz-dueno').value = 'Pedro';
+  if(tieneDueno) doc.getElementById('vz-dueno').value = nombreDueno;
   doc.getElementById('vz-cant').value = '8';
   doc.getElementById('vz-origen').value = p;
   win.__confirmarVoz();

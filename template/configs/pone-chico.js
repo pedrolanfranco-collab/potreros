@@ -4,7 +4,9 @@ module.exports = {
   "potrerosGeo": [],
   "puntosSeed": [],
   "duenos": [
-    "Pedro"
+    "Chico",
+    "Pablo",
+    "Kelbi"
   ],
   "cargaInicialSeed": {},
   "nombresViejosPotrero": {},
@@ -14,8 +16,8 @@ module.exports = {
   "themeColor": "#1d4fa8",
   "nombre": "Pone Chico",
   "subtitulo": "Gestión de hacienda por potrero y dueño",
-  "versionPc": "1.51",
-  "versionMovil": "1.51",
+  "versionPc": "1.52",
+  "versionMovil": "1.52",
   "duenoLabel": "Dueño",
   "duenoObligatorio": true,
   "textoSinAsignar": "(sin dueño)",

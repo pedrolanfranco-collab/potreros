@@ -126,7 +126,8 @@ async function probarArchivo(archivo){
   chequear('estado.potreros arranca vacío', Object.keys(win.__est().potreros).length === 0);
   chequear('el mapa se centró con el fallback (sin bounds)',
     JSON.stringify(win.__mapa._view && win.__mapa._view[0]) === JSON.stringify([-31.385, -55.426]));
-  chequear('lista de dueños trae al menos "Pedro"', win.__duenos().includes('Pedro'));
+  chequear('lista de dueños trae a Chico, Pablo y Kelbi',
+    ['Chico','Pablo','Kelbi'].every(n=>win.__duenos().includes(n)), win.__duenos());
 
   // --- crear el primer potrero desde cero, vía "Importar KML/KMZ" ---
   const coordsNuevas = '-55.400,-31.390,0 -55.401,-31.391,0 -55.402,-31.389,0 -55.400,-31.390,0';

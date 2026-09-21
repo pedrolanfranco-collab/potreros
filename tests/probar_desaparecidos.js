@@ -80,6 +80,7 @@ async function levantar(archivo){
   try{
     win.eval(codigo +
       '\n;window.__est = function(){ return estado; };' +
+      '\n;window.__establecimiento = function(){ return ESTABLECIMIENTO; };' +
       '\n;window.__mostrarFormulario = function(n,a,p){ seleccionarPotrero(n); return mostrarFormulario(n,a,p); };' +
       '\n;window.__seleccionar = function(n){ return seleccionarPotrero(n); };' +
       '\n;window.__listarCasos = function(){ return listarCasosDesaparecidos(); };' +
@@ -120,8 +121,11 @@ async function probarArchivo(archivo, tieneDueno){
   const origen = nombres[0], destino = nombres[1];
   const categoria = 'Vaquillonas 1-2 años';
   // 11/9/2026: las 6 apps ya usan clave compuesta "categoria||firma"; sin
-  // "tieneDueno" (María Laura/Pone Chico) cae en la firma vacía.
-  const key = tieneDueno ? categoria + '||Pedro' : categoria + '||';
+  // "tieneDueno" (María Laura/Pone Chico) cae en la firma vacía. 20/9/2026:
+  // el nombre tiene que ser uno REALMENTE configurado en CONFIG.duenos --
+  // Pone Chico dejó de tener "Pedro" (ahora Chico/Pablo/Kelbi).
+  const nombreDueno = win.__establecimiento()==='pone_chico' ? 'Chico' : 'Pedro';
+  const key = tieneDueno ? categoria + '||' + nombreDueno : categoria + '||';
 
   // Estado conocido: 3 Vaquillonas en el origen, nada en el destino.
   [origen, destino].forEach(n => Object.keys(est.potreros[n].animales).forEach(k => est.potreros[n].animales[k]=0));
@@ -130,7 +134,7 @@ async function probarArchivo(archivo, tieneDueno){
   // 1) Registrar la desaparición de las 3.
   win.__mostrarFormulario(origen, 'desaparecido');
   doc.getElementById('f-cat').value = categoria;
-  if(tieneDueno) doc.getElementById('f-dueno').value = 'Pedro';
+  if(tieneDueno) doc.getElementById('f-dueno').value = nombreDueno;
   doc.getElementById('f-cant').value = '3';
   doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
 
@@ -196,7 +200,7 @@ async function probarArchivo(archivo, tieneDueno){
   //    resultado -- confirma que el casoId explícito viaja bien y el caso
   //    no depende de ids autogenerados en cada reconstrucción.
   [origen, destino].forEach(n => { est.potreros[n].animales = {}; est.potreros[n].historial = []; });
-  const dueno = tieneDueno ? 'Pedro' : null;
+  const dueno = tieneDueno ? nombreDueno : null;
   win.__aplicarRemoto({ tipo:'desaparecido', potrero: origen, fecha_cliente:'01/09/2026',
     detalle:{ categoria, dueno, cantidad:3, casoId:'caso_test_1' } });
   win.__aplicarRemoto({ tipo:'encontrado', potrero: destino, fecha_cliente:'02/09/2026',
@@ -215,7 +219,7 @@ async function probarArchivo(archivo, tieneDueno){
   est.potreros[origen].animales[key] = 5;
   win.__mostrarFormulario(origen, 'desaparecido');
   doc.getElementById('f-cat').value = categoria;
-  if(tieneDueno) doc.getElementById('f-dueno').value = 'Pedro';
+  if(tieneDueno) doc.getElementById('f-dueno').value = nombreDueno;
   doc.getElementById('f-cant').value = '5';
   doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
   chequear('setup: quedaron 0 antes de borrar', (est.potreros[origen].animales[key]||0)===0);
@@ -233,7 +237,7 @@ async function probarArchivo(archivo, tieneDueno){
   est.potreros[origen].animales[key] = 4;
   win.__mostrarFormulario(origen, 'desaparecido');
   doc.getElementById('f-cat').value = categoria;
-  if(tieneDueno) doc.getElementById('f-dueno').value = 'Pedro';
+  if(tieneDueno) doc.getElementById('f-dueno').value = nombreDueno;
   doc.getElementById('f-cant').value = '4';
   doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
   casos = win.__listarCasos();
@@ -298,7 +302,7 @@ async function probarArchivo(archivo, tieneDueno){
   est.potreros[origen].animales[key] = 2;
   win.__mostrarFormulario(origen, 'desaparecido');
   doc.getElementById('f-cat').value = categoria;
-  if(tieneDueno) doc.getElementById('f-dueno').value = 'Pedro';
+  if(tieneDueno) doc.getElementById('f-dueno').value = nombreDueno;
   doc.getElementById('f-cant').value = '2';
   doc.getElementById('f-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
   casos = win.__listarCasos();
