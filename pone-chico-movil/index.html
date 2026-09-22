@@ -381,6 +381,19 @@
     background:var(--ocre);color:#fff;padding:8px 16px;border-radius:20px;
     font-size:13px;font-weight:600;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,0.25);
   }
+  .dibujo-controles{
+    position:fixed;top:14px;left:50%;transform:translateX(-50%);
+    background:#2b3a24;color:#fff;padding:10px 16px;border-radius:12px;
+    font-size:13px;font-weight:600;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,0.3);
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:92vw;
+  }
+  .dibujo-controles button{
+    border:none;border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;cursor:pointer;
+  }
+  .dibujo-controles .db-deshacer{background:#7a6a3a;color:#fff;}
+  .dibujo-controles .db-terminar{background:#4a7a3a;color:#fff;}
+  .dibujo-controles .db-terminar:disabled{background:#5a5a4a;color:#aaa;cursor:not-allowed;}
+  .dibujo-controles .db-cancelar{background:var(--rojo-hacienda);color:#fff;}
 </style>
 </head>
 <body>
@@ -389,7 +402,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.52</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.53</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -627,7 +640,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.52","versionMovil":"1.52","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.53","versionMovil":"1.53","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -2163,7 +2176,11 @@ function dibujarPotrero(p){
 
   poly.bindPopup('', {maxWidth:230});
   poly.on('click', (e)=>{
-    if(modoColocarPunto){ colocarPuntoEn(e.latlng); return; }
+    // Sin esto, un click arriba de un potrero YA dibujado dispara el click
+    // del polígono Y burbujea al click del mapa -- en modo "colocar punto"
+    // o "dibujar potrero" eso agregaba el mismo punto/vértice dos veces.
+    if(modoColocarPunto){ L.DomEvent.stopPropagation(e); colocarPuntoEn(e.latlng); return; }
+    if(modoDibujarPotrero){ L.DomEvent.stopPropagation(e); agregarVerticeDibujo(e.latlng); return; }
     poly.setPopupContent(popupContenidoPotrero(p.nombre));
     poly.openPopup(e.latlng);
     seleccionarPotrero(p.nombre);
@@ -2248,10 +2265,124 @@ function ocultarAvisoModo(){
 
 map.on('click', (e)=>{
   if(modoColocarPunto) colocarPuntoEn(e.latlng);
+  else if(modoDibujarPotrero) agregarVerticeDibujo(e.latlng);
 });
 
 // recrear marcadores de puntos guardados
 estado.puntos.forEach(p=> crearMarcadorPunto(p));
+
+/* ======================= DIBUJAR POTRERO A MANO (solo PC) =======================
+   Para un potrero sin límite todavía (ni por KML) -- no hay plugin de dibujo
+   (Leaflet vanilla nomás), así que se arma a mano: cada click agrega un
+   vértice, se ve una vista previa punteada en vivo, y "Terminar" corre
+   EXACTAMENTE el mismo alta que importarLimitesKML() (POTREROS_GEO,
+   estado.potreros, AREA_CALCULADA, dibujarPotrero, POTREROS_NUEVOS_KEY,
+   evento 'potrero_creado') -- así "🗑 Eliminar potrero" ya sabe borrarlo
+   sin tocar nada más, porque queda marcado como "nuevo" igual que uno
+   importado. */
+let modoDibujarPotrero = null; // {nombre} cuando está activo
+let verticesDibujo = [];
+let dibujoPreviewLayer = null;
+let dibujoMarcadoresVertice = [];
+let avisoDibujo = null;
+
+function redibujarPreviewDibujo(){
+  if(dibujoPreviewLayer){ map.removeLayer(dibujoPreviewLayer); dibujoPreviewLayer = null; }
+  if(verticesDibujo.length >= 2){
+    dibujoPreviewLayer = L.polygon(verticesDibujo, {
+      color:'#c77b2e', weight:2, dashArray:'6,6', fillColor:'#e0a458', fillOpacity:0.2
+    }).addTo(map);
+  }
+}
+function actualizarAvisoDibujo(){
+  if(!avisoDibujo) return;
+  const n = verticesDibujo.length;
+  const areaTxt = n>=3 ? ` · ${calcAreaHa(verticesDibujo.map(ll=>[ll.lat,ll.lng])).toFixed(1)} ha (aprox.)` : '';
+  avisoDibujo.querySelector('.db-contador').textContent = `${n} punto${n===1?'':'s'}${areaTxt}`;
+  avisoDibujo.querySelector('.db-terminar').disabled = n < 3;
+}
+function agregarVerticeDibujo(latlng){
+  verticesDibujo.push(latlng);
+  const marcador = L.circleMarker(latlng, {radius:5, color:'#c77b2e', weight:2, fillColor:'#fff', fillOpacity:1}).addTo(map);
+  dibujoMarcadoresVertice.push(marcador);
+  redibujarPreviewDibujo();
+  actualizarAvisoDibujo();
+}
+function deshacerVerticeDibujo(){
+  if(!verticesDibujo.length) return;
+  verticesDibujo.pop();
+  const marcador = dibujoMarcadoresVertice.pop();
+  if(marcador) map.removeLayer(marcador);
+  redibujarPreviewDibujo();
+  actualizarAvisoDibujo();
+}
+function limpiarCapasDibujo(){
+  if(dibujoPreviewLayer){ map.removeLayer(dibujoPreviewLayer); dibujoPreviewLayer = null; }
+  dibujoMarcadoresVertice.forEach(m=> map.removeLayer(m));
+  dibujoMarcadoresVertice = [];
+  verticesDibujo = [];
+}
+function mostrarAvisoDibujo(){
+  ocultarAvisoDibujo();
+  avisoDibujo = document.createElement('div');
+  avisoDibujo.className = 'dibujo-controles';
+  avisoDibujo.innerHTML = `
+    <span>✏️ Tocá el mapa para marcar las esquinas</span>
+    <span class="db-contador">0 puntos</span>
+    <button class="db-deshacer" id="db-deshacer">↩ Deshacer punto</button>
+    <button class="db-terminar" id="db-terminar" disabled>✅ Terminar</button>
+    <button class="db-cancelar" id="db-cancelar">✕ Cancelar</button>
+  `;
+  document.body.appendChild(avisoDibujo);
+  avisoDibujo.querySelector('#db-deshacer').addEventListener('click', deshacerVerticeDibujo);
+  avisoDibujo.querySelector('#db-terminar').addEventListener('click', terminarDibujoPotrero);
+  avisoDibujo.querySelector('#db-cancelar').addEventListener('click', cancelarDibujoPotrero);
+}
+function ocultarAvisoDibujo(){
+  if(avisoDibujo){ avisoDibujo.remove(); avisoDibujo = null; }
+}
+function iniciarDibujoPotrero(nombre){
+  modoDibujarPotrero = {nombre};
+  limpiarCapasDibujo();
+  map.doubleClickZoom.disable();
+  mostrarAvisoDibujo();
+  actualizarAvisoDibujo();
+}
+function cancelarDibujoPotrero(){
+  modoDibujarPotrero = null;
+  limpiarCapasDibujo();
+  map.doubleClickZoom.enable();
+  ocultarAvisoDibujo();
+}
+function terminarDibujoPotrero(){
+  if(verticesDibujo.length < 3) return;
+  const nombre = modoDibujarPotrero.nombre;
+  const coords = verticesDibujo.map(ll=>[ll.lat, ll.lng]);
+  limpiarCapasDibujo();
+  map.doubleClickZoom.enable();
+  ocultarAvisoDibujo();
+  modoDibujarPotrero = null;
+
+  const p = {nombre, coords, area: null};
+  POTREROS_GEO.push(p);
+  estado.potreros[nombre] = {animales:{}, historial:[], fechaIngreso:null, fechaSalida:null};
+  AREA_CALCULADA[nombre] = calcAreaHa(p.coords);
+  dibujarPotrero(p);
+  enviarEvento('potrero_creado', nombre, {coords: p.coords, area: p.area});
+  try{
+    const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
+    nuevosGuardados.push(p);
+    localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevosGuardados));
+  }catch(e){}
+  guardarEstado();
+  actualizarTodo();
+  if(typeof actualizarEtiquetasMapa === 'function') actualizarEtiquetasMapa();
+  actualizarLimiteMapa();
+  toast(`Potrero "${nombre}" creado — cargale los animales cuando quieras`);
+}
+map.on('dblclick', ()=>{
+  if(modoDibujarPotrero) terminarDibujoPotrero();
+});
 
 function refrescarColoresMapa(){
   POTREROS_GEO.forEach(p=>{
@@ -2553,6 +2684,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['coef-cerrar-x', 'coef-cerrar'],
   ['puntos-cerrar-x', 'puntos-cerrar'],
   ['detalle-dueno-cerrar-x', 'detalle-dueno-cerrar'],
+  ['dp-cerrar-x', 'dp-cancelar'],
 ].forEach(([xId, targetId])=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
