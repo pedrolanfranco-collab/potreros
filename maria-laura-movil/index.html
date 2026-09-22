@@ -132,6 +132,49 @@
 
   .potrero-card{
     border:1px solid var(--linea);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:12px;
+    cursor:pointer;
+    background:#fff;
+    box-shadow:0 4px 8px rgba(0,0,0,0.06);
+    transition:border-color .15s, box-shadow .15s;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .potrero-card:hover{border-color:var(--verde-campo);}
+  .potrero-card .nombre{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.2rem;
+    color:var(--verde-monte);
+    margin-bottom:4px;
+  }
+  .potrero-card .area{
+    font-size:0.9rem;
+    color:var(--texto-suave);
+  }
+  .potrero-card .badge-total{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:0.95rem;
+    background:var(--verde-campo);
+    color:#fff;
+    border-radius:14px;
+    padding:3px 12px;
+    min-width:24px;
+    text-align:center;
+  }
+  .potrero-card .ocupacion-badge{
+    margin-top:4px;
+    font-size:0.9rem;
+    padding:4px 10px;
+    border-radius:6px;
+    display:inline-block;
+  }
+  .potrero-card.activo{border-color:var(--ocre);box-shadow:0 0 0 2px rgba(198,138,59,0.25);background:#fffaf0;}
+    border:1px solid var(--linea);
     border-radius:8px;
     padding:10px 12px;
     margin-bottom:8px;
@@ -402,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.82</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.83</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -593,9 +636,10 @@
         </select>
       </div>
       <div class="form-row"><label id="ca-label-potrero">Potrero de origen</label><select id="ca-potrero"></select></div>
-      <div class="form-row"><label>Categoría</label><select id="ca-cat"></select></div>
-      <div class="form-row"><label id="ca-label-dueno">Dueño</label><select id="ca-dueno"></select></div>
-      <div class="form-row"><label>Cantidad</label><input type="number" id="ca-cant" min="1" value="1"></div>
+      <div class="form-row"><label>Nº de guía (opcional)</label><input type="text" id="ca-guia" placeholder="Ej: A592366" style="text-transform:uppercase;"></div>
+      <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Categoría · Dueño · Cantidad</label>
+      <div id="ca-filas"></div>
+      <button type="button" class="btn btn-secundario" id="ca-agregar-fila" style="margin:8px 0;">+ Agregar otra categoría</button>
       <div class="form-row"><label>Fecha</label><input type="date" id="ca-fecha"></div>
       <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="ca-obs" placeholder="Ej: campo de Fulano, pastoreo"></div>
       <div class="form-botones" style="margin-bottom:12px;">
@@ -660,7 +704,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.83","versionMovil":"2.82","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":false,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.84","versionMovil":"2.83","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":false,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1332,29 +1376,35 @@ function aplicarEventoRemoto(row, potrerosSucios){
     // eso pasa el guard de arriba sin problema. El otro extremo del
     // movimiento (estado.campoAjeno) nunca es un potrero real, así que no
     // pasa por POTREROS_GEO/estado.potreros ni por ninguno de los cálculos
-    // que iteran esa lista (mapa, alertas, dotación UG/ha).
-    const key = claveAnimal(d.categoria, d.dueno);
+    // que iteran esa lista (mapa, alertas, dotación UG/ha). 23/9/2026:
+    // d.items es un arreglo (una guía puede cubrir varias categorías).
     const a = estado.potreros[potrero].animales;
     const totalAntes = totalPotrero(potrero);
     estado.campoAjeno = estado.campoAjeno || {animales:{}, historial:[]};
-    if(row.tipo === 'envio_campo_ajeno'){
-      a[key] = Math.max(0, (a[key]||0) - d.cantidad);
-      estado.campoAjeno.animales[key] = (estado.campoAjeno.animales[key]||0) + d.cantidad;
-    } else {
-      estado.campoAjeno.animales[key] = Math.max(0, (estado.campoAjeno.animales[key]||0) - d.cantidad);
-      a[key] = (a[key]||0) + d.cantidad;
-    }
+    const items = d.items || [];
+    items.forEach(it=>{
+      const key = claveAnimal(it.categoria, it.dueno);
+      if(row.tipo === 'envio_campo_ajeno'){
+        a[key] = Math.max(0, (a[key]||0) - it.cantidad);
+        estado.campoAjeno.animales[key] = (estado.campoAjeno.animales[key]||0) + it.cantidad;
+      } else {
+        estado.campoAjeno.animales[key] = Math.max(0, (estado.campoAjeno.animales[key]||0) - it.cantidad);
+        a[key] = (a[key]||0) + it.cantidad;
+      }
+    });
     registrarCambioOcupacion(potrero, totalAntes, fechaEvt);
     if(potrerosSucios) potrerosSucios.add(potrero);
+    const itemsTxtCA = items.map(it=>`${it.cantidad} ${it.categoria}${it.dueno?' de '+it.dueno:''}`).join(', ');
+    const sufGuiaCA = d.guia ? ` — guía ${d.guia}` : '';
     const sufObsCA = d.obs ? ` (${d.obs})` : '';
     const detalleCA = row.tipo === 'envio_campo_ajeno'
-      ? `Envío a campo ajeno (sincronizado): -${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}${sufObsCA}`
-      : `Retorno de campo ajeno (sincronizado): +${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}${sufObsCA}`;
-    const origDatosCA = {potrero, categoria: d.categoria, dueno: d.dueno||null, cantidad: d.cantidad};
+      ? `Envío a campo ajeno (sincronizado): ${itemsTxtCA}${sufGuiaCA}${sufObsCA}`
+      : `Retorno de campo ajeno (sincronizado): ${itemsTxtCA}${sufGuiaCA}${sufObsCA}`;
+    const origDatosCA = {potrero, items, guia: d.guia||null};
     registrarHistorial(potrero, row.tipo, detalleCA, undefined, undefined, fechaEvt, d.usuario).origDatos = origDatosCA;
     estado.campoAjeno.historial = estado.campoAjeno.historial || [];
     if(!estado.campoAjeno.historial.some(m=>m.id===row.event_id)){
-      estado.campoAjeno.historial.unshift({id: row.event_id, fecha: fechaEvt, tipo: row.tipo==='envio_campo_ajeno'?'envio':'retorno', categoria: d.categoria, dueno: d.dueno||null, cantidad: d.cantidad, potrero, obs: d.obs||null, usuario: d.usuario||null});
+      estado.campoAjeno.historial.unshift({id: row.event_id, fecha: fechaEvt, tipo: row.tipo==='envio_campo_ajeno'?'envio':'retorno', items, potrero, guia: d.guia||null, obs: d.obs||null, usuario: d.usuario||null});
     }
     return;
   }
@@ -1457,10 +1507,19 @@ function aplicarEventoRemoto(row, potrerosSucios){
       h.eliminado = true;
       h.detalle += (d.accion==='eliminar' ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)');
     };
-    if(r.tipo==='restar' || r.tipo==='sumar' || r.tipo==='retorno_campo_ajeno_ajuste' || r.tipo==='envio_campo_ajeno_ajuste'){
+    if(r.tipo==='restar' || r.tipo==='sumar'){
       const potreroOriginal = r.potrero || potrero;
       const h = buscarMejor(potreroOriginal, od =>
         od.categoria===r.categoria && od.cantidad===r.cantidad && (od.dueno||null)===(r.dueno||null));
+      if(h){ tachar(h); marcado = true; }
+    } else if(r.tipo==='retorno_campo_ajeno_ajuste' || r.tipo==='envio_campo_ajeno_ajuste'){
+      // d.tipoOriginal ya es el tipo de la entrada ORIGINAL (envio_campo_ajeno
+      // o retorno_campo_ajeno) -- lo pone borrarHistorial/editarHistorial al
+      // armar el evento -- así que buscarMejor() ya filtra por el tipo
+      // correcto solo. Acá solo hace falta el matcher de contenido (items).
+      const potreroOriginal = r.potrero || potrero;
+      const itemsStrCA = JSON.stringify(r.items||[]);
+      const h = buscarMejor(potreroOriginal, od => JSON.stringify(od.items||[])===itemsStrCA);
       if(h){ tachar(h); marcado = true; }
     } else if(r.tipo==='mover'){
       // construirAjusteInverso invierte origen/destino y categoria/categoriaDestino:
@@ -1926,16 +1985,18 @@ function aplicarAjusteReversion(ajuste, fecha){
     registrarCambioOcupacion(ajuste.potrero, totalAntes, fecha);
   } else if(ajuste.tipo==='retorno_campo_ajeno_ajuste' || ajuste.tipo==='envio_campo_ajeno_ajuste'){
     const p = estado.potreros[ajuste.potrero]; if(!p) return;
-    const key = claveAnimal(ajuste.categoria, ajuste.dueno);
     const totalAntes = totalPotrero(ajuste.potrero);
     estado.campoAjeno = estado.campoAjeno || {animales:{}, historial:[]};
-    if(ajuste.tipo==='retorno_campo_ajeno_ajuste'){
-      p.animales[key] = (p.animales[key]||0) + ajuste.cantidad;
-      estado.campoAjeno.animales[key] = Math.max(0, (estado.campoAjeno.animales[key]||0) - ajuste.cantidad);
-    } else {
-      p.animales[key] = Math.max(0, (p.animales[key]||0) - ajuste.cantidad);
-      estado.campoAjeno.animales[key] = (estado.campoAjeno.animales[key]||0) + ajuste.cantidad;
-    }
+    (ajuste.items||[]).forEach(it=>{
+      const key = claveAnimal(it.categoria, it.dueno);
+      if(ajuste.tipo==='retorno_campo_ajeno_ajuste'){
+        p.animales[key] = (p.animales[key]||0) + it.cantidad;
+        estado.campoAjeno.animales[key] = Math.max(0, (estado.campoAjeno.animales[key]||0) - it.cantidad);
+      } else {
+        p.animales[key] = Math.max(0, (p.animales[key]||0) - it.cantidad);
+        estado.campoAjeno.animales[key] = (estado.campoAjeno.animales[key]||0) + it.cantidad;
+      }
+    });
     registrarCambioOcupacion(ajuste.potrero, totalAntes, fecha);
   } else if(ajuste.tipo==='mover'){
     const po = estado.potreros[ajuste.origen], pd = estado.potreros[ajuste.destino];
@@ -1988,11 +2049,11 @@ function construirAjusteInverso(h){
   }
   if(h.tipo==='envio_campo_ajeno'){
     // deshacer un envío = un retorno: el potrero recupera, campo ajeno devuelve
-    return {tipo:'retorno_campo_ajeno_ajuste', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
+    return {tipo:'retorno_campo_ajeno_ajuste', potrero: e.potrero, items: e.items};
   }
   if(h.tipo==='retorno_campo_ajeno'){
     // deshacer un retorno = un envío: el potrero vuelve a perderlos, campo ajeno los recupera
-    return {tipo:'envio_campo_ajeno_ajuste', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
+    return {tipo:'envio_campo_ajeno_ajuste', potrero: e.potrero, items: e.items};
   }
   if(h.tipo==='movimiento'){
     return {tipo:'mover', origen: e.destino, destino: e.potrero, categoria: e.categoriaDestino || e.categoria, categoriaDestino: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
@@ -4365,19 +4426,39 @@ function renderAbortosLista(){
    para que no aparezcan en el mapa ni cuenten en dotación/UG por hectárea
    de ningún potrero real. El Excel de Ganadería sigue siendo quien calcula
    y declara -- esto es solo registro documental, sincronizado entre
-   dispositivos. */
+   dispositivos. 23/9/2026: soporta varias categorías con su cantidad en
+   un mismo movimiento (mismo patrón de filas que "+ Agregar animales",
+   `filaAgregarAnimales`/`actualizarBotonesQuitarAgregar`), todas bajo la
+   MISMA guía -- una guía puede cubrir varias categorías del mismo camión/
+   arreo, no solo una. */
 function renderCampoAjenoLista(){
   const cont = document.getElementById('campo-ajeno-lista');
   if(!cont) return;
   const lista = (((estado.campoAjeno||{}).historial)||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha)).slice(0,20);
   cont.innerHTML = !lista.length
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin movimientos de campo ajeno todavía.</p>'
-    : lista.map(m=>`
+    : lista.map(m=>{
+      const itemsTxt = (m.items||[]).map(it=>`${it.cantidad} ${it.categoria}${it.dueno?' de '+it.dueno:''}`).join(', ');
+      return `
       <div class="potrero-card">
-        <div class="nombre">${m.fecha} — ${m.tipo==='envio'?'Envío':'Retorno'}: ${m.cantidad} ${m.categoria}${m.dueno?' de '+m.dueno:''}</div>
-        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${m.tipo==='envio'?'desde':'a'} ${m.potrero}${m.obs?' — '+m.obs:''}${m.usuario?' — '+m.usuario:''}</div>
-      </div>`).join('');
+        <div class="nombre">${m.fecha} — ${m.tipo==='envio'?'Envío':'Retorno'}: ${itemsTxt}</div>
+        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${m.tipo==='envio'?'desde':'a'} ${m.potrero}${m.guia?' — guía '+m.guia:''}${m.obs?' — '+m.obs:''}${m.usuario?' — '+m.usuario:''}</div>
+      </div>`;
+    }).join('');
 }
+function filaCampoAjeno(idx){
+  return `<div class="form-row ca-fila" data-idx="${idx}" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+    <select class="ca-cat" style="flex:2;">${opcionesCategorias()}</select>
+    <select class="ca-dueno" style="flex:2;">${opcionesDuenos()}</select>
+    <input type="number" class="ca-cant" min="1" value="1" style="flex:1;min-width:56px;">
+    <button type="button" class="ca-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+  </div>`;
+}
+function actualizarBotonesQuitarCampoAjeno(){
+  const filas = document.querySelectorAll('#ca-filas .ca-fila');
+  filas.forEach(f=>{ f.querySelector('.ca-quitar').style.visibility = filas.length>1 ? 'visible' : 'hidden'; });
+}
+let campoAjenoFilaIdx = 1;
 document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ll-fecha').value = fechaISOHoy();
   document.getElementById('ll-fecha').max = fechaISOHoy();
@@ -4395,12 +4476,12 @@ document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   if(CONFIG.dicoseHabilitado){
     document.getElementById('campo-ajeno-seccion').style.display = 'block';
     document.getElementById('ca-potrero').innerHTML = opcionesPotrerosTodos();
-    document.getElementById('ca-cat').innerHTML = opcionesCategorias();
-    document.getElementById('ca-dueno').innerHTML = opcionesDuenos();
-    document.getElementById('ca-label-dueno').textContent = CONFIG.duenoLabel;
-    document.getElementById('ca-tipo').value = 'envio';
     document.getElementById('ca-label-potrero').textContent = 'Potrero de origen';
-    document.getElementById('ca-cant').value = 1;
+    document.getElementById('ca-tipo').value = 'envio';
+    document.getElementById('ca-guia').value = '';
+    campoAjenoFilaIdx = 1;
+    document.getElementById('ca-filas').innerHTML = filaCampoAjeno(0);
+    actualizarBotonesQuitarCampoAjeno();
     document.getElementById('ca-fecha').value = fechaISOHoy();
     document.getElementById('ca-fecha').max = fechaISOHoy();
     document.getElementById('ca-obs').value = '';
@@ -4412,46 +4493,84 @@ if(document.getElementById('ca-tipo')){
   document.getElementById('ca-tipo').addEventListener('change', (e)=>{
     document.getElementById('ca-label-potrero').textContent = e.target.value==='envio' ? 'Potrero de origen' : 'Potrero de destino';
   });
+  document.getElementById('ca-agregar-fila').addEventListener('click', ()=>{
+    document.getElementById('ca-filas').insertAdjacentHTML('beforeend', filaCampoAjeno(campoAjenoFilaIdx++));
+    actualizarBotonesQuitarCampoAjeno();
+  });
+  document.getElementById('ca-filas').addEventListener('click', (e)=>{
+    if(e.target.classList.contains('ca-quitar')){
+      e.target.closest('.ca-fila').remove();
+      actualizarBotonesQuitarCampoAjeno();
+    }
+  });
   document.getElementById('ca-guardar').addEventListener('click', ()=>{
     const tipo = document.getElementById('ca-tipo').value;
     const potrero = document.getElementById('ca-potrero').value;
-    const cat = document.getElementById('ca-cat').value;
-    const dueno = document.getElementById('ca-dueno').value;
-    const cant = parseInt(document.getElementById('ca-cant').value,10);
+    const guiaRaw = document.getElementById('ca-guia').value.trim().toUpperCase();
+    if(guiaRaw && !/^[A-Z]\d{6}$/.test(guiaRaw)){ toast('La guía debe tener 1 letra y 6 dígitos (ej: A592366)'); return; }
+    const guia = guiaRaw || null;
     const fechaISO = document.getElementById('ca-fecha').value;
     const obs = document.getElementById('ca-obs').value.trim();
     if(!potrero){ toast('Elegí un potrero'); return; }
-    if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
     if(!fechaISO){ toast('Elegí una fecha'); return; }
+    const items = Array.from(document.querySelectorAll('#ca-filas .ca-fila')).map(f=>({
+      categoria: f.querySelector('.ca-cat').value,
+      dueno: f.querySelector('.ca-dueno').value,
+      cantidad: parseInt(f.querySelector('.ca-cant').value,10)
+    })).filter(it=>it.cantidad && it.cantidad>0);
+    if(!items.length){ toast('Ingresá al menos una categoría con cantidad válida'); return; }
     const fecha = fechaISOaDisplay(fechaISO);
-    const key = claveAnimal(cat, dueno);
     estado.campoAjeno = estado.campoAjeno || {animales:{}, historial:[]};
 
     if(tipo==='envio'){
-      const disponibles = (estado.potreros[potrero].animales[key])||0;
-      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${potrero}`); return; }
+      const faltantes = items.filter(it=>{
+        const key = claveAnimal(it.categoria, it.dueno);
+        return it.cantidad > ((estado.potreros[potrero].animales[key])||0);
+      });
+      if(faltantes.length){
+        const detalleFaltantes = faltantes.map(it=>{
+          const key = claveAnimal(it.categoria, it.dueno);
+          const disp = estado.potreros[potrero].animales[key]||0;
+          return `${it.categoria}${it.dueno?' de '+it.dueno:''}: hay ${disp}, pedís ${it.cantidad}`;
+        }).join('\n');
+        if(!confirm(`Vas a dejar saldo negativo en ${potrero}:\n${detalleFaltantes}\n¿Continuar de todos modos?`)) return;
+      }
       const totalAntes = totalPotrero(potrero);
-      estado.potreros[potrero].animales[key] -= cant;
+      items.forEach(it=>{
+        const key = claveAnimal(it.categoria, it.dueno);
+        estado.potreros[potrero].animales[key] = (estado.potreros[potrero].animales[key]||0) - it.cantidad;
+        estado.campoAjeno.animales[key] = (estado.campoAjeno.animales[key]||0) + it.cantidad;
+      });
       registrarCambioOcupacion(potrero, totalAntes, fecha);
-      estado.campoAjeno.animales[key] = (estado.campoAjeno.animales[key]||0) + cant;
     } else {
-      const disponibles = estado.campoAjeno.animales[key]||0;
-      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en campo ajeno`); return; }
-      estado.campoAjeno.animales[key] -= cant;
+      const faltantes = items.filter(it=> it.cantidad > (estado.campoAjeno.animales[claveAnimal(it.categoria, it.dueno)]||0));
+      if(faltantes.length){
+        const detalleFaltantes = faltantes.map(it=>{
+          const disp = estado.campoAjeno.animales[claveAnimal(it.categoria, it.dueno)]||0;
+          return `${it.categoria}${it.dueno?' de '+it.dueno:''}: hay ${disp} en campo ajeno, pedís ${it.cantidad}`;
+        }).join('\n');
+        if(!confirm(`Campo ajeno va a quedar en negativo:\n${detalleFaltantes}\n¿Continuar de todos modos?`)) return;
+      }
       const totalAntes = totalPotrero(potrero);
-      estado.potreros[potrero].animales[key] = (estado.potreros[potrero].animales[key]||0) + cant;
+      items.forEach(it=>{
+        const key = claveAnimal(it.categoria, it.dueno);
+        estado.campoAjeno.animales[key] = (estado.campoAjeno.animales[key]||0) - it.cantidad;
+        estado.potreros[potrero].animales[key] = (estado.potreros[potrero].animales[key]||0) + it.cantidad;
+      });
       registrarCambioOcupacion(potrero, totalAntes, fecha);
     }
 
     const id = generarIdHistorial();
     const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
-    estado.campoAjeno.historial.unshift({id, fecha, tipo, categoria: cat, dueno: dueno||null, cantidad: cant, potrero, obs: obs||null, usuario: usuario||null});
+    estado.campoAjeno.historial.unshift({id, fecha, tipo, items, potrero, guia, obs: obs||null, usuario: usuario||null});
+    const itemsTxt = items.map(it=>`${it.cantidad} ${it.categoria}${it.dueno?' de '+it.dueno:''}`).join(', ');
+    const sufGuia = guia ? ` — guía ${guia}` : '';
     const detalleHist = tipo==='envio'
-      ? `Envío a campo ajeno: -${cant} ${cat}${dueno?' de '+dueno:''}${obs?' ('+obs+')':''}`
-      : `Retorno de campo ajeno: +${cant} ${cat}${dueno?' de '+dueno:''}${obs?' ('+obs+')':''}`;
-    registrarHistorial(potrero, tipo==='envio'?'envio_campo_ajeno':'retorno_campo_ajeno', detalleHist, {potrero, categoria: cat, dueno: dueno||null, cantidad: cant, obs: obs||null}, undefined, fecha);
+      ? `Envío a campo ajeno: ${itemsTxt}${sufGuia}${obs?' ('+obs+')':''}`
+      : `Retorno de campo ajeno: ${itemsTxt}${sufGuia}${obs?' ('+obs+')':''}`;
+    registrarHistorial(potrero, tipo==='envio'?'envio_campo_ajeno':'retorno_campo_ajeno', detalleHist, {potrero, items, guia, obs: obs||null}, undefined, fecha);
     guardarEstado();
-    enviarEvento(tipo==='envio'?'envio_campo_ajeno':'retorno_campo_ajeno', potrero, {categoria: cat, dueno: dueno||null, cantidad: cant, obs: obs||null}, fecha);
+    enviarEvento(tipo==='envio'?'envio_campo_ajeno':'retorno_campo_ajeno', potrero, {items, guia, obs: obs||null}, fecha);
     actualizarTodo();
     publicarStockPotreros([potrero]);
     renderCampoAjenoLista();
