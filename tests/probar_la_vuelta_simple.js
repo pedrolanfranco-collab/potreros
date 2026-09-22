@@ -156,6 +156,39 @@ async function probarSimple(archivo){
   chequear('boton Sincronizar ahora presente', !!doc.getElementById('btn-sincronizar'));
   chequear('boton Desaparecidos (lista) presente', !!doc.getElementById('btn-desaparecidos'));
 
+  // ---- Historial: solo se muestra lo cargado desde este dispositivo ----
+  // (un evento remoto sí queda en el estado/stock -- eso no cambia, sólo
+  // se oculta de la lista que se le muestra al empleado)
+  {
+    const potreroHist = potreroConAnimales;
+    win.seleccionarPotrero(potreroHist);
+    win.mostrarFormulario(potreroHist, 'nacimiento');
+    doc.getElementById('f-cat').value = 'Terneros';
+    doc.getElementById('f-cant').value = '2';
+    doc.getElementById('f-fecha').value = win.fechaISOHoy();
+    doc.getElementById('f-confirmar').click();
+    const idLocal = win.__est().potreros[potreroHist].historial[0].id;
+
+    win.aplicarEventoRemoto({
+      dispositivo: 'otro-dispositivo-cualquiera',
+      tipo: 'nacimiento', potrero: potreroHist,
+      detalle: {categoria: 'Terneros', cantidad: 9, usuario: 'Pedro'},
+      fecha_cliente: win.fechaHoy()
+    }, new Set());
+    const totalHistorialReal = win.__est().potreros[potreroHist].historial.length;
+
+    win.renderDetalle(potreroHist); // fuerza a re-renderizar con el evento remoto ya aplicado
+    const itemsMostrados = doc.querySelectorAll('#historial .hist-item').length;
+    chequear('el evento remoto SÍ quedó en el estado (no se pierde, solo se oculta)',
+      win.__est().potreros[potreroHist].historial.some(h=>h.remoto===true && h.tipo==='nacimiento' && h.detalle.includes('9 Terneros')));
+    chequear('el historial mostrado tiene menos filas que el historial real (el remoto está oculto)',
+      itemsMostrados < totalHistorialReal, `mostrados=${itemsMostrados} reales=${totalHistorialReal}`);
+    chequear('el movimiento cargado LOCALMENTE sigue visible en el historial mostrado',
+      doc.getElementById('historial').innerHTML.includes('2 Terneros'));
+    chequear('el movimiento del OTRO dispositivo NO aparece en el historial mostrado',
+      !doc.getElementById('historial').innerHTML.includes('9 Terneros'));
+  }
+
   // ---- las advertencias (⚠️ carga/ocupación) NO se muestran, ni en el detalle ni en la lista ----
   const potreroConAlerta = potreros.find(p => win.calcularAlertas(p.nombre).length > 0);
   chequear('hay al menos un potrero con alerta calculada, para probar que no se muestra', !!potreroConAlerta, 'ningún potrero con alerta en el seed');

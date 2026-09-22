@@ -1082,7 +1082,17 @@ async function vaciarColaStock(){
   }
   guardarEstado();
 }
+/* Bandera de solo-lectura para registrarHistorial(): true mientras se está
+   procesando un evento remoto (aplicarEventoRemoto es síncrona, sin await
+   interno, así que no hay riesgo de que se entrevere con una acción local
+   del usuario) -- la usa la variante "simple" para poder filtrar el
+   historial mostrado a "solo lo cargado desde este dispositivo", sin tocar
+   ninguna llamada a registrarHistorial() ni el motor de sincronización en
+   sí (ver "@simple" en Selección y detalle). */
+let _aplicandoRemoto = false;
 function aplicarEventoRemoto(row, potrerosSucios){
+  _aplicandoRemoto = true;
+  try{
   const d = row.detalle || {};
   // 10/9/2026: eventos viejos en Supabase todavía dicen "Cerro" (nombre
   // equivocado, renombrado a "Rincon") -- se traducen acá para que una
@@ -1583,6 +1593,9 @@ function aplicarEventoRemoto(row, potrerosSucios){
       contraparte: d.contraparte||'', guia: d.guia||null, notas: 'sincronizado'
     });
   }
+  }finally{
+    _aplicandoRemoto = false;
+  }
 }
 let sincronizando = false;
 async function sincronizar(mostrarToast){
@@ -1818,6 +1831,7 @@ function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha, usuari
   const quien = arguments.length >= 7 ? usuario : usuarioActual();
   const detalleFinal = quien ? `${detalle} — ${quien}` : detalle;
   const entry = {fecha: fecha || fechaHoy(), tipo, detalle: detalleFinal, id: generarIdHistorial()};
+  if(_aplicandoRemoto) entry.remoto = true;
   if(extra) entry.extra = extra;
   if(grupoId) entry.grupoId = grupoId;
   estado.potreros[nombre].historial.unshift(entry);
@@ -2536,6 +2550,7 @@ function renderDetalle(nombre){
   const ocup = estadoOcupacion(nombre);
   const alertasPotrero = calcularAlertas(nombre);
   const casosPotrero = listarCasosDesaparecidos().filter(c=>c.potreroOrigen===nombre);
+  const historialVisible = historial.filter(h=>!h.remoto);
 
   det.innerHTML = `
     <div class="detalle-titulo"><h2>${nombre}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
@@ -2565,7 +2580,7 @@ function renderDetalle(nombre){
 
     <div id="historial">
       <h3>Historial</h3>
-      ${historial.length ? historial.slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||'')).slice(0,15).map(h=>`
+      ${historialVisible.length ? historialVisible.slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||'')).slice(0,15).map(h=>`
         <div class="hist-item ${h.tipo}${h.eliminado?' eliminado':''}">
           <span class="fecha">${h.fecha}</span> — ${h.detalle}
           ${(h.id && h.extra && !h.eliminado) ? `
