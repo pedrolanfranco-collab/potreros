@@ -2406,6 +2406,8 @@ module.exports = {
   "subtitulo": "Rivera, Uruguay · Gestión de hacienda por potrero",
   "versionPc": "3.15",
   "versionMovil": "3.15",
+  "simpleHabilitado": true,
+  "versionMovilSimple": "1.0",
   "duenoLabel": "Firma",
   "duenoObligatorio": false,
   "textoSinAsignar": "(sin firma)",

@@ -44,8 +44,8 @@ const ESTABLECIMIENTOS = [
   {
     nombre: 'la-vuelta',
     config: require('./configs/la-vuelta.js'),
-    onedrive: { pc: 'potreros_la_vuelta_pc.html', movil: 'potreros_la_vuelta_movil.html' },
-    repoDir: { pc: 'la-vuelta-pc', movil: 'la-vuelta-movil' },
+    onedrive: { pc: 'potreros_la_vuelta_pc.html', movil: 'potreros_la_vuelta_movil.html', 'movil-simple': 'potreros_la_vuelta_movil_simple.html' },
+    repoDir: { pc: 'la-vuelta-pc', movil: 'la-vuelta-movil', 'movil-simple': 'la-vuelta-movil-campo' },
   },
   {
     nombre: 'maria-laura',
@@ -86,7 +86,16 @@ function stripMarkers(text, activos) {
 }
 
 function generar(templateText, config, variant) {
-  const activos = [variant];
+  const esPc = variant === 'pc';
+  const esSimple = variant === 'movil-simple';
+  // La variante "movil-simple" reusa el shell de móvil (GPS, "Quién soy",
+  // etc, marcados @movil) -- solo el nuevo eje @completo/@simple, más
+  // abajo, decide qué pantallas de ese shell quedan.
+  const activos = [esPc ? 'pc' : 'movil'];
+  activos.push(esSimple ? 'simple' : 'completo');
+  // "＋ Agregar animales" hoy es exclusivo de PC; la variante simple lo
+  // suma también (único caso invertido respecto al eje @completo/@simple).
+  if (esPc || esSimple) activos.push('agregarInicialBoton');
   activos.push(config.mapLabels ? 'mapLabels' : 'noMapLabels');
   activos.push(config.usaExcelBridge ? 'sanidadExcel' : 'sanidadNativa');
   activos.push(config.duenoObligatorio ? 'duenoVoz' : 'sinDuenoVoz');
@@ -105,7 +114,12 @@ function generar(templateText, config, variant) {
   texto = texto.replace('__THEME_COLOR__', config.themeColor);
   texto = texto.replace(/__NOMBRE__/g, config.nombre);
   texto = texto.replace('__SUBTITULO__', config.subtitulo);
-  texto = texto.replace(variant === 'pc' ? '__VERSION_PC__' : '__VERSION_MOVIL__', variant === 'pc' ? config.versionPc : config.versionMovil);
+  // La variante simple reusa el placeholder __VERSION_MOVIL__ del shell
+  // (no tiene su propio marcador en el header) pero con el valor de
+  // versionMovilSimple, así la app muestra su propio número de versión.
+  const placeholderVersion = esPc ? '__VERSION_PC__' : '__VERSION_MOVIL__';
+  const valorVersion = esPc ? config.versionPc : esSimple ? config.versionMovilSimple : config.versionMovil;
+  texto = texto.replace(placeholderVersion, valorVersion);
 
   texto = texto.replace('<!DOCTYPE html>\n', `<!DOCTYPE html>\n${CABECERA_GENERADO}`);
 
@@ -113,8 +127,9 @@ function generar(templateText, config, variant) {
 }
 
 function cacheEsperado(est, variant) {
-  const version = variant === 'pc' ? est.config.versionPc : est.config.versionMovil;
-  return `${est.nombre}-${variant === 'movil' ? 'movil' : 'pc'}-v${version}`;
+  if (variant === 'pc') return `${est.nombre}-pc-v${est.config.versionPc}`;
+  if (variant === 'movil-simple') return `${est.nombre}-movil-simple-v${est.config.versionMovilSimple}`;
+  return `${est.nombre}-movil-v${est.config.versionMovil}`;
 }
 
 // Reemplaza solo la línea "const CACHE = '...';" -- el resto de sw.js
@@ -137,7 +152,8 @@ function main() {
   let algunoDistinto = false;
 
   for (const est of ESTABLECIMIENTOS) {
-    for (const variant of ['pc', 'movil']) {
+    const variantes = ['pc', 'movil'].concat(est.config.simpleHabilitado ? ['movil-simple'] : []);
+    for (const variant of variantes) {
       const salida = generar(templateText, est.config, variant);
       const repoPath = path.join(REPO_DIR, est.repoDir[variant], 'index.html');
       const onedrivePath = path.join(ONEDRIVE_DIR, est.onedrive[variant]);

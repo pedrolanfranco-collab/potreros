@@ -18,6 +18,7 @@ module.exports = {
   "subtitulo": "Gestión de hacienda por potrero y dueño",
   "versionPc": "1.56",
   "versionMovil": "1.56",
+  "simpleHabilitado": false,
   "duenoLabel": "Dueño",
   "duenoObligatorio": true,
   "textoSinAsignar": "(sin dueño)",

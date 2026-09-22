@@ -501,7 +501,9 @@
     </div>
   </div>
 </div>
+<!-- @completo:start -->
 <button id="btn-voz" title="Cargar por voz" style="display:none;position:fixed;bottom:22px;right:22px;z-index:900;width:58px;height:58px;border-radius:50%;background:var(--rojo-hacienda);color:#fff;border:none;font-size:24px;box-shadow:0 4px 16px rgba(0,0,0,0.35);cursor:pointer;">🎤</button>
+<!-- @completo:end -->
 <div id="modal-herramientas" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🛠 Herramientas</h3>
@@ -517,15 +519,21 @@
 <!-- @pc:end -->
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
 <!-- @movil:start -->
+<!-- @completo:start -->
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias</button>
+<!-- @completo:end -->
       <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
+<!-- @completo:start -->
       <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
       <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
       <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
+<!-- @completo:end -->
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
+<!-- @completo:start -->
       <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
+<!-- @completo:end -->
       <button class="btn btn-json" id="btn-puntos" style="display:none;">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-resync-puntos" style="display:none;">🔄 Resincronizar mis puntos</button>
 <!-- @movil:end -->
@@ -548,10 +556,16 @@
       <input type="file" id="input-json" accept=".json">
       <input type="file" id="input-kml" accept=".kml,.kmz">
     </div>
+<!-- @completo:start -->
     <div class="nota-guardado">Los datos se guardan solos en este navegador. El backup JSON es para pasarlos a otro dispositivo (guardalo en tu carpeta de OneDrive).</div>
+<!-- @completo:end -->
+<!-- @simple:start -->
+    <div class="nota-guardado">Los datos se guardan solos en este navegador y se sincronizan solos con los demás dispositivos cuando hay señal.</div>
+<!-- @simple:end -->
     <div class="form-botones"><button class="btn btn-secundario" id="herramientas-cerrar">Cerrar</button></div>
   </div>
 </div>
+<!-- @completo:start -->
 <div id="modal-voz" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🎤 Carga por voz</h3>
@@ -563,6 +577,8 @@
     <div class="form-botones"><button class="btn btn-secundario" id="voz-cerrar">Cerrar</button></div>
   </div>
 </div>
+<!-- @completo:end -->
+<!-- @completo:start -->
 <div id="modal-alertas" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🔔 Alertas y umbrales</h3>
@@ -577,6 +593,7 @@
     <div class="form-botones"><button class="btn btn-secundario" id="alertas-cerrar">Cerrar</button></div>
   </div>
 </div>
+<!-- @completo:end -->
 <div id="modal-desaparecidos" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>❓ Desaparecidos</h3>
@@ -591,6 +608,7 @@
     <div class="form-botones"><button class="btn btn-secundario" id="desaparecidos-cerrar">Cerrar</button></div>
   </div>
 </div>
+<!-- @completo:start -->
 <div id="modal-sanidad" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🏥 Sanidad</h3>
@@ -711,6 +729,7 @@
     <div class="form-botones"><button class="btn btn-secundario" id="stock-cerrar">Cerrar</button></div>
   </div>
 </div>
+<!-- @completo:end -->
 <div id="modal-usuario" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>👤 ¿Quién sos?</h3>
@@ -2780,7 +2799,11 @@ function renderLista(filtro=''){
     card.innerHTML = `
       <div class="fila-top">
         <div>
-          <div class="nombre">${nombre} ${alertas.length ? '<span title="'+alertas.join(' · ')+'">⚠️</span>':''} ${casosPotrero.length ? '<span title="'+casosPotrero.map(c=>c.pendiente+' '+c.categoria+' desaparecidos').join(' · ')+'">❓</span>':''}</div>
+          <div class="nombre">${nombre}
+<!-- @completo:start -->
+          ${alertas.length ? '<span title="'+alertas.join(' · ')+'">⚠️</span>':''}
+<!-- @completo:end -->
+          ${casosPotrero.length ? '<span title="'+casosPotrero.map(c=>c.pendiente+' '+c.categoria+' desaparecidos').join(' · ')+'">❓</span>':''}</div>
           <div class="area">${areaHa(nombre).toFixed(1)} ha ${carga>0 ? `· <span class="carga-badge">${carga.toFixed(2)} UG/ha</span>` : ''}</div>
         </div>
         <div class="badge-total ${total===0?'vacio':''}"${total<0?' style="background:#d32f2f;color:#fff;"':''}>${total}</div>
@@ -2872,7 +2895,9 @@ function renderDetalle(nombre){
     <div class="detalle-titulo"><h2>${nombre}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
     <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong></div>
     <div class="ocupacion-badge ocupacion-${ocup.tipo}" style="margin-bottom:10px;">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
+<!-- @completo:start -->
     ${alertasPotrero.length ? `<div style="background:#fbe6d9;border-left:3px solid var(--rojo-hacienda);border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a3420;">${alertasPotrero.map(a=>'⚠️ '+a).join('<br>')}</div>` : ''}
+<!-- @completo:end -->
     ${casosPotrero.length ? `<div style="background:#fdf1de;border-left:3px solid #c68a3b;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a5220;">${casosPotrero.map(c=>`❓ ${c.pendiente} de ${c.cantidadOriginal} ${c.categoria}${c.dueno?' de '+c.dueno:''} desaparecidos desde ${c.fecha} — <span style="cursor:pointer;text-decoration:underline;" data-abrir-desaparecidos="1">resolver</span>`).join('<br>')}</div>` : ''}
 
     <table class="tabla-animales">
@@ -2885,17 +2910,21 @@ function renderDetalle(nombre){
     <button class="btn btn-secundario btn-full" id="btn-detalle-por-dueno" style="margin-bottom:10px;">👤 Ver por dueño</button>
 
     <div class="acciones">
-<!-- @pc:start -->
+<!-- @agregarInicialBoton:start -->
       <button class="btn btn-agregar" data-accion="agregar">＋ Agregar animales</button>
-<!-- @pc:end -->
+<!-- @agregarInicialBoton:end -->
       <button class="btn btn-mover" data-accion="mover">⇄ Mover una categoría</button>
       <button class="btn btn-nacimiento" data-accion="nacimiento">🐄 Nacimiento</button>
       <button class="btn btn-muerte" data-accion="muerte">✕ Muerte</button>
       <button class="btn btn-muerte" data-accion="desaparecido">❓ Desaparecido</button>
+<!-- @completo:start -->
       <button class="btn btn-compraventa btn-full" data-accion="compraventa">💰 Compra / Venta</button>
+<!-- @completo:end -->
       <button class="btn btn-mover btn-full" data-accion="mover-todo" style="filter:brightness(0.9);">⇄⇄ Mover TODO el potrero</button>
     </div>
+<!-- @completo:start -->
     <button class="btn btn-json btn-full" id="btn-eliminar-potrero" style="color:var(--rojo-hacienda);margin-top:6px;">🗑 Eliminar potrero</button>
+<!-- @completo:end -->
 
     <div id="form-zona"></div>
 
@@ -2906,9 +2935,16 @@ function renderDetalle(nombre){
           <span class="fecha">${h.fecha}</span> — ${h.detalle}
           ${(h.id && h.extra && !h.eliminado) ? `
           <span class="hist-acciones">
+<!-- @completo:start -->
             ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo!=='retorno_campo_ajeno') ? `<button class="hist-btn" data-hist-editar="${h.id}" title="Editar">✏️</button>` : ''}
+<!-- @completo:end -->
+<!-- @simple:start -->
+            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo!=='retorno_campo_ajeno' && h.tipo!=='compra' && h.tipo!=='venta') ? `<button class="hist-btn" data-hist-editar="${h.id}" title="Editar">✏️</button>` : ''}
+<!-- @simple:end -->
             ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${h.id}" title="Agregar/editar caravana">🏷️</button>` : ''}
+<!-- @completo:start -->
             ${(CONFIG.dicoseHabilitado && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${h.id}" title="Agregar/editar guía">📄</button>` : ''}
+<!-- @completo:end -->
             <button class="hist-btn" data-hist-borrar="${h.id}" title="Borrar">🗑</button>
           </span>` : ''}
         </div>
@@ -2938,7 +2974,9 @@ function renderDetalle(nombre){
     });
   });
   document.getElementById('detalle-cerrar').addEventListener('click', cerrarDetalle);
+<!-- @completo:start -->
   document.getElementById('btn-eliminar-potrero').addEventListener('click', ()=> eliminarPotrero(nombre));
+<!-- @completo:end -->
   document.getElementById('btn-detalle-por-dueno').addEventListener('click', ()=> abrirDetalleDuenoPotrero(nombre));
 }
 /* 19/9/2026: ventana aparte con el desglose por dueño+categoría de UN
@@ -3106,8 +3144,13 @@ function filasCategoriasMover(nombre){
 function filaAgregarAnimales(idx){
   return `<div class="form-row agregar-fila" data-idx="${idx}" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
     <select class="ag-cat" style="flex:2;">${opcionesCategorias()}</select>
+<!-- @completo:start -->
     <select class="ag-dueno" style="flex:2;">${opcionesDuenos(undefined, true)}</select>
     <input type="text" class="ag-dueno-otro" placeholder="Escribir dueño/procedencia" style="display:none;flex:2;">
+<!-- @completo:end -->
+<!-- @simple:start -->
+    <input type="text" class="ag-dueno-otro" placeholder="Dueño/procedencia (obligatorio)" style="flex:2;">
+<!-- @simple:end -->
     <input type="number" class="ag-cant" min="1" value="1" style="flex:1;min-width:56px;">
     <button type="button" class="ag-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
   </div>`;
@@ -3153,12 +3196,18 @@ function mostrarFormularioAgregarInicial(nombre){
   document.getElementById('f-confirmar').addEventListener('click', ()=>{
     const fechaISO = document.getElementById('f-fecha').value;
     if(!fechaISO){ toast('Elegí una fecha'); return; }
-    const filas = Array.from(document.querySelectorAll('#f-filas-agregar .agregar-fila')).map(f=>({
-      cat: f.querySelector('.ag-cat').value,
-      dueno: f.querySelector('.ag-dueno').value === '__otro__' ? f.querySelector('.ag-dueno-otro').value.trim() : f.querySelector('.ag-dueno').value,
-      cant: parseInt(f.querySelector('.ag-cant').value,10)
-    })).filter(f=>f.cant && f.cant>0);
+    const filas = Array.from(document.querySelectorAll('#f-filas-agregar .agregar-fila')).map(f=>{
+      const selDueno = f.querySelector('.ag-dueno');
+      return {
+        cat: f.querySelector('.ag-cat').value,
+        dueno: selDueno ? (selDueno.value === '__otro__' ? f.querySelector('.ag-dueno-otro').value.trim() : selDueno.value) : f.querySelector('.ag-dueno-otro').value.trim(),
+        cant: parseInt(f.querySelector('.ag-cant').value,10)
+      };
+    }).filter(f=>f.cant && f.cant>0);
     if(!filas.length){ toast('Ingresá al menos una categoría con cantidad válida'); return; }
+<!-- @simple:start -->
+    if(filas.some(f=>!f.dueno)){ toast('Ingresá de quién son los animales en cada categoría'); return; }
+<!-- @simple:end -->
     const fecha = fechaISOaDisplay(fechaISO);
     filas.forEach(f=>{
       const totalAntes = totalPotrero(nombre);
@@ -3185,8 +3234,13 @@ function mostrarFormulario(nombre, accion, prefill){
           <h3>Agregar animales a ${nombre}</h3>
           <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill.categoria)}</select></div>
           <div class="form-row"><label>${CONFIG.duenoLabel}</label>
+<!-- @completo:start -->
             <select id="f-dueno">${opcionesDuenos(prefill.dueno, true)}</select>
             <input type="text" id="f-dueno-otro" placeholder="Escribir dueño/procedencia" style="display:none;margin-top:6px;">
+<!-- @completo:end -->
+<!-- @simple:start -->
+            <input type="text" id="f-dueno-otro" placeholder="Dueño/procedencia (obligatorio)" value="${prefill.dueno||''}">
+<!-- @simple:end -->
           </div>
           <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill.cantidad}"></div>
           <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
@@ -3195,19 +3249,24 @@ function mostrarFormulario(nombre, accion, prefill){
             <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
           </div>
         </div>`;
+<!-- @completo:start -->
       prepararCampoDueno('f-dueno', prefill.dueno);
       document.getElementById('f-dueno').addEventListener('change', (e)=>{
         const libre = document.getElementById('f-dueno-otro');
         libre.style.display = e.target.value === '__otro__' ? '' : 'none';
         if(e.target.value !== '__otro__') libre.value = '';
       });
+<!-- @completo:end -->
       document.getElementById('f-confirmar').addEventListener('click', ()=>{
         const cat = document.getElementById('f-cat').value;
-        const dueno = valorDueno('f-dueno');
+        const dueno = document.getElementById('f-dueno') ? valorDueno('f-dueno') : document.getElementById('f-dueno-otro').value.trim();
         const cant = parseInt(document.getElementById('f-cant').value,10);
         const fechaISO = document.getElementById('f-fecha').value;
         if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
         if(!fechaISO){ toast('Elegí una fecha'); return; }
+<!-- @simple:start -->
+        if(!dueno){ toast('Ingresá de quién son los animales'); return; }
+<!-- @simple:end -->
         const fecha = fechaISOaDisplay(fechaISO);
         const totalAntes = totalPotrero(nombre);
         const a = estado.potreros[nombre].animales;
@@ -3224,7 +3283,12 @@ function mostrarFormulario(nombre, accion, prefill){
     }
     if(totalPotrero(nombre)>0){
       zona.innerHTML = `<div class="form-accion">
+<!-- @completo:start -->
         <p style="font-size:13px;color:var(--texto-suave);margin:0 0 10px 0;">"＋ Agregar animales" es para cargar el stock inicial de un potrero vacío. ${nombre} ya tiene animales cargados — para sumar más adelante preferí 💰 Compra, 🐄 Nacimiento, o ⇄ Mover si vienen de otro potrero.</p>
+<!-- @completo:end -->
+<!-- @simple:start -->
+        <p style="font-size:13px;color:var(--texto-suave);margin:0 0 10px 0;">"＋ Agregar animales" es para cargar el stock inicial de un potrero vacío. ${nombre} ya tiene animales cargados — para sumar más adelante preferí 🐄 Nacimiento, o ⇄ Mover si vienen de otro potrero.</p>
+<!-- @simple:end -->
         <div class="form-botones">
           <button class="btn btn-agregar" id="f-agregar-igual">Agregar igual</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -3381,6 +3445,7 @@ function mostrarFormulario(nombre, accion, prefill){
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
 
+  // @completo:start
   if(accion==='compraventa'){
     zona.innerHTML = `
       <div class="form-accion">
@@ -3453,6 +3518,7 @@ function mostrarFormulario(nombre, accion, prefill){
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
+  // @completo:end
 
   if(accion==='nacimiento'){
     zona.innerHTML = `
@@ -4775,6 +4841,7 @@ document.getElementById('input-kml').addEventListener('change', (e)=>{
   e.target.value = '';
 });
 
+<!-- @completo:start -->
 /* ======================= BACKUP JSON ======================= */
 /* Mejoras v1.7: el archivo lleva fecha y hora (para no pisar backups del mismo día),
    se registra cuándo fue el último y se avisa si pasaron muchos días sin hacer uno. */
@@ -4910,6 +4977,7 @@ document.getElementById('coef-guardar').addEventListener('click', ()=>{
   toast('Coeficientes actualizados');
 <!-- @pc:end -->
 });
+<!-- @completo:end -->
 
 /* ======================= MODAL PUNTOS (aguadas / instalaciones) ======================= */
 function poblarSelectTipo(){
@@ -5021,6 +5089,7 @@ document.getElementById('input-puntos').addEventListener('change', (e)=>{
   e.target.value = '';
 });
 
+<!-- @completo:start -->
 /* ======================= ALERTAS Y UMBRALES (reglas, sin IA) ======================= */
 function renderAlertasLista(){
   const cont = document.getElementById('alertas-lista');
@@ -5062,6 +5131,7 @@ document.getElementById('al-guardar').addEventListener('click', ()=>{
   renderAlertasLista();
   toast('Umbrales actualizados');
 });
+<!-- @completo:end -->
 
 /* ======================= "❓ DESAPARECIDOS" (animales perdidos, buscando) =======================
    No hay un array de estado nuevo: los casos se calculan leyendo el
@@ -5260,6 +5330,7 @@ document.getElementById('muertes-filtro-dueno').addEventListener('change', (e)=>
   cargarTablaMuertes(e.target.value, false);
 });
 
+<!-- @completo:start -->
 /* ======================= SANIDAD (base propia en Supabase, sin Excel) =======================
    18/9/2026: ninguna de las 3 apps depende de un Excel para calcular lo que
    muestra -- TABLA_SANIDAD (definida mas arriba, junto a guardarSanidadCarga)
@@ -5616,7 +5687,9 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   await renderMisCargasSanidad();
   // @sanidadExcel:end
 });
+<!-- @completo:end -->
 
+<!-- @completo:start -->
 /* ======================= LLUVIAS ======================= */
 function renderLluviasLista(){
   const cont = document.getElementById('lluvias-lista');
@@ -5908,8 +5981,10 @@ document.getElementById('ab-guardar').addEventListener('click', ()=>{
   renderAbortosLista();
   toast('Aborto registrado');
 });
+<!-- @completo:end -->
 
 <!-- @movil:start -->
+<!-- @completo:start -->
 /* ======================= STOCK TOTAL: CATEGORÍAS, POR POTRERO, NACIMIENTOS Y MUERTES =======================
    Nacimientos y muertes no se sacan del historial local: un evento sincronizado
    desde otro dispositivo no guarda cantidad/fecha estructuradas ahí, solo un
@@ -6343,8 +6418,10 @@ document.getElementById('btn-stock').addEventListener('click', ()=>{
 document.getElementById('stock-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-stock').style.display = 'none';
 });
+<!-- @completo:end -->
 
 <!-- @movil:end -->
+<!-- @completo:start -->
 /* ======================= CARGA POR VOZ (sin IA — reglas + reconocimiento del navegador) ======================= */
 const NUM_UNIDADES = {
   cero:0, un:1, uno:1, una:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8, nueve:9,
@@ -6645,6 +6722,7 @@ document.getElementById('voz-grabar').addEventListener('click', ()=>{
   try{ reconocimientoVoz.start(); }catch(e){ grabandoVoz=false; }
 });
 inicializarVoz();
+<!-- @completo:end -->
 
 /* ======================= INDICADOR DE CONEXIÓN ======================= */
 /* Los movimientos, altas/bajas, compras/ventas, etc. se guardan siempre en este dispositivo
@@ -6657,11 +6735,15 @@ function actualizarEstadoConexion(estabaOffline){
     el.textContent = '🟢 En línea';
     el.style.color = '#b9d9a0';
     if(estabaOffline){
-      const ub = estado.ultimoBackup;
-      const movsNuevos = contarMovimientos() - ((ub && ub.movimientos) || 0);
-      toast(movsNuevos > 0
-        ? `Volvió la señal — tenés ${movsNuevos} movimiento${movsNuevos===1?'':'s'} sin respaldar`
-        : 'Conexión recuperada');
+      if(typeof contarMovimientos === 'function'){
+        const ub = estado.ultimoBackup;
+        const movsNuevos = contarMovimientos() - ((ub && ub.movimientos) || 0);
+        toast(movsNuevos > 0
+          ? `Volvió la señal — tenés ${movsNuevos} movimiento${movsNuevos===1?'':'s'} sin respaldar`
+          : 'Conexión recuperada');
+      } else {
+        toast('Conexión recuperada');
+      }
     }
     sincronizar(true);
   } else {
@@ -6680,6 +6762,7 @@ document.getElementById('btn-sincronizar').addEventListener('click', ()=>{
 if(navigator.onLine) setTimeout(()=> sincronizar(false), 1500);
 setInterval(()=>{ if(navigator.onLine) sincronizar(false); }, 3*60*1000);
 
+<!-- @completo:start -->
 /* ======================= RESTABLECER DATOS DE FÁBRICA ======================= */
 /* Borra lo guardado en este navegador (incluido el ID de dispositivo) y
    recarga: al no tener ESTABLECIMIENTO ni historial propio, sincronizar()
@@ -6707,6 +6790,7 @@ document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   try{ localStorage.removeItem(DISPOSITIVO_KEY); }catch(e){}
   location.reload();
 });
+<!-- @completo:end -->
 
 /* ======================= QUIÉN SOY (identificación de usuario) ======================= */
 document.getElementById('btn-usuario').addEventListener('click', ()=>{

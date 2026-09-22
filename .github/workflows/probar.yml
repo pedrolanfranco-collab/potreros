@@ -103,3 +103,6 @@ jobs:
 
       - name: "DICOSE Fase A (solo La Vuelta) -- guia en Compra/Venta, agregar guia despues, campo ajeno"
         run: node tests/probar_dicose.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html
+
+      - name: "La Vuelta Campo (movil-simple, para un empleado) -- que se mantiene/excluye, y sincroniza sin casos especiales con la-vuelta-movil"
+        run: node tests/probar_la_vuelta_simple.js la-vuelta-movil-campo/index.html la-vuelta-movil/index.html

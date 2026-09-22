@@ -739,7 +739,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.56","versionMovil":"1.56","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.56","versionMovil":"1.56","simpleHabilitado":false,"duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -2554,7 +2554,9 @@ function renderLista(filtro=''){
     card.innerHTML = `
       <div class="fila-top">
         <div>
-          <div class="nombre">${nombre} ${alertas.length ? '<span title="'+alertas.join(' · ')+'">⚠️</span>':''} ${casosPotrero.length ? '<span title="'+casosPotrero.map(c=>c.pendiente+' '+c.categoria+' desaparecidos').join(' · ')+'">❓</span>':''}</div>
+          <div class="nombre">${nombre}
+          ${alertas.length ? '<span title="'+alertas.join(' · ')+'">⚠️</span>':''}
+          ${casosPotrero.length ? '<span title="'+casosPotrero.map(c=>c.pendiente+' '+c.categoria+' desaparecidos').join(' · ')+'">❓</span>':''}</div>
           <div class="area">${areaHa(nombre).toFixed(1)} ha ${carga>0 ? `· <span class="carga-badge">${carga.toFixed(2)} UG/ha</span>` : ''}</div>
         </div>
         <div class="badge-total ${total===0?'vacio':''}"${total<0?' style="background:#d32f2f;color:#fff;"':''}>${total}</div>
@@ -2925,11 +2927,14 @@ function mostrarFormularioAgregarInicial(nombre){
   document.getElementById('f-confirmar').addEventListener('click', ()=>{
     const fechaISO = document.getElementById('f-fecha').value;
     if(!fechaISO){ toast('Elegí una fecha'); return; }
-    const filas = Array.from(document.querySelectorAll('#f-filas-agregar .agregar-fila')).map(f=>({
-      cat: f.querySelector('.ag-cat').value,
-      dueno: f.querySelector('.ag-dueno').value === '__otro__' ? f.querySelector('.ag-dueno-otro').value.trim() : f.querySelector('.ag-dueno').value,
-      cant: parseInt(f.querySelector('.ag-cant').value,10)
-    })).filter(f=>f.cant && f.cant>0);
+    const filas = Array.from(document.querySelectorAll('#f-filas-agregar .agregar-fila')).map(f=>{
+      const selDueno = f.querySelector('.ag-dueno');
+      return {
+        cat: f.querySelector('.ag-cat').value,
+        dueno: selDueno ? (selDueno.value === '__otro__' ? f.querySelector('.ag-dueno-otro').value.trim() : selDueno.value) : f.querySelector('.ag-dueno-otro').value.trim(),
+        cant: parseInt(f.querySelector('.ag-cant').value,10)
+      };
+    }).filter(f=>f.cant && f.cant>0);
     if(!filas.length){ toast('Ingresá al menos una categoría con cantidad válida'); return; }
     const fecha = fechaISOaDisplay(fechaISO);
     filas.forEach(f=>{
@@ -2975,7 +2980,7 @@ function mostrarFormulario(nombre, accion, prefill){
       });
       document.getElementById('f-confirmar').addEventListener('click', ()=>{
         const cat = document.getElementById('f-cat').value;
-        const dueno = valorDueno('f-dueno');
+        const dueno = document.getElementById('f-dueno') ? valorDueno('f-dueno') : document.getElementById('f-dueno-otro').value.trim();
         const cant = parseInt(document.getElementById('f-cant').value,10);
         const fechaISO = document.getElementById('f-fecha').value;
         if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
@@ -5901,11 +5906,15 @@ function actualizarEstadoConexion(estabaOffline){
     el.textContent = '🟢 En línea';
     el.style.color = '#b9d9a0';
     if(estabaOffline){
-      const ub = estado.ultimoBackup;
-      const movsNuevos = contarMovimientos() - ((ub && ub.movimientos) || 0);
-      toast(movsNuevos > 0
-        ? `Volvió la señal — tenés ${movsNuevos} movimiento${movsNuevos===1?'':'s'} sin respaldar`
-        : 'Conexión recuperada');
+      if(typeof contarMovimientos === 'function'){
+        const ub = estado.ultimoBackup;
+        const movsNuevos = contarMovimientos() - ((ub && ub.movimientos) || 0);
+        toast(movsNuevos > 0
+          ? `Volvió la señal — tenés ${movsNuevos} movimiento${movsNuevos===1?'':'s'} sin respaldar`
+          : 'Conexión recuperada');
+      } else {
+        toast('Conexión recuperada');
+      }
     }
     sincronizar(true);
   } else {
