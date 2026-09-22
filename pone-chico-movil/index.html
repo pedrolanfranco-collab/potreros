@@ -402,7 +402,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.53</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.54</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -640,7 +640,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.53","versionMovil":"1.53","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.54","versionMovil":"1.54","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1139,9 +1139,16 @@ async function borrarStockPotrero(nombre){
     .eq('establecimiento', ESTABLECIMIENTO).eq('potrero', nombre);
   return !error;
 }
-function publicarStockPotreros(nombres){
+async function publicarStockPotreros(nombres){
   const unicos = [...new Set((nombres||[]).filter(Boolean))];
-  return Promise.all(unicos.map(n=>publicarStockPotrero(n)));
+  const resultados = [];
+  const LOTE_TAMANO = 4;
+  for(let i=0; i<unicos.length; i+=LOTE_TAMANO){
+    const lote = unicos.slice(i, i+LOTE_TAMANO);
+    const res = await Promise.all(lote.map(n=>publicarStockPotrero(n)));
+    resultados.push(...res);
+  }
+  return resultados;
 }
 async function vaciarColaStock(){
   if(!estado.colaStock || !estado.colaStock.length) return;
@@ -1606,7 +1613,8 @@ async function sincronizar(mostrarToast){
     let query = client.from('eventos_sync').select('*').eq('establecimiento', ESTABLECIMIENTO).order('creado_en', {ascending:true});
     if(estado.ultimaSincronizacion) query = query.gt('creado_en', estado.ultimaSincronizacion);
     const { data, error } = await query;
-    if(error || !data){ return; }
+    if(error){ console.warn('Error al sincronizar eventos_sync:', error.message || error); return; }
+    if(!data){ return; }
     let cambios = 0;
     const miId = idDispositivo();
     data.forEach(row=>{
@@ -1618,7 +1626,7 @@ async function sincronizar(mostrarToast){
       actualizarTodo();
       if(mostrarToast) toast(`Sincronizado: ${cambios} movimiento${cambios===1?'':'s'} de otro dispositivo`);
     }
-    publicarStockPotreros(esPrimeraSync ? Object.keys(estado.potreros) : [...potrerosSucios]);
+    await publicarStockPotreros(esPrimeraSync ? Object.keys(estado.potreros) : [...potrerosSucios]);
   }catch(e){ console.warn('Error al sincronizar', e); }finally{
     sincronizando = false;
     actualizarEstadoSync();
@@ -3786,22 +3794,16 @@ function abrirFormularioEncontrado(caso){
    dueño -- reporte de solo lectura, independiente del conteo de
    temporada (calcularEstadisticasMuertes), consulta directa a
    eventos_sync así no hace falta reconstruir nada del historial local. */
-async function cargarTablaMuertes(filtroDueno){
+let muertesUltimosEventos = null;
+function renderTablaMuertesFilas(filtroDueno){
   const cont = document.getElementById('muertes-tabla');
-  const client = clienteSupabase();
-  if(!client || !navigator.onLine){
-    cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Sin conexión — no se puede traer el registro ahora.</p>';
-    return;
-  }
-  cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Cargando…</p>';
-  const res = await client.from('eventos_sync').select('detalle,fecha_cliente,tipo')
-    .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido']);
-  if(res.error){
-    cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">No se pudo traer el registro.</p>';
+  if(!cont) return;
+  if(!muertesUltimosEventos || !muertesUltimosEventos.length){
+    cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Sin muertes registradas.</p>';
     return;
   }
   const filas = {};
-  (res.data||[]).forEach(ev=>{
+  muertesUltimosEventos.forEach(ev=>{
     const d = ev.detalle || {};
     if(filtroDueno && (d.dueno||'') !== filtroDueno) return;
     const clave = `${d.categoria||'(sin categoría)'}||${d.dueno||''}`;
@@ -3810,11 +3812,34 @@ async function cargarTablaMuertes(filtroDueno){
     if(!filas[clave].ultima || parseFechaDMY(ev.fecha_cliente) > parseFechaDMY(filas[clave].ultima)) filas[clave].ultima = ev.fecha_cliente;
   });
   const lista = Object.values(filas).sort((a,b)=> a.categoria.localeCompare(b.categoria) || b.cantidad-a.cantidad);
-  if(!lista.length){ cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Sin muertes registradas.</p>'; return; }
+  if(!lista.length){ cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Sin muertes registradas para este dueño.</p>'; return; }
   cont.innerHTML = `<table class="tabla-animales">
     <thead><tr><th>Categoría</th><th>Dueño</th><th style="text-align:right;">Cantidad</th><th>Último registro</th></tr></thead>
     <tbody>${lista.map(f=>`<tr><td>${f.categoria}</td><td>${textoFirma(f.dueno)}</td><td class="num">${f.cantidad}</td><td>${f.ultima||''}</td></tr>`).join('')}</tbody>
   </table>`;
+}
+async function cargarTablaMuertes(filtroDueno, forzarRed){
+  const cont = document.getElementById('muertes-tabla');
+  if(!forzarRed && muertesUltimosEventos){
+    renderTablaMuertesFilas(filtroDueno);
+    return;
+  }
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine){
+    if(muertesUltimosEventos){ renderTablaMuertesFilas(filtroDueno); return; }
+    cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Sin conexión — no se puede traer el registro ahora.</p>';
+    return;
+  }
+  cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Cargando…</p>';
+  const res = await client.from('eventos_sync').select('detalle,fecha_cliente,tipo')
+    .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido']);
+  if(res.error){
+    if(muertesUltimosEventos){ renderTablaMuertesFilas(filtroDueno); return; }
+    cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">No se pudo traer el registro.</p>';
+    return;
+  }
+  muertesUltimosEventos = res.data || [];
+  renderTablaMuertesFilas(filtroDueno);
 }
 document.getElementById('btn-desaparecidos').addEventListener('click', ()=>{
   renderDesaparecidosLista();
@@ -3826,10 +3851,10 @@ document.getElementById('desaparecidos-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-desaparecidos').style.display = 'none';
 });
 document.querySelector('#modal-desaparecidos details').addEventListener('toggle', (e)=>{
-  if(e.target.open) cargarTablaMuertes(document.getElementById('muertes-filtro-dueno').value);
+  if(e.target.open) cargarTablaMuertes(document.getElementById('muertes-filtro-dueno').value, true);
 });
 document.getElementById('muertes-filtro-dueno').addEventListener('change', (e)=>{
-  cargarTablaMuertes(e.target.value);
+  cargarTablaMuertes(e.target.value, false);
 });
 
 /* ======================= SANIDAD (base propia en Supabase, sin Excel) =======================
