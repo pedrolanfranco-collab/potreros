@@ -2404,8 +2404,8 @@ module.exports = {
   "themeColor": "#2b3a24",
   "nombre": "La Vuelta",
   "subtitulo": "Rivera, Uruguay · Gestión de hacienda por potrero",
-  "versionPc": "3.13",
-  "versionMovil": "3.13",
+  "versionPc": "3.14",
+  "versionMovil": "3.14",
   "duenoLabel": "Firma",
   "duenoObligatorio": false,
   "textoSinAsignar": "(sin firma)",
@@ -2413,6 +2413,7 @@ module.exports = {
   "usaExcelBridge": true,
   "tablaSanidad": "sanidad_carga",
   "stockSupabase": true,
+  "dicoseHabilitado": true,
   "fixFechaIngreso": null,
   "mapaFallback": [
     -31.385,

@@ -100,3 +100,6 @@ jobs:
 
       - name: "Dibujar potrero a mano (solo PC) -- vertices, deshacer, terminar, Eliminar potrero, sincronizado"
         run: node tests/probar_dibujar_potrero.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html la-vuelta-movil/index.html maria-laura-movil/index.html pone-chico-movil/index.html
+
+      - name: "DICOSE Fase A (solo La Vuelta) -- guia en Compra/Venta, agregar guia despues, campo ajeno"
+        run: node tests/probar_dicose.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html
