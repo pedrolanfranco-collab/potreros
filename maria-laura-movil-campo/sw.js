@@ -1,9 +1,9 @@
-// Service worker de La Vuelta Campo — cachea solo la app shell (este HTML,
+// Service worker de María Laura Campo — cachea solo la app shell (este HTML,
 // el manifest, los iconos y las librerias externas que usa) para que abra
 // offline. Nunca intercepta nada mas: ni las teselas del mapa (arcgisonline)
 // ni las llamadas a Supabase (sincronizacion), asi no hay riesgo de servir
 // datos viejos ni de romper la sincronizacion.
-const CACHE = 'la-vuelta-movil-simple-v1.1';
+const CACHE = 'maria-laura-movil-simple-v1.1';
 const PRECACHE_URLS = [".", "index.html", "manifest.json", "icon-48x48.png", "icon-72x72.png", "icon-96x96.png", "icon-144x144.png", "icon-192x192.png", "icon-512x512.png", "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js", "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js", "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css", "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js", "https://fonts.googleapis.com", "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"];
 
 self.addEventListener('install', event => {

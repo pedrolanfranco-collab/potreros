@@ -50,14 +50,14 @@ const ESTABLECIMIENTOS = [
   {
     nombre: 'maria-laura',
     config: require('./configs/maria-laura.js'),
-    onedrive: { pc: 'maria_laura_pc.html', movil: 'maria_laura_movil.html' },
-    repoDir: { pc: 'maria-laura-pc', movil: 'maria-laura-movil' },
+    onedrive: { pc: 'maria_laura_pc.html', movil: 'maria_laura_movil.html', 'movil-simple': 'maria_laura_movil_simple.html' },
+    repoDir: { pc: 'maria-laura-pc', movil: 'maria-laura-movil', 'movil-simple': 'maria-laura-movil-campo' },
   },
   {
     nombre: 'pone-chico',
     config: require('./configs/pone-chico.js'),
-    onedrive: { pc: 'pone_chico_pc.html', movil: 'pone_chico_movil.html' },
-    repoDir: { pc: 'pone-chico-pc', movil: 'pone-chico-movil' },
+    onedrive: { pc: 'pone_chico_pc.html', movil: 'pone_chico_movil.html', 'movil-simple': 'pone_chico_movil_simple.html' },
+    repoDir: { pc: 'pone-chico-pc', movil: 'pone-chico-movil', 'movil-simple': 'pone-chico-movil-campo' },
   },
 ];
 
