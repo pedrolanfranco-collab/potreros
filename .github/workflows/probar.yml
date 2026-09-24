@@ -106,3 +106,6 @@ jobs:
 
       - name: "Movil simple / \"*-campo\" (para un empleado, 3 establecimientos) -- que se mantiene/excluye, y sincroniza sin casos especiales con su movil completo"
         run: node tests/probar_la_vuelta_simple.js la-vuelta-movil-campo/index.html la-vuelta-movil/index.html maria-laura-movil-campo/index.html maria-laura-movil/index.html pone-chico-movil-campo/index.html pone-chico-movil/index.html
+
+      - name: "Buscar caravana (solo La Vuelta) -- padron animales_caravana, estados de carencia, caravana en el tratamiento"
+        run: node tests/probar_caravana.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-movil/index.html pone-chico-movil/index.html

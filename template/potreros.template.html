@@ -536,6 +536,7 @@
 <!-- @completo:end -->
       <button class="btn btn-json" id="btn-puntos" style="display:none;">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-resync-puntos" style="display:none;">🔄 Resincronizar mis puntos</button>
+      <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
 <!-- @movil:end -->
 <!-- @pc:start -->
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
@@ -548,6 +549,7 @@
       <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
       <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-resync-puntos">🔄 Resincronizar mis puntos</button>
+      <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
       <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
       <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
@@ -623,6 +625,8 @@
       <!-- @sanidadNativa:end -->
       <div class="form-row"><label>Potrero</label><select id="sc-potrero"></select></div>
       <div class="form-row"><label>Cantidad</label><input type="number" id="sc-cantidad" min="1"></div>
+      <div class="form-row" id="sc-fila-caravana" style="display:none;"><label>Caravana (opcional)</label><input type="tel" id="sc-caravana" inputmode="numeric" placeholder="Si es a un animal solo" maxlength="15"></div>
+      <div id="sc-caravana-quien"></div>
       <div class="form-row"><label>Gen (opcional)</label><input type="number" id="sc-gen" min="0"></div>
       <div class="form-row"><label>Producto 1</label><select id="sc-producto1" style="display:none;"></select><input type="text" id="sc-producto1-otro" placeholder="Producto 1"></div>
       <div class="form-row"><label>Dosis 1</label><input type="number" id="sc-dosis1" min="0" step="0.01"></div>
@@ -744,6 +748,22 @@
       <button class="btn btn-agregar" id="usuario-guardar">Guardar</button>
       <button class="btn btn-secundario" id="usuario-cancelar">Cancelar</button>
     </div>
+  </div>
+</div>
+<div id="modal-caravana" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🔎 Buscar caravana</h3>
+    <button class="btn-cerrar-x" id="caravana-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Escribí el número visual de la caravana (los 8 dígitos) para ver de qué animal se trata y si está en período de espera.</p>
+    <div class="form-row">
+      <label>Caravana</label>
+      <input type="tel" id="cv-numero" inputmode="numeric" placeholder="Ej: 57179343" maxlength="15">
+    </div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="cv-buscar">Buscar</button>
+    </div>
+    <div id="cv-resultado"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="caravana-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -3113,6 +3133,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['puntos-cerrar-x', 'puntos-cerrar'],
   ['detalle-dueno-cerrar-x', 'detalle-dueno-cerrar'],
   ['dp-cerrar-x', 'dp-cancelar'],
+  ['caravana-cerrar-x', 'caravana-cerrar'],
 ].forEach(([xId, targetId])=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
@@ -5677,8 +5698,12 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   const dosis2Raw = document.getElementById('sc-dosis2').value;
   const dosis2 = dosis2Raw ? parseFloat(dosis2Raw) : null;
   const obs = document.getElementById('sc-obs').value.trim();
+  const caravana = CONFIG.caravanasHabilitado
+    ? normalizarCaravana(document.getElementById('sc-caravana').value) : null;
   if(!fechaISO){ toast('Elegí una fecha'); return; }
   if(!cantidad || cantidad<1){ toast('Ingresá una cantidad válida'); return; }
+  // Una caravana identifica a UN animal: no puede venir con cantidad 5.
+  if(caravana && cantidad !== 1){ toast('Con caravana, la cantidad tiene que ser 1'); return; }
   if(!producto1){ toast('Ingresá el producto 1'); return; }
   if(isNaN(dosis1) || dosis1<=0){ toast('Ingresá la dosis 1'); return; }
   const registro = {
@@ -5697,6 +5722,12 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
     producto2: producto2||null, dosis2,
     observaciones: obs||null
   };
+  // @sanidadExcel:start
+  // La columna existe en sanidad_carga desde el 24/9/2026. Se manda solo si
+  // el establecimiento tiene el padron publicado, para no ensuciar la tabla
+  // con un campo que nadie puede verificar contra nada.
+  if(CONFIG.caravanasHabilitado) registro.caravana = caravana;
+  // @sanidadExcel:end
   await guardarSanidadCarga(registro);
   // @sanidadExcel:start
   estado.historialSanidad = estado.historialSanidad || [];
@@ -5705,6 +5736,10 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   guardarEstado();
   // @sanidadExcel:end
   document.getElementById('form-sanidad').style.display = 'none';
+  if(CONFIG.caravanasHabilitado){
+    document.getElementById('sc-caravana').value = '';
+    document.getElementById('sc-caravana-quien').innerHTML = '';
+  }
   toast('Tratamiento cargado');
   await cargarSanidad();
   // @sanidadExcel:start
@@ -5712,6 +5747,142 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   // @sanidadExcel:end
 });
 <!-- @completo:end -->
+
+/* ======================= BUSCAR CARAVANA ======================= */
+/* 24/9/2026. El padron por animal lo publica la PC a 'animales_caravana'
+   (publicar_animales.py, en la carpeta del lector XRS2) desde la base que
+   arma el baston. La app SOLO LEE de ahi.
+
+   Para que sirve: parado en el corral, saber de que animal es una caravana
+   y -- sobre todo -- si esta en periodo de espera. Un tratamiento cargado
+   al animal equivocado termina en una carencia equivocada, y eso es un
+   animal que se va a faena cuando no debia.
+
+   Gateado por CONFIG.caravanasHabilitado (solo La Vuelta por ahora, mismo
+   patron de rollout gradual que stockSupabase). */
+const TABLA_CARAVANAS = 'animales_caravana';
+
+function normalizarCaravana(txt){
+  const d = String(txt||'').replace(/\D/g,'');
+  if(!d) return null;
+  return d.slice(-8).padStart(8,'0');   // el EID trae 15, el visual 8
+}
+
+async function buscarCaravana(id8){
+  const client = clienteSupabase();
+  if(!client) return {error:'sin conexión'};
+  try{
+    const res = await client.from(TABLA_CARAVANAS).select('*')
+      .eq('establecimiento', ESTABLECIMIENTO).eq('id8', id8).limit(1);
+    if(res.error) return {error: res.error.message || 'error de consulta'};
+    return {animal: (res.data && res.data[0]) || null};
+  }catch(e){
+    return {error:'sin señal'};
+  }
+}
+
+function fichaCaravanaHTML(a){
+  const filas = [
+    ['Categoría', a.categoria],
+    ['Sexo', a.sexo],
+    ['Generación', a.gen],
+    [CONFIG.duenoLabel, a.propietario],
+    ['Potrero', a.potrero],
+    ['Último peso', a.ultimo_peso ? `${a.ultimo_peso} kg (${a.peso_fecha||'sin fecha'})` : null],
+    ['Última lectura', a.ultima_lectura],
+    ['Próximo tratamiento', a.proximo_tratamiento],
+  ].filter(([,v]) => v !== null && v !== undefined && v !== '');
+
+  let estado, color, detalle;
+  if(a.estado_carencia === 'NO APTO'){
+    color = 'var(--rojo-hacienda)';
+    estado = '⛔ NO APTO';
+    detalle = `No puede ir a faena hasta el ${a.fecha_apto||'?'}`
+      + (a.dias_restantes != null ? ` — faltan ${a.dias_restantes} días` : '')
+      + (a.producto_carencia ? `, por ${a.producto_carencia}` : '');
+  }else if(a.estado_carencia === 'CARENCIA DESCONOCIDA'){
+    color = '#b7791f';
+    estado = '⚠️ SIN CONFIRMAR';
+    detalle = 'No se sabe si está apto: '
+      + (a.producto_carencia ? `${a.producto_carencia} no tiene plazo de espera cargado.` : 'falta el plazo de un producto.')
+      + ' No lo mandes a faena sin chequear.';
+  }else{
+    color = '#1e7b34';
+    estado = '✅ APTO';
+    detalle = 'Sin período de espera pendiente.';
+  }
+
+  return `<div class="modal-info" style="border-left:4px solid ${color};padding-left:10px;margin:10px 0;">
+      <div style="font-weight:700;color:${color};font-size:15px;">${estado}</div>
+      <div>${detalle}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${v}</td></tr>`).join('')}
+    </table>`;
+}
+
+async function ejecutarBusquedaCaravana(){
+  const caja = document.getElementById('cv-resultado');
+  const id8 = normalizarCaravana(document.getElementById('cv-numero').value);
+  if(!id8){ toast('Escribí el número de la caravana'); return; }
+  caja.innerHTML = '<p class="modal-info">Buscando…</p>';
+  const r = await buscarCaravana(id8);
+  if(r.error){
+    caja.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">No se pudo consultar (${r.error}). Necesitás señal para buscar una caravana.</p>`;
+    return;
+  }
+  if(!r.animal){
+    caja.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Puede ser un animal que nunca pasó por la manga, o un número mal tipeado.</p>`;
+    return;
+  }
+  caja.innerHTML = fichaCaravanaHTML(r.animal);
+}
+
+if(CONFIG.caravanasHabilitado){
+  const bc = document.getElementById('btn-caravana');
+  if(bc){
+    bc.style.display = '';
+    bc.addEventListener('click', ()=>{
+      document.getElementById('cv-numero').value = '';
+      document.getElementById('cv-resultado').innerHTML = '';
+      document.getElementById('modal-caravana').style.display = 'flex';
+    });
+  }
+  const cvb = document.getElementById('cv-buscar');
+  if(cvb) cvb.addEventListener('click', ejecutarBusquedaCaravana);
+  const cvn = document.getElementById('cv-numero');
+  if(cvn) cvn.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') ejecutarBusquedaCaravana(); });
+  const cvc = document.getElementById('caravana-cerrar');
+  if(cvc) cvc.addEventListener('click', ()=>{
+    document.getElementById('modal-caravana').style.display = 'none';
+  });
+
+  /* La misma consulta, dentro del formulario de tratamiento: al tipear la
+     caravana se muestra de quien es ANTES de guardar. Es la confirmacion
+     que evita cargarle el producto al animal equivocado. */
+  const fila = document.getElementById('sc-fila-caravana');
+  if(fila) fila.style.display = '';
+  const scc = document.getElementById('sc-caravana');
+  if(scc) scc.addEventListener('change', async ()=>{
+    const quien = document.getElementById('sc-caravana-quien');
+    const id8 = normalizarCaravana(scc.value);
+    if(!id8){ quien.innerHTML = ''; return; }
+    quien.innerHTML = '<p class="modal-info">Buscando…</p>';
+    const r = await buscarCaravana(id8);
+    if(r.error){
+      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">Sin señal para verificar la caravana ${id8}. Se va a guardar igual.</p>`;
+    }else if(!r.animal){
+      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
+    }else{
+      const a = r.animal;
+      const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
+                      a.potrero && ('potrero ' + a.potrero)].filter(Boolean);
+      const aviso = a.estado_carencia === 'NO APTO'
+        ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${a.fecha_apto||'?'}</b>` : '';
+      quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${id8}</b>: ${partes.join(', ')}${aviso}</p>`;
+    }
+  });
+}
 
 /* ======================= LLUVIAS ======================= */
 function renderLluviasLista(){

@@ -506,6 +506,7 @@
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
       <button class="btn btn-json" id="btn-puntos" style="display:none;">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-resync-puntos" style="display:none;">🔄 Resincronizar mis puntos</button>
+      <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
       <input type="file" id="input-json" accept=".json">
       <input type="file" id="input-kml" accept=".kml,.kmz">
     </div>
@@ -553,6 +554,22 @@
     </div>
   </div>
 </div>
+<div id="modal-caravana" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🔎 Buscar caravana</h3>
+    <button class="btn-cerrar-x" id="caravana-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Escribí el número visual de la caravana (los 8 dígitos) para ver de qué animal se trata y si está en período de espera.</p>
+    <div class="form-row">
+      <label>Caravana</label>
+      <input type="tel" id="cv-numero" inputmode="numeric" placeholder="Ej: 57179343" maxlength="15">
+    </div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="cv-buscar">Buscar</button>
+    </div>
+    <div id="cv-resultado"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="caravana-cerrar">Cerrar</button></div>
+  </div>
+</div>
 <div id="toast"></div>
 <div id="modal-puntos" class="modal-overlay" style="display:none;">
   <div class="modal-box">
@@ -575,7 +592,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.84","versionMovil":"2.83","simpleHabilitado":true,"versionMovilSimple":"1.1","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":false,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.85","versionMovil":"2.84","simpleHabilitado":true,"versionMovilSimple":"1.1","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":false,"caravanasHabilitado":false,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -2765,6 +2782,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['puntos-cerrar-x', 'puntos-cerrar'],
   ['detalle-dueno-cerrar-x', 'detalle-dueno-cerrar'],
   ['dp-cerrar-x', 'dp-cancelar'],
+  ['caravana-cerrar-x', 'caravana-cerrar'],
 ].forEach(([xId, targetId])=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
@@ -3722,6 +3740,142 @@ document.getElementById('muertes-filtro-dueno').addEventListener('change', (e)=>
   cargarTablaMuertes(e.target.value, false);
 });
 
+
+/* ======================= BUSCAR CARAVANA ======================= */
+/* 24/9/2026. El padron por animal lo publica la PC a 'animales_caravana'
+   (publicar_animales.py, en la carpeta del lector XRS2) desde la base que
+   arma el baston. La app SOLO LEE de ahi.
+
+   Para que sirve: parado en el corral, saber de que animal es una caravana
+   y -- sobre todo -- si esta en periodo de espera. Un tratamiento cargado
+   al animal equivocado termina en una carencia equivocada, y eso es un
+   animal que se va a faena cuando no debia.
+
+   Gateado por CONFIG.caravanasHabilitado (solo La Vuelta por ahora, mismo
+   patron de rollout gradual que stockSupabase). */
+const TABLA_CARAVANAS = 'animales_caravana';
+
+function normalizarCaravana(txt){
+  const d = String(txt||'').replace(/\D/g,'');
+  if(!d) return null;
+  return d.slice(-8).padStart(8,'0');   // el EID trae 15, el visual 8
+}
+
+async function buscarCaravana(id8){
+  const client = clienteSupabase();
+  if(!client) return {error:'sin conexión'};
+  try{
+    const res = await client.from(TABLA_CARAVANAS).select('*')
+      .eq('establecimiento', ESTABLECIMIENTO).eq('id8', id8).limit(1);
+    if(res.error) return {error: res.error.message || 'error de consulta'};
+    return {animal: (res.data && res.data[0]) || null};
+  }catch(e){
+    return {error:'sin señal'};
+  }
+}
+
+function fichaCaravanaHTML(a){
+  const filas = [
+    ['Categoría', a.categoria],
+    ['Sexo', a.sexo],
+    ['Generación', a.gen],
+    [CONFIG.duenoLabel, a.propietario],
+    ['Potrero', a.potrero],
+    ['Último peso', a.ultimo_peso ? `${a.ultimo_peso} kg (${a.peso_fecha||'sin fecha'})` : null],
+    ['Última lectura', a.ultima_lectura],
+    ['Próximo tratamiento', a.proximo_tratamiento],
+  ].filter(([,v]) => v !== null && v !== undefined && v !== '');
+
+  let estado, color, detalle;
+  if(a.estado_carencia === 'NO APTO'){
+    color = 'var(--rojo-hacienda)';
+    estado = '⛔ NO APTO';
+    detalle = `No puede ir a faena hasta el ${a.fecha_apto||'?'}`
+      + (a.dias_restantes != null ? ` — faltan ${a.dias_restantes} días` : '')
+      + (a.producto_carencia ? `, por ${a.producto_carencia}` : '');
+  }else if(a.estado_carencia === 'CARENCIA DESCONOCIDA'){
+    color = '#b7791f';
+    estado = '⚠️ SIN CONFIRMAR';
+    detalle = 'No se sabe si está apto: '
+      + (a.producto_carencia ? `${a.producto_carencia} no tiene plazo de espera cargado.` : 'falta el plazo de un producto.')
+      + ' No lo mandes a faena sin chequear.';
+  }else{
+    color = '#1e7b34';
+    estado = '✅ APTO';
+    detalle = 'Sin período de espera pendiente.';
+  }
+
+  return `<div class="modal-info" style="border-left:4px solid ${color};padding-left:10px;margin:10px 0;">
+      <div style="font-weight:700;color:${color};font-size:15px;">${estado}</div>
+      <div>${detalle}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${v}</td></tr>`).join('')}
+    </table>`;
+}
+
+async function ejecutarBusquedaCaravana(){
+  const caja = document.getElementById('cv-resultado');
+  const id8 = normalizarCaravana(document.getElementById('cv-numero').value);
+  if(!id8){ toast('Escribí el número de la caravana'); return; }
+  caja.innerHTML = '<p class="modal-info">Buscando…</p>';
+  const r = await buscarCaravana(id8);
+  if(r.error){
+    caja.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">No se pudo consultar (${r.error}). Necesitás señal para buscar una caravana.</p>`;
+    return;
+  }
+  if(!r.animal){
+    caja.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Puede ser un animal que nunca pasó por la manga, o un número mal tipeado.</p>`;
+    return;
+  }
+  caja.innerHTML = fichaCaravanaHTML(r.animal);
+}
+
+if(CONFIG.caravanasHabilitado){
+  const bc = document.getElementById('btn-caravana');
+  if(bc){
+    bc.style.display = '';
+    bc.addEventListener('click', ()=>{
+      document.getElementById('cv-numero').value = '';
+      document.getElementById('cv-resultado').innerHTML = '';
+      document.getElementById('modal-caravana').style.display = 'flex';
+    });
+  }
+  const cvb = document.getElementById('cv-buscar');
+  if(cvb) cvb.addEventListener('click', ejecutarBusquedaCaravana);
+  const cvn = document.getElementById('cv-numero');
+  if(cvn) cvn.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') ejecutarBusquedaCaravana(); });
+  const cvc = document.getElementById('caravana-cerrar');
+  if(cvc) cvc.addEventListener('click', ()=>{
+    document.getElementById('modal-caravana').style.display = 'none';
+  });
+
+  /* La misma consulta, dentro del formulario de tratamiento: al tipear la
+     caravana se muestra de quien es ANTES de guardar. Es la confirmacion
+     que evita cargarle el producto al animal equivocado. */
+  const fila = document.getElementById('sc-fila-caravana');
+  if(fila) fila.style.display = '';
+  const scc = document.getElementById('sc-caravana');
+  if(scc) scc.addEventListener('change', async ()=>{
+    const quien = document.getElementById('sc-caravana-quien');
+    const id8 = normalizarCaravana(scc.value);
+    if(!id8){ quien.innerHTML = ''; return; }
+    quien.innerHTML = '<p class="modal-info">Buscando…</p>';
+    const r = await buscarCaravana(id8);
+    if(r.error){
+      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">Sin señal para verificar la caravana ${id8}. Se va a guardar igual.</p>`;
+    }else if(!r.animal){
+      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
+    }else{
+      const a = r.animal;
+      const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
+                      a.potrero && ('potrero ' + a.potrero)].filter(Boolean);
+      const aviso = a.estado_carencia === 'NO APTO'
+        ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${a.fecha_apto||'?'}</b>` : '';
+      quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${id8}</b>: ${partes.join(', ')}${aviso}</p>`;
+    }
+  });
+}
 
 /* ======================= LLUVIAS ======================= */
 function renderLluviasLista(){

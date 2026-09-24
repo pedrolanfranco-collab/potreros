@@ -16,8 +16,8 @@ module.exports = {
   "themeColor": "#1d4fa8",
   "nombre": "Pone Chico",
   "subtitulo": "Gestión de hacienda por potrero y dueño",
-  "versionPc": "1.56",
-  "versionMovil": "1.56",
+  "versionPc": "1.57",
+  "versionMovil": "1.57",
   "simpleHabilitado": true,
   "versionMovilSimple": "1.1",
   "duenoLabel": "Dueño",
@@ -27,6 +27,7 @@ module.exports = {
   "usaExcelBridge": false,
   "tablaSanidad": "sanidad_carga_pone_chico",
   "stockSupabase": false,
+  "caravanasHabilitado": false,
   "fixFechaIngreso": null,
   "mapaFallback": [
     -31.385,
