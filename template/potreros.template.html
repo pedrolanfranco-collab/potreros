@@ -521,8 +521,8 @@
 <!-- @movil:start -->
 <!-- @completo:start -->
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
-      <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
 <!-- @completo:end -->
+      <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias</button>
       <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
 <!-- @completo:start -->
@@ -610,7 +610,6 @@
     <div class="form-botones"><button class="btn btn-secundario" id="desaparecidos-cerrar">Cerrar</button></div>
   </div>
 </div>
-<!-- @completo:start -->
 <div id="modal-sanidad" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🏥 Sanidad</h3>
@@ -645,7 +644,6 @@
     <div class="form-botones"><button class="btn btn-secundario" id="sanidad-cerrar">Cerrar</button></div>
   </div>
 </div>
-<!-- @completo:end -->
 <div id="modal-lluvias" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🌧 Lluvias</h3>
@@ -5375,7 +5373,6 @@ document.getElementById('muertes-filtro-dueno').addEventListener('change', (e)=>
   cargarTablaMuertes(e.target.value, false);
 });
 
-<!-- @completo:start -->
 /* ======================= SANIDAD (base propia en Supabase, sin Excel) =======================
    18/9/2026: ninguna de las 3 apps depende de un Excel para calcular lo que
    muestra -- TABLA_SANIDAD (definida mas arriba, junto a guardarSanidadCarga)
@@ -5746,7 +5743,6 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   await renderMisCargasSanidad();
   // @sanidadExcel:end
 });
-<!-- @completo:end -->
 
 /* ======================= BUSCAR CARAVANA ======================= */
 /* 24/9/2026. El padron por animal lo publica la PC a 'animales_caravana'
