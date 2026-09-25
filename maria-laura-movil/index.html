@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.86</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.87</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -565,8 +565,8 @@
     <h3>🏥 Sanidad</h3>
     <button class="btn-cerrar-x" id="sanidad-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Los plazos y el costo se calculan al toque, según el catálogo de productos.</p>
-    <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento</button>
-    <button class="btn btn-json btn-full" id="btn-cargar-sanidad-individual" style="display:none;margin-bottom:10px;">+ Cargar tratamiento (individual)</button>
+    <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento (grupal)</button>
+    <button class="btn btn-json btn-full" id="btn-cargar-sanidad-individual" style="margin-bottom:10px;">+ Cargar tratamiento (individual)</button>
     <div id="form-sanidad" style="display:none;margin-bottom:12px;">
       <div class="form-row"><label>Fecha</label><input type="date" id="sc-fecha"></div>
       <div class="form-row"><label>Categoría</label><select id="sc-categoria"></select></div>
@@ -730,7 +730,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.87","versionMovil":"2.86","simpleHabilitado":true,"versionMovilSimple":"1.4","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.88","versionMovil":"2.87","simpleHabilitado":true,"versionMovilSimple":"1.5","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -4420,14 +4420,21 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
     producto2: producto2||null, dosis2,
     observaciones: obs||null
   };
+  // 25/9/2026: caravana/sin_caravana en las 3 tablas de sanidad (columnas
+  // agregadas a las 3 el mismo dia, ver commit). Se mandan siempre
+  // (explícitas en null en grupal, no un campo ausente) aunque el
+  // establecimiento no tenga padrón propio (animales_caravana) para
+  // verificar de quién es -- eso solo cambia si "quien es" muestra algo al
+  // tipear, no si se guarda. sin_caravana en null en grupal, no false
+  // (false sugeriría que se confirmó activamente, y ahí ni se preguntó).
+  registro.caravana = sanidadModoIndividual ? caravana : null;
+  registro.sin_caravana = sanidadModoIndividual ? sinCaravanaConfirmado : null;
   await guardarSanidadCarga(registro);
   document.getElementById('form-sanidad').style.display = 'none';
-  if(CONFIG.caravanasHabilitado){
-    document.getElementById('sc-caravana').value = '';
-    document.getElementById('sc-caravana').disabled = false;
-    document.getElementById('sc-sin-caravana').checked = false;
-    document.getElementById('sc-caravana-quien').innerHTML = '';
-  }
+  document.getElementById('sc-caravana').value = '';
+  document.getElementById('sc-caravana').disabled = false;
+  document.getElementById('sc-sin-caravana').checked = false;
+  document.getElementById('sc-caravana-quien').innerHTML = '';
   toast('Tratamiento cargado');
   await cargarSanidad();
 });
@@ -4540,55 +4547,52 @@ if(CONFIG.caravanasHabilitado){
   if(cvc) cvc.addEventListener('click', ()=>{
     document.getElementById('modal-caravana').style.display = 'none';
   });
-
-  /* 25/9/2026: "Cargar tratamiento" grupal/individual -- ver
-     abrirFormSanidad más arriba. El botón individual y la fila de caravana
-     solo tienen sentido con el padrón cargado (mismo flag). */
-  const btnIndiv = document.getElementById('btn-cargar-sanidad-individual');
-  if(btnIndiv) btnIndiv.style.display = '';
-  const btnGrupal = document.getElementById('btn-cargar-sanidad');
-  if(btnGrupal) btnGrupal.textContent = '+ Cargar tratamiento (grupal)';
-
-  /* La misma consulta, dentro del formulario de tratamiento: al tipear la
-     caravana se muestra de quien es ANTES de guardar. Es la confirmacion
-     que evita cargarle el producto al animal equivocado. */
-  const scc = document.getElementById('sc-caravana');
-  if(scc) scc.addEventListener('change', async ()=>{
-    const quien = document.getElementById('sc-caravana-quien');
-    const id8 = normalizarCaravana(scc.value);
-    if(!id8){ quien.innerHTML = ''; return; }
-    quien.innerHTML = '<p class="modal-info">Buscando…</p>';
-    const r = await buscarCaravana(id8);
-    if(r.error){
-      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">Sin señal para verificar la caravana ${id8}. Se va a guardar igual.</p>`;
-    }else if(!r.animal){
-      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
-    }else{
-      const a = r.animal;
-      const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
-                      a.potrero && ('potrero ' + a.potrero)].filter(Boolean);
-      const aviso = a.estado_carencia === 'NO APTO'
-        ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${a.fecha_apto||'?'}</b>` : '';
-      quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${id8}</b>: ${partes.join(', ')}${aviso}</p>`;
-    }
-  });
-  /* Confirmación explícita de "no tiene caravana": deja constancia
-     (sin_caravana=true en el registro) en vez de un campo vacío ambiguo.
-     Tildarla limpia y bloquea el campo de caravana -- son mutuamente
-     excluyentes, no tiene sentido escribir un número y tildar "no tiene". */
-  const ssc = document.getElementById('sc-sin-caravana');
-  if(ssc) ssc.addEventListener('change', ()=>{
-    const quien = document.getElementById('sc-caravana-quien');
-    if(ssc.checked){
-      scc.value = '';
-      scc.disabled = true;
-      quien.innerHTML = '<p class="modal-info">Confirmado: este animal no tiene caravana.</p>';
-    }else{
-      scc.disabled = false;
-      quien.innerHTML = '';
-    }
-  });
 }
+
+/* 25/9/2026: "Cargar tratamiento individual" (con caravana) esta disponible
+   en los 3 establecimientos desde el principio -- a diferencia de "🔎
+   Buscar caravana" arriba (que sigue gateado por CONFIG.caravanasHabilitado,
+   porque busca contra el padron animales_caravana, que hoy solo tiene datos
+   de La Vuelta), acá no hace falta padron para cargar la caravana de un
+   tratamiento: "quien es" simplemente no encuentra nada donde no hay
+   padron, pero el numero se guarda igual -- es un dato del animal, no una
+   consulta que dependa de tener el padron cargado. */
+const scc = document.getElementById('sc-caravana');
+scc.addEventListener('change', async ()=>{
+  const quien = document.getElementById('sc-caravana-quien');
+  const id8 = normalizarCaravana(scc.value);
+  if(!id8){ quien.innerHTML = ''; return; }
+  quien.innerHTML = '<p class="modal-info">Buscando…</p>';
+  const r = await buscarCaravana(id8);
+  if(r.error){
+    quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">Sin señal para verificar la caravana ${id8}. Se va a guardar igual.</p>`;
+  }else if(!r.animal){
+    quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
+  }else{
+    const a = r.animal;
+    const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
+                    a.potrero && ('potrero ' + a.potrero)].filter(Boolean);
+    const aviso = a.estado_carencia === 'NO APTO'
+      ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${a.fecha_apto||'?'}</b>` : '';
+    quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${id8}</b>: ${partes.join(', ')}${aviso}</p>`;
+  }
+});
+/* Confirmación explícita de "no tiene caravana": deja constancia
+   (sin_caravana=true en el registro) en vez de un campo vacío ambiguo.
+   Tildarla limpia y bloquea el campo de caravana -- son mutuamente
+   excluyentes, no tiene sentido escribir un número y tildar "no tiene". */
+const ssc = document.getElementById('sc-sin-caravana');
+ssc.addEventListener('change', ()=>{
+  const quien = document.getElementById('sc-caravana-quien');
+  if(ssc.checked){
+    scc.value = '';
+    scc.disabled = true;
+    quien.innerHTML = '<p class="modal-info">Confirmado: este animal no tiene caravana.</p>';
+  }else{
+    scc.disabled = false;
+    quien.innerHTML = '';
+  }
+});
 
 /* ======================= LLUVIAS ======================= */
 function renderLluviasLista(){

@@ -17,10 +17,14 @@
  *    caravana, cantidad libre) e individual (un animal, cantidad fija en 1,
  *    caravana obligatoria salvo que se confirme explicitamente "este animal
  *    no tiene caravana" -- deja constancia en sin_caravana en vez de un
- *    campo vacio ambiguo).
- *  - Maria Laura y Pone Chico (caravanasHabilitado=false) no ven nada de
- *    esto (ni el boton individual) y NO mandan las columnas -- el codigo
- *    esta pero queda inerte, mismo patron de rollout que stockSupabase.
+ *    campo vacio ambiguo). Disponible en los 3 establecimientos desde el
+ *    principio -- no depende de tener padron cargado, ese dato solo cambia
+ *    si "quien es" encuentra algo al tipear, no si se puede guardar.
+ *  - "🔎 Buscar caravana" (el buscador aparte) sigue siendo solo de La
+ *    Vuelta (CONFIG.caravanasHabilitado) -- busca contra el padron
+ *    animales_caravana, que hoy solo tiene datos de La Vuelta. En Maria
+ *    Laura/Pone Chico "quien es" (dentro del form) simplemente no
+ *    encuentra nada, pero eso no impide cargar/guardar la caravana.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -162,76 +166,70 @@ async function probarArchivo(archivo){
   const boton = doc.getElementById('btn-caravana');
   chequear('el boton existe en el HTML generado', !!boton);
 
+  // ---------- "🔎 Buscar caravana" (el buscador aparte): solo La Vuelta ----------
   if(!habilitado){
     // Inerte, no ausente: el codigo se genera igual para los 3.
     chequear('sin el flag, el boton queda oculto', boton.style.display === 'none');
-    chequear('sin el flag, "Cargar tratamiento individual" queda oculto',
-      doc.getElementById('btn-cargar-sanidad-individual').style.display === 'none');
-    chequear('sin el flag, "Cargar tratamiento" mantiene su nombre original',
-      doc.getElementById('btn-cargar-sanidad').textContent === '+ Cargar tratamiento');
-    chequear('sin el flag, la fila de caravana del form queda oculta',
-      doc.getElementById('sc-fila-caravana').style.display === 'none');
-    chequear('sin el flag no se consulta el padron', servidor.consultas.length === 0);
-    return;
+  } else {
+    chequear('con el flag, el boton se muestra', boton.style.display !== 'none');
+
+    // ---------- normalizacion: EID de 15 vs visual de 8 ----------
+    const n = win.__normalizar;
+    chequear('EID de 15 digitos -> los 8 visuales', n('858000057179343') === '57179343');
+    chequear('visual de 8 queda igual', n('57179343') === '57179343');
+    chequear('un numero corto se rellena con ceros', n('1234') === '00001234');
+    chequear('texto sin digitos da null', n('abc') === null);
+
+    // ---------- buscar: animal APTO ----------
+    boton.dispatchEvent(new win.Event('click', {bubbles:true}));
+    chequear('el modal se abre', doc.getElementById('modal-caravana').style.display === 'flex');
+    doc.getElementById('cv-numero').value = '858000057179343';   // con el EID entero
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    let txt = doc.getElementById('cv-resultado').textContent;
+    chequear('busca por los ultimos 8 digitos', servidor.consultas.includes('57179343'));
+    chequear('APTO: lo dice', /APTO/.test(txt) && !/NO APTO/.test(txt));
+    chequear('APTO: muestra la categoria', /Vaquillona/.test(txt));
+    chequear('APTO: muestra el potrero', /12/.test(txt));
+    chequear('APTO: muestra el peso', /292/.test(txt));
+
+    // ---------- buscar: animal NO APTO ----------
+    doc.getElementById('cv-numero').value = '37620042';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('NO APTO: lo dice', /NO APTO/.test(txt));
+    chequear('NO APTO: muestra hasta cuando', /2026-12-31/.test(txt));
+    chequear('NO APTO: muestra los dias que faltan', /98/.test(txt));
+    chequear('NO APTO: nombra el producto', /EON/.test(txt));
+
+    // ---------- buscar: carencia desconocida ----------
+    doc.getElementById('cv-numero').value = '44444444';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('desconocida: no dice que este apto', !/✅/.test(txt));
+    chequear('desconocida: avisa que no se sabe', /No se sabe si está apto/.test(txt));
+    chequear('desconocida: nombra el producto sin plazo', /G0/.test(txt));
+
+    // ---------- buscar: caravana que no existe ----------
+    doc.getElementById('cv-numero').value = '99999999';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('caravana desconocida: avisa y no inventa un animal',
+      /no está en el padrón/.test(txt) && !/Vaquillona|Vaca|Novillito/.test(txt));
+
+    doc.getElementById('caravana-cerrar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    chequear('la ✕ / Cerrar cierra el modal', doc.getElementById('modal-caravana').style.display === 'none');
   }
 
-  chequear('con el flag, el boton se muestra', boton.style.display !== 'none');
-
-  // ---------- normalizacion: EID de 15 vs visual de 8 ----------
-  const n = win.__normalizar;
-  chequear('EID de 15 digitos -> los 8 visuales', n('858000057179343') === '57179343');
-  chequear('visual de 8 queda igual', n('57179343') === '57179343');
-  chequear('un numero corto se rellena con ceros', n('1234') === '00001234');
-  chequear('texto sin digitos da null', n('abc') === null);
-
-  // ---------- buscar: animal APTO ----------
-  boton.dispatchEvent(new win.Event('click', {bubbles:true}));
-  chequear('el modal se abre', doc.getElementById('modal-caravana').style.display === 'flex');
-  doc.getElementById('cv-numero').value = '858000057179343';   // con el EID entero
-  doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
-  await esperar(40);
-  let txt = doc.getElementById('cv-resultado').textContent;
-  chequear('busca por los ultimos 8 digitos', servidor.consultas.includes('57179343'));
-  chequear('APTO: lo dice', /APTO/.test(txt) && !/NO APTO/.test(txt));
-  chequear('APTO: muestra la categoria', /Vaquillona/.test(txt));
-  chequear('APTO: muestra el potrero', /12/.test(txt));
-  chequear('APTO: muestra el peso', /292/.test(txt));
-
-  // ---------- buscar: animal NO APTO ----------
-  doc.getElementById('cv-numero').value = '37620042';
-  doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
-  await esperar(40);
-  txt = doc.getElementById('cv-resultado').textContent;
-  chequear('NO APTO: lo dice', /NO APTO/.test(txt));
-  chequear('NO APTO: muestra hasta cuando', /2026-12-31/.test(txt));
-  chequear('NO APTO: muestra los dias que faltan', /98/.test(txt));
-  chequear('NO APTO: nombra el producto', /EON/.test(txt));
-
-  // ---------- buscar: carencia desconocida ----------
-  doc.getElementById('cv-numero').value = '44444444';
-  doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
-  await esperar(40);
-  txt = doc.getElementById('cv-resultado').textContent;
-  chequear('desconocida: no dice que este apto', !/✅/.test(txt));
-  chequear('desconocida: avisa que no se sabe', /No se sabe si está apto/.test(txt));
-  chequear('desconocida: nombra el producto sin plazo', /G0/.test(txt));
-
-  // ---------- buscar: caravana que no existe ----------
-  doc.getElementById('cv-numero').value = '99999999';
-  doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
-  await esperar(40);
-  txt = doc.getElementById('cv-resultado').textContent;
-  chequear('caravana desconocida: avisa y no inventa un animal',
-    /no está en el padrón/.test(txt) && !/Vaquillona|Vaca|Novillito/.test(txt));
-
-  doc.getElementById('caravana-cerrar').dispatchEvent(new win.Event('click', {bubbles:true}));
-  chequear('la ✕ / Cerrar cierra el modal', doc.getElementById('modal-caravana').style.display === 'none');
-
-  // ---------- 25/9/2026: "Cargar tratamiento" grupal vs individual ----------
+  // ---------- 25/9/2026: "Cargar tratamiento" grupal vs individual --
+  // disponible en los 3 establecimientos, con o sin flag ----------
   const tabla = win.__tablaSanidad;
-  chequear('con el flag, "Cargar tratamiento (grupal)" se renombra',
+  chequear('"Cargar tratamiento (grupal)" tiene su nombre',
     doc.getElementById('btn-cargar-sanidad').textContent === '+ Cargar tratamiento (grupal)');
-  chequear('con el flag, "Cargar tratamiento individual" se muestra',
+  chequear('"Cargar tratamiento individual" se muestra',
     doc.getElementById('btn-cargar-sanidad-individual').style.display !== 'none');
 
   // ---- grupal: la fila de caravana NO aparece, cantidad libre como siempre ----
@@ -262,8 +260,16 @@ async function probarArchivo(archivo){
   doc.getElementById('sc-caravana').dispatchEvent(new win.Event('change', {bubbles:true}));
   await esperar(40);
   const quien = doc.getElementById('sc-caravana-quien').textContent;
-  chequear('al tipear la caravana dice de quien es', /Novillito 1-2/.test(quien));
-  chequear('y avisa si ese animal esta en carencia', /NO APTO/.test(quien));
+  if(habilitado){
+    // Solo La Vuelta tiene ese animal en el padron de prueba.
+    chequear('al tipear la caravana dice de quien es', /Novillito 1-2/.test(quien));
+    chequear('y avisa si ese animal esta en carencia', /NO APTO/.test(quien));
+  } else {
+    // Maria Laura/Pone Chico no tienen padron propio -- "quien es" no
+    // encuentra nada, pero eso no impide cargar la caravana (mas abajo).
+    chequear('sin padron, "quien es" avisa que no esta (no rompe ni inventa)',
+      /no está en el padrón/.test(quien));
+  }
 
   // Sin caravana Y sin confirmar "no tiene" -> bloquea.
   doc.getElementById('sc-caravana').value = '';

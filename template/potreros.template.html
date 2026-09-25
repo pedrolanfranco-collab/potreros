@@ -615,8 +615,8 @@
     <h3>🏥 Sanidad</h3>
     <button class="btn-cerrar-x" id="sanidad-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Los plazos y el costo se calculan al toque, según el catálogo de productos.</p>
-    <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento</button>
-    <button class="btn btn-json btn-full" id="btn-cargar-sanidad-individual" style="display:none;margin-bottom:10px;">+ Cargar tratamiento (individual)</button>
+    <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento (grupal)</button>
+    <button class="btn btn-json btn-full" id="btn-cargar-sanidad-individual" style="margin-bottom:10px;">+ Cargar tratamiento (individual)</button>
     <div id="form-sanidad" style="display:none;margin-bottom:12px;">
       <div class="form-row"><label>Fecha</label><input type="date" id="sc-fecha"></div>
       <div class="form-row"><label>Categoría</label><select id="sc-categoria"></select></div>
@@ -5756,18 +5756,15 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
     producto2: producto2||null, dosis2,
     observaciones: obs||null
   };
-  // @sanidadExcel:start
-  // Las columnas existen en sanidad_carga desde el 24/9/2026 (caravana) y
-  // el 25/9/2026 (sin_caravana). Se mandan solo si el establecimiento tiene
-  // el padron publicado, para no ensuciar la tabla con un campo que nadie
-  // puede verificar contra nada. sin_caravana solo tiene sentido en modo
-  // individual -- en grupal queda null, no false (false sugeriría que se
-  // confirmó activamente, y ahí ni se preguntó).
-  if(CONFIG.caravanasHabilitado){
-    registro.caravana = caravana;
-    registro.sin_caravana = sanidadModoIndividual ? sinCaravanaConfirmado : null;
-  }
-  // @sanidadExcel:end
+  // 25/9/2026: caravana/sin_caravana en las 3 tablas de sanidad (columnas
+  // agregadas a las 3 el mismo dia, ver commit). Se mandan siempre
+  // (explícitas en null en grupal, no un campo ausente) aunque el
+  // establecimiento no tenga padrón propio (animales_caravana) para
+  // verificar de quién es -- eso solo cambia si "quien es" muestra algo al
+  // tipear, no si se guarda. sin_caravana en null en grupal, no false
+  // (false sugeriría que se confirmó activamente, y ahí ni se preguntó).
+  registro.caravana = sanidadModoIndividual ? caravana : null;
+  registro.sin_caravana = sanidadModoIndividual ? sinCaravanaConfirmado : null;
   await guardarSanidadCarga(registro);
   // @sanidadExcel:start
   estado.historialSanidad = estado.historialSanidad || [];
@@ -5776,12 +5773,10 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   guardarEstado();
   // @sanidadExcel:end
   document.getElementById('form-sanidad').style.display = 'none';
-  if(CONFIG.caravanasHabilitado){
-    document.getElementById('sc-caravana').value = '';
-    document.getElementById('sc-caravana').disabled = false;
-    document.getElementById('sc-sin-caravana').checked = false;
-    document.getElementById('sc-caravana-quien').innerHTML = '';
-  }
+  document.getElementById('sc-caravana').value = '';
+  document.getElementById('sc-caravana').disabled = false;
+  document.getElementById('sc-sin-caravana').checked = false;
+  document.getElementById('sc-caravana-quien').innerHTML = '';
   toast('Tratamiento cargado');
   await cargarSanidad();
   // @sanidadExcel:start
@@ -5897,55 +5892,52 @@ if(CONFIG.caravanasHabilitado){
   if(cvc) cvc.addEventListener('click', ()=>{
     document.getElementById('modal-caravana').style.display = 'none';
   });
-
-  /* 25/9/2026: "Cargar tratamiento" grupal/individual -- ver
-     abrirFormSanidad más arriba. El botón individual y la fila de caravana
-     solo tienen sentido con el padrón cargado (mismo flag). */
-  const btnIndiv = document.getElementById('btn-cargar-sanidad-individual');
-  if(btnIndiv) btnIndiv.style.display = '';
-  const btnGrupal = document.getElementById('btn-cargar-sanidad');
-  if(btnGrupal) btnGrupal.textContent = '+ Cargar tratamiento (grupal)';
-
-  /* La misma consulta, dentro del formulario de tratamiento: al tipear la
-     caravana se muestra de quien es ANTES de guardar. Es la confirmacion
-     que evita cargarle el producto al animal equivocado. */
-  const scc = document.getElementById('sc-caravana');
-  if(scc) scc.addEventListener('change', async ()=>{
-    const quien = document.getElementById('sc-caravana-quien');
-    const id8 = normalizarCaravana(scc.value);
-    if(!id8){ quien.innerHTML = ''; return; }
-    quien.innerHTML = '<p class="modal-info">Buscando…</p>';
-    const r = await buscarCaravana(id8);
-    if(r.error){
-      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">Sin señal para verificar la caravana ${id8}. Se va a guardar igual.</p>`;
-    }else if(!r.animal){
-      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
-    }else{
-      const a = r.animal;
-      const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
-                      a.potrero && ('potrero ' + a.potrero)].filter(Boolean);
-      const aviso = a.estado_carencia === 'NO APTO'
-        ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${a.fecha_apto||'?'}</b>` : '';
-      quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${id8}</b>: ${partes.join(', ')}${aviso}</p>`;
-    }
-  });
-  /* Confirmación explícita de "no tiene caravana": deja constancia
-     (sin_caravana=true en el registro) en vez de un campo vacío ambiguo.
-     Tildarla limpia y bloquea el campo de caravana -- son mutuamente
-     excluyentes, no tiene sentido escribir un número y tildar "no tiene". */
-  const ssc = document.getElementById('sc-sin-caravana');
-  if(ssc) ssc.addEventListener('change', ()=>{
-    const quien = document.getElementById('sc-caravana-quien');
-    if(ssc.checked){
-      scc.value = '';
-      scc.disabled = true;
-      quien.innerHTML = '<p class="modal-info">Confirmado: este animal no tiene caravana.</p>';
-    }else{
-      scc.disabled = false;
-      quien.innerHTML = '';
-    }
-  });
 }
+
+/* 25/9/2026: "Cargar tratamiento individual" (con caravana) esta disponible
+   en los 3 establecimientos desde el principio -- a diferencia de "🔎
+   Buscar caravana" arriba (que sigue gateado por CONFIG.caravanasHabilitado,
+   porque busca contra el padron animales_caravana, que hoy solo tiene datos
+   de La Vuelta), acá no hace falta padron para cargar la caravana de un
+   tratamiento: "quien es" simplemente no encuentra nada donde no hay
+   padron, pero el numero se guarda igual -- es un dato del animal, no una
+   consulta que dependa de tener el padron cargado. */
+const scc = document.getElementById('sc-caravana');
+scc.addEventListener('change', async ()=>{
+  const quien = document.getElementById('sc-caravana-quien');
+  const id8 = normalizarCaravana(scc.value);
+  if(!id8){ quien.innerHTML = ''; return; }
+  quien.innerHTML = '<p class="modal-info">Buscando…</p>';
+  const r = await buscarCaravana(id8);
+  if(r.error){
+    quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">Sin señal para verificar la caravana ${id8}. Se va a guardar igual.</p>`;
+  }else if(!r.animal){
+    quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
+  }else{
+    const a = r.animal;
+    const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
+                    a.potrero && ('potrero ' + a.potrero)].filter(Boolean);
+    const aviso = a.estado_carencia === 'NO APTO'
+      ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${a.fecha_apto||'?'}</b>` : '';
+    quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${id8}</b>: ${partes.join(', ')}${aviso}</p>`;
+  }
+});
+/* Confirmación explícita de "no tiene caravana": deja constancia
+   (sin_caravana=true en el registro) en vez de un campo vacío ambiguo.
+   Tildarla limpia y bloquea el campo de caravana -- son mutuamente
+   excluyentes, no tiene sentido escribir un número y tildar "no tiene". */
+const ssc = document.getElementById('sc-sin-caravana');
+ssc.addEventListener('change', ()=>{
+  const quien = document.getElementById('sc-caravana-quien');
+  if(ssc.checked){
+    scc.value = '';
+    scc.disabled = true;
+    quien.innerHTML = '<p class="modal-info">Confirmado: este animal no tiene caravana.</p>';
+  }else{
+    scc.disabled = false;
+    quien.innerHTML = '';
+  }
+});
 
 /* ======================= LLUVIAS ======================= */
 function renderLluviasLista(){
