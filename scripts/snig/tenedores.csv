@@ -1,5 +1,5 @@
 codigo_snig,tenedor,tipo_tenencia,establecimiento_app,firma_app,departamento,activo,notas
-130563651,Pedro Lanfranco,establecimiento_propio,la_vuelta,Pedro Lanfranco,Rivera,si,"El campo La Vuelta y el ganado de la firma Pedro Lanfranco van bajo el mismo codigo: es establecimiento y duenio de ganado a la vez."
+130563651,La Vuelta,establecimiento_propio,la_vuelta,Pedro Lanfranco,Rivera,si,"El DICOSE es del establecimiento La Vuelta. El ganado registrado bajo ese codigo es de la firma Pedro Lanfranco: por eso el mismo codigo es tenedor (el campo) y propietario (la firma)."
 ff0567061,Silvia Dutra,propietario_sin_campo,la_vuelta,Silvia Dutra,Rivera,si,"Solo propietaria de ganado, sin campo. Su ganado esta fisicamente en La Vuelta, o sea con tenedor 130563651 y propietario ff0567061."
 ,Fideicomiso,propietario_sin_campo,la_vuelta,Fideicomiso,Rivera,si,"FALTA EL CODIGO. La firma existe en la app y aparece en las sesiones del baston, asi que tiene que tener DICOSE propio o estar colgada de otro."
 ,Walter Lanfranco,propietario_sin_campo,la_vuelta,Walter Lanfranco,Rivera,si,"FALTA EL CODIGO. Idem Fideicomiso: figura como firma en la app y no aparece en el export de 130563651."
