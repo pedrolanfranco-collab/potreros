@@ -42,8 +42,10 @@ CARPETA_DEFECTO = os.path.join(
 # real POTRERO cae en el medio de PRODUCTO2 y "DOSIS 2", asi que el orden no
 # sigue ninguna logica que convenga dar por sentada.
 ALIAS = {
-    'eid':        ['eid', 'electronic id', 'rfid'],
-    'vid':        ['vid', 'visual id', 'visual'],
+    # 'ide'/'idv' son como los escribe el export viejo de Tru-Test; 'eid'/'vid'
+    # como los escribe la app de Datamars. Son la misma cosa.
+    'eid':        ['eid', 'ide', 'electronic id', 'rfid', 'nro electronico'],
+    'vid':        ['vid', 'idv', 'visual id', 'visual'],
     'fecha':      ['date', 'fecha'],
     'hora':       ['time', 'hora'],
     'propietario':['propietario', 'owner', 'duenio', 'dueno'],
@@ -66,15 +68,23 @@ OBLIGATORIAS = ['eid', 'fecha']
 CATEGORIA_BASTON = {
     'TERNERA': 'Terneras',
     'TERNERO': 'Terneros',
-    'VAQUILLONA': 'Vaquillonas 1-2 años',
     'VAQUILLONA 1-2': 'Vaquillonas 1-2 años',
     'VAQUILLONA 2-3': 'Vaquillonas 2-3 años',
     'NOVILLITO': 'Novillitos 1-2 años',
     'NOVILLO 2-3': 'Novillos 2-3 años',
-    'NOVILLO': 'Novillos +3 años',
     'VACA': 'Vacas',
     'TORO': 'Toros',
     'BUEY': 'Bueyes',
+}
+# Abreviaturas que NO alcanzan solas para saber la categoria de la app: hacen
+# falta la generacion o la edad. Mapearlas de prepo seria elegir una categoria
+# equivocada la mitad de las veces, asi que se reportan y se deciden una vez.
+CATEGORIA_AMBIGUA = {
+    'VAQ':        'vaquillona, pero falta saber si 1-2 o 2-3 años (mirar GEN)',
+    'VAQUILLONA': 'idem VAQ',
+    'NOV':        'novillo, pero falta saber si 1-2, 2-3 o +3 años',
+    'NOVILLO':    'idem NOV',
+    'VCUT':       'no se que categoria de la app le corresponde',
 }
 
 def normalizar(txt):
@@ -164,13 +174,53 @@ def juntar_archivos(args):
     return [a for a in archivos
             if os.path.basename(a).lower() not in ('padron_baston.csv', 'tenedores_detectados.csv')]
 
+def parece_dato(encabezados):
+    """True si la primera fila del archivo es un animal, no un encabezado.
+
+    Varios exports de la carpeta no traen fila de encabezado: arrancan
+    directo con el EID. Sin esto, el lector toma el primer animal como
+    nombres de columna, se pierde ese animal y despues no encuentra ninguna
+    columna -- que es exactamente lo que paso el 25/9/2026, y el mensaje
+    "sin columna eid" no daba ninguna pista de la causa.
+    """
+    if not encabezados:
+        return False
+    primera = re.sub(r'\D', '', str(encabezados[0] or ''))
+    return len(primera) >= 12          # un EID; ningun encabezado es un numero largo
+
 def titulo(t):
     print('\n' + t); print('-' * len(t))
 
+def volcado_crudo(archivos):
+    """Imprime las dos primeras lineas de cada archivo, tal cual vienen.
+
+    Para los archivos sin encabezado es la unica forma de deducir el orden
+    de las columnas: hay que mirarlas al lado del nombre de la sesion.
+    """
+    for ruta in archivos:
+        print('\n=== %s' % os.path.basename(ruta))
+        try:
+            with open(ruta, 'rb') as f:
+                crudo = f.read(4000)
+            for cod in ('utf-8-sig', 'cp1252', 'latin-1'):
+                try:
+                    texto = crudo.decode(cod); break
+                except UnicodeDecodeError:
+                    continue
+            for linea in texto.splitlines()[:2]:
+                print('   %s' % linea)
+        except Exception as e:
+            print('   no se pudo leer: %s' % e)
+
 def main():
-    archivos = juntar_archivos(sys.argv[1:])
+    args = [a for a in sys.argv[1:] if a != '--crudo']
+    archivos = juntar_archivos(args)
     if not archivos:
         sys.exit('No hay ningun .csv para leer.')
+
+    if '--crudo' in sys.argv[1:]:
+        volcado_crudo(archivos)
+        return
 
     print('Archivos: %d' % len(archivos))
 
@@ -178,6 +228,7 @@ def main():
     por_encabezado = defaultdict(list)
     lecturas = []
     ilegibles = []
+    sin_encabezado = []
     for ruta in archivos:
         try:
             enc, filas = leer_csv(ruta)
@@ -185,6 +236,8 @@ def main():
             ilegibles.append((os.path.basename(ruta), str(e))); continue
         if not enc:
             ilegibles.append((os.path.basename(ruta), 'vacio')); continue
+        if parece_dato(enc):
+            sin_encabezado.append((os.path.basename(ruta), len(enc), len(filas) + 1)); continue
         por_encabezado[tuple(normalizar(h) for h in enc)].append(os.path.basename(ruta))
         mapa = mapear_columnas(enc)
         faltan = [c for c in OBLIGATORIAS if c not in mapa]
@@ -223,6 +276,13 @@ def main():
             print('      ejemplo : %s' % arch[0])
             if len(arch) > 1:
                 print('      y %d mas' % (len(arch) - 1))
+    if sin_encabezado:
+        print('\n   %d archivos NO traen fila de encabezado: arrancan directo con el' % len(sin_encabezado))
+        print('   EID. No se pueden leer sin saber el orden de las columnas, y ese orden')
+        print('   no es el mismo en todos. Mirá el volcado:  leer_baston.py --crudo\n')
+        print('      %-34s %s' % ('archivo', 'columnas  filas'))
+        for n, cols, fil in sin_encabezado:
+            print('      %-34s %8d %6d' % (n, cols, fil))
     if ilegibles:
         print('\n   No pude leer %d archivos:' % len(ilegibles))
         for n, m in ilegibles:
@@ -257,7 +317,13 @@ def main():
                         ('origen',      'informativo'),
                         ('gen',         'informativo'),
                         ('rodeo',       'informativo, la app no tiene este campo')):
-        c = Counter(l[campo] for l in lecturas if l[campo])
+        # propietario/categoria/origen se cuentan en mayuscula: el mismo valor
+        # viene escrito de las dos formas segun la sesion, y la traduccion no
+        # distingue mayusculas. El potrero se cuenta tal cual, porque en Maria
+        # Laura son nombres y ahi las mayusculas son parte del nombre.
+        aplastar = campo in ('propietario', 'categoria', 'origen')
+        c = Counter((l[campo].strip().upper() if aplastar else l[campo])
+                    for l in lecturas if l[campo])
         vacios = sum(1 for l in lecturas if not l[campo])
         print('\n   %s  (%s)' % (campo.upper(), nota))
         if not c:
@@ -266,15 +332,27 @@ def main():
         for k, v in c.most_common(20):
             extra = ''
             if campo == 'categoria':
-                destino = CATEGORIA_BASTON.get(k.strip().upper())
-                extra = '  ->  %s' % destino if destino else '  ->  SIN TRADUCIR'
+                clave = k.strip().upper()
+                destino = CATEGORIA_BASTON.get(clave)
+                if destino:
+                    extra = '  ->  %s' % destino
+                elif clave in CATEGORIA_AMBIGUA:
+                    extra = '  ->  AMBIGUA: %s' % CATEGORIA_AMBIGUA[clave]
+                else:
+                    extra = '  ->  SIN TRADUCIR'
             print('      %-22s %6d%s' % (k, v, extra))
         if len(c) > 20:
             print('      ... y %d valores mas' % (len(c) - 20))
         if vacios:
             print('      (vacio)                %6d' % vacios)
-    faltan_cat = sorted({l['categoria'].strip().upper() for l in lecturas
-                         if l['categoria'] and l['categoria'].strip().upper() not in CATEGORIA_BASTON})
+    todas_cat = {l['categoria'].strip().upper() for l in lecturas if l['categoria']}
+    ambiguas = sorted(c for c in todas_cat if c in CATEGORIA_AMBIGUA)
+    faltan_cat = sorted(c for c in todas_cat
+                        if c not in CATEGORIA_BASTON and c not in CATEGORIA_AMBIGUA)
+    if ambiguas:
+        print('\n   Categorias ambiguas (hay que decidirlas una vez):')
+        for c in ambiguas:
+            print('      %-12s %s' % (c, CATEGORIA_AMBIGUA[c]))
     if faltan_cat:
         print('\n   Categorias sin traducir: %s' % ', '.join(faltan_cat))
         print('   Agregalas a CATEGORIA_BASTON arriba en este mismo archivo.')
