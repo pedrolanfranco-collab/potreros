@@ -1,0 +1,125 @@
+Filas de 'Planilla Sanitaria' que NO se migraron a sanidad_carga
+(les falta un campo obligatorio -- revisar si hace falta completarlas a mano)
+
+Fila 10: falta cantidad
+Fila 15: falta potrero, cantidad, producto1, dosis1
+Fila 22: falta producto1, dosis1
+Fila 75: falta cantidad
+Fila 87: falta cantidad
+Fila 90: falta cantidad
+Fila 91: falta potrero, cantidad
+Fila 92: falta cantidad
+Fila 94: falta potrero, cantidad
+Fila 98: falta cantidad
+Fila 99: falta cantidad
+Fila 100: falta cantidad, dosis1
+Fila 141: falta cantidad
+Fila 186: falta cantidad
+Fila 198: falta potrero
+Fila 199: falta potrero
+Fila 235: falta potrero, cantidad
+Fila 239: falta dosis1
+Fila 245: falta cantidad
+Fila 247: falta dosis1
+Fila 248: falta cantidad
+Fila 251: falta potrero, cantidad
+Fila 252: falta potrero, cantidad
+Fila 253: falta potrero
+Fila 257: falta cantidad
+Fila 262: falta potrero
+Fila 267: falta cantidad
+Fila 269: falta cantidad
+Fila 270: falta cantidad
+Fila 271: falta cantidad
+Fila 272: falta potrero
+Fila 273: falta potrero
+Fila 288: falta cantidad
+Fila 289: falta cantidad
+Fila 290: falta cantidad
+Fila 296: falta categoria, potrero, cantidad
+Fila 297: falta cantidad
+Fila 299: falta dosis1
+Fila 300: falta dosis1
+Fila 301: falta dosis1
+Fila 303: falta dosis1
+Fila 304: falta dosis1
+Fila 305: falta dosis1
+Fila 306: falta dosis1
+Fila 307: falta dosis1
+Fila 308: falta dosis1
+Fila 309: falta dosis1
+Fila 310: falta dosis1
+Fila 312: falta cantidad
+Fila 313: falta cantidad
+Fila 320: falta cantidad
+Fila 322: falta cantidad
+Fila 323: falta potrero
+Fila 324: falta potrero
+Fila 327: falta cantidad
+Fila 328: falta cantidad
+Fila 329: falta cantidad
+Fila 331: falta potrero
+Fila 357: falta cantidad
+Fila 358: falta dosis1
+Fila 360: falta cantidad
+Fila 361: falta cantidad
+Fila 363: falta cantidad
+Fila 364: falta cantidad
+Fila 375: falta cantidad
+Fila 378: falta dosis1
+Fila 379: falta dosis1
+Fila 380: falta dosis1
+Fila 381: falta dosis1
+Fila 382: falta dosis1
+Fila 383: falta dosis1
+Fila 384: falta potrero, cantidad, dosis1
+Fila 385: falta potrero, cantidad, dosis1
+Fila 386: falta potrero, cantidad, dosis1
+Fila 388: falta dosis1
+Fila 395: falta cantidad
+Fila 407: falta cantidad
+Fila 408: falta cantidad
+Fila 409: falta dosis1
+Fila 410: falta dosis1
+Fila 411: falta dosis1
+Fila 412: falta dosis1
+Fila 413: falta dosis1
+Fila 414: falta cantidad, dosis1
+Fila 421: falta cantidad
+Fila 422: falta cantidad
+Fila 424: falta potrero, dosis1
+Fila 425: falta potrero, dosis1
+Fila 426: falta dosis1
+Fila 427: falta potrero, dosis1
+Fila 428: falta dosis1
+Fila 429: falta cantidad, dosis1
+Fila 430: falta cantidad, dosis1
+Fila 431: falta cantidad, dosis1
+Fila 434: falta cantidad
+Fila 435: falta cantidad
+Fila 436: falta dosis1
+Fila 437: falta cantidad, dosis1
+Fila 438: falta cantidad, dosis1
+Fila 439: falta cantidad, dosis1
+Fila 440: falta cantidad, dosis1
+Fila 441: falta cantidad, dosis1
+Fila 442: falta cantidad, dosis1
+Fila 443: falta cantidad, dosis1
+Fila 444: falta cantidad, dosis1
+Fila 445: falta cantidad, dosis1
+Fila 446: falta cantidad, dosis1
+Fila 447: falta cantidad, dosis1
+Fila 450: falta cantidad, dosis1
+Fila 451: falta cantidad, dosis1
+Fila 452: falta dosis1
+Fila 457: falta dosis1
+Fila 458: falta dosis1
+Fila 462: falta dosis1
+Fila 463: falta dosis1
+Fila 464: falta dosis1
+Fila 465: falta dosis1
+Fila 466: falta dosis1
+Fila 467: falta dosis1
+Fila 485: falta cantidad
+Fila 505: falta cantidad
+Fila 508: falta cantidad
