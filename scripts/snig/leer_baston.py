@@ -31,7 +31,7 @@ import os
 import re
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import date, datetime
 
 CARPETA_DEFECTO = os.path.join(
     os.environ.get('OneDrive', os.path.expanduser('~')),
@@ -73,19 +73,74 @@ CATEGORIA_BASTON = {
     'NOVILLITO': 'Novillitos 1-2 años',
     'NOVILLO 2-3': 'Novillos 2-3 años',
     'VACA': 'Vacas',
+    # Vaca ultima cria: se va despues de destetar este ternero. Para la app
+    # sigue siendo una vaca -- "Vacas de invernada" es la que ya se saco de
+    # entore y se esta engordando, que no es lo mismo.
+    'VCUT': 'Vacas',
     'TORO': 'Toros',
     'BUEY': 'Bueyes',
 }
-# Abreviaturas que NO alcanzan solas para saber la categoria de la app: hacen
-# falta la generacion o la edad. Mapearlas de prepo seria elegir una categoria
-# equivocada la mitad de las veces, asi que se reportan y se deciden una vez.
-CATEGORIA_AMBIGUA = {
-    'VAQ':        'vaquillona, pero falta saber si 1-2 o 2-3 años (mirar GEN)',
-    'VAQUILLONA': 'idem VAQ',
-    'NOV':        'novillo, pero falta saber si 1-2, 2-3 o +3 años',
-    'NOVILLO':    'idem NOV',
-    'VCUT':       'no se que categoria de la app le corresponde',
+# Abreviaturas que no alcanzan solas: dicen la familia pero no el tramo de
+# edad. Se resuelven con GEN (el año de nacimiento) mas la fecha de la
+# sesion. Cada lista va del mas joven al mas viejo, con el tope de edad en
+# años que le corresponde a cada tramo; el ultimo se lleva todo el resto.
+FAMILIA = {
+    'VAQ':        [(12, 'Terneras'), (24, 'Vaquillonas 1-2 años'), (None, 'Vaquillonas 2-3 años')],
+    'VAQUILLONA': [(12, 'Terneras'), (24, 'Vaquillonas 1-2 años'), (None, 'Vaquillonas 2-3 años')],
+    'NOV':        [(12, 'Terneros'), (24, 'Novillitos 1-2 años'),
+                   (36, 'Novillos 2-3 años'), (None, 'Novillos +3 años')],
+    'NOVILLO':    [(12, 'Terneros'), (24, 'Novillitos 1-2 años'),
+                   (36, 'Novillos 2-3 años'), (None, 'Novillos +3 años')],
 }
+
+# Mes en que se asume que pario la generacion. Restar años calendario
+# envejece a los animales hasta 12 meses de mas: una vaquillona de la
+# generacion 2024 leida en mayo de 2026 tiene 19 meses, no 2 años, y con la
+# resta simple caia en "2-3 años" en vez de "1-2". Parir en octubre es el
+# promedio de la zona; si tu pariciones se corren, este numero se cambia una
+# sola vez aca.
+MES_PARICION = 10
+
+def anio_nacimiento(gen, fecha):
+    """GEN es el ultimo digito del año de nacimiento: 5 = 2025, 0 = 2020.
+
+    Se resuelve contra la fecha de la sesion, tomando el año mas reciente
+    que termine en ese digito y no sea posterior a la sesion. La decada
+    queda implicita: un GEN 9 leido en 2026 se toma como 2019, no 2009. Un
+    animal de mas de 10 años se clasifica mal por diseño de la codificacion,
+    no por este calculo -- para eso esta la edad exacta del SNIG.
+    """
+    d = re.sub(r'\D', '', str(gen or ''))
+    if len(d) != 1 or not fecha:
+        return None
+    a = fecha.year
+    while a % 10 != int(d):
+        a -= 1
+    return a
+
+def categoria_app(cat, gen, fecha):
+    """Devuelve (categoria_de_la_app, motivo_si_no_se_pudo)."""
+    clave = (cat or '').strip().upper()
+    if not clave:
+        return None, 'sin categoria'
+    if clave in CATEGORIA_BASTON:
+        return CATEGORIA_BASTON[clave], None
+    tramos = FAMILIA.get(clave)
+    if not tramos:
+        return None, 'sin traducir'
+    anio = anio_nacimiento(gen, fecha)
+    if anio is None:
+        return None, 'falta GEN o fecha'
+    meses = edad_meses(anio, fecha)
+    for tope, destino in tramos:
+        if tope is None or meses < tope:
+            return destino, None
+    return None, 'edad fuera de rango'
+
+def edad_meses(anio_nac, fecha):
+    """Meses entre la paricion asumida de esa generacion y la fecha leida."""
+    nacio = date(anio_nac, MES_PARICION, 1)
+    return (fecha.year - nacio.year) * 12 + (fecha.month - nacio.month)
 
 def normalizar(txt):
     t = str(txt or '').strip().lower()
@@ -174,6 +229,40 @@ def juntar_archivos(args):
     return [a for a in archivos
             if os.path.basename(a).lower() not in ('padron_baston.csv', 'tenedores_detectados.csv')]
 
+# Los CSV que baja el programa de Tru-Test en la PC no traen encabezado. Este
+# es el orden deducido de las sesiones de mayo de 2026. Como el archivo no
+# tiene forma de avisar que sus columnas estan en otro orden, cada archivo se
+# verifica fila por fila con validar_layout() antes de leerlo: uno que no
+# encaje se reporta, no se lee a la fuerza.
+LAYOUT_PC = ['eid', 'vid', 'fecha', 'hora', 'propietario', 'categoria', 'gen',
+             'potrero', 'producto1', 'producto2', 'dosis1', 'dosis2', 'origen', 'nota']
+
+def validar_layout(filas, layout):
+    """Motivos por los que este archivo NO encaja en el layout. Vacio = encaja.
+
+    Las verificaciones son las que el encabezado haria gratis: si una dosis
+    trae texto o un producto trae un numero, las columnas estan corridas.
+    """
+    idx = {c: i for i, c in enumerate(layout)}
+    problemas = Counter()
+    for fila in filas:
+        def v(c):
+            i = idx.get(c)
+            return fila[i].strip() if i is not None and i < len(fila) else ''
+        if len(re.sub(r'\D', '', v('eid'))) < 12:
+            problemas['el EID no parece un EID'] += 1
+        if not a_fecha(v('fecha')):
+            problemas['la fecha no parece una fecha'] += 1
+        for c in ('producto1', 'producto2'):
+            t = v(c)
+            if t and re.fullmatch(r'[\d.,]+', t):
+                problemas['%s trae un numero' % c] += 1
+        for c in ('dosis1', 'dosis2'):
+            t = v(c)
+            if t and a_numero(t) is None:
+                problemas['%s trae texto' % c] += 1
+    return problemas
+
 def parece_dato(encabezados):
     """True si la primera fila del archivo es un animal, no un encabezado.
 
@@ -237,12 +326,19 @@ def main():
         if not enc:
             ilegibles.append((os.path.basename(ruta), 'vacio')); continue
         if parece_dato(enc):
-            sin_encabezado.append((os.path.basename(ruta), len(enc), len(filas) + 1)); continue
-        por_encabezado[tuple(normalizar(h) for h in enc)].append(os.path.basename(ruta))
-        mapa = mapear_columnas(enc)
-        faltan = [c for c in OBLIGATORIAS if c not in mapa]
-        if faltan:
-            ilegibles.append((os.path.basename(ruta), 'sin columna ' + ', '.join(faltan))); continue
+            # No hay encabezado: la primera fila ya es un animal.
+            filas = [enc] + filas
+            problemas = validar_layout(filas, LAYOUT_PC)
+            sin_encabezado.append((os.path.basename(ruta), len(enc), len(filas), problemas))
+            if problemas:
+                continue          # las columnas no estan donde dice LAYOUT_PC
+            mapa = {c: i for i, c in enumerate(LAYOUT_PC) if i < len(enc)}
+        else:
+            por_encabezado[tuple(normalizar(h) for h in enc)].append(os.path.basename(ruta))
+            mapa = mapear_columnas(enc)
+            faltan = [c for c in OBLIGATORIAS if c not in mapa]
+            if faltan:
+                ilegibles.append((os.path.basename(ruta), 'sin columna ' + ', '.join(faltan))); continue
         def val(fila, campo):
             i = mapa.get(campo)
             return fila[i].strip() if i is not None and i < len(fila) else ''
@@ -277,12 +373,19 @@ def main():
             if len(arch) > 1:
                 print('      y %d mas' % (len(arch) - 1))
     if sin_encabezado:
-        print('\n   %d archivos NO traen fila de encabezado: arrancan directo con el' % len(sin_encabezado))
-        print('   EID. No se pueden leer sin saber el orden de las columnas, y ese orden')
-        print('   no es el mismo en todos. Mirá el volcado:  leer_baston.py --crudo\n')
-        print('      %-34s %s' % ('archivo', 'columnas  filas'))
-        for n, cols, fil in sin_encabezado:
-            print('      %-34s %8d %6d' % (n, cols, fil))
+        encajan = [x for x in sin_encabezado if not x[3]]
+        no_encajan = [x for x in sin_encabezado if x[3]]
+        print('\n   %d archivos SIN encabezado (los que baja el programa de la PC).' % len(sin_encabezado))
+        print('   Se leen con el orden fijo LAYOUT_PC, verificando cada fila:\n')
+        print('      %-34s %8s %6s  %s' % ('archivo', 'columnas', 'filas', 'estado'))
+        for n, cols, fil, prob in sin_encabezado:
+            print('      %-34s %8d %6d  %s' % (n, cols, fil, 'ok' if not prob else 'NO ENCAJA'))
+        print('\n   Encajan %d, no encajan %d.' % (len(encajan), len(no_encajan)))
+        for n, cols, fil, prob in no_encajan:
+            print('\n      %s -- por que no encaja:' % n)
+            for motivo, veces in prob.most_common():
+                print('         %-34s %d filas' % (motivo, veces))
+            print('         Mirá las columnas con:  leer_baston.py --crudo')
     if ilegibles:
         print('\n   No pude leer %d archivos:' % len(ilegibles))
         for n, m in ilegibles:
@@ -333,11 +436,10 @@ def main():
             extra = ''
             if campo == 'categoria':
                 clave = k.strip().upper()
-                destino = CATEGORIA_BASTON.get(clave)
-                if destino:
-                    extra = '  ->  %s' % destino
-                elif clave in CATEGORIA_AMBIGUA:
-                    extra = '  ->  AMBIGUA: %s' % CATEGORIA_AMBIGUA[clave]
+                if clave in CATEGORIA_BASTON:
+                    extra = '  ->  %s' % CATEGORIA_BASTON[clave]
+                elif clave in FAMILIA:
+                    extra = '  ->  segun GEN (ver abajo)'
                 else:
                     extra = '  ->  SIN TRADUCIR'
             print('      %-22s %6d%s' % (k, v, extra))
@@ -346,16 +448,34 @@ def main():
         if vacios:
             print('      (vacio)                %6d' % vacios)
     todas_cat = {l['categoria'].strip().upper() for l in lecturas if l['categoria']}
-    ambiguas = sorted(c for c in todas_cat if c in CATEGORIA_AMBIGUA)
     faltan_cat = sorted(c for c in todas_cat
-                        if c not in CATEGORIA_BASTON and c not in CATEGORIA_AMBIGUA)
-    if ambiguas:
-        print('\n   Categorias ambiguas (hay que decidirlas una vez):')
-        for c in ambiguas:
-            print('      %-12s %s' % (c, CATEGORIA_AMBIGUA[c]))
+                        if c not in CATEGORIA_BASTON and c not in FAMILIA)
     if faltan_cat:
         print('\n   Categorias sin traducir: %s' % ', '.join(faltan_cat))
-        print('   Agregalas a CATEGORIA_BASTON arriba en este mismo archivo.')
+        print('   Agregalas a CATEGORIA_BASTON o a FAMILIA arriba en este mismo archivo.')
+
+    titulo('3b. Como queda cada categoria + GEN')
+    print('   GEN es el ultimo digito del año de nacimiento (5 = 2025). La edad se')
+    print('   cuenta desde una paricion asumida en el mes %d de ese año.' % MES_PARICION)
+    print('   Si tus pariciones se corren, se cambia MES_PARICION y listo.\n')
+    resueltas = Counter()
+    fallidas = Counter()
+    for l in lecturas:
+        destino, motivo = categoria_app(l['categoria'], l['gen'], l['fecha'])
+        clave = (l['categoria'] or '(vacio)').strip().upper()
+        if destino:
+            anio = anio_nacimiento(l['gen'], l['fecha'])
+            meses = edad_meses(anio, l['fecha']) if anio and l['fecha'] else None
+            resueltas[(clave, l['gen'] or '-', anio or '-', meses if meses is not None else '-', destino)] += 1
+        else:
+            fallidas[(clave, l['gen'] or '-', motivo)] += 1
+    print('      %-10s %-5s %-7s %-7s %-24s %s' % ('baston', 'GEN', 'nacio', 'meses', 'categoria de la app', 'animales'))
+    for (clave, gen, anio, meses, destino), n in sorted(resueltas.items(), key=lambda kv: -kv[1]):
+        print('      %-10s %-5s %-7s %-7s %-24s %6d' % (clave, gen, anio, meses, destino, n))
+    if fallidas:
+        print('\n      Sin resolver:')
+        for (clave, gen, motivo), n in sorted(fallidas.items(), key=lambda kv: -kv[1]):
+            print('      %-10s %-5s %-32s %6d' % (clave, gen, motivo, n))
 
     if con_prod:
         titulo('4. Productos cargados en la manga')
@@ -393,7 +513,7 @@ def main():
             l = por_animal[id8]
             p = peso_ultimo.get(id8)
             w.writerow([id8, l['ide'], l['propietario'], l['gen'], l['categoria'],
-                        CATEGORIA_BASTON.get((l['categoria'] or '').strip().upper(), ''),
+                        categoria_app(l['categoria'], l['gen'], l['fecha'])[0] or '',
                         l['potrero'], l['rodeo'], l['origen'],
                         l['fecha'].isoformat() if l['fecha'] else '',
                         p['peso'] if p else '', p['fecha'].isoformat() if p and p['fecha'] else '',
