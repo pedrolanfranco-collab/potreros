@@ -13,13 +13,42 @@ function chequear(nombre, cond, detalle){
 }
 
 function crearServidor(){
+  // stock_potreros se guarda aparte de eventos_sync (filas): desde que
+  // stockSupabase se activó en Pone Chico, eliminarPotrero() llama de
+  // verdad a borrarStockPotrero() -> client.from('stock_potreros').delete(),
+  // que sin este soporte tira "delete is not a function" (ver
+  // probar_stock_potreros.js, que ya lo necesitaba para La Vuelta).
   const filas = [];
-  return { filas, createClient(){ return { from(){
-    const q = { _filtros: [],
-      insert(obj){ filas.push(obj); return Promise.resolve({ error: null }); },
+  const stock = [];
+  const tablas = { eventos_sync: filas, stock_potreros: stock };
+  return { filas, createClient(){ return { from(tabla){
+    const arr = tablas[tabla] || (tablas[tabla] = []);
+    const q = { _filtros: [], _delete: false,
+      insert(obj){ arr.push(obj); return Promise.resolve({ error: null }); },
+      upsert(objs, opts){
+        const claves = ((opts && opts.onConflict) || '').split(',');
+        (Array.isArray(objs) ? objs : [objs]).forEach(obj=>{
+          const idx = arr.findIndex(r=> claves.every(c=>r[c]===obj[c]));
+          if(idx>=0) arr[idx] = Object.assign({}, arr[idx], obj); else arr.push(Object.assign({}, obj));
+        });
+        return Promise.resolve({ error: null });
+      },
       select(){ return q; }, eq(col, val){ q._filtros.push(r => r[col] === val); return q; },
       gt(col, val){ q._filtros.push(r => r[col] > val); return q; }, order(){ return q; },
-      then(res){ const data = filas.filter(r => q._filtros.every(f => f(r))); return Promise.resolve(res({ data, error: null })); }
+      not(col, op, val){
+        const lista = String(val).replace(/^\(|\)$/g,'').split(',').filter(Boolean).map(s=>s.replace(/^"|"$/g,''));
+        q._filtros.push(r=> !lista.includes(r[col]));
+        return q;
+      },
+      delete(){ q._delete = true; return q; },
+      then(res){
+        if(q._delete){
+          tablas[tabla] = arr.filter(r => !q._filtros.every(f => f(r)));
+          return Promise.resolve(res({ error: null }));
+        }
+        const data = arr.filter(r => q._filtros.every(f => f(r)));
+        return Promise.resolve(res({ data, error: null }));
+      }
     };
     return q;
   } }; } };
