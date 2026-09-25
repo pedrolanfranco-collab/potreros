@@ -312,6 +312,19 @@ def main():
         i = mapa.get(campo)
         print('   %-14s %s' % (campo, encabezados[i] if i is not None else '(no viene en este export)'))
 
+    # Las columnas del archivo que no reconoci. Sin esta lista, una columna
+    # que existe pero se llama distinto a lo que dice ALIAS queda como "no
+    # viene en este export" y parece que el SNIG dejo de mandarla. Paso el
+    # 25/9/2026 con la fecha de ingreso a la ubicacion.
+    usadas = set(mapa.values())
+    sobran = [h for i, h in enumerate(encabezados) if i not in usadas and str(h).strip()]
+    if sobran:
+        print('\n   Columnas del archivo que NO estoy usando:')
+        for h in sobran:
+            print('      %r' % h)
+        print('   Si alguna de estas es una que creo que "no viene", copiá el nombre')
+        print('   tal cual (con las comillas) al diccionario ALIAS de arriba.')
+
     # ---- 2. dispositivo: ceros perdidos y duplicados
     titulo('2. Numero de dispositivo (la clave del cruce)')
     largos = Counter()
