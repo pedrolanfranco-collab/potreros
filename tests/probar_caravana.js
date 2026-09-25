@@ -13,10 +13,14 @@
  *    no debia -- es el error que este modal existe para evitar.
  *  - Una caravana que no esta en el padron AVISA, no inventa un animal.
  *  - Sin señal avisa y no rompe.
- *  - Con caravana, la cantidad tiene que ser 1: una caravana es un animal.
+ *  - 25/9/2026: "Cargar tratamiento" se divide en grupal (por lote, sin
+ *    caravana, cantidad libre) e individual (un animal, cantidad fija en 1,
+ *    caravana obligatoria salvo que se confirme explicitamente "este animal
+ *    no tiene caravana" -- deja constancia en sin_caravana en vez de un
+ *    campo vacio ambiguo).
  *  - Maria Laura y Pone Chico (caravanasHabilitado=false) no ven nada de
- *    esto y NO mandan la columna -- el codigo esta pero queda inerte, mismo
- *    patron de rollout que stockSupabase.
+ *    esto (ni el boton individual) y NO mandan las columnas -- el codigo
+ *    esta pero queda inerte, mismo patron de rollout que stockSupabase.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -161,6 +165,10 @@ async function probarArchivo(archivo){
   if(!habilitado){
     // Inerte, no ausente: el codigo se genera igual para los 3.
     chequear('sin el flag, el boton queda oculto', boton.style.display === 'none');
+    chequear('sin el flag, "Cargar tratamiento individual" queda oculto',
+      doc.getElementById('btn-cargar-sanidad-individual').style.display === 'none');
+    chequear('sin el flag, "Cargar tratamiento" mantiene su nombre original',
+      doc.getElementById('btn-cargar-sanidad').textContent === '+ Cargar tratamiento');
     chequear('sin el flag, la fila de caravana del form queda oculta',
       doc.getElementById('sc-fila-caravana').style.display === 'none');
     chequear('sin el flag no se consulta el padron', servidor.consultas.length === 0);
@@ -219,12 +227,37 @@ async function probarArchivo(archivo){
   doc.getElementById('caravana-cerrar').dispatchEvent(new win.Event('click', {bubbles:true}));
   chequear('la ✕ / Cerrar cierra el modal', doc.getElementById('modal-caravana').style.display === 'none');
 
-  // ---------- la caravana dentro del formulario de tratamiento ----------
-  chequear('la fila de caravana se muestra en el form',
-    doc.getElementById('sc-fila-caravana').style.display !== 'none');
+  // ---------- 25/9/2026: "Cargar tratamiento" grupal vs individual ----------
+  const tabla = win.__tablaSanidad;
+  chequear('con el flag, "Cargar tratamiento (grupal)" se renombra',
+    doc.getElementById('btn-cargar-sanidad').textContent === '+ Cargar tratamiento (grupal)');
+  chequear('con el flag, "Cargar tratamiento individual" se muestra',
+    doc.getElementById('btn-cargar-sanidad-individual').style.display !== 'none');
 
+  // ---- grupal: la fila de caravana NO aparece, cantidad libre como siempre ----
   doc.getElementById('btn-cargar-sanidad').dispatchEvent(new win.Event('click', {bubbles:true}));
   await esperar(20);
+  chequear('grupal: la fila de caravana queda oculta',
+    doc.getElementById('sc-fila-caravana').style.display === 'none');
+  chequear('grupal: la cantidad es editable', !doc.getElementById('sc-cantidad').readOnly);
+  doc.getElementById('sc-cantidad').value = '70';
+  doc.getElementById('sc-producto1-otro').value = 'FORCER';
+  doc.getElementById('sc-dosis1').value = '20';
+  doc.getElementById('sc-guardar').dispatchEvent(new win.Event('click', {bubbles:true}));
+  await esperar(30);
+  const porLote = (servidor.filas[tabla]||[])[0];
+  chequear('grupal: una carga por lote guarda bien', !!porLote && porLote.cantidad === 70);
+  chequear('grupal: la caravana va en null', porLote && porLote.caravana === null);
+  chequear('grupal: sin_caravana va en null (ni se preguntó)', porLote && porLote.sin_caravana === null);
+
+  // ---- individual: fila de caravana visible, cantidad fija en 1 ----
+  doc.getElementById('btn-cargar-sanidad-individual').dispatchEvent(new win.Event('click', {bubbles:true}));
+  await esperar(20);
+  chequear('individual: la fila de caravana se muestra',
+    doc.getElementById('sc-fila-caravana').style.display !== 'none');
+  chequear('individual: la cantidad arranca en 1', doc.getElementById('sc-cantidad').value === '1');
+  chequear('individual: la cantidad queda de solo lectura', doc.getElementById('sc-cantidad').readOnly);
+
   doc.getElementById('sc-caravana').value = '37620042';
   doc.getElementById('sc-caravana').dispatchEvent(new win.Event('change', {bubbles:true}));
   await esperar(40);
@@ -232,35 +265,43 @@ async function probarArchivo(archivo){
   chequear('al tipear la caravana dice de quien es', /Novillito 1-2/.test(quien));
   chequear('y avisa si ese animal esta en carencia', /NO APTO/.test(quien));
 
-  // Con caravana, cantidad tiene que ser 1.
-  const tabla = win.__tablaSanidad;
-  doc.getElementById('sc-cantidad').value = '5';
+  // Sin caravana Y sin confirmar "no tiene" -> bloquea.
+  doc.getElementById('sc-caravana').value = '';
+  doc.getElementById('sc-caravana').dispatchEvent(new win.Event('change', {bubbles:true}));
   doc.getElementById('sc-producto1-otro').value = 'MEXIVER';
   doc.getElementById('sc-dosis1').value = '9';
   doc.getElementById('sc-guardar').dispatchEvent(new win.Event('click', {bubbles:true}));
   await esperar(30);
-  chequear('con caravana y cantidad 5 no guarda', (servidor.filas[tabla]||[]).length === 0);
+  chequear('individual sin caravana ni confirmacion no guarda', (servidor.filas[tabla]||[]).length === 1);
 
-  doc.getElementById('sc-cantidad').value = '1';
+  doc.getElementById('sc-caravana').value = '37620042';
+  doc.getElementById('sc-caravana').dispatchEvent(new win.Event('change', {bubbles:true}));
+  await esperar(40);
   doc.getElementById('sc-guardar').dispatchEvent(new win.Event('click', {bubbles:true}));
   await esperar(30);
-  const guardado = (servidor.filas[tabla]||[])[0];
-  chequear('con cantidad 1 si guarda', !!guardado);
-  chequear('la caravana viaja en el insert', guardado && guardado.caravana === '37620042');
+  const conCaravana = (servidor.filas[tabla]||[])[1];
+  chequear('individual con caravana guarda', !!conCaravana);
+  chequear('individual: cantidad queda en 1 aunque el campo estuviera bloqueado',
+    conCaravana && conCaravana.cantidad === 1);
+  chequear('la caravana viaja en el insert', conCaravana && conCaravana.caravana === '37620042');
+  chequear('sin_caravana va en false (se cargo una real)', conCaravana && conCaravana.sin_caravana === false);
 
-  // Sin caravana sigue andando igual que siempre (por lote).
-  doc.getElementById('btn-cargar-sanidad').dispatchEvent(new win.Event('click', {bubbles:true}));
+  // ---- "Este animal no tiene caravana": deja constancia y permite guardar ----
+  doc.getElementById('btn-cargar-sanidad-individual').dispatchEvent(new win.Event('click', {bubbles:true}));
   await esperar(20);
-  chequear('el campo se limpia despues de guardar',
-    doc.getElementById('sc-caravana').value === '');
-  doc.getElementById('sc-cantidad').value = '70';
-  doc.getElementById('sc-producto1-otro').value = 'FORCER';
-  doc.getElementById('sc-dosis1').value = '20';
+  chequear('el campo se limpia al reabrir', doc.getElementById('sc-caravana').value === '');
+  doc.getElementById('sc-sin-caravana').checked = true;
+  doc.getElementById('sc-sin-caravana').dispatchEvent(new win.Event('change', {bubbles:true}));
+  chequear('tildar "no tiene" bloquea el campo de caravana', doc.getElementById('sc-caravana').disabled);
+  chequear('y confirma en el aviso', /no tiene caravana/.test(doc.getElementById('sc-caravana-quien').textContent));
+  doc.getElementById('sc-producto1-otro').value = 'IVOMEC';
+  doc.getElementById('sc-dosis1').value = '2';
   doc.getElementById('sc-guardar').dispatchEvent(new win.Event('click', {bubbles:true}));
   await esperar(30);
-  const porLote = (servidor.filas[tabla]||[])[1];
-  chequear('sin caravana, una carga por lote sigue funcionando', !!porLote && porLote.cantidad === 70);
-  chequear('sin caravana, el campo va en null', porLote && porLote.caravana === null);
+  const sinCaravana = (servidor.filas[tabla]||[])[2];
+  chequear('"no tiene caravana" guarda igual', !!sinCaravana);
+  chequear('la caravana queda en null', sinCaravana && sinCaravana.caravana === null);
+  chequear('sin_caravana queda en true (constancia explicita)', sinCaravana && sinCaravana.sin_caravana === true);
 }
 
 async function probarSinSenal(archivo){
