@@ -39,6 +39,28 @@ import leer_baston
 def titulo(t):
     print('\n' + t); print('-' * len(t))
 
+def cargar_tenedores():
+    """Lee tenedores.csv, al lado de este script. Es la tabla que traduce
+    entre los tres vocabularios: el codigo del SNIG, la firma de la app y
+    como escribe el propietario el baston.
+
+    Devuelve (por_propietario_baston, por_codigo). Si el archivo no esta,
+    devuelve vacio y el informe lo dice, en vez de fallar: el cruce por id8
+    funciona igual, lo que se pierde es saber de quien es cada animal.
+    """
+    ruta = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tenedores.csv')
+    if not os.path.isfile(ruta):
+        return {}, {}
+    por_baston, por_codigo = {}, {}
+    with open(ruta, newline='', encoding='utf-8-sig') as f:
+        for fila in csv.DictReader(f):
+            fila = {k: (v or '').strip() for k, v in fila.items() if k}
+            if fila.get('codigo_snig'):
+                por_codigo[fila['codigo_snig'].upper()] = fila
+            if fila.get('propietario_baston'):
+                por_baston[fila['propietario_baston'].upper()] = fila
+    return por_baston, por_codigo
+
 def escribir(ruta, encabezados, filas):
     with open(ruta, 'w', newline='', encoding='utf-8-sig') as f:
         w = csv.writer(f)
@@ -138,12 +160,40 @@ def main():
         print('   pasaron por la manga en el periodo. La lista completa queda en el CSV.')
 
     titulo('C1. Leido por el baston y no en el SNIG a mi nombre  (%d)' % len(solo_b))
-    if solo_b:
-        c = Counter(por_id8_bast[a]['propietario'] or '(sin propietario)' for a in solo_b)
+    por_baston, _ = cargar_tenedores()
+    if not por_baston:
+        print('   (no encontre tenedores.csv al lado de este script, asi que no puedo')
+        print('    separar las firmas sin export de las diferencias de verdad)')
+
+    def firma_de(id8):
+        return por_baston.get((por_id8_bast[id8]['propietario'] or '').strip().upper())
+
+    # Una firma sin export del SNIG no puede cruzar NUNCA: todos sus animales
+    # caen aca por definicion, y mezclarlos con las diferencias reales llena
+    # la lista de falsas alarmas y esconde las que importan.
+    sin_export, reales = [], []
+    for a in solo_b:
+        f = firma_de(a)
+        (sin_export if f and f.get('tiene_export') == 'no' else reales).append(a)
+
+    if sin_export:
+        print('   De firmas SIN export del SNIG (no son diferencias):')
+        c = Counter((firma_de(a) or {}).get('firma_app', '?') for a in sin_export)
         for k, v in c.most_common():
             print('      %-26s %6d' % (k, v))
-        print('\n   Transferencias que el vendedor no hizo, numeros mal leidos, o ganado')
-        print('   de un tercero que todavia no esta en tenedores.csv.')
+        print('   Estos animales no se pueden conciliar contra el SNIG por ahora.')
+    if reales:
+        print('\n   Diferencias de verdad  (%d):' % len(reales))
+        c = Counter((por_id8_bast[a]['propietario'] or '(sin propietario)').strip().upper()
+                    for a in reales)
+        for k, v in c.most_common():
+            f = por_baston.get(k.strip().upper())
+            etiqueta = f['firma_app'] if f and f.get('firma_app') else '%s (no esta en tenedores.csv)' % k
+            print('      %-34s %6d' % (etiqueta, v))
+        print('\n   Transferencias que el vendedor no hizo, numeros mal leidos, ganado')
+        print('   de un tercero, o un export del SNIG que todavia no bajaste.')
+    elif solo_b:
+        print('\n   Ninguna diferencia real: todo lo que no cruza es de una firma sin export.')
 
     # ------------------------------------------------------- discrepancias
     titulo('Discrepancias entre los que SI cruzan')
@@ -175,8 +225,10 @@ def main():
                          'propietario', 'tenedor', 'fecha_ingreso', 'documento')]
               for a in sorted(solo_s)])
     escribir(os.path.join(salida, 'c1_solo_baston.csv'),
-             ['id8', 'ide', 'propietario', 'categoria', 'potrero', 'peso', 'ultima_lectura', 'archivo'],
+             ['id8', 'ide', 'propietario', 'firma_app', 'tiene_export', 'categoria',
+              'potrero', 'peso', 'ultima_lectura', 'archivo'],
              [[por_id8_bast[a]['id8'], por_id8_bast[a]['ide'], por_id8_bast[a]['propietario'],
+               (firma_de(a) or {}).get('firma_app', ''), (firma_de(a) or {}).get('tiene_export', ''),
                por_id8_bast[a]['categoria'], por_id8_bast[a]['potrero'], por_id8_bast[a]['peso'],
                por_id8_bast[a]['fecha'].isoformat() if por_id8_bast[a]['fecha'] else '',
                por_id8_bast[a]['archivo']] for a in sorted(solo_b)])
