@@ -219,6 +219,48 @@ def a_fecha(txt):
             continue
     return None
 
+def cargar_animales(ruta, solo_vivos=True):
+    """Lee el export y devuelve una lista de dicts, para usar desde cruzar.py.
+
+    'id8' sale de rellenar Dispositivo a 8 digitos, igual que
+    normalizarCaravana() en la app: si Excel se comio un cero, esto lo
+    devuelve. El informe de main() es el que avisa cuantos fueron.
+    """
+    filas, _ = leer_tabla(ruta)
+    if not filas:
+        return []
+    encabezados = filas[0]
+    mapa = mapear_columnas(encabezados)
+    faltan = [c for c in OBLIGATORIAS if c not in mapa]
+    if faltan:
+        raise ValueError('Al export del SNIG le faltan columnas: %s. Encabezados: %s'
+                         % (', '.join(faltan), ', '.join(encabezados)))
+    out = []
+    for fila in filas[1:]:
+        if not any(c.strip() for c in fila):
+            continue
+        def val(campo):
+            i = mapa.get(campo)
+            return fila[i].strip() if i is not None and i < len(fila) else ''
+        if solo_vivos and 'status_vida' in mapa and not normalizar(val('status_vida')).startswith('vivo'):
+            continue
+        d = re.sub(r'\D', '', val('dispositivo'))
+        if not d:
+            continue
+        meses = a_entero(val('edad_meses'))
+        if meses is None:
+            dias = a_entero(val('edad_dias'))
+            meses = int(dias / 30.4375) if dias is not None else None
+        out.append({
+            'id8': d.zfill(8), 'dispositivo_crudo': d, 'sexo': val('sexo'),
+            'raza': val('raza'), 'edad_meses': meses,
+            'propietario': val('propietario'), 'ubicacion': val('ubicacion'),
+            'tenedor': val('tenedor'), 'status_vida': val('status_vida'),
+            'categoria': categoria_por_edad(val('sexo'), meses),
+            'fecha_ingreso': a_fecha(val('fecha_ingreso')), 'documento': val('documento'),
+        })
+    return out
+
 def buscar_en_descargas():
     carpeta = os.path.join(os.path.expanduser('~'), 'Downloads')
     if not os.path.isdir(carpeta):
