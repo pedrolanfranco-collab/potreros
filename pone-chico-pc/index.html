@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.64 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.65 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -780,7 +780,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.64","versionMovil":"1.64","simpleHabilitado":true,"versionMovilSimple":"1.9","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.65","versionMovil":"1.66","simpleHabilitado":true,"versionMovilSimple":"1.9","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -3829,7 +3829,7 @@ async function calcularEstadisticasNacimientos(){
       // punta contra Supabase real antes y después del fix.
       const res = await client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
         .eq('establecimiento', ESTABLECIMIENTO)
-        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto','senalada'])
+        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto','senalada','senalada_editada','senalada_eliminada'])
         .order('creado_en', {ascending:true});
       if(!res.error){
         eventos = res.data||[];
@@ -3845,7 +3845,15 @@ async function calcularEstadisticasNacimientos(){
 
   const saldo = saldoInicialTemporada();
   const porMesCategoria = {'Terneros':{8:0,9:0,10:0,11:0,12:0}, 'Corderos/as':{8:0,9:0,10:0,11:0,12:0}};
-  let nacidosTerneros = 0, nacidosCorderos = 0, abortosTemporada = 0, senaladosMachos = 0, senaladosHembras = 0;
+  let nacidosTerneros = 0, nacidosCorderos = 0, abortosTemporada = 0;
+  // 29/9/2026: señaladas se pueden editar/borrar (ver "senalada_editada"/
+  // "senalada_eliminada" en aplicarEventoRemoto), así que a diferencia de
+  // abortosTemporada (un contador que solo suma) hace falta reconstruir el
+  // estado final por id antes de sumar -- sumar el evento crudo "senalada"
+  // sin aplicar sus ediciones/borrados dejaría el % desactualizado para
+  // siempre después de corregir un registro. Bug real encontrado probando
+  // en el navegador: una edición de 4->5 machos seguía mostrando 4.
+  const senaladasPorId = {};
   const acumular = (categoria, fc, delta)=>{
     if(!porMesCategoria[categoria]) return; // Terneras/Potros/as viejos: ya no se cuentan
     if(!fc || typeof fc !== 'string') return;
@@ -3874,7 +3882,11 @@ async function calcularEstadisticasNacimientos(){
     } else if(ev.tipo==='aborto'){
       if(enTemporada(ev.fecha_cliente)) abortosTemporada += (d.cantidad||1);
     } else if(ev.tipo==='senalada'){
-      if(enTemporada(ev.fecha_cliente)){ senaladosMachos += (d.machos||0); senaladosHembras += (d.hembras||0); }
+      senaladasPorId[d.id] = {fecha: ev.fecha_cliente, machos: d.machos||0, hembras: d.hembras||0};
+    } else if(ev.tipo==='senalada_editada'){
+      if(senaladasPorId[d.id]) senaladasPorId[d.id] = {fecha: d.fecha, machos: d.machos||0, hembras: d.hembras||0};
+    } else if(ev.tipo==='senalada_eliminada'){
+      delete senaladasPorId[d.id];
     } else if(ev.tipo==='muerte' || ev.tipo==='venta' || ev.tipo==='desaparecido'){
       tocarSaldoTemporada(saldo, ev.potrero, d.categoria, -(d.cantidad||0), true);
     } else if(ev.tipo==='ingreso' || ev.tipo==='compra' || ev.tipo==='encontrado'){
@@ -3909,6 +3921,10 @@ async function calcularEstadisticasNacimientos(){
         });
       }
     }
+  });
+  let senaladosMachos = 0, senaladosHembras = 0;
+  Object.values(senaladasPorId).forEach(sn=>{
+    if(enTemporada(sn.fecha)){ senaladosMachos += sn.machos; senaladosHembras += sn.hembras; }
   });
 
   const filasPorCategoria = ['Terneros','Corderos/as'].map(cat=>{

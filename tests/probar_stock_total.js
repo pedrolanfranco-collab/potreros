@@ -139,7 +139,14 @@ async function probarArchivo(archivo, tieneDueno){
     { establecimiento: 'la_vuelta', tipo: 'aborto', fecha_cliente: fechaEnTemporada(1), detalle: { motivo: 'no_prenada' } },
     // 28/9/2026: Señalada -- % junto al de nacidos, sobre la MISMA base que
     // Corderos/as (ovejas encarneradas). Discrimina macho/hembra.
-    { establecimiento: 'la_vuelta', tipo: 'senalada', fecha_cliente: fechaEnTemporada(1), detalle: { machos: 4, hembras: 3 } },
+    // 29/9/2026: sntest1 se crea 4/3 y se EDITA a 6/1 (mismo total, split
+    // distinto -- si el bug de no aplicar la edición reaparece, este test
+    // lo detecta aunque el total "7" coincida por casualidad). sntest2 se
+    // crea 50/50 y se BORRA -- no tiene que sumar nada.
+    { establecimiento: 'la_vuelta', tipo: 'senalada', fecha_cliente: fechaEnTemporada(1), detalle: { id: 'sntest1', machos: 4, hembras: 3 } },
+    { establecimiento: 'la_vuelta', tipo: 'senalada_editada', fecha_cliente: fechaEnTemporada(1), detalle: { id: 'sntest1', fecha: fechaEnTemporada(1), machos: 6, hembras: 1 } },
+    { establecimiento: 'la_vuelta', tipo: 'senalada', fecha_cliente: fechaEnTemporada(2), detalle: { id: 'sntest2', machos: 50, hembras: 50 } },
+    { establecimiento: 'la_vuelta', tipo: 'senalada_eliminada', fecha_cliente: fechaEnTemporada(2), detalle: { id: 'sntest2' } },
     { establecimiento: 'maria_laura', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 4, categoria: 'Terneros' } },
     { establecimiento: 'pone_chico', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 9, categoria: 'Terneros' } },
   ];
@@ -218,39 +225,37 @@ async function probarArchivo(archivo, tieneDueno){
   // 28/9/2026: Señalada -- discrimina macho/hembra, % sobre ovejas
   // encarneradas (misma base que Corderos/Corderas, en 0 por defecto en
   // este seed -- ningún establecimiento carga ovino acá). Solo La Vuelta
-  // tiene el evento sembrado (4 machos + 3 hembras = 7).
+  // tiene eventos sembrados: sntest1 editado a 6 machos + 1 hembra = 7,
+  // sntest2 (50+50) borrado del todo -- no tiene que sumar nada.
   const senaladosEsperados = win.__establecimiento()==='la_vuelta' ? 7 : 0;
   chequear(`temporada: ${senaladosEsperados} Señalados`, panelTemp.includes(`<strong>${senaladosEsperados}</strong> Señalados`), panelTemp);
   if(senaladosEsperados>0){
-    chequear('temporada: Señalados discrimina 4 macho / 3 hembra, sin ovejas cargadas todavía',
-      panelTemp.includes('Señalados (4 macho / 3 hembra) — sin ovejas encarneradas cargadas'), panelTemp);
+    chequear('temporada: Señalados muestra el split EDITADO (6 macho / 1 hembra), no el original (4/3), y sin ovejas cargadas todavía',
+      panelTemp.includes('Señalados (6 macho / 1 hembra) — sin ovejas encarneradas cargadas'), panelTemp);
   }
 
-  // Editor de "vacas preñadas / ovejas encarneradas" -- solo en PC (mismo
-  // criterio que "⚙ Coeficientes UG"); en móvil el panel es de solo lectura.
-  const esPC = archivo.includes('-pc/');
+  // Editor de "vacas preñadas / ovejas encarneradas" -- 29/9/2026: pasó a
+  // estar en PC Y en móvil (antes solo PC, mismo criterio que "⚙
+  // Coeficientes UG"), a pedido de Pedro: quien carga la Señalada en el
+  // campo no siempre tiene la PC a mano para cargar las ovejas encarneradas.
   const btnGuardarMadres = doc.getElementById('temporada-madres-guardar');
-  if(esPC){
-    chequear('editor de madres: existe en PC', !!btnGuardarMadres);
-    doc.getElementById('temporada-vacas').value = '20';
-    doc.getElementById('temporada-ovejas').value = '8';
-    btnGuardarMadres.dispatchEvent(new win.Event('click', { bubbles: true }));
-    await new Promise(r=>setTimeout(r,30));
-    chequear('editor de madres: guardó en estado.vacasPrenadasTemporada', est.vacasPrenadasTemporada === 20, est.vacasPrenadasTemporada);
-    chequear('editor de madres: guardó en estado.ovejasEncarneradasTemporada', est.ovejasEncarneradasTemporada === 8, est.ovejasEncarneradasTemporada);
-    const panelTempLuego = doc.getElementById('stock-panel-2').innerHTML;
-    const pctEsperado = (esperado.nac/20*100).toFixed(1);
-    chequear(`editor de madres: el % de Terneros se recalculó sobre 20 vacas (${pctEsperado}%)`, panelTempLuego.includes(`${pctEsperado}% s/ vacas`), panelTempLuego);
-    if(win.__establecimiento()==='la_vuelta'){
-      const pctSenaladaEsperado = (7/8*100).toFixed(1);
-      chequear(`editor de madres: el % de Señalados se recalculó sobre 8 ovejas encarneradas (${pctSenaladaEsperado}%)`,
-        panelTempLuego.includes(`Señalados (4 macho / 3 hembra) — ${pctSenaladaEsperado}% s/ ovejas encarneradas`), panelTempLuego);
-    }
-    chequear('editor de madres: sigue en la pestaña Temporada (no vuelve a Categorías)',
-      doc.getElementById('stock-panel-2').style.display !== 'none' && doc.getElementById('stock-panel-0').style.display === 'none');
-  } else {
-    chequear('editor de madres: NO existe en móvil (solo lectura)', !btnGuardarMadres);
+  chequear('editor de madres: existe (PC y móvil)', !!btnGuardarMadres);
+  doc.getElementById('temporada-vacas').value = '20';
+  doc.getElementById('temporada-ovejas').value = '8';
+  btnGuardarMadres.dispatchEvent(new win.Event('click', { bubbles: true }));
+  await new Promise(r=>setTimeout(r,30));
+  chequear('editor de madres: guardó en estado.vacasPrenadasTemporada', est.vacasPrenadasTemporada === 20, est.vacasPrenadasTemporada);
+  chequear('editor de madres: guardó en estado.ovejasEncarneradasTemporada', est.ovejasEncarneradasTemporada === 8, est.ovejasEncarneradasTemporada);
+  const panelTempLuego = doc.getElementById('stock-panel-2').innerHTML;
+  const pctEsperado = (esperado.nac/20*100).toFixed(1);
+  chequear(`editor de madres: el % de Terneros se recalculó sobre 20 vacas (${pctEsperado}%)`, panelTempLuego.includes(`${pctEsperado}% s/ vacas`), panelTempLuego);
+  if(win.__establecimiento()==='la_vuelta'){
+    const pctSenaladaEsperado = (7/8*100).toFixed(1);
+    chequear(`editor de madres: el % de Señalados se recalculó sobre 8 ovejas encarneradas (${pctSenaladaEsperado}%)`,
+      panelTempLuego.includes(`Señalados (6 macho / 1 hembra) — ${pctSenaladaEsperado}% s/ ovejas encarneradas`), panelTempLuego);
   }
+  chequear('editor de madres: sigue en la pestaña Temporada (no vuelve a Categorías)',
+    doc.getElementById('stock-panel-2').style.display !== 'none' && doc.getElementById('stock-panel-0').style.display === 'none');
 
   // pestaña "Por dueño" -- desde el 19/9/2026 alcanza con tener más de un
   // dueño configurado (config.duenos.length > 1), ya no hace falta que sea
