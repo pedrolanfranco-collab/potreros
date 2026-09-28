@@ -9,3 +9,15 @@
 tests/node_modules/
 __pycache__/
 *.pyc
+
+# Este repo es PUBLICO (GitHub Pages sirve main). tenedores.csv lleva codigos
+# de DICOSE y nombres reales de personas: queda local. La estructura, con los
+# datos de ejemplo, esta en scripts/snig/tenedores.ejemplo.csv
+scripts/snig/tenedores.csv
+
+# Salidas de esos mismos scripts: llevan los codigos de DICOSE y el padron
+# completo de hacienda. Se regeneran corriendo el script, no se versionan.
+tenedores_detectados.csv
+padron_baston.csv
+scripts/snig/*.xls
+scripts/snig/*.xlsx
