@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.92 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.93 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -655,6 +655,7 @@
     <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="sn-obs" placeholder="Ej: señalada potrero 5"></div>
     <div class="form-botones" style="margin-bottom:12px;">
       <button class="btn btn-agregar" id="sn-guardar">Registrar señalada</button>
+      <button class="btn btn-secundario" id="sn-cancelar-edicion" style="display:none;">Cancelar edición</button>
     </div>
     <div id="senaladas-lista"></div>
     <div id="campo-ajeno-seccion" style="display:none;">
@@ -779,7 +780,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.92","versionMovil":"2.91","simpleHabilitado":true,"versionMovilSimple":"1.8","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.93","versionMovil":"2.92","simpleHabilitado":true,"versionMovilSimple":"1.9","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1381,6 +1382,19 @@ function aplicarEventoRemoto(row, potrerosSucios){
     if(!estado.senaladas.some(sn=>sn.id===d.id)){
       estado.senaladas.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), machos: d.machos||0, hembras: d.hembras||0, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
     }
+    return;
+  }
+
+  // 29/9/2026: editar/borrar un registro de señalada -- mismo criterio que
+  // "lluvia_editada"/"lluvia_eliminada", CUALQUIER dispositivo (incluido
+  // Campo) tiene que aplicarlos al sincronizar, aunque no muestre la UI.
+  if(row.tipo === 'senalada_editada'){
+    const sn = (estado.senaladas||[]).find(x=>x.id===d.id);
+    if(sn){ sn.fecha = d.fecha; sn.machos = d.machos||0; sn.hembras = d.hembras||0; sn.obs = d.obs||null; }
+    return;
+  }
+  if(row.tipo === 'senalada_eliminada'){
+    estado.senaladas = (estado.senaladas||[]).filter(sn=>sn.id!==d.id);
     return;
   }
 
@@ -5712,7 +5726,11 @@ function renderAbortosLista(){
 /* Señalada -- mismo criterio que Abortos: del establecimiento entero, sin
    potrero. No toca stock; es un conteo aparte (discriminado macho/hembra)
    para el % de señalada sobre ovejas encarneradas, ver
-   calcularEstadisticasNacimientos(). */
+   calcularEstadisticasNacimientos(). 29/9/2026: editar/borrar un registro,
+   mismo patrón que Lluvias (editarLluvia/borrarLluvia) -- edición/baja
+   directa sin reversar nada (no toca stock), sincronizada como evento
+   aparte (senalada_editada/senalada_eliminada), no reusa "correccion". */
+let editandoSenaladaId = null;
 function renderSenaladasLista(){
   const cont = document.getElementById('senaladas-lista');
   const lista = (estado.senaladas||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha)).slice(0,20);
@@ -5720,10 +5738,53 @@ function renderSenaladasLista(){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin señaladas registradas todavía.</p>'
     : lista.map(sn=>`
       <div class="potrero-card">
-        <div class="nombre">${sn.fecha} — ${sn.machos||0} macho / ${sn.hembras||0} hembra</div>
+        <div class="nombre">${sn.fecha} — ${sn.machos||0} macho / ${sn.hembras||0} hembra
+          <span class="hist-acciones">
+            <button class="hist-btn" data-senalada-editar="${sn.id}" title="Editar">✏️</button>
+            <button class="hist-btn" data-senalada-borrar="${sn.id}" title="Borrar">🗑</button>
+          </span>
+        </div>
         ${sn.obs || sn.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${sn.obs||''}${sn.obs && sn.usuario?' — ':''}${sn.usuario||''}</div>` : ''}
       </div>`).join('');
+  cont.querySelectorAll('[data-senalada-editar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarSenalada(btn.dataset.senaladaEditar); });
+  });
+  cont.querySelectorAll('[data-senalada-borrar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); borrarSenalada(btn.dataset.senaladaBorrar); });
+  });
 }
+function editarSenalada(id){
+  const sn = (estado.senaladas||[]).find(x=>x.id===id);
+  if(!sn) return;
+  editandoSenaladaId = id;
+  const [d,m,y] = sn.fecha.split('/');
+  document.getElementById('sn-fecha').value = `${y}-${m}-${d}`;
+  document.getElementById('sn-machos').value = sn.machos||0;
+  document.getElementById('sn-hembras').value = sn.hembras||0;
+  document.getElementById('sn-obs').value = sn.obs||'';
+  document.getElementById('sn-guardar').textContent = 'Guardar corrección';
+  document.getElementById('sn-cancelar-edicion').style.display = '';
+  document.getElementById('sn-machos').focus();
+}
+function borrarSenalada(id){
+  const sn = (estado.senaladas||[]).find(x=>x.id===id);
+  if(!sn) return;
+  if(!confirm(`¿Borrar la señalada de ${sn.fecha} (${sn.machos||0} macho / ${sn.hembras||0} hembra)? No se puede deshacer.`)) return;
+  estado.senaladas = (estado.senaladas||[]).filter(x=>x.id!==id);
+  guardarEstado();
+  enviarEvento('senalada_eliminada', ESTABLECIMIENTO, {id});
+  renderSenaladasLista();
+  toast('Señalada borrada');
+}
+document.getElementById('sn-cancelar-edicion').addEventListener('click', ()=>{
+  editandoSenaladaId = null;
+  document.getElementById('sn-fecha').value = fechaISOHoy();
+  document.getElementById('sn-machos').value = '0';
+  document.getElementById('sn-hembras').value = '0';
+  document.getElementById('sn-obs').value = '';
+  document.getElementById('sn-guardar').textContent = 'Registrar señalada';
+  document.getElementById('sn-cancelar-edicion').style.display = 'none';
+});
 /* 22/9/2026: "campo ajeno" (DICOSE, solo La Vuelta) -- animales propios
    que van a pastar al campo de un tercero, o vuelven de ahí. Viven en un
    balde aparte (estado.campoAjeno), NUNCA en POTREROS_GEO/estado.potreros,
@@ -5779,6 +5840,9 @@ document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ab-fecha').value = fechaISOHoy();
   document.getElementById('ab-fecha').max = fechaISOHoy();
   document.getElementById('ab-obs').value = '';
+  editandoSenaladaId = null;
+  document.getElementById('sn-guardar').textContent = 'Registrar señalada';
+  document.getElementById('sn-cancelar-edicion').style.display = 'none';
   document.getElementById('sn-machos').value = '0';
   document.getElementById('sn-hembras').value = '0';
   document.getElementById('sn-fecha').value = fechaISOHoy();
@@ -6011,6 +6075,17 @@ document.getElementById('sn-guardar').addEventListener('click', ()=>{
   if(!fechaISO){ toast('Elegí una fecha'); return; }
   if(machos<1 && hembras<1){ toast('Ingresá al menos un macho o una hembra'); return; }
   const fecha = fechaISOaDisplay(fechaISO);
+  if(editandoSenaladaId){
+    const sn = (estado.senaladas||[]).find(x=>x.id===editandoSenaladaId);
+    if(sn){ sn.fecha = fecha; sn.machos = machos; sn.hembras = hembras; sn.obs = obs||null; guardarEstado(); }
+    enviarEvento('senalada_editada', ESTABLECIMIENTO, {id: editandoSenaladaId, fecha, machos, hembras, obs: obs||null});
+    editandoSenaladaId = null;
+    document.getElementById('sn-guardar').textContent = 'Registrar señalada';
+    document.getElementById('sn-cancelar-edicion').style.display = 'none';
+    renderSenaladasLista();
+    toast('Señalada corregida');
+    return;
+  }
   const id = generarIdHistorial();
   const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
   estado.senaladas = estado.senaladas || [];

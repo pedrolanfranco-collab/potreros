@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.8</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.9</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -629,7 +629,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.63","versionMovil":"1.63","simpleHabilitado":true,"versionMovilSimple":"1.8","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.64","versionMovil":"1.64","simpleHabilitado":true,"versionMovilSimple":"1.9","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1231,6 +1231,19 @@ function aplicarEventoRemoto(row, potrerosSucios){
     if(!estado.senaladas.some(sn=>sn.id===d.id)){
       estado.senaladas.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), machos: d.machos||0, hembras: d.hembras||0, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
     }
+    return;
+  }
+
+  // 29/9/2026: editar/borrar un registro de señalada -- mismo criterio que
+  // "lluvia_editada"/"lluvia_eliminada", CUALQUIER dispositivo (incluido
+  // Campo) tiene que aplicarlos al sincronizar, aunque no muestre la UI.
+  if(row.tipo === 'senalada_editada'){
+    const sn = (estado.senaladas||[]).find(x=>x.id===d.id);
+    if(sn){ sn.fecha = d.fecha; sn.machos = d.machos||0; sn.hembras = d.hembras||0; sn.obs = d.obs||null; }
+    return;
+  }
+  if(row.tipo === 'senalada_eliminada'){
+    estado.senaladas = (estado.senaladas||[]).filter(sn=>sn.id!==d.id);
     return;
   }
 

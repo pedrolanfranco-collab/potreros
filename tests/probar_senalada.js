@@ -174,6 +174,55 @@ async function probarArchivo(archivo){
   await win.vaciarColaSync();
   chequear('al volver la señal la cola se vacía', (win.__est().colaSync||[]).length === 0);
   chequear('ese evento en cola también llegó al servidor', servidor.filas.filter(f=>f.tipo==='senalada').length >= 2);
+
+  // --- 29/9/2026: editar y borrar un registro ---
+  win.__est().senaladas.length = 0;
+  win.__est().senaladas.push({ id:'edsn1', fecha:'10/03/2026', machos:12, hembras:9, obs:'Potrero 5', dispositivo:'este', usuario:null });
+  win.renderSenaladasLista();
+  chequear('la fila tiene boton editar y borrar',
+    !!doc.querySelector('[data-senalada-editar="edsn1"]') && !!doc.querySelector('[data-senalada-borrar="edsn1"]'));
+
+  doc.querySelector('[data-senalada-editar="edsn1"]').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('editar precarga la fecha', doc.getElementById('sn-fecha').value === '2026-03-10');
+  chequear('editar precarga machos', doc.getElementById('sn-machos').value === '12');
+  chequear('editar precarga hembras', doc.getElementById('sn-hembras').value === '9');
+  chequear('editar precarga observaciones', doc.getElementById('sn-obs').value === 'Potrero 5');
+  chequear('el boton pasa a "Guardar corrección"', doc.getElementById('sn-guardar').textContent === 'Guardar corrección');
+  chequear('aparece "Cancelar edición"', doc.getElementById('sn-cancelar-edicion').style.display !== 'none');
+
+  doc.getElementById('sn-fecha').value = '2026-03-11';
+  doc.getElementById('sn-machos').value = '15';
+  doc.getElementById('sn-hembras').value = '10';
+  doc.getElementById('sn-guardar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  const editada = win.__est().senaladas.find(sn=>sn.id==='edsn1');
+  chequear('editar corrige fecha, machos y hembras en estado.senaladas',
+    !!editada && editada.fecha==='11/03/2026' && editada.machos===15 && editada.hembras===10, JSON.stringify(editada));
+  chequear('el boton vuelve a "Registrar señalada"', doc.getElementById('sn-guardar').textContent === 'Registrar señalada');
+  await new Promise(r=>setTimeout(r, 30));
+  chequear('se mandó senalada_editada a Supabase',
+    servidor.filas.some(f=>f.tipo==='senalada_editada' && f.detalle && f.detalle.id==='edsn1' && f.detalle.machos===15 && f.detalle.hembras===10 && f.detalle.fecha==='11/03/2026'));
+
+  doc.getElementById('sn-cancelar-edicion').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('"Cancelar edición" desactiva el modo edición', doc.getElementById('sn-guardar').textContent === 'Registrar señalada');
+
+  win.renderSenaladasLista();
+  doc.querySelector('[data-senalada-borrar="edsn1"]').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('borrar saca el registro de estado.senaladas', !win.__est().senaladas.some(sn=>sn.id==='edsn1'));
+  await new Promise(r=>setTimeout(r, 30));
+  chequear('se mandó senalada_eliminada a Supabase',
+    servidor.filas.some(f=>f.tipo==='senalada_eliminada' && f.detalle && f.detalle.id==='edsn1'));
+
+  // --- editar/borrar remotos: cualquier dispositivo los tiene que aplicar ---
+  win.__est().senaladas.length = 0;
+  win.__est().senaladas.push({ id:'remedsn', fecha:'01/01/2026', machos:3, hembras:2, dispositivo:'otro', usuario:null });
+  win.aplicarEventoRemoto({ tipo:'senalada_editada', potrero:'esto-no-es-un-potrero', dispositivo:'otro',
+    detalle: { id:'remedsn', fecha:'02/01/2026', machos:8, hembras:6 } });
+  const remotaEditada = win.__est().senaladas.find(sn=>sn.id==='remedsn');
+  chequear('un senalada_editada remoto actualiza fecha, machos y hembras',
+    !!remotaEditada && remotaEditada.fecha==='02/01/2026' && remotaEditada.machos===8 && remotaEditada.hembras===6, JSON.stringify(remotaEditada));
+  win.aplicarEventoRemoto({ tipo:'senalada_eliminada', potrero:'esto-no-es-un-potrero', dispositivo:'otro',
+    detalle: { id:'remedsn' } });
+  chequear('un senalada_eliminada remoto saca el registro', !win.__est().senaladas.some(sn=>sn.id==='remedsn'));
 }
 
 (async () => {
