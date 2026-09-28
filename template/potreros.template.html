@@ -714,6 +714,15 @@
       <button class="btn btn-agregar" id="ab-guardar">Registrar aborto</button>
     </div>
     <div id="abortos-lista"></div>
+    <h4 style="margin:16px 0 6px;font-size:13px;">🐑 Señalada</h4>
+    <div class="form-row"><label>Machos</label><input type="number" id="sn-machos" min="0" value="0"></div>
+    <div class="form-row"><label>Hembras</label><input type="number" id="sn-hembras" min="0" value="0"></div>
+    <div class="form-row"><label>Fecha</label><input type="date" id="sn-fecha"></div>
+    <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="sn-obs" placeholder="Ej: señalada potrero 5"></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="sn-guardar">Registrar señalada</button>
+    </div>
+    <div id="senaladas-lista"></div>
     <div id="campo-ajeno-seccion" style="display:none;">
       <h4 style="margin:16px 0 6px;font-size:13px;">🌾 Campo ajeno</h4>
       <p class="modal-info" style="margin:0 0 8px;">Para animales propios que van a pastar al campo de un tercero, o que vuelven de ahí — queda registrado en la app, pero el cálculo de DICOSE lo sigue llevando el Excel.</p>
@@ -1112,7 +1121,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], eventosClima: [], abortos: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], eventosClima: [], abortos: [], senaladas: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
     ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0
@@ -1445,6 +1454,18 @@ function aplicarEventoRemoto(row, potrerosSucios){
     estado.abortos = estado.abortos || [];
     if(!estado.abortos.some(ab=>ab.id===d.id)){
       estado.abortos.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), motivo: d.motivo, cantidad: d.cantidad||1, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
+    }
+    return;
+  }
+
+  if(row.tipo === 'senalada'){
+    // 28/9/2026: mismo criterio que "aborto" -- del establecimiento entero,
+    // sin potrero, antes del guard de abajo. No toca stock (los corderos ya
+    // se contaron al nacer, si se cargó ese nacimiento); solo cuenta para
+    // el % de señalada sobre ovejas encarneradas (calcularEstadisticasNacimientos).
+    estado.senaladas = estado.senaladas || [];
+    if(!estado.senaladas.some(sn=>sn.id===d.id)){
+      estado.senaladas.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), machos: d.machos||0, hembras: d.hembras||0, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
     }
     return;
   }
@@ -4110,7 +4131,7 @@ async function calcularEstadisticasNacimientos(){
       // punta contra Supabase real antes y después del fix.
       const res = await client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
         .eq('establecimiento', ESTABLECIMIENTO)
-        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto'])
+        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto','senalada'])
         .order('creado_en', {ascending:true});
       if(!res.error){
         eventos = res.data||[];
@@ -4126,7 +4147,7 @@ async function calcularEstadisticasNacimientos(){
 
   const saldo = saldoInicialTemporada();
   const porMesCategoria = {'Terneros':{8:0,9:0,10:0,11:0,12:0}, 'Corderos/as':{8:0,9:0,10:0,11:0,12:0}};
-  let nacidosTerneros = 0, nacidosCorderos = 0, abortosTemporada = 0;
+  let nacidosTerneros = 0, nacidosCorderos = 0, abortosTemporada = 0, senaladosMachos = 0, senaladosHembras = 0;
   const acumular = (categoria, fc, delta)=>{
     if(!porMesCategoria[categoria]) return; // Terneras/Potros/as viejos: ya no se cuentan
     if(!fc || typeof fc !== 'string') return;
@@ -4154,6 +4175,8 @@ async function calcularEstadisticasNacimientos(){
       acumular(d.categoria, ev.fecha_cliente, d.cantidad||0);
     } else if(ev.tipo==='aborto'){
       if(enTemporada(ev.fecha_cliente)) abortosTemporada += (d.cantidad||1);
+    } else if(ev.tipo==='senalada'){
+      if(enTemporada(ev.fecha_cliente)){ senaladosMachos += (d.machos||0); senaladosHembras += (d.hembras||0); }
     } else if(ev.tipo==='muerte' || ev.tipo==='venta' || ev.tipo==='desaparecido'){
       tocarSaldoTemporada(saldo, ev.potrero, d.categoria, -(d.cantidad||0), true);
     } else if(ev.tipo==='ingreso' || ev.tipo==='compra' || ev.tipo==='encontrado'){
@@ -4200,7 +4223,9 @@ async function calcularEstadisticasNacimientos(){
     totalEventos: (eventos||[]).length,
     bovino: {madres: vacas, nacidos: nacidosTerneros, pct: vacas>0 ? (nacidosTerneros/vacas*100) : 0,
       abortos: abortosTemporada, pctAbortos: vacas>0 ? (abortosTemporada/vacas*100) : 0},
-    ovino: {madres: ovejas, nacidos: nacidosCorderos, pct: ovejas>0 ? (nacidosCorderos/ovejas*100) : 0}
+    ovino: {madres: ovejas, nacidos: nacidosCorderos, pct: ovejas>0 ? (nacidosCorderos/ovejas*100) : 0,
+      senaladosMachos, senaladosHembras, senalados: senaladosMachos+senaladosHembras,
+      pctSenalada: ovejas>0 ? ((senaladosMachos+senaladosHembras)/ovejas*100) : 0}
   };
 }
 /* Nacimientos discrimina por especie (ver calcularEstadisticasNacimientos) --
@@ -4217,7 +4242,9 @@ function renderNacimientosTemporadaHTML(nac){
   const pctAbortosTxt = nac.bovino.madres>0 ? nac.bovino.pctAbortos.toFixed(1)+'% s/ vacas' : 'sin vacas preñadas cargadas';
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.nacidos}</strong> Terneros (${pctBovinoTxt})</p>`;
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.abortos}</strong> Abortos (${pctAbortosTxt})</p>`;
-  html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
+  html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
+  const pctSenaladaTxt = nac.ovino.madres>0 ? nac.ovino.pctSenalada.toFixed(1)+'% s/ ovejas encarneradas' : 'sin ovejas encarneradas cargadas';
+  html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.senalados}</strong> Señalados (${nac.ovino.senaladosMachos} macho / ${nac.ovino.senaladosHembras} hembra) — ${pctSenaladaTxt}</p>`;
   html += `<details style="margin-bottom:8px;"><summary style="font-size:12px;color:var(--texto-suave);cursor:pointer;">✎ Editar vacas preñadas / ovejas encarneradas</summary>
     <div style="margin-top:6px;">
       <div class="form-row"><label>Vacas preñadas (temporada)</label><input type="number" min="0" id="temporada-vacas" value="${nac.bovino.madres}"></div>
@@ -6091,6 +6118,21 @@ function renderAbortosLista(){
         ${ab.obs || ab.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${ab.obs||''}${ab.obs && ab.usuario?' — ':''}${ab.usuario||''}</div>` : ''}
       </div>`).join('');
 }
+/* Señalada -- mismo criterio que Abortos: del establecimiento entero, sin
+   potrero. No toca stock; es un conteo aparte (discriminado macho/hembra)
+   para el % de señalada sobre ovejas encarneradas, ver
+   calcularEstadisticasNacimientos(). */
+function renderSenaladasLista(){
+  const cont = document.getElementById('senaladas-lista');
+  const lista = (estado.senaladas||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha)).slice(0,20);
+  cont.innerHTML = !lista.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Sin señaladas registradas todavía.</p>'
+    : lista.map(sn=>`
+      <div class="potrero-card">
+        <div class="nombre">${sn.fecha} — ${sn.machos||0} macho / ${sn.hembras||0} hembra</div>
+        ${sn.obs || sn.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${sn.obs||''}${sn.obs && sn.usuario?' — ':''}${sn.usuario||''}</div>` : ''}
+      </div>`).join('');
+}
 /* 22/9/2026: "campo ajeno" (DICOSE, solo La Vuelta) -- animales propios
    que van a pastar al campo de un tercero, o vuelven de ahí. Viven en un
    balde aparte (estado.campoAjeno), NUNCA en POTREROS_GEO/estado.potreros,
@@ -6148,12 +6190,18 @@ document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ab-fecha').value = fechaISOHoy();
   document.getElementById('ab-fecha').max = fechaISOHoy();
   document.getElementById('ab-obs').value = '';
+  document.getElementById('sn-machos').value = '0';
+  document.getElementById('sn-hembras').value = '0';
+  document.getElementById('sn-fecha').value = fechaISOHoy();
+  document.getElementById('sn-fecha').max = fechaISOHoy();
+  document.getElementById('sn-obs').value = '';
   // @completo:end
   renderLluviasLista();
   renderLluviasResumen();
   // @completo:start
   renderEventosClimaLista();
   renderAbortosLista();
+  renderSenaladasLista();
   if(CONFIG.dicoseHabilitado){
     document.getElementById('campo-ajeno-seccion').style.display = 'block';
     document.getElementById('ca-potrero').innerHTML = opcionesPotrerosTodos();
@@ -6376,6 +6424,24 @@ document.getElementById('ab-guardar').addEventListener('click', ()=>{
   renderAbortosLista();
   toast('Aborto registrado');
 });
+document.getElementById('sn-guardar').addEventListener('click', ()=>{
+  const fechaISO = document.getElementById('sn-fecha').value;
+  const machos = parseInt(document.getElementById('sn-machos').value, 10) || 0;
+  const hembras = parseInt(document.getElementById('sn-hembras').value, 10) || 0;
+  const obs = document.getElementById('sn-obs').value.trim();
+  if(!fechaISO){ toast('Elegí una fecha'); return; }
+  if(machos<1 && hembras<1){ toast('Ingresá al menos un macho o una hembra'); return; }
+  const fecha = fechaISOaDisplay(fechaISO);
+  const id = generarIdHistorial();
+  const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
+  estado.senaladas = estado.senaladas || [];
+  estado.senaladas.unshift({id, fecha, machos, hembras, obs: obs||null, dispositivo: idDispositivo(), usuario: usuario||null});
+  guardarEstado();
+  // Mismo truco que "aborto": ESTABLECIMIENTO como placeholder de "potrero".
+  enviarEvento('senalada', ESTABLECIMIENTO, {id, machos, hembras, obs: obs||null, usuario: usuario||null}, fecha);
+  renderSenaladasLista();
+  toast('Señalada registrada');
+});
 <!-- @completo:end -->
 
 <!-- @movil:start -->
@@ -6475,7 +6541,7 @@ async function calcularEstadisticasNacimientos(){
       // punta contra Supabase real antes y después del fix.
       const res = await client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
         .eq('establecimiento', ESTABLECIMIENTO)
-        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto'])
+        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto','senalada'])
         .order('creado_en', {ascending:true});
       if(!res.error){
         eventos = res.data||[];
@@ -6491,7 +6557,7 @@ async function calcularEstadisticasNacimientos(){
 
   const saldo = saldoInicialTemporada();
   const porMesCategoria = {'Terneros':{8:0,9:0,10:0,11:0,12:0}, 'Corderos/as':{8:0,9:0,10:0,11:0,12:0}};
-  let nacidosTerneros = 0, nacidosCorderos = 0, abortosTemporada = 0;
+  let nacidosTerneros = 0, nacidosCorderos = 0, abortosTemporada = 0, senaladosMachos = 0, senaladosHembras = 0;
   const acumular = (categoria, fc, delta)=>{
     if(!porMesCategoria[categoria]) return; // Terneras/Potros/as viejos: ya no se cuentan
     if(!fc || typeof fc !== 'string') return;
@@ -6519,6 +6585,8 @@ async function calcularEstadisticasNacimientos(){
       acumular(d.categoria, ev.fecha_cliente, d.cantidad||0);
     } else if(ev.tipo==='aborto'){
       if(enTemporada(ev.fecha_cliente)) abortosTemporada += (d.cantidad||1);
+    } else if(ev.tipo==='senalada'){
+      if(enTemporada(ev.fecha_cliente)){ senaladosMachos += (d.machos||0); senaladosHembras += (d.hembras||0); }
     } else if(ev.tipo==='muerte' || ev.tipo==='venta' || ev.tipo==='desaparecido'){
       tocarSaldoTemporada(saldo, ev.potrero, d.categoria, -(d.cantidad||0), true);
     } else if(ev.tipo==='ingreso' || ev.tipo==='compra' || ev.tipo==='encontrado'){
@@ -6565,7 +6633,9 @@ async function calcularEstadisticasNacimientos(){
     totalEventos: (eventos||[]).length,
     bovino: {madres: vacas, nacidos: nacidosTerneros, pct: vacas>0 ? (nacidosTerneros/vacas*100) : 0,
       abortos: abortosTemporada, pctAbortos: vacas>0 ? (abortosTemporada/vacas*100) : 0},
-    ovino: {madres: ovejas, nacidos: nacidosCorderos, pct: ovejas>0 ? (nacidosCorderos/ovejas*100) : 0}
+    ovino: {madres: ovejas, nacidos: nacidosCorderos, pct: ovejas>0 ? (nacidosCorderos/ovejas*100) : 0,
+      senaladosMachos, senaladosHembras, senalados: senaladosMachos+senaladosHembras,
+      pctSenalada: ovejas>0 ? ((senaladosMachos+senaladosHembras)/ovejas*100) : 0}
   };
 }
 async function calcularEstadisticasMuertes(){
@@ -6653,7 +6723,9 @@ function renderNacimientosTemporadaHTML(nac){
   const pctAbortosTxt = nac.bovino.madres>0 ? nac.bovino.pctAbortos.toFixed(1)+'% s/ vacas' : 'sin vacas preñadas cargadas';
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.nacidos}</strong> Terneros (${pctBovinoTxt})</p>`;
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.bovino.abortos}</strong> Abortos (${pctAbortosTxt})</p>`;
-  html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
+  html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${nac.ovino.nacidos}</strong> Corderos/Corderas (${pctOvinoTxt})</p>`;
+  const pctSenaladaTxt = nac.ovino.madres>0 ? nac.ovino.pctSenalada.toFixed(1)+'% s/ ovejas encarneradas' : 'sin ovejas encarneradas cargadas';
+  html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${nac.ovino.senalados}</strong> Señalados (${nac.ovino.senaladosMachos} macho / ${nac.ovino.senaladosHembras} hembra) — ${pctSenaladaTxt}</p>`;
   if(nac.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
   html += tablaMesesHTML(nac.filasPorCategoria, 'Categoría');
   return html;

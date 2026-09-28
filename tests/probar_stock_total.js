@@ -137,6 +137,9 @@ async function probarArchivo(archivo, tieneDueno){
     // preñadas). No lleva categoria/potrero (evento del establecimiento
     // entero, como lluvia/evento_clima).
     { establecimiento: 'la_vuelta', tipo: 'aborto', fecha_cliente: fechaEnTemporada(1), detalle: { motivo: 'no_prenada' } },
+    // 28/9/2026: Señalada -- % junto al de nacidos, sobre la MISMA base que
+    // Corderos/as (ovejas encarneradas). Discrimina macho/hembra.
+    { establecimiento: 'la_vuelta', tipo: 'senalada', fecha_cliente: fechaEnTemporada(1), detalle: { machos: 4, hembras: 3 } },
     { establecimiento: 'maria_laura', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 4, categoria: 'Terneros' } },
     { establecimiento: 'pone_chico', tipo: 'nacimiento', fecha_cliente: fechaEnTemporada(1), detalle: { cantidad: 9, categoria: 'Terneros' } },
   ];
@@ -212,6 +215,17 @@ async function probarArchivo(archivo, tieneDueno){
       panelTemp.includes(`Abortos (${pctAbortosEsperado}% s/ vacas)`), panelTemp);
   }
 
+  // 28/9/2026: Señalada -- discrimina macho/hembra, % sobre ovejas
+  // encarneradas (misma base que Corderos/Corderas, en 0 por defecto en
+  // este seed -- ningún establecimiento carga ovino acá). Solo La Vuelta
+  // tiene el evento sembrado (4 machos + 3 hembras = 7).
+  const senaladosEsperados = win.__establecimiento()==='la_vuelta' ? 7 : 0;
+  chequear(`temporada: ${senaladosEsperados} Señalados`, panelTemp.includes(`<strong>${senaladosEsperados}</strong> Señalados`), panelTemp);
+  if(senaladosEsperados>0){
+    chequear('temporada: Señalados discrimina 4 macho / 3 hembra, sin ovejas cargadas todavía',
+      panelTemp.includes('Señalados (4 macho / 3 hembra) — sin ovejas encarneradas cargadas'), panelTemp);
+  }
+
   // Editor de "vacas preñadas / ovejas encarneradas" -- solo en PC (mismo
   // criterio que "⚙ Coeficientes UG"); en móvil el panel es de solo lectura.
   const esPC = archivo.includes('-pc/');
@@ -227,6 +241,11 @@ async function probarArchivo(archivo, tieneDueno){
     const panelTempLuego = doc.getElementById('stock-panel-2').innerHTML;
     const pctEsperado = (esperado.nac/20*100).toFixed(1);
     chequear(`editor de madres: el % de Terneros se recalculó sobre 20 vacas (${pctEsperado}%)`, panelTempLuego.includes(`${pctEsperado}% s/ vacas`), panelTempLuego);
+    if(win.__establecimiento()==='la_vuelta'){
+      const pctSenaladaEsperado = (7/8*100).toFixed(1);
+      chequear(`editor de madres: el % de Señalados se recalculó sobre 8 ovejas encarneradas (${pctSenaladaEsperado}%)`,
+        panelTempLuego.includes(`Señalados (4 macho / 3 hembra) — ${pctSenaladaEsperado}% s/ ovejas encarneradas`), panelTempLuego);
+    }
     chequear('editor de madres: sigue en la pestaña Temporada (no vuelve a Categorías)',
       doc.getElementById('stock-panel-2').style.display !== 'none' && doc.getElementById('stock-panel-0').style.display === 'none');
   } else {
