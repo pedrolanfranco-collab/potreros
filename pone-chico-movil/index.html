@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.61</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.62</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -504,7 +504,7 @@
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
-      <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias</button>
+      <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
       <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
       <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
       <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
@@ -598,15 +598,19 @@
 </div>
 <div id="modal-lluvias" class="modal-overlay" style="display:none;">
   <div class="modal-box">
-    <h3>🌧 Lluvias</h3>
+    <h3>🌧 Lluvias y otros eventos</h3>
     <button class="btn-cerrar-x" id="lluvias-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <div class="form-row"><label>Fecha</label><input type="date" id="ll-fecha"></div>
     <div class="form-row"><label>Milímetros</label><input type="number" id="ll-mm" min="0" step="0.1"></div>
     <div class="form-botones" style="margin-bottom:12px;">
       <button class="btn btn-agregar" id="ll-guardar">Cargar lluvia</button>
+      <button class="btn btn-secundario" id="ll-cancelar-edicion" style="display:none;">Cancelar edición</button>
     </div>
-    <div id="lluvias-lista"></div>
     <div id="lluvias-resumen"></div>
+    <div class="form-botones" style="margin:8px 0 0;">
+      <button type="button" class="btn btn-secundario" id="btn-lluvias-historial">📋 Ver historial</button>
+    </div>
+    <div id="lluvias-lista" style="display:none;margin-top:8px;"></div>
     <h4 style="margin:16px 0 6px;font-size:13px;">❄️ Otros eventos (helada, granizo...)</h4>
     <div class="form-row"><label>Tipo</label>
       <select id="ev-tipo">
@@ -630,6 +634,7 @@
         <option value="no_prenada">Vaca diagnosticada preñada que no lo está</option>
       </select>
     </div>
+    <div class="form-row"><label>Cantidad</label><input type="number" id="ab-cantidad" min="1" value="1"></div>
     <div class="form-row"><label>Fecha</label><input type="date" id="ab-fecha"></div>
     <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="ab-obs" placeholder="Ej: potrero 9, vaca de Silvia"></div>
     <div class="form-botones" style="margin-bottom:12px;">
@@ -730,7 +735,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.61","versionMovil":"1.61","simpleHabilitado":true,"versionMovilSimple":"1.5","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.62","versionMovil":"1.62","simpleHabilitado":true,"versionMovilSimple":"1.7","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1287,6 +1292,20 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
+  // 28/9/2026: editar/borrar un registro de lluvia -- solo la app completa
+  // los genera (ver "editarLluvia"/"borrarLluvia"), pero CUALQUIER
+  // dispositivo (incluido Campo) tiene que aplicarlos igual al sincronizar,
+  // para no quedarse con un registro viejo o ya borrado en otro lado.
+  if(row.tipo === 'lluvia_editada'){
+    const l = (estado.lluvias||[]).find(x=>x.id===d.id);
+    if(l){ l.fecha = d.fecha; l.mm = d.mm; }
+    return;
+  }
+  if(row.tipo === 'lluvia_eliminada'){
+    estado.lluvias = (estado.lluvias||[]).filter(l=>l.id!==d.id);
+    return;
+  }
+
   if(row.tipo === 'evento_clima'){
     // Mismo criterio que "lluvia": es del establecimiento entero, sin
     // potrero -- se aplica antes del guard de abajo.
@@ -1304,7 +1323,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     // para el % de abortos junto al de nacidos (calcularEstadisticasNacimientos).
     estado.abortos = estado.abortos || [];
     if(!estado.abortos.some(ab=>ab.id===d.id)){
-      estado.abortos.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), motivo: d.motivo, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
+      estado.abortos.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), motivo: d.motivo, cantidad: d.cantidad||1, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
     }
     return;
   }
@@ -4600,16 +4619,40 @@ ssc.addEventListener('change', ()=>{
 });
 
 /* ======================= LLUVIAS ======================= */
+/* 28/9/2026: editar/borrar un registro de lluvia, y el botón "Ver
+   historial" (la lista de registros individuales queda oculta por
+   defecto, solo se ve el resumen mensual). Solo en la app completa --
+   en Campo (móvil-simple) el empleado sigue solo cargando lluvia, sin
+   tocar lo que otro dispositivo ya cargó. No toca stock ni potreros, así
+   que a diferencia de "editar/borrar historial" de un movimiento, esto
+   es una edición/baja directa (sin reversar nada) -- edita o saca el
+   registro en el propio dispositivo y lo sincroniza como evento aparte
+   (lluvia_editada/lluvia_eliminada), no reusa "correccion" porque ese
+   tipo asume un potrero real de donde reversar stock, y una lluvia no
+   tiene ninguno de los dos. */
+let editandoLluviaId = null;
 function renderLluviasLista(){
   const cont = document.getElementById('lluvias-lista');
-  const lista = (estado.lluvias||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha)).slice(0,20);
+  const listaCompleta = (estado.lluvias||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha));
+  const lista = listaCompleta;
   cont.innerHTML = !lista.length
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin lluvias registradas todavía.</p>'
     : lista.map(l=>`
       <div class="potrero-card">
-        <div class="nombre">${l.fecha}</div>
+        <div class="nombre">${l.fecha}
+          <span class="hist-acciones">
+            <button class="hist-btn" data-lluvia-editar="${l.id}" title="Editar">✏️</button>
+            <button class="hist-btn" data-lluvia-borrar="${l.id}" title="Borrar">🗑</button>
+          </span>
+        </div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${l.mm} mm${l.usuario?(' — '+l.usuario):''}</div>
       </div>`).join('');
+  cont.querySelectorAll('[data-lluvia-editar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarLluvia(btn.dataset.lluviaEditar); });
+  });
+  cont.querySelectorAll('[data-lluvia-borrar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); borrarLluvia(btn.dataset.lluviaBorrar); });
+  });
 }
 const MESES_ABREV_LLUVIA = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 /* Acumulado de mm por mes y año, a partir de estado.lluvias -- es a nivel
@@ -4670,7 +4713,7 @@ function renderAbortosLista(){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin abortos registrados todavía.</p>'
     : lista.map(ab=>`
       <div class="potrero-card">
-        <div class="nombre">${ab.fecha} — ${MOTIVO_TXT[ab.motivo]||ab.motivo}</div>
+        <div class="nombre">${ab.fecha} — ${(ab.cantidad||1) > 1 ? (ab.cantidad+' animales · ') : ''}${MOTIVO_TXT[ab.motivo]||ab.motivo}</div>
         ${ab.obs || ab.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${ab.obs||''}${ab.obs && ab.usuario?' — ':''}${ab.usuario||''}</div>` : ''}
       </div>`).join('');
 }
@@ -4717,9 +4760,15 @@ document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ll-fecha').value = fechaISOHoy();
   document.getElementById('ll-fecha').max = fechaISOHoy();
   document.getElementById('ll-mm').value = '';
+  editandoLluviaId = null;
+  document.getElementById('ll-guardar').textContent = 'Cargar lluvia';
+  document.getElementById('ll-cancelar-edicion').style.display = 'none';
+  document.getElementById('lluvias-lista').style.display = 'none';
+  document.getElementById('btn-lluvias-historial').textContent = '📋 Ver historial';
   document.getElementById('ev-fecha').value = fechaISOHoy();
   document.getElementById('ev-fecha').max = fechaISOHoy();
   document.getElementById('ev-obs').value = '';
+  document.getElementById('ab-cantidad').value = '1';
   document.getElementById('ab-fecha').value = fechaISOHoy();
   document.getElementById('ab-fecha').max = fechaISOHoy();
   document.getElementById('ab-obs').value = '';
@@ -4840,6 +4889,19 @@ document.getElementById('ll-guardar').addEventListener('click', ()=>{
   if(!fechaISO){ toast('Elegí una fecha'); return; }
   if(isNaN(mm) || mm<0){ toast('Ingresá los milímetros'); return; }
   const fecha = fechaISOaDisplay(fechaISO);
+  if(editandoLluviaId){
+    const l = (estado.lluvias||[]).find(x=>x.id===editandoLluviaId);
+    if(l){ l.fecha = fecha; l.mm = mm; guardarEstado(); }
+    enviarEvento('lluvia_editada', ESTABLECIMIENTO, {id: editandoLluviaId, fecha, mm});
+    editandoLluviaId = null;
+    document.getElementById('ll-guardar').textContent = 'Cargar lluvia';
+    document.getElementById('ll-cancelar-edicion').style.display = 'none';
+    document.getElementById('ll-mm').value = '';
+    renderLluviasLista();
+    renderLluviasResumen();
+    toast('Lluvia corregida');
+    return;
+  }
   const id = generarIdHistorial();
   const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
   estado.lluvias = estado.lluvias || [];
@@ -4853,6 +4915,42 @@ document.getElementById('ll-guardar').addEventListener('click', ()=>{
   renderLluviasLista();
   renderLluviasResumen();
   toast(`Se cargó ${mm} mm del ${fecha}`);
+});
+function editarLluvia(id){
+  const l = (estado.lluvias||[]).find(x=>x.id===id);
+  if(!l) return;
+  editandoLluviaId = id;
+  const [d,m,y] = l.fecha.split('/');
+  document.getElementById('ll-fecha').value = `${y}-${m}-${d}`;
+  document.getElementById('ll-mm').value = l.mm;
+  document.getElementById('ll-guardar').textContent = 'Guardar corrección';
+  document.getElementById('ll-cancelar-edicion').style.display = '';
+  document.getElementById('ll-mm').focus();
+}
+function borrarLluvia(id){
+  const l = (estado.lluvias||[]).find(x=>x.id===id);
+  if(!l) return;
+  if(!confirm(`¿Borrar el registro de ${l.mm} mm del ${l.fecha}? No se puede deshacer.`)) return;
+  estado.lluvias = (estado.lluvias||[]).filter(x=>x.id!==id);
+  guardarEstado();
+  enviarEvento('lluvia_eliminada', ESTABLECIMIENTO, {id});
+  renderLluviasLista();
+  renderLluviasResumen();
+  toast('Registro de lluvia borrado');
+}
+document.getElementById('ll-cancelar-edicion').addEventListener('click', ()=>{
+  editandoLluviaId = null;
+  document.getElementById('ll-fecha').value = fechaISOHoy();
+  document.getElementById('ll-mm').value = '';
+  document.getElementById('ll-guardar').textContent = 'Cargar lluvia';
+  document.getElementById('ll-cancelar-edicion').style.display = 'none';
+});
+document.getElementById('btn-lluvias-historial').addEventListener('click', ()=>{
+  const cont = document.getElementById('lluvias-lista');
+  const btn = document.getElementById('btn-lluvias-historial');
+  const visible = cont.style.display !== 'none';
+  cont.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? '📋 Ver historial' : '🔼 Ocultar historial';
 });
 document.getElementById('ev-guardar').addEventListener('click', ()=>{
   const fechaISO = document.getElementById('ev-fecha').value;
@@ -4875,18 +4973,20 @@ document.getElementById('ev-guardar').addEventListener('click', ()=>{
 document.getElementById('ab-guardar').addEventListener('click', ()=>{
   const fechaISO = document.getElementById('ab-fecha').value;
   const motivo = document.getElementById('ab-motivo').value;
+  const cantidad = parseInt(document.getElementById('ab-cantidad').value, 10);
   const obs = document.getElementById('ab-obs').value.trim();
   if(!fechaISO){ toast('Elegí una fecha'); return; }
+  if(!cantidad || cantidad<1){ toast('Ingresá una cantidad válida'); return; }
   const fecha = fechaISOaDisplay(fechaISO);
   const id = generarIdHistorial();
   const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
   estado.abortos = estado.abortos || [];
-  estado.abortos.unshift({id, fecha, motivo, obs: obs||null, dispositivo: idDispositivo(), usuario: usuario||null});
+  estado.abortos.unshift({id, fecha, motivo, cantidad, obs: obs||null, dispositivo: idDispositivo(), usuario: usuario||null});
   guardarEstado();
   // Mismo truco que "lluvia"/"evento_clima": ESTABLECIMIENTO como
   // placeholder de "potrero" (enviarEvento/eventos_sync siempre esperan
   // ese campo, aunque un aborto no sea de ningún potrero en particular).
-  enviarEvento('aborto', ESTABLECIMIENTO, {id, motivo, obs: obs||null, usuario: usuario||null}, fecha);
+  enviarEvento('aborto', ESTABLECIMIENTO, {id, motivo, cantidad, obs: obs||null, usuario: usuario||null}, fecha);
   renderAbortosLista();
   toast('Aborto registrado');
 });
@@ -5029,7 +5129,7 @@ async function calcularEstadisticasNacimientos(){
       tocarSaldoTemporada(saldo, ev.potrero, d.categoria, d.cantidad||0, false);
       acumular(d.categoria, ev.fecha_cliente, d.cantidad||0);
     } else if(ev.tipo==='aborto'){
-      if(enTemporada(ev.fecha_cliente)) abortosTemporada++;
+      if(enTemporada(ev.fecha_cliente)) abortosTemporada += (d.cantidad||1);
     } else if(ev.tipo==='muerte' || ev.tipo==='venta' || ev.tipo==='desaparecido'){
       tocarSaldoTemporada(saldo, ev.potrero, d.categoria, -(d.cantidad||0), true);
     } else if(ev.tipo==='ingreso' || ev.tipo==='compra' || ev.tipo==='encontrado'){

@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.5</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.7</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -574,8 +574,8 @@
     <div class="form-botones" style="margin-bottom:12px;">
       <button class="btn btn-agregar" id="ll-guardar">Cargar lluvia</button>
     </div>
-    <div id="lluvias-lista"></div>
     <div id="lluvias-resumen"></div>
+    <div id="lluvias-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -629,7 +629,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.61","versionMovil":"1.61","simpleHabilitado":true,"versionMovilSimple":"1.5","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.62","versionMovil":"1.62","simpleHabilitado":true,"versionMovilSimple":"1.7","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1186,6 +1186,20 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
+  // 28/9/2026: editar/borrar un registro de lluvia -- solo la app completa
+  // los genera (ver "editarLluvia"/"borrarLluvia"), pero CUALQUIER
+  // dispositivo (incluido Campo) tiene que aplicarlos igual al sincronizar,
+  // para no quedarse con un registro viejo o ya borrado en otro lado.
+  if(row.tipo === 'lluvia_editada'){
+    const l = (estado.lluvias||[]).find(x=>x.id===d.id);
+    if(l){ l.fecha = d.fecha; l.mm = d.mm; }
+    return;
+  }
+  if(row.tipo === 'lluvia_eliminada'){
+    estado.lluvias = (estado.lluvias||[]).filter(l=>l.id!==d.id);
+    return;
+  }
+
   if(row.tipo === 'evento_clima'){
     // Mismo criterio que "lluvia": es del establecimiento entero, sin
     // potrero -- se aplica antes del guard de abajo.
@@ -1203,7 +1217,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     // para el % de abortos junto al de nacidos (calcularEstadisticasNacimientos).
     estado.abortos = estado.abortos || [];
     if(!estado.abortos.some(ab=>ab.id===d.id)){
-      estado.abortos.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), motivo: d.motivo, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
+      estado.abortos.unshift({id: d.id, fecha: row.fecha_cliente || fechaHoy(), motivo: d.motivo, cantidad: d.cantidad||1, obs: d.obs||null, dispositivo: row.dispositivo, usuario: d.usuario||null});
     }
     return;
   }
@@ -4280,12 +4294,14 @@ ssc.addEventListener('change', ()=>{
 /* ======================= LLUVIAS ======================= */
 function renderLluviasLista(){
   const cont = document.getElementById('lluvias-lista');
-  const lista = (estado.lluvias||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha)).slice(0,20);
+  const listaCompleta = (estado.lluvias||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha));
+  const lista = listaCompleta.slice(0,20);
   cont.innerHTML = !lista.length
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin lluvias registradas todavía.</p>'
     : lista.map(l=>`
       <div class="potrero-card">
-        <div class="nombre">${l.fecha}</div>
+        <div class="nombre">${l.fecha}
+        </div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${l.mm} mm${l.usuario?(' — '+l.usuario):''}</div>
       </div>`).join('');
 }
