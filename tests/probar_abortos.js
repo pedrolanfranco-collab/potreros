@@ -123,6 +123,32 @@ async function probarArchivo(archivo){
   await new Promise(r=>setTimeout(r, 30));
   chequear('se mandó como evento a Supabase con tipo aborto',
     servidor.filas.some(f=>f.tipo==='aborto' && f.detalle && f.detalle.motivo==='no_prenada'));
+  chequear('sin tocar el campo, la cantidad queda en 1 por defecto', abortos[0].cantidad === 1, JSON.stringify(abortos[0]));
+
+  // --- 28/9/2026: cantidad (varios animales en el mismo registro) ---
+  chequear('campo ab-cantidad presente', !!doc.getElementById('ab-cantidad'));
+  doc.getElementById('btn-lluvias').dispatchEvent(new win.Event('click', { bubbles: true }));
+  doc.getElementById('ab-motivo').value = 'feto_visto';
+  doc.getElementById('ab-cantidad').value = '3';
+  doc.getElementById('ab-obs').value = 'Tres vacas del potrero 5';
+  doc.getElementById('ab-guardar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  const conCantidad = win.__est().abortos[0];
+  chequear('la cantidad cargada queda en estado.abortos', conCantidad.cantidad === 3, JSON.stringify(conCantidad));
+  chequear('la lista muestra "3 animales"', /3 animales/.test(doc.getElementById('abortos-lista').innerHTML));
+  await new Promise(r=>setTimeout(r, 30));
+  chequear('la cantidad viaja en el evento a Supabase',
+    servidor.filas.some(f=>f.tipo==='aborto' && f.detalle && f.detalle.cantidad===3));
+  const antesCantidadInvalida = win.__est().abortos.length;
+  doc.getElementById('ab-cantidad').value = '0';
+  doc.getElementById('ab-guardar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('cantidad 0 no carga nada', win.__est().abortos.length === antesCantidadInvalida);
+
+  // --- un evento remoto viejo sin "cantidad" (anterior a esta funcion) cuenta como 1 ---
+  win.aplicarEventoRemoto({ tipo:'aborto', potrero: 'esto-no-es-un-potrero', dispositivo:'otro',
+    fecha_cliente: '05/09/2026', detalle: { id:'sin-cantidad', motivo:'feto_visto', obs:null, usuario:'Otro' } });
+  const remotoSinCantidad = win.__est().abortos.find(ab=>ab.id==='sin-cantidad');
+  chequear('un evento remoto sin cantidad (formato viejo) se guarda como 1',
+    !!remotoSinCantidad && remotoSinCantidad.cantidad === 1, JSON.stringify(remotoSinCantidad));
 
   // --- validación: sin fecha no carga nada ---
   const antes = win.__est().abortos.length;
@@ -148,6 +174,7 @@ async function probarArchivo(archivo){
   // --- sin señal se encola, y se vacía al reconectar ---
   Object.defineProperty(win.navigator, 'onLine', { value: false, configurable: true });
   const colaAntes = (win.__est().colaSync||[]).length;
+  doc.getElementById('ab-cantidad').value = '1';
   doc.getElementById('ab-fecha').value = win.fechaISOHoy();
   doc.getElementById('ab-guardar').dispatchEvent(new win.Event('click', { bubbles: true }));
   await new Promise(r=>setTimeout(r, 30));

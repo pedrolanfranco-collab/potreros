@@ -7,6 +7,13 @@
  * agruparLluviasPorMesYAnio() suma bien por mes y separa por año (14/9/2026);
  * "otros eventos" (helada, granizo, etc., 14/9/2026) sigue el mismo patrón
  * que lluvia pero con su propio tipo de evento ('evento_clima'), sin mm.
+ * 28/9/2026: el botón pasa a decir "Lluvias y otros eventos"; el historial
+ * de registros individuales queda oculto por defecto detrás de "Ver
+ * historial" (solo el resumen mensual se ve siempre); cada registro se
+ * puede editar (fecha y mm) o borrar, con sus propios tipos de evento
+ * ('lluvia_editada'/'lluvia_eliminada', no reusa 'correccion' porque ese
+ * asume un potrero real del que reversar stock) que cualquier dispositivo
+ * tiene que aplicar al sincronizar, no solo el que originó el cambio.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -179,6 +186,61 @@ async function probarArchivo(archivo){
   await win.vaciarColaSync();
   chequear('al volver la señal la cola se vacía', (win.__est().colaSync||[]).length === 0);
   chequear('ese evento en cola también llegó al servidor', servidor.filas.some(f=>f.tipo==='lluvia' && f.detalle && f.detalle.mm===5));
+
+  // --- 28/9/2026: boton renombrado, historial oculto por defecto, editar/borrar ---
+  chequear('el boton dice "Lluvias y otros eventos"', /otros eventos/.test(doc.getElementById('btn-lluvias').textContent));
+  chequear('boton "Ver historial" presente', !!doc.getElementById('btn-lluvias-historial'));
+  chequear('la lista de registros arranca oculta', doc.getElementById('lluvias-lista').style.display === 'none');
+  doc.getElementById('btn-lluvias-historial').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('"Ver historial" la muestra', doc.getElementById('lluvias-lista').style.display !== 'none');
+  doc.getElementById('btn-lluvias-historial').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('tocarlo de nuevo la vuelve a ocultar', doc.getElementById('lluvias-lista').style.display === 'none');
+  doc.getElementById('btn-lluvias-historial').dispatchEvent(new win.Event('click', { bubbles: true }));
+
+  win.__est().lluvias.length = 0;
+  win.__est().lluvias.push({ id:'edl1', fecha:'10/03/2026', mm:12, dispositivo:'este', usuario:null });
+  win.renderLluviasLista();
+  chequear('la fila tiene boton editar y borrar',
+    !!doc.querySelector('[data-lluvia-editar="edl1"]') && !!doc.querySelector('[data-lluvia-borrar="edl1"]'));
+
+  doc.querySelector('[data-lluvia-editar="edl1"]').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('editar precarga la fecha', doc.getElementById('ll-fecha').value === '2026-03-10');
+  chequear('editar precarga los mm', doc.getElementById('ll-mm').value === '12');
+  chequear('el boton pasa a "Guardar corrección"', doc.getElementById('ll-guardar').textContent === 'Guardar corrección');
+  chequear('aparece "Cancelar edición"', doc.getElementById('ll-cancelar-edicion').style.display !== 'none');
+
+  doc.getElementById('ll-fecha').value = '2026-03-11';
+  doc.getElementById('ll-mm').value = '20';
+  doc.getElementById('ll-guardar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  const editada = win.__est().lluvias.find(l=>l.id==='edl1');
+  chequear('editar corrige fecha y mm en estado.lluvias',
+    !!editada && editada.fecha==='11/03/2026' && editada.mm===20, JSON.stringify(editada));
+  chequear('el boton vuelve a "Cargar lluvia"', doc.getElementById('ll-guardar').textContent === 'Cargar lluvia');
+  await new Promise(r=>setTimeout(r, 30));
+  chequear('se mandó lluvia_editada a Supabase',
+    servidor.filas.some(f=>f.tipo==='lluvia_editada' && f.detalle && f.detalle.id==='edl1' && f.detalle.mm===20 && f.detalle.fecha==='11/03/2026'));
+
+  doc.getElementById('ll-cancelar-edicion').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('"Cancelar edición" desactiva el modo edición', doc.getElementById('ll-guardar').textContent === 'Cargar lluvia');
+
+  win.renderLluviasLista();
+  doc.querySelector('[data-lluvia-borrar="edl1"]').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('borrar saca el registro de estado.lluvias', !win.__est().lluvias.some(l=>l.id==='edl1'));
+  await new Promise(r=>setTimeout(r, 30));
+  chequear('se mandó lluvia_eliminada a Supabase',
+    servidor.filas.some(f=>f.tipo==='lluvia_eliminada' && f.detalle && f.detalle.id==='edl1'));
+
+  // --- editar/borrar remotos: cualquier dispositivo los tiene que aplicar ---
+  win.__est().lluvias.length = 0;
+  win.__est().lluvias.push({ id:'remedl', fecha:'01/01/2026', mm:5, dispositivo:'otro', usuario:null });
+  win.aplicarEventoRemoto({ tipo:'lluvia_editada', potrero:'esto-no-es-un-potrero', dispositivo:'otro',
+    detalle: { id:'remedl', fecha:'02/01/2026', mm:9 } });
+  const remotaEditada = win.__est().lluvias.find(l=>l.id==='remedl');
+  chequear('un lluvia_editada remoto actualiza fecha y mm',
+    !!remotaEditada && remotaEditada.fecha==='02/01/2026' && remotaEditada.mm===9, JSON.stringify(remotaEditada));
+  win.aplicarEventoRemoto({ tipo:'lluvia_eliminada', potrero:'esto-no-es-un-potrero', dispositivo:'otro',
+    detalle: { id:'remedl' } });
+  chequear('un lluvia_eliminada remoto saca el registro', !win.__est().lluvias.some(l=>l.id==='remedl'));
 
   // --- otros eventos climáticos (helada, granizo, etc.) ---
   chequear('estado.eventosClima arranca vacío', Array.isArray(win.__est().eventosClima) && win.__est().eventosClima.length===0);
