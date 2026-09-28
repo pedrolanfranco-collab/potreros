@@ -20,11 +20,12 @@
  *    campo vacio ambiguo). Disponible en los 3 establecimientos desde el
  *    principio -- no depende de tener padron cargado, ese dato solo cambia
  *    si "quien es" encuentra algo al tipear, no si se puede guardar.
- *  - "🔎 Buscar caravana" (el buscador aparte) sigue siendo solo de La
- *    Vuelta (CONFIG.caravanasHabilitado) -- busca contra el padron
- *    animales_caravana, que hoy solo tiene datos de La Vuelta. En Maria
- *    Laura/Pone Chico "quien es" (dentro del form) simplemente no
- *    encuentra nada, pero eso no impide cargar/guardar la caravana.
+ *  - "🔎 Buscar caravana" (el buscador aparte) va con
+ *    CONFIG.caravanasHabilitado, que tienen los establecimientos con el padron
+ *    animales_caravana publicado: La Vuelta y, desde el 28/9/2026, Maria
+ *    Laura. En Pone Chico, que no lo tiene, "quien es" (dentro del form)
+ *    simplemente no encuentra nada, y eso NO impide cargar ni guardar la
+ *    caravana -- se prueban las dos mitades por separado.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -89,11 +90,23 @@ const PADRON = [
     ultimo_peso:null, peso_fecha:null, ultima_lectura:'2026-04-01' },
 ];
 
+// animales_caravana esta partido por establecimiento y buscarCaravana() filtra
+// por el suyo, asi que el padron de prueba tiene que tener una copia de los
+// animales POR CADA establecimiento que lo tenga publicado de verdad: La
+// Vuelta (24/9/2026) y Maria Laura (28/9/2026). Pone Chico no tiene padron, y
+// esa ausencia es parte de lo que se prueba -- ahi "quien es" no encuentra
+// nada y tiene que avisarlo sin inventar un animal.
+const CON_PADRON = ['la_vuelta', 'maria_laura'];
+
 function crearServidor(opciones){
   const cfg = opciones || {};
+  const padron = [];
+  for(const e of CON_PADRON){
+    for(const a of PADRON) padron.push(Object.assign({}, a, { establecimiento: e }));
+  }
   const filas = { sanidad_carga: [], sanidad_carga_maria_laura: [],
     sanidad_carga_pone_chico: [], eventos_sync: [], productos_catalogo: [],
-    animales_caravana: PADRON.map(a => Object.assign({}, a)) };
+    animales_caravana: padron };
   const consultas = [];
   return {
     filas, consultas,

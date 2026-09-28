@@ -5794,8 +5794,12 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
    al animal equivocado termina en una carencia equivocada, y eso es un
    animal que se va a faena cuando no debia.
 
-   Gateado por CONFIG.caravanasHabilitado (solo La Vuelta por ahora, mismo
-   patron de rollout gradual que stockSupabase). */
+   Gateado por CONFIG.caravanasHabilitado: lo tienen los establecimientos con
+   el padron publicado en animales_caravana. La Vuelta desde el 24/9/2026 y
+   Maria Laura desde el 28/9 (1143 y 281 caravanas). Mismo patron de rollout
+   gradual que stockSupabase. La consulta filtra por ESTABLECIMIENTO, asi que
+   cada app ve solo su padron y un animal trasladado aparece en el campo donde
+   fue su ultima pasada por la manga, no en los dos. */
 const TABLA_CARAVANAS = 'animales_caravana';
 
 function normalizarCaravana(txt){
@@ -5897,8 +5901,9 @@ if(CONFIG.caravanasHabilitado){
 /* 25/9/2026: "Cargar tratamiento individual" (con caravana) esta disponible
    en los 3 establecimientos desde el principio -- a diferencia de "🔎
    Buscar caravana" arriba (que sigue gateado por CONFIG.caravanasHabilitado,
-   porque busca contra el padron animales_caravana, que hoy solo tiene datos
-   de La Vuelta), acá no hace falta padron para cargar la caravana de un
+   porque busca contra el padron animales_caravana, que hoy tiene La Vuelta y
+   Maria Laura pero no Pone Chico), acá no hace falta padron para cargar la
+   caravana de un
    tratamiento: "quien es" simplemente no encuentra nada donde no hay
    padron, pero el numero se guarda igual -- es un dato del animal, no una
    consulta que dependa de tener el padron cargado. */

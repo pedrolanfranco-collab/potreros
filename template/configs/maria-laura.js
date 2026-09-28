@@ -250,8 +250,8 @@ module.exports = {
   "themeColor": "#7a5236",
   "nombre": "María Laura",
   "subtitulo": "Gestión de hacienda por potrero y dueño",
-  "versionPc": "2.89",
-  "versionMovil": "2.88",
+  "versionPc": "2.90",
+  "versionMovil": "2.89",
   "simpleHabilitado": true,
   "versionMovilSimple": "1.6",
   "duenoLabel": "Dueño",
@@ -261,7 +261,7 @@ module.exports = {
   "usaExcelBridge": false,
   "tablaSanidad": "sanidad_carga_maria_laura",
   "stockSupabase": true,
-  "caravanasHabilitado": false,
+  "caravanasHabilitado": true,
   "fixFechaIngreso": {
     "potreros": [
       "Tajamar",

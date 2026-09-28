@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.60 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.61 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -765,7 +765,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.60","versionMovil":"1.60","simpleHabilitado":true,"versionMovilSimple":"1.5","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.61","versionMovil":"1.61","simpleHabilitado":true,"versionMovilSimple":"1.5","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -5414,8 +5414,12 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
    al animal equivocado termina en una carencia equivocada, y eso es un
    animal que se va a faena cuando no debia.
 
-   Gateado por CONFIG.caravanasHabilitado (solo La Vuelta por ahora, mismo
-   patron de rollout gradual que stockSupabase). */
+   Gateado por CONFIG.caravanasHabilitado: lo tienen los establecimientos con
+   el padron publicado en animales_caravana. La Vuelta desde el 24/9/2026 y
+   Maria Laura desde el 28/9 (1143 y 281 caravanas). Mismo patron de rollout
+   gradual que stockSupabase. La consulta filtra por ESTABLECIMIENTO, asi que
+   cada app ve solo su padron y un animal trasladado aparece en el campo donde
+   fue su ultima pasada por la manga, no en los dos. */
 const TABLA_CARAVANAS = 'animales_caravana';
 
 function normalizarCaravana(txt){
@@ -5517,8 +5521,9 @@ if(CONFIG.caravanasHabilitado){
 /* 25/9/2026: "Cargar tratamiento individual" (con caravana) esta disponible
    en los 3 establecimientos desde el principio -- a diferencia de "🔎
    Buscar caravana" arriba (que sigue gateado por CONFIG.caravanasHabilitado,
-   porque busca contra el padron animales_caravana, que hoy solo tiene datos
-   de La Vuelta), acá no hace falta padron para cargar la caravana de un
+   porque busca contra el padron animales_caravana, que hoy tiene La Vuelta y
+   Maria Laura pero no Pone Chico), acá no hace falta padron para cargar la
+   caravana de un
    tratamiento: "quien es" simplemente no encuentra nada donde no hay
    padron, pero el numero se guarda igual -- es un dato del animal, no una
    consulta que dependa de tener el padron cargado. */
