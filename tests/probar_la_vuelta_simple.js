@@ -6,10 +6,12 @@
  * "<prefijo>-movil-campo" / "<prefijo>-movil" entre los argumentos. Cubre:
  *   - lo que se mantiene: mapa/potreros, Mover, Nacimiento, Muerte,
  *     Desaparecido, Mover TODO, Agregar animales (carga inicial, ausente en
- *     la movil completa), GPS, Ver por dueno, Sincronizar, Quien soy.
+ *     la movil completa), GPS, Ver por dueno, Sincronizar, Quien soy,
+ *     Lluvias (23/9/2026, solo el registro de mm) y Sanidad (25/9/2026,
+ *     "+ Cargar tratamiento" completo, igual que en la movil completa).
  *   - lo que se excluye: Compra/Venta (y con el, el campo de guia DICOSE),
- *     Stock total, Sanidad, Lluvias, Alertas (editor), Backup JSON,
- *     Restablecer datos de fabrica, Eliminar potrero, Carga por voz.
+ *     Stock total, Alertas (editor), Backup JSON, Restablecer datos de
+ *     fabrica, Eliminar potrero, Carga por voz.
  *   - la restriccion puntual en "Agregar animales": el campo dueno es
  *     siempre texto libre obligatorio, sin dropdown de Firmas ni "sin
  *     asignar" (para no atribuir por error stock nuevo a la familia) --
@@ -81,6 +83,7 @@ function crearServidor(){
           delete(){ q._modo='delete'; return q; },
           eq(col,val){ q._filtros.push(r=>r[col]===val); return q; },
           gt(col,val){ q._filtros.push(r=>r[col]>val); return q; },
+          gte(col,val){ q._filtros.push(r=>r[col]>=val); return q; },
           not(){ return q; },
           in(col,vals){ q._filtros.push(r=>vals.includes(r[col])); return q; },
           order(col,opts){ q._orden = {col, asc: !opts || opts.ascending!==false}; return q; },
@@ -217,17 +220,14 @@ async function probarSimple(archivo){
   chequear('campo de guia DICOSE (#f-guia) AUSENTE', !doc.getElementById('f-guia'));
   chequear('Eliminar potrero AUSENTE', !doc.getElementById('btn-eliminar-potrero'));
   chequear('Stock total AUSENTE', !doc.getElementById('btn-stock'));
-  chequear('Sanidad AUSENTE', !doc.getElementById('btn-sanidad'));
   chequear('Alertas (editor) AUSENTE', !doc.getElementById('btn-alertas'));
   chequear('Backup (exportar) AUSENTE', !doc.getElementById('btn-exportar-json'));
   chequear('Backup (importar) AUSENTE', !doc.getElementById('btn-importar-json'));
   chequear('Restablecer datos de fabrica AUSENTE', !doc.getElementById('btn-restablecer'));
   chequear('Carga por voz (boton flotante) AUSENTE', !doc.getElementById('btn-voz'));
-  chequear('modal-sanidad AUSENTE', !doc.getElementById('modal-sanidad'));
   chequear('modal-stock AUSENTE', !doc.getElementById('modal-stock'));
   chequear('modal-voz AUSENTE', !doc.getElementById('modal-voz'));
   chequear('modal-alertas AUSENTE', !doc.getElementById('modal-alertas'));
-  chequear('funcion cargarSanidad AUSENTE (sin codigo huerfano)', typeof win.cargarSanidad === 'undefined');
   chequear('funcion cargarStock AUSENTE (sin codigo huerfano)', typeof win.cargarStock === 'undefined');
   chequear('funcion inicializarVoz AUSENTE (sin codigo huerfano)', typeof win.inicializarVoz === 'undefined');
 
@@ -255,6 +255,26 @@ async function probarSimple(archivo){
     chequear('la lluvia cargada aparece en la lista del modal', doc.getElementById('lluvias-lista').innerHTML.includes('18.5'));
   }
   doc.getElementById('lluvias-cerrar').click();
+
+  // ---- Sanidad: 25/9/2026, presente y funcional igual que en la movil
+  // completa -- el empleado puede cargar un tratamiento con el mismo
+  // formulario y motor (guardarSanidadCarga), no una versión recortada ----
+  chequear('Sanidad PRESENTE', !!doc.getElementById('btn-sanidad'));
+  chequear('modal-sanidad PRESENTE', !!doc.getElementById('modal-sanidad'));
+  doc.getElementById('btn-sanidad').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('modal-sanidad se abre', doc.getElementById('modal-sanidad').style.display === 'flex');
+  doc.getElementById('btn-cargar-sanidad').dispatchEvent(new win.Event('click', { bubbles: true }));
+  await new Promise(r=>setTimeout(r,20)); // btn-cargar-sanidad es async (cargarCatalogoProductos())
+  chequear('categoria trae opciones', doc.getElementById('sc-categoria').options.length > 0);
+  if(potreros.length) doc.getElementById('sc-potrero').value = potreros[0].nombre;
+  doc.getElementById('sc-cantidad').value = '5';
+  doc.getElementById('sc-producto1-otro').value = 'IVOMEC';
+  doc.getElementById('sc-dosis1').value = '2';
+  doc.getElementById('sc-guardar').dispatchEvent(new win.Event('click', { bubbles: true }));
+  await new Promise(r=>setTimeout(r,20));
+  const seMando = Object.values(servidor.filas).some(arr => Array.isArray(arr) && arr.some(r=>r.producto1==='IVOMEC'));
+  chequear('el tratamiento cargado se mandó a la tabla de sanidad', seMando);
+  doc.getElementById('sanidad-cerrar').click();
 
   // ---- "Agregar animales": presente, restringido a dueno-texto-libre obligatorio ----
   // (se saltea sin aviso de falla si el establecimiento no tiene ningún
