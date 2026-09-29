@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.65 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.66 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -780,7 +780,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.65","versionMovil":"1.66","simpleHabilitado":true,"versionMovilSimple":"1.9","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.66","versionMovil":"1.67","simpleHabilitado":true,"versionMovilSimple":"1.10","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -5150,11 +5150,14 @@ document.getElementById('muertes-filtro-dueno').addEventListener('change', (e)=>
    compartido en las 3 apps, contra productos_catalogo.
 
    Se trae una ventana de fecha ancha (260 dias, cubre el T espera mas largo
-   conocido -- Carbazol, 213 dias -- con margen) en vez de "los ultimos 50",
+   conocido -- Carbazol, 213 dias -- con margen) en vez de "los ultimos 20",
    porque un tratamiento puede seguir "No apto" mucho despues de salir de los
-   ultimos registros. "Ultimos tratamientos" muestra igual solo los primeros
-   50 de esa ventana; "No aptos" y "Próximos tratamientos" recorren toda la
-   ventana. */
+   ultimos registros. "No aptos" recorre toda la ventana (nunca se sabe de
+   antemano cuántos hay). "Ultimos tratamientos" y "Próximos tratamientos"
+   (29/9/2026, pedido de Pedro) muestran cada uno los 20 propios de esa
+   ventana -- "Ultimos" los 20 más recientes por fecha de carga, "Próximos"
+   los 20 con vencimiento más cercano (`proximo`), dos órdenes distintos
+   sobre la misma ventana, no el mismo recorte aplicado dos veces. */
 async function cargarSanidad(){
   const cont = document.getElementById('sanidad-lista');
   cont.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>';
@@ -5199,7 +5202,10 @@ function renderSanidadLista(cargas){
   if(!cargas.length && !pendientes.length){
     html += '<p style="font-size:13px;color:var(--texto-suave);">Sin tratamientos registrados todavía.</p>';
   } else {
-    html += cargas.slice(0, 50).map(c=>tarjetaSanidad(c)).join('');
+    // 29/9/2026: 20, no 50 -- pedido de Pedro. `cargas` ya viene ordenada
+    // por fecha descendente (ver cargarSanidad), así que slice(0,20) son
+    // los 20 más recientes.
+    html += cargas.slice(0, 20).map(c=>tarjetaSanidad(c)).join('');
     html += pendientes.map(p=>`
       <div class="potrero-card">
         <div class="nombre">${p.fecha||''} · ${p.categoria||'—'}${p.potrero?(' · potrero '+p.potrero):''}${p.dueno?(' · '+p.dueno):''}</div>
@@ -5217,10 +5223,13 @@ function renderSanidadLista(cargas){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Ningún tratamiento vigente ahora mismo.</p>'
     : noAptos.map(c=> tarjetaSanidad(c)).join('');
 
+  // 29/9/2026: 20, ordenados por más próximo primero (pedido de Pedro) --
+  // ya se ordenaba ascendente por fecha, solo faltaba el tope de 20.
   const proximos = cargas
     .map(c=> Object.assign({}, c, {proximo: calcularProximoTratamiento(c.fecha, c.producto1, c.producto2)}))
     .filter(c=> c.proximo)
-    .sort((a,b)=> a.proximo.localeCompare(b.proximo));
+    .sort((a,b)=> a.proximo.localeCompare(b.proximo))
+    .slice(0, 20);
   html += '<h4 style="margin:16px 0 6px;font-size:13px;">🔁 Próximos tratamientos (garrapaticidas)</h4>';
   html += !proximos.length
     ? '<p style="font-size:13px;color:var(--texto-suave);">Nada pendiente por ahora.</p>'

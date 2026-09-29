@@ -18,10 +18,14 @@
  * cantidad), no el máximo -- así lo hacía ya el Excel (Valor dosis 1 +
  * Valor dosis 2 = TOTAL).
  *
- * "No aptos"/"Próximos tratamientos" en el panel Sanidad recorren una
- * ventana ancha (260 días), no solo "los últimos 50" -- un tratamiento con
- * T espera largo (ej. Carbazol, 213 días) puede seguir "No apto" mucho
- * después de salir de los últimos registros.
+ * "No aptos" en el panel Sanidad recorre una ventana ancha (260 días), no
+ * solo "los últimos 20" -- un tratamiento con T espera largo (ej. Carbazol,
+ * 213 días) puede seguir "No apto" mucho después de salir de los últimos
+ * registros. "Últimos tratamientos" y "Próximos tratamientos" (29/9/2026,
+ * pedido de Pedro) sí muestran 20 cada uno, pero con criterios de corte
+ * DISTINTOS sobre esa misma ventana: "Últimos" los 20 de carga más
+ * reciente, "Próximos" los 20 de vencimiento más cercano -- no son el mismo
+ * subconjunto de 20 (ver probarLimiteVeinte).
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -182,7 +186,7 @@ async function probarArchivo(archivo){
     win.__calcularProximoTratamiento(hace10, 'EON', null) === win.__sumarDiasISO(hace10, 45));
 
   // --- Panel: "No aptos" y "Próximos tratamientos", ventana ancha (no solo
-  // los últimos 50) ---
+  // los últimos 20) ---
   const tablaSanidad = win.__tablaSanidad;
   const registroPotrero = (tablaSanidad === 'sanidad_carga') ? {potrero:'21'} : {potrero:'21', dueno:null};
   servidor.filas[tablaSanidad] = [
@@ -208,8 +212,61 @@ async function probarArchivo(archivo){
   chequear('"Próximos tratamientos" NO incluye el de Ricoverm (no es garrapaticida)',
     (()=>{ const seccion = listaHtml.split('Próximos tratamientos')[1]||''; return !seccion.includes('Ricoverm'); })(),
     listaHtml);
-  chequear('el tratamiento de hace 100 días sigue apareciendo (ventana de 260 días, no "los últimos 50")',
+  chequear('el tratamiento de hace 100 días sigue apareciendo (ventana de 260 días, no "los últimos 20")',
     listaHtml.includes('Ricoverm'), listaHtml);
+}
+
+/* 29/9/2026, pedido de Pedro: "Últimos tratamientos" y "Próximos
+   tratamientos" muestran 20 cada uno, pero recortados con criterios
+   DISTINTOS sobre la misma ventana de 260 días -- "Últimos" por fecha de
+   carga más reciente, "Próximos" por vencimiento (`proximo`) más cercano.
+   Con 25 cargas de un mismo garrapaticida, un día de diferencia entre cada
+   una, los dos recortes de 20 quedan con conjuntos DISTINTOS: "Últimos" se
+   queda con las 20 más nuevas (hace1..hace20) y descarta las 5 más viejas;
+   "Próximos" se queda con las 20 de vencimiento más próximo -- que son
+   justamente las más VIEJAS (hace6..hace25, porque vencen antes: próximo =
+   fecha + 45, y una fecha más vieja da un "próximo" más cercano a hoy) y
+   descarta las 5 más nuevas (hace1..hace5, cuyo vencimiento está más lejos). */
+async function probarLimiteVeinte(archivo){
+  console.log('\n=== ' + archivo + ' (tope de 20 en Últimos/Próximos) ===');
+  const servidor = crearServidor(CATALOGO);
+  const { win, errores } = await levantar(archivo, servidor);
+  if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
+  await win.__cargarCatalogoProductos();
+  const doc = win.document;
+  const hoy = win.__fechaISOHoy();
+  const tablaSanidad = win.__tablaSanidad;
+  const registroPotrero = (tablaSanidad === 'sanidad_carga') ? {potrero:'21'} : {potrero:'21', dueno:null};
+
+  const fechas = [];
+  const filas = [];
+  for(let i=1; i<=25; i++){
+    const f = win.__sumarDiasISO(hoy, -i);
+    fechas.push(f);
+    filas.push(Object.assign({id:'v'+i, fecha:f, categoria:'Vacas', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero));
+  }
+  servidor.filas[tablaSanidad] = filas;
+  await win.__cargarSanidad();
+  const listaHtml = doc.getElementById('sanidad-lista').innerHTML;
+  const seccionUltimos = listaHtml.split('Últimos tratamientos')[1].split('No aptos')[0];
+  const seccionProximos = listaHtml.split('Próximos tratamientos')[1] || '';
+  const contarTarjetas = (html)=> (html.match(/class="potrero-card"/g)||[]).length;
+
+  chequear('Últimos tratamientos: exactamente 20 tarjetas (de 25 cargadas)',
+    contarTarjetas(seccionUltimos) === 20, contarTarjetas(seccionUltimos));
+  chequear('Últimos tratamientos: incluye el más reciente (hace1)', seccionUltimos.includes(fechas[0]));
+  chequear('Últimos tratamientos: incluye el 20° (hace20)', seccionUltimos.includes(fechas[19]));
+  chequear('Últimos tratamientos: NO incluye el 21° (hace21, quedó afuera del tope)', !seccionUltimos.includes(fechas[20]));
+  chequear('Últimos tratamientos: NO incluye el más viejo (hace25)', !seccionUltimos.includes(fechas[24]));
+
+  chequear('Próximos tratamientos: exactamente 20 tarjetas (de 25 con garrapaticida)',
+    contarTarjetas(seccionProximos) === 20, contarTarjetas(seccionProximos));
+  chequear('Próximos tratamientos: incluye el de vencimiento más próximo (hace25, el más viejo)', seccionProximos.includes(fechas[24]));
+  chequear('Próximos tratamientos: incluye el 20° más próximo (hace6)', seccionProximos.includes(fechas[5]));
+  chequear('Próximos tratamientos: NO incluye el que vence más lejos (hace1, el más reciente, quedó afuera del tope)', !seccionProximos.includes(fechas[0]));
+  chequear('Próximos tratamientos: los dos recortes de 20 son conjuntos DISTINTOS (no el mismo aplicado dos veces)',
+    seccionUltimos.includes(fechas[0]) && !seccionProximos.includes(fechas[0]) &&
+    seccionProximos.includes(fechas[24]) && !seccionUltimos.includes(fechas[24]));
 }
 
 /* 18/9/2026: antes de que Pedro corra el ALTER TABLE en Supabase, pedir
@@ -234,6 +291,7 @@ async function probarFallbackColumnaFaltante(archivo){
   const archivos = process.argv.slice(2);
   for(const a of archivos) await probarArchivo(a);
   for(const a of archivos) await probarFallbackColumnaFaltante(a);
+  for(const a of archivos) await probarLimiteVeinte(a);
   console.log('\n' + (fallas ? fallas + ' verificacion(es) fallaron' : 'Todo OK'));
   process.exit(fallas ? 1 : 0);
 })();
