@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.66 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.69 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -780,7 +780,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.66","versionMovil":"1.67","simpleHabilitado":true,"versionMovilSimple":"1.10","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.69","versionMovil":"1.70","simpleHabilitado":true,"versionMovilSimple":"1.13","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1044,7 +1044,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], eventosClima: [], abortos: [], senaladas: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], eventosClima: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
     ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0
@@ -1395,6 +1395,17 @@ function aplicarEventoRemoto(row, potrerosSucios){
   }
   if(row.tipo === 'senalada_eliminada'){
     estado.senaladas = (estado.senaladas||[]).filter(sn=>sn.id!==d.id);
+    return;
+  }
+
+  if(row.tipo === 'proximo_confirmado'){
+    // 29/9/2026: "✓ Hecho" en Próximos tratamientos (Sanidad) -- marca un
+    // tratamiento de sanidad_carga/etc. como ya efectuado, para que salga
+    // de esa lista en todos los dispositivos. No toca la tabla de sanidad
+    // ni ningún potrero, mismo criterio "sin potrero real" que aborto/
+    // senalada, antes del guard de abajo.
+    estado.proximosConfirmados = estado.proximosConfirmados || [];
+    if(!estado.proximosConfirmados.includes(d.id)) estado.proximosConfirmados.push(d.id);
     return;
   }
 
@@ -5198,44 +5209,76 @@ function renderSanidadLista(cargas){
   const cont = document.getElementById('sanidad-lista');
   const pendientes = estado.colaSanidad || [];
 
-  let html = '<h4 style="margin:10px 0 6px;font-size:13px;">Últimos tratamientos</h4>';
-  if(!cargas.length && !pendientes.length){
-    html += '<p style="font-size:13px;color:var(--texto-suave);">Sin tratamientos registrados todavía.</p>';
-  } else {
-    // 29/9/2026: 20, no 50 -- pedido de Pedro. `cargas` ya viene ordenada
-    // por fecha descendente (ver cargarSanidad), así que slice(0,20) son
-    // los 20 más recientes.
-    html += cargas.slice(0, 20).map(c=>tarjetaSanidad(c)).join('');
-    html += pendientes.map(p=>`
+  // 29/9/2026: las 3 secciones detrás de un botón colapsable (pedido de
+  // Pedro) -- <details> nativo, sin JS propio, mismo patrón que ya usaban
+  // "✎ Editar vacas preñadas..."/"🪦 Ver registro de muertes por
+  // categoría". Cerradas por defecto, con la cantidad en el resumen para
+  // que se vea de un vistazo sin tener que abrirlas.
+  const seccionDetails = (titulo, cantidad, cuerpoHtml)=>
+    `<details style="margin:10px 0 6px;"><summary style="font-size:13px;font-weight:600;cursor:pointer;">${titulo} (${cantidad})</summary>
+      <div style="margin-top:6px;">${cuerpoHtml}</div>
+    </details>`;
+
+  let html = '';
+  // 29/9/2026: 20, no 50. `cargas` ya viene ordenada por fecha descendente
+  // (ver cargarSanidad), así que slice(0,20) son los 20 más recientes.
+  const ultimasCargas = cargas.slice(0, 20);
+  const cuerpoUltimos = (!cargas.length && !pendientes.length)
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Sin tratamientos registrados todavía.</p>'
+    : ultimasCargas.map(c=>tarjetaSanidad(c)).join('') + pendientes.map(p=>`
       <div class="potrero-card">
         <div class="nombre">${p.fecha||''} · ${p.categoria||'—'}${p.potrero?(' · potrero '+p.potrero):''}${p.dueno?(' · '+p.dueno):''}</div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${p.producto1||''} — 📴 sin señal, en tu dispositivo</div>
       </div>`).join('');
-  }
+  html += seccionDetails('Últimos tratamientos', ultimasCargas.length + pendientes.length, cuerpoUltimos);
 
   const hoy = fechaISOHoy();
   const noAptos = cargas
     .map(c=> Object.assign({}, c, {aptoDesde: calcularAptoDesde(c.fecha, c.producto1, c.producto2)}))
     .filter(c=> c.aptoDesde && c.aptoDesde > hoy)
     .sort((a,b)=> a.aptoDesde.localeCompare(b.aptoDesde));
-  html += '<h4 style="margin:16px 0 6px;font-size:13px;">🚫 No aptos</h4>';
-  html += !noAptos.length
+  const cuerpoNoAptos = !noAptos.length
     ? '<p style="font-size:13px;color:var(--texto-suave);">Ningún tratamiento vigente ahora mismo.</p>'
     : noAptos.map(c=> tarjetaSanidad(c)).join('');
+  html += seccionDetails('🚫 No aptos', noAptos.length, cuerpoNoAptos);
 
-  // 29/9/2026: 20, ordenados por más próximo primero (pedido de Pedro) --
-  // ya se ordenaba ascendente por fecha, solo faltaba el tope de 20.
+  // 29/9/2026: ya no es un tope de 20 -- ahora filtra por antelación real
+  // (pedido de Pedro): solo los que todavía tienen MÁS de 20 días para
+  // cumplir. `diasDesde()` da positivo para el pasado y negativo para el
+  // futuro, así que "días que faltan" es el negativo de eso. También se
+  // saca cualquier id ya marcado "✓ Hecho" (estado.proximosConfirmados).
   const proximos = cargas
     .map(c=> Object.assign({}, c, {proximo: calcularProximoTratamiento(c.fecha, c.producto1, c.producto2)}))
-    .filter(c=> c.proximo)
-    .sort((a,b)=> a.proximo.localeCompare(b.proximo))
-    .slice(0, 20);
-  html += '<h4 style="margin:16px 0 6px;font-size:13px;">🔁 Próximos tratamientos (garrapaticidas)</h4>';
-  html += !proximos.length
-    ? '<p style="font-size:13px;color:var(--texto-suave);">Nada pendiente por ahora.</p>'
-    : proximos.map(c=> tarjetaSanidad(c, `<div style="font-size:12px;color:var(--texto-suave);margin-top:2px;">Próximo: ${fechaISOaDisplay(c.proximo)}</div>`)).join('');
+    .filter(c=> c.proximo && (-diasDesde(c.proximo)) > 20 && !(estado.proximosConfirmados||[]).includes(c.id))
+    .sort((a,b)=> a.proximo.localeCompare(b.proximo));
+  // 29/9/2026: botón "✓ Hecho" (pedido de Pedro) -- marca el tratamiento
+  // como ya efectuado y lo saca de esta lista. No crea un tratamiento
+  // nuevo ni toca sanidad_carga -- es solo una marca (id del tratamiento
+  // que generó el aviso) sincronizada por eventos_sync, mismo patrón que
+  // aborto/señalada (sin ALTER TABLE).
+  const cuerpoProximos = !proximos.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Nada con más de 20 días de antelación por ahora.</p>'
+    : proximos.map(c=> tarjetaSanidad(c,
+        `<div style="font-size:12px;color:var(--texto-suave);margin-top:2px;">Próximo: ${fechaISOaDisplay(c.proximo)}</div>
+         <button class="btn btn-secundario" data-proximo-confirmar="${c.id}" style="margin-top:6px;font-size:12px;padding:4px 10px;">✓ Hecho, ya se trató</button>`
+      )).join('');
+  html += seccionDetails('🔁 Próximos tratamientos (garrapaticidas)', proximos.length, cuerpoProximos);
 
   cont.innerHTML = html;
+  cont.querySelectorAll('[data-proximo-confirmar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const id = btn.dataset.proximoConfirmar;
+      estado.proximosConfirmados = estado.proximosConfirmados || [];
+      if(!estado.proximosConfirmados.includes(id)) estado.proximosConfirmados.push(id);
+      guardarEstado();
+      // Mismo truco que "aborto"/"senalada": ESTABLECIMIENTO como
+      // placeholder de "potrero" (no toca ningún potrero real).
+      enviarEvento('proximo_confirmado', ESTABLECIMIENTO, {id});
+      renderSanidadLista(cargas);
+      toast('Marcado como hecho');
+    });
+  });
 }
 document.getElementById('btn-sanidad').addEventListener('click', ()=>{
   document.getElementById('modal-sanidad').style.display = 'flex';

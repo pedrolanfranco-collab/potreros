@@ -21,11 +21,15 @@
  * "No aptos" en el panel Sanidad recorre una ventana ancha (260 días), no
  * solo "los últimos 20" -- un tratamiento con T espera largo (ej. Carbazol,
  * 213 días) puede seguir "No apto" mucho después de salir de los últimos
- * registros. "Últimos tratamientos" y "Próximos tratamientos" (29/9/2026,
- * pedido de Pedro) sí muestran 20 cada uno, pero con criterios de corte
- * DISTINTOS sobre esa misma ventana: "Últimos" los 20 de carga más
- * reciente, "Próximos" los 20 de vencimiento más cercano -- no son el mismo
- * subconjunto de 20 (ver probarLimiteVeinte).
+ * registros.
+ *
+ * 29/9/2026, pedido de Pedro: las 3 secciones (Últimos/No aptos/Próximos)
+ * quedan detrás de un <details> colapsable, cerrado por defecto, con la
+ * cantidad en el resumen. "Últimos tratamientos" sigue topeado a 20 (los
+ * de carga más reciente). "Próximos tratamientos" DEJA de ser un tope de
+ * 20 -- pasa a filtrar por antelación real: solo entran los que todavía
+ * tienen MÁS de 20 días para cumplir (`-diasDesde(proximo) > 20`), sin
+ * límite de cantidad (ver probarProximosPorAntelacion).
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -128,7 +132,8 @@ async function levantar(archivo, servidor){
       '\n;window.__cargarCatalogoProductos = cargarCatalogoProductos;' +
       '\n;window.__cargarSanidad = cargarSanidad;' +
       '\n;window.__fechaISOHoy = fechaISOHoy;' +
-      '\n;window.__sumarDiasISO = sumarDiasISO;');
+      '\n;window.__sumarDiasISO = sumarDiasISO;' +
+      '\n;window.__est = function(){ return estado; };');
   }catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await new Promise(r => setTimeout(r, 60));
   return { win, errores };
@@ -214,21 +219,36 @@ async function probarArchivo(archivo){
     listaHtml);
   chequear('el tratamiento de hace 100 días sigue apareciendo (ventana de 260 días, no "los últimos 20")',
     listaHtml.includes('Ricoverm'), listaHtml);
+
+  // --- 29/9/2026, pedido de Pedro: las 3 secciones detrás de un <details>
+  // cerrado por defecto, con la cantidad en el resumen ---
+  chequear('"No aptos" vive dentro de un <details> (botón para verlo, no siempre visible)',
+    /<details[^>]*><summary[^>]*>🚫 No aptos \(\d+\)<\/summary>/.test(listaHtml), listaHtml);
+  chequear('"No aptos" arranca cerrado (sin el atributo open)',
+    !/<details[^>]*\bopen\b[^>]*>🚫 No aptos/.test(listaHtml), listaHtml);
+  chequear('el resumen de "No aptos" muestra la cantidad real (1: solo Altis sigue no apto)',
+    listaHtml.includes('🚫 No aptos (1)'), listaHtml);
+  chequear('"Últimos tratamientos" también vive dentro de un <details>, cerrado',
+    /<details[^>]*><summary[^>]*>Últimos tratamientos \(\d+\)<\/summary>/.test(listaHtml) &&
+    !/<details[^>]*\bopen\b[^>]*><summary[^>]*>Últimos tratamientos/.test(listaHtml), listaHtml);
+  chequear('el resumen de "Últimos tratamientos" muestra 2 (t1 + t2)',
+    listaHtml.includes('Últimos tratamientos (2)'), listaHtml);
+  chequear('"Próximos tratamientos" también vive dentro de un <details>, cerrado',
+    /<details[^>]*><summary[^>]*>🔁 Próximos tratamientos \(garrapaticidas\) \(\d+\)<\/summary>/.test(listaHtml) &&
+    !/<details[^>]*\bopen\b[^>]*><summary[^>]*>🔁 Próximos/.test(listaHtml), listaHtml);
 }
 
-/* 29/9/2026, pedido de Pedro: "Últimos tratamientos" y "Próximos
-   tratamientos" muestran 20 cada uno, pero recortados con criterios
-   DISTINTOS sobre la misma ventana de 260 días -- "Últimos" por fecha de
-   carga más reciente, "Próximos" por vencimiento (`proximo`) más cercano.
-   Con 25 cargas de un mismo garrapaticida, un día de diferencia entre cada
-   una, los dos recortes de 20 quedan con conjuntos DISTINTOS: "Últimos" se
-   queda con las 20 más nuevas (hace1..hace20) y descarta las 5 más viejas;
-   "Próximos" se queda con las 20 de vencimiento más próximo -- que son
-   justamente las más VIEJAS (hace6..hace25, porque vencen antes: próximo =
-   fecha + 45, y una fecha más vieja da un "próximo" más cercano a hoy) y
-   descarta las 5 más nuevas (hace1..hace5, cuyo vencimiento está más lejos). */
-async function probarLimiteVeinte(archivo){
-  console.log('\n=== ' + archivo + ' (tope de 20 en Últimos/Próximos) ===');
+/* 29/9/2026, pedido de Pedro: "Últimos tratamientos" sigue topeado a 20
+   (los de carga más reciente); "Próximos tratamientos" DEJA de tener tope
+   de cantidad -- pasa a filtrar por antelación real, solo entran los que
+   todavía tienen MÁS de 20 días para cumplir (`-diasDesde(proximo) > 20`).
+   Con Altis (T_Residual 45): próximo = fecha + 45, así que "días que
+   faltan" = 45 - (días desde que se cargó). Se arma el caso límite exacto
+   -- una carga de hace 25 días da "faltan 20" (NO entra, no es "más de
+   20"), una de hace 24 días da "faltan 21" (SÍ entra) -- para confirmar
+   que el corte es estrictamente ">20", no ">=20". */
+async function probarUltimosTope20(archivo){
+  console.log('\n=== ' + archivo + ' (Últimos tratamientos: tope de 20) ===');
   const servidor = crearServidor(CATALOGO);
   const { win, errores } = await levantar(archivo, servidor);
   if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
@@ -243,30 +263,127 @@ async function probarLimiteVeinte(archivo){
   for(let i=1; i<=25; i++){
     const f = win.__sumarDiasISO(hoy, -i);
     fechas.push(f);
-    filas.push(Object.assign({id:'v'+i, fecha:f, categoria:'Vacas', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero));
+    // Ricoverm (sin T_Residual) -- no interfiere con "Próximos", solo se
+    // usa acá para probar el tope de "Últimos tratamientos".
+    filas.push(Object.assign({id:'v'+i, fecha:f, categoria:'Vacas', cantidad:1, producto1:'Ricoverm', dosis1:1}, registroPotrero));
   }
   servidor.filas[tablaSanidad] = filas;
   await win.__cargarSanidad();
   const listaHtml = doc.getElementById('sanidad-lista').innerHTML;
   const seccionUltimos = listaHtml.split('Últimos tratamientos')[1].split('No aptos')[0];
-  const seccionProximos = listaHtml.split('Próximos tratamientos')[1] || '';
   const contarTarjetas = (html)=> (html.match(/class="potrero-card"/g)||[]).length;
 
   chequear('Últimos tratamientos: exactamente 20 tarjetas (de 25 cargadas)',
     contarTarjetas(seccionUltimos) === 20, contarTarjetas(seccionUltimos));
+  chequear('el resumen dice "Últimos tratamientos (20)"', listaHtml.includes('Últimos tratamientos (20)'), listaHtml);
   chequear('Últimos tratamientos: incluye el más reciente (hace1)', seccionUltimos.includes(fechas[0]));
   chequear('Últimos tratamientos: incluye el 20° (hace20)', seccionUltimos.includes(fechas[19]));
   chequear('Últimos tratamientos: NO incluye el 21° (hace21, quedó afuera del tope)', !seccionUltimos.includes(fechas[20]));
   chequear('Últimos tratamientos: NO incluye el más viejo (hace25)', !seccionUltimos.includes(fechas[24]));
+}
 
-  chequear('Próximos tratamientos: exactamente 20 tarjetas (de 25 con garrapaticida)',
-    contarTarjetas(seccionProximos) === 20, contarTarjetas(seccionProximos));
-  chequear('Próximos tratamientos: incluye el de vencimiento más próximo (hace25, el más viejo)', seccionProximos.includes(fechas[24]));
-  chequear('Próximos tratamientos: incluye el 20° más próximo (hace6)', seccionProximos.includes(fechas[5]));
-  chequear('Próximos tratamientos: NO incluye el que vence más lejos (hace1, el más reciente, quedó afuera del tope)', !seccionProximos.includes(fechas[0]));
-  chequear('Próximos tratamientos: los dos recortes de 20 son conjuntos DISTINTOS (no el mismo aplicado dos veces)',
-    seccionUltimos.includes(fechas[0]) && !seccionProximos.includes(fechas[0]) &&
-    seccionProximos.includes(fechas[24]) && !seccionUltimos.includes(fechas[24]));
+async function probarProximosPorAntelacion(archivo){
+  console.log('\n=== ' + archivo + ' (Próximos tratamientos: más de 20 días de antelación) ===');
+  const servidor = crearServidor(CATALOGO);
+  const { win, errores } = await levantar(archivo, servidor);
+  if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
+  await win.__cargarCatalogoProductos();
+  const doc = win.document;
+  const hoy = win.__fechaISOHoy();
+  const tablaSanidad = win.__tablaSanidad;
+  const registroPotrero = (tablaSanidad === 'sanidad_carga') ? {potrero:'21'} : {potrero:'21', dueno:null};
+
+  const hace25 = win.__sumarDiasISO(hoy, -25); // próximo = hoy+20 (faltan 20, límite exacto -- NO entra)
+  const hace24 = win.__sumarDiasISO(hoy, -24); // próximo = hoy+21 (faltan 21 -- SÍ entra)
+  const hace1 = win.__sumarDiasISO(hoy, -1);   // próximo = hoy+44 (faltan 44 -- SÍ entra, bien lejos)
+  servidor.filas[tablaSanidad] = [
+    Object.assign({id:'limite20', fecha:hace25, categoria:'Vacas', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero),
+    Object.assign({id:'limite21', fecha:hace24, categoria:'Vacas', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero),
+    Object.assign({id:'lejos44', fecha:hace1, categoria:'Vacas', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero),
+  ];
+  await win.__cargarSanidad();
+  const listaHtml = doc.getElementById('sanidad-lista').innerHTML;
+  const seccionProximos = listaHtml.split('🔁 Próximos tratamientos')[1] || '';
+  const contarTarjetas = (html)=> (html.match(/class="potrero-card"/g)||[]).length;
+
+  chequear('Próximos tratamientos: exactamente 2 (limite20 queda afuera, faltan justo 20 días, no "más de 20")',
+    contarTarjetas(seccionProximos) === 2, contarTarjetas(seccionProximos));
+  chequear('el resumen dice "(2)"', listaHtml.includes('Próximos tratamientos (garrapaticidas) (2)'), listaHtml);
+  chequear('Próximos tratamientos: NO incluye el de exactamente 20 días de antelación',
+    !seccionProximos.includes(hace25), seccionProximos);
+  chequear('Próximos tratamientos: SÍ incluye el de 21 días de antelación',
+    seccionProximos.includes(hace24), seccionProximos);
+  chequear('Próximos tratamientos: SÍ incluye el de 44 días de antelación',
+    seccionProximos.includes(hace1), seccionProximos);
+  chequear('Próximos tratamientos: ordenados por vencimiento más cercano primero (21 días antes que 44 días)',
+    seccionProximos.indexOf(hace24) < seccionProximos.indexOf(hace1), seccionProximos);
+}
+
+/* 29/9/2026, pedido de Pedro: botón "✓ Hecho, ya se trató" en cada tarjeta
+   de "Próximos tratamientos" -- marca ese tratamiento como efectuado (por
+   `id`, sin tocar sanidad_carga/eventos de stock) y lo saca de la lista.
+   Sincronizado por eventos_sync (tipo proximo_confirmado), mismo criterio
+   "sin potrero real" que aborto/señalada -- otro dispositivo lo tiene que
+   aplicar igual al sincronizar, sin tener el tratamiento cargado a mano. */
+async function probarConfirmarProximo(archivo){
+  console.log('\n=== ' + archivo + ' (Próximos tratamientos: botón "✓ Hecho") ===');
+  const servidor = crearServidor(CATALOGO);
+  const { win, errores } = await levantar(archivo, servidor);
+  if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
+  await win.__cargarCatalogoProductos();
+  const doc = win.document;
+  const hoy = win.__fechaISOHoy();
+  const tablaSanidad = win.__tablaSanidad;
+  const registroPotrero = (tablaSanidad === 'sanidad_carga') ? {potrero:'21'} : {potrero:'21', dueno:null};
+  const hace30 = win.__sumarDiasISO(hoy, -30); // próximo = hoy+15 -> NO entra (no tiene >20 días)
+  const hace10 = win.__sumarDiasISO(hoy, -10); // próximo = hoy+35 -> SÍ entra
+
+  servidor.filas[tablaSanidad] = [
+    Object.assign({id:'confirmar1', fecha:hace10, categoria:'Vacas', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero),
+  ];
+  await win.__cargarSanidad();
+  chequear('estado.proximosConfirmados arranca vacío', Array.isArray(win.__est().proximosConfirmados) && win.__est().proximosConfirmados.length===0);
+
+  let listaHtml = doc.getElementById('sanidad-lista').innerHTML;
+  chequear('el botón "✓ Hecho" aparece con el id del tratamiento',
+    !!doc.querySelector('[data-proximo-confirmar="confirmar1"]'), listaHtml);
+  chequear('antes de confirmar, el resumen de Próximos dice "(1)"',
+    listaHtml.includes('Próximos tratamientos (garrapaticidas) (1)'), listaHtml);
+
+  doc.querySelector('[data-proximo-confirmar="confirmar1"]').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('confirmar agrega el id a estado.proximosConfirmados', win.__est().proximosConfirmados.includes('confirmar1'), win.__est().proximosConfirmados);
+
+  listaHtml = doc.getElementById('sanidad-lista').innerHTML;
+  chequear('tras confirmar, "Próximos tratamientos" queda vacío (el resumen dice "(0)")',
+    listaHtml.includes('Próximos tratamientos (garrapaticidas) (0)'), listaHtml);
+  chequear('tras confirmar, ya no queda el botón de ese id', !doc.querySelector('[data-proximo-confirmar="confirmar1"]'), listaHtml);
+
+  await new Promise(r=>setTimeout(r, 30));
+  chequear('se mandó el evento proximo_confirmado a Supabase',
+    servidor.filas.eventos_sync && servidor.filas.eventos_sync.some(f=>f.tipo==='proximo_confirmado' && f.detalle && f.detalle.id==='confirmar1'));
+
+  // --- otro dispositivo, sin el tratamiento cargado a mano, tiene que
+  // aplicar la confirmación igual al sincronizar ---
+  win.__est().proximosConfirmados.length = 0;
+  win.aplicarEventoRemoto({ tipo:'proximo_confirmado', potrero:'esto-no-es-un-potrero', dispositivo:'otro',
+    detalle: { id:'remoto1' } });
+  chequear('un evento remoto de proximo_confirmado se aplica sin requerir un potrero válido ni el tratamiento cargado',
+    win.__est().proximosConfirmados.includes('remoto1'));
+
+  // --- no duplica si llega el mismo id de nuevo ---
+  const antesDeRepetir = win.__est().proximosConfirmados.length;
+  win.aplicarEventoRemoto({ tipo:'proximo_confirmado', potrero:'esto-no-es-un-potrero', dispositivo:'otro',
+    detalle: { id:'remoto1' } });
+  chequear('no duplica un evento de proximo_confirmado con el mismo id', win.__est().proximosConfirmados.length === antesDeRepetir);
+
+  // --- un tratamiento con MENOS de 20 días de antelación nunca aparece en
+  // Próximos, así que no necesita botón "✓ Hecho" ---
+  servidor.filas[tablaSanidad] = [
+    Object.assign({id:'noaplica', fecha:hace30, categoria:'Vacas', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero),
+  ];
+  await win.__cargarSanidad();
+  chequear('un tratamiento sin más de 20 días de antelación no aparece (ni con botón) en Próximos',
+    !doc.querySelector('[data-proximo-confirmar="noaplica"]'));
 }
 
 /* 18/9/2026: antes de que Pedro corra el ALTER TABLE en Supabase, pedir
@@ -291,7 +408,9 @@ async function probarFallbackColumnaFaltante(archivo){
   const archivos = process.argv.slice(2);
   for(const a of archivos) await probarArchivo(a);
   for(const a of archivos) await probarFallbackColumnaFaltante(a);
-  for(const a of archivos) await probarLimiteVeinte(a);
+  for(const a of archivos) await probarUltimosTope20(a);
+  for(const a of archivos) await probarProximosPorAntelacion(a);
+  for(const a of archivos) await probarConfirmarProximo(a);
   console.log('\n' + (fallas ? fallas + ' verificacion(es) fallaron' : 'Todo OK'));
   process.exit(fallas ? 1 : 0);
 })();
