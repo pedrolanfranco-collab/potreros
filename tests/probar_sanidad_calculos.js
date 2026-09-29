@@ -340,6 +340,7 @@ async function probarConfirmarProximo(archivo){
 
   servidor.filas[tablaSanidad] = [
     Object.assign({id:'confirmar1', fecha:hace10, categoria:'Vacas', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero),
+    Object.assign({id:'cancelar1', fecha:hace10, categoria:'Toros', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero),
   ];
   await win.__cargarSanidad();
   chequear('estado.proximosConfirmados arranca vacío', Array.isArray(win.__est().proximosConfirmados) && win.__est().proximosConfirmados.length===0);
@@ -347,16 +348,31 @@ async function probarConfirmarProximo(archivo){
   let listaHtml = doc.getElementById('sanidad-lista').innerHTML;
   chequear('el botón "✓ Hecho" aparece con el id del tratamiento',
     !!doc.querySelector('[data-proximo-confirmar="confirmar1"]'), listaHtml);
-  chequear('antes de confirmar, el resumen de Próximos dice "(1)"',
-    listaHtml.includes('Próximos tratamientos (garrapaticidas) (1)'), listaHtml);
+  chequear('antes de confirmar, el resumen de Próximos dice "(2)"',
+    listaHtml.includes('Próximos tratamientos (garrapaticidas) (2)'), listaHtml);
 
+  // --- 29/9/2026, pedido de Pedro: pide confirmación antes de marcar (un
+  // toque accidental no puede sacarlo de la lista sin querer) -- si el
+  // usuario cancela el confirm(), no pasa nada ---
+  win.confirm = () => false;
+  doc.querySelector('[data-proximo-confirmar="cancelar1"]').dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('cancelar la confirmación NO agrega el id', !win.__est().proximosConfirmados.includes('cancelar1'), win.__est().proximosConfirmados);
+  listaHtml = doc.getElementById('sanidad-lista').innerHTML;
+  chequear('cancelar la confirmación NO lo saca de la lista (sigue el botón)',
+    !!doc.querySelector('[data-proximo-confirmar="cancelar1"]'), listaHtml);
+  await new Promise(r=>setTimeout(r, 30));
+  chequear('cancelar la confirmación NO manda ningún evento a Supabase',
+    !(servidor.filas.eventos_sync||[]).some(f=>f.tipo==='proximo_confirmado' && f.detalle && f.detalle.id==='cancelar1'));
+
+  win.confirm = () => true;
   doc.querySelector('[data-proximo-confirmar="confirmar1"]').dispatchEvent(new win.Event('click', { bubbles: true }));
   chequear('confirmar agrega el id a estado.proximosConfirmados', win.__est().proximosConfirmados.includes('confirmar1'), win.__est().proximosConfirmados);
 
   listaHtml = doc.getElementById('sanidad-lista').innerHTML;
-  chequear('tras confirmar, "Próximos tratamientos" queda vacío (el resumen dice "(0)")',
-    listaHtml.includes('Próximos tratamientos (garrapaticidas) (0)'), listaHtml);
+  chequear('tras confirmar, "Próximos tratamientos" queda con 1 (cancelar1 sigue, confirmar1 salió)',
+    listaHtml.includes('Próximos tratamientos (garrapaticidas) (1)'), listaHtml);
   chequear('tras confirmar, ya no queda el botón de ese id', !doc.querySelector('[data-proximo-confirmar="confirmar1"]'), listaHtml);
+  chequear('el otro (cancelado) sigue con su botón intacto', !!doc.querySelector('[data-proximo-confirmar="cancelar1"]'), listaHtml);
 
   await new Promise(r=>setTimeout(r, 30));
   chequear('se mandó el evento proximo_confirmado a Supabase',

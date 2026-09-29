@@ -445,7 +445,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.69 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.70 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -780,7 +780,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.69","versionMovil":"1.70","simpleHabilitado":true,"versionMovilSimple":"1.13","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.70","versionMovil":"1.71","simpleHabilitado":true,"versionMovilSimple":"1.14","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -5268,6 +5268,11 @@ function renderSanidadLista(cargas){
   cont.querySelectorAll('[data-proximo-confirmar]').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{
       ev.stopPropagation();
+      // 29/9/2026, pedido de Pedro: confirmación antes de marcar -- no hay
+      // forma de deshacerlo después (queda oculto en todos los
+      // dispositivos), así que un toque accidental no puede sacarlo de la
+      // lista sin querer. Mismo patrón que "borrarLluvia"/"borrarSenalada".
+      if(!confirm('¿Marcar este tratamiento como ya realizado? Va a salir de "Próximos tratamientos" en todos los dispositivos, no se puede deshacer.')) return;
       const id = btn.dataset.proximoConfirmar;
       estado.proximosConfirmados = estado.proximosConfirmados || [];
       if(!estado.proximosConfirmados.includes(id)) estado.proximosConfirmados.push(id);
