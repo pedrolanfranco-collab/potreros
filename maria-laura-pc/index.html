@@ -414,6 +414,7 @@
   .punto-item .info{display:flex;align-items:center;gap:6px;}
   .punto-item .icono{font-size:15px;}
   .punto-item .txt-sub{color:var(--texto-suave);font-size:11px;}
+  .punto-item .acciones{display:flex;gap:10px;flex-shrink:0;}
   .punto-item button{
     background:none;border:none;color:var(--rojo-hacienda);cursor:pointer;font-size:12px;
     font-weight:600;
@@ -445,7 +446,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.00 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.01 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -516,6 +517,8 @@
       <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
       <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
       <button class="btn btn-json" id="btn-resync-puntos">🔄 Resincronizar mis puntos</button>
+      <button class="btn btn-json" id="btn-infraestructura">🔧 Infraestructura</button>
+      <button class="btn btn-json" id="btn-capin-annoni">🌾 Capín Annoni</button>
       <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
       <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
       <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
@@ -760,6 +763,19 @@
     <div class="form-botones"><button class="btn btn-secundario" id="puntos-cerrar">Cerrar</button></div>
   </div>
 </div>
+<div id="modal-reporte" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3 id="reporte-titulo">🔧 Infraestructura</h3>
+    <button class="btn-cerrar-x" id="reporte-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info" id="reporte-info">Reportá un problema encontrado en el campo — se guarda con su ubicación para poder encontrarlo después.</p>
+    <div class="form-row" id="reporte-fila-subtipo"><label>Tipo de problema</label><select id="rp-subtipo"></select></div>
+    <div class="form-row"><label>Fecha</label><input type="date" id="rp-fecha"></div>
+    <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="rp-obs" placeholder="Ej: cerca de la tranquera norte"></div>
+    <button class="btn btn-secundario btn-full" id="rp-mapa" style="width:100%;margin-bottom:10px;">🗺 Marcar en el mapa</button>
+    <div id="reporte-lista"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="reporte-cerrar">Cerrar</button></div>
+  </div>
+</div>
 <div id="modal-dibujar-potrero" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>✏️ Dibujar potrero</h3>
@@ -780,7 +796,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.00","versionMovil":"3.00","simpleHabilitado":true,"versionMovilSimple":"1.15","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.01","versionMovil":"3.01","simpleHabilitado":true,"versionMovilSimple":"1.16","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1014,6 +1030,28 @@ const TIPOS_PUNTO = {
   }
 };
 
+/* Categorías de "reportes de campo" (30/9/2026, a pedido): problemas de
+   infraestructura y focos de capín annoni encontrados al recorrer el
+   campo. Sistema separado de TIPOS_PUNTO/estado.puntos (que son cosas
+   permanentes del campo -- aguadas, instalaciones) porque acá cada
+   entrada es un problema puntual que se resuelve y queda en historial
+   (ver estado.reportes, campo `resuelto`), no algo que se borra al
+   "corregir". Cada categoría tiene un solo botón en Herramientas. */
+const REPORTE_CATEGORIAS = {
+  infraestructura: {
+    etiqueta: "Infraestructura",
+    icono: "🔧",
+    color: "#b23b3b",
+    subtipos: {"Caño roto":"🔧","Bebedero roto":"🚱","Alambrado roto":"✂️","Otro":"⚠️"}
+  },
+  capin_annoni: {
+    etiqueta: "Capín Annoni",
+    icono: "🌾",
+    color: "#8a6d1f",
+    subtipos: {"Foco de capín annoni":"🌾"}
+  }
+};
+
 /* ======================= ESTADO ======================= */
 const CONFIG_DEFAULT = { cargaMaxima: 1.3, diasOcupacionMax: 5 };
 /* Carga inicial (de la planilla de animales) — se aplica UNA sola vez, la primera vez
@@ -1044,7 +1082,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], transacciones: [], lluvias: [], eventosClima: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], transacciones: [], lluvias: [], eventosClima: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
     ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0
@@ -1429,6 +1467,40 @@ function aplicarEventoRemoto(row, potrerosSucios){
     if(idx===-1) return;
     estado.puntos.splice(idx,1);
     if(puntosLayers[d.id]){ map.removeLayer(puntosLayers[d.id]); delete puntosLayers[d.id]; }
+    guardarEstado();
+    return;
+  }
+
+  // 30/9/2026: "reportes de campo" (Infraestructura / Capín Annoni) --
+  // mismo criterio que "punto_creado": no tienen potrero real, se aplican
+  // antes del guard de abajo. Idempotentes por id.
+  if(row.tipo === 'reporte_creado'){
+    estado.reportes = estado.reportes || [];
+    if(!estado.reportes.some(r=>r.id===d.id)){
+      const reporte = {id: d.id, categoria: d.categoria, subtipo: d.subtipo, obs: d.obs||null, fecha: d.fecha || row.fecha_cliente || fechaHoy(), lat: d.lat, lon: d.lon, resuelto: false, fechaResuelto: null};
+      estado.reportes.push(reporte);
+      crearMarcadorReporte(reporte);
+      guardarEstado();
+    }
+    return;
+  }
+
+  if(row.tipo === 'reporte_resuelto'){
+    const r = (estado.reportes||[]).find(x=>x.id===d.id);
+    if(r && !r.resuelto){
+      r.resuelto = true;
+      r.fechaResuelto = d.fecha || fechaHoy();
+      if(reportesLayers[d.id]){ map.removeLayer(reportesLayers[d.id]); delete reportesLayers[d.id]; }
+      guardarEstado();
+    }
+    return;
+  }
+
+  if(row.tipo === 'reporte_eliminado'){
+    const idx = (estado.reportes||[]).findIndex(r=>r.id===d.id);
+    if(idx===-1) return;
+    estado.reportes.splice(idx,1);
+    if(reportesLayers[d.id]){ map.removeLayer(reportesLayers[d.id]); delete reportesLayers[d.id]; }
     guardarEstado();
     return;
   }
@@ -2417,6 +2489,7 @@ function dibujarPotrero(p){
     // del polígono Y burbujea al click del mapa -- en modo "colocar punto"
     // o "dibujar potrero" eso agregaba el mismo punto/vértice dos veces.
     if(modoColocarPunto){ L.DomEvent.stopPropagation(e); colocarPuntoEn(e.latlng); return; }
+    if(modoColocarReporte){ L.DomEvent.stopPropagation(e); colocarReporteEn(e.latlng); return; }
     if(modoDibujarPotrero){ L.DomEvent.stopPropagation(e); agregarVerticeDibujo(e.latlng); return; }
     poly.setPopupContent(popupContenidoPotrero(p.nombre));
     poly.openPopup(e.latlng);
@@ -2502,11 +2575,61 @@ function ocultarAvisoModo(){
 
 map.on('click', (e)=>{
   if(modoColocarPunto) colocarPuntoEn(e.latlng);
+  else if(modoColocarReporte) colocarReporteEn(e.latlng);
   else if(modoDibujarPotrero) agregarVerticeDibujo(e.latlng);
 });
 
 // recrear marcadores de puntos guardados
 estado.puntos.forEach(p=> crearMarcadorPunto(p));
+
+/* ======================= REPORTES DE CAMPO (Infraestructura / Capín Annoni) =======================
+   Mismo mecanismo que PUNTOS de arriba (mismo pin en gota, mismo modo
+   "tocar el mapa"), pero en `estado.reportes` -- son problemas puntuales
+   que se resuelven (campo `resuelto`), no cosas permanentes del campo. */
+let modoColocarReporte = null; // {categoria, subtipo, obs, fecha}
+const reportesLayers = {}; // id -> marker
+
+function iconoReporte(reporte){
+  const cat = REPORTE_CATEGORIAS[reporte.categoria];
+  const emoji = cat.subtipos[reporte.subtipo] || cat.icono;
+  return L.divIcon({
+    className:'icono-punto',
+    html:`<div style="background:${cat.color};width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.35);border:2px solid #fff;"><span style="transform:rotate(45deg);font-size:13px;">${emoji}</span></div>`,
+    iconSize:[26,26],
+    iconAnchor:[13,26]
+  });
+}
+
+function crearMarcadorReporte(reporte){
+  const marker = L.marker([reporte.lat, reporte.lon], {icon: iconoReporte(reporte)}).addTo(map);
+  marker.bindPopup(`<strong>${reporte.subtipo}</strong><br>${reporte.fecha}${reporte.obs?('<br>'+reporte.obs):''}`);
+  reportesLayers[reporte.id] = marker;
+}
+
+function guardarReporte(datos){
+  const reporte = {
+    id: 'rp_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+    categoria: datos.categoria, subtipo: datos.subtipo, obs: datos.obs||null,
+    fecha: datos.fecha || fechaISOHoy(), lat: datos.lat, lon: datos.lon,
+    resuelto: false, fechaResuelto: null
+  };
+  estado.reportes = estado.reportes || [];
+  estado.reportes.push(reporte);
+  crearMarcadorReporte(reporte);
+  guardarEstado();
+  renderListaReportes(reporte.categoria);
+  enviarEvento('reporte_creado', ESTABLECIMIENTO, {id: reporte.id, categoria: reporte.categoria, subtipo: reporte.subtipo, obs: reporte.obs, fecha: reporte.fecha, lat: reporte.lat, lon: reporte.lon});
+  toast(`${reporte.subtipo} agregado al mapa`);
+}
+
+function colocarReporteEn(latlng){
+  guardarReporte(Object.assign({}, modoColocarReporte, {lat: latlng.lat, lon: latlng.lng}));
+  modoColocarReporte = null;
+  ocultarAvisoModo();
+}
+
+// recrear marcadores de reportes activos (los resueltos no se muestran en el mapa)
+(estado.reportes||[]).filter(r=>!r.resuelto).forEach(r=> crearMarcadorReporte(r));
 
 /* ======================= DIBUJAR POTRERO A MANO (solo PC) =======================
    Para un potrero sin límite todavía (ni por KML) -- no hay plugin de dibujo
@@ -2928,6 +3051,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['usuario-cerrar-x', 'usuario-guardar'],
   ['coef-cerrar-x', 'coef-cerrar'],
   ['puntos-cerrar-x', 'puntos-cerrar'],
+  ['reporte-cerrar-x', 'reporte-cerrar'],
   ['detalle-dueno-cerrar-x', 'detalle-dueno-cerrar'],
   ['dp-cerrar-x', 'dp-cancelar'],
   ['caravana-cerrar-x', 'caravana-cerrar'],
@@ -4910,6 +5034,109 @@ document.getElementById('input-puntos').addEventListener('change', (e)=>{
     toast('No se pudo leer el archivo');
   });
   e.target.value = '';
+});
+
+/* ======================= MODAL REPORTE (Infraestructura / Capín Annoni) =======================
+   30/9/2026, a pedido: georeferenciar problemas de infraestructura (caño/
+   bebedero/alambrado roto) y focos de capín annoni encontrados en el
+   campo. Dos botones de entrada (btn-infraestructura/btn-capin-annoni),
+   un solo modal reconfigurado por categoría -- ver REPORTE_CATEGORIAS. */
+let modalReporteCategoria = null;
+
+function renderListaReportes(categoria){
+  const cont = document.getElementById('reporte-lista');
+  const cat = REPORTE_CATEGORIAS[categoria];
+  const todos = (estado.reportes||[]).filter(r=>r.categoria===categoria);
+  const activos = todos.filter(r=>!r.resuelto);
+  const resueltos = todos.filter(r=>r.resuelto);
+  const fila = (r)=>`
+    <div class="punto-item">
+      <div class="info">
+        <span class="icono">${cat.subtipos[r.subtipo]||cat.icono}</span>
+        <span>${r.subtipo} <span class="txt-sub">${r.fecha}${r.obs?(' — '+r.obs):''}</span></span>
+      </div>
+      <div class="acciones">
+        ${r.resuelto ? '' : `<button data-resolver="${r.id}" style="color:#3f6b2f;">✓ Resuelto</button>`}
+        <button data-del="${r.id}">Eliminar</button>
+      </div>
+    </div>`;
+  let html = activos.length ? activos.map(fila).join('') : '<div class="puntos-vacio">Sin reportes activos.</div>';
+  if(resueltos.length){
+    html += `<details style="margin:10px 0 6px;"><summary style="font-size:13px;font-weight:600;cursor:pointer;">Resueltos (${resueltos.length})</summary><div style="margin-top:6px;">${resueltos.map(fila).join('')}</div></details>`;
+  }
+  cont.innerHTML = html;
+  cont.querySelectorAll('[data-resolver]').forEach(btn=>{
+    btn.addEventListener('click', ()=> resolverReporte(btn.dataset.resolver, categoria));
+  });
+  cont.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=> eliminarReporte(btn.dataset.del, categoria));
+  });
+}
+
+function resolverReporte(id, categoria){
+  if(!confirm('¿Marcar este reporte como resuelto? Va a salir de la lista activa en todos los dispositivos, no se puede deshacer.')) return;
+  const r = (estado.reportes||[]).find(x=>x.id===id);
+  if(!r) return;
+  r.resuelto = true;
+  r.fechaResuelto = fechaISOHoy();
+  if(reportesLayers[id]){ map.removeLayer(reportesLayers[id]); delete reportesLayers[id]; }
+  guardarEstado();
+  renderListaReportes(categoria);
+  enviarEvento('reporte_resuelto', ESTABLECIMIENTO, {id, fecha: r.fechaResuelto});
+  toast('Marcado como resuelto');
+}
+
+function eliminarReporte(id, categoria){
+  if(!confirm('¿Eliminar este reporte? No se puede deshacer.')) return;
+  estado.reportes = (estado.reportes||[]).filter(r=>r.id!==id);
+  if(reportesLayers[id]){ map.removeLayer(reportesLayers[id]); delete reportesLayers[id]; }
+  guardarEstado();
+  renderListaReportes(categoria);
+  enviarEvento('reporte_eliminado', ESTABLECIMIENTO, {id});
+  toast('Reporte eliminado');
+}
+
+function abrirModalReporte(categoria){
+  modalReporteCategoria = categoria;
+  const cat = REPORTE_CATEGORIAS[categoria];
+  document.getElementById('reporte-titulo').textContent = `${cat.icono} ${cat.etiqueta}`;
+  document.getElementById('reporte-info').textContent = categoria==='capin_annoni'
+    ? 'Marcá dónde encontraste un foco de capín annoni — se guarda con su ubicación para poder controlarlo después.'
+    : 'Reportá un caño, bebedero o alambrado roto — se guarda con su ubicación para poder encontrarlo después.';
+  const subtipos = Object.keys(cat.subtipos);
+  const filaSubtipo = document.getElementById('reporte-fila-subtipo');
+  if(subtipos.length > 1){
+    filaSubtipo.style.display = '';
+    document.getElementById('rp-subtipo').innerHTML = subtipos.map(s=>`<option value="${s}">${cat.subtipos[s]} ${s}</option>`).join('');
+  } else {
+    filaSubtipo.style.display = 'none';
+  }
+  document.getElementById('rp-fecha').value = fechaISOHoy();
+  document.getElementById('rp-fecha').max = fechaISOHoy();
+  document.getElementById('rp-obs').value = '';
+  renderListaReportes(categoria);
+  document.getElementById('modal-reporte').style.display = 'flex';
+}
+
+function subtipoReporteSeleccionado(){
+  const subtipos = Object.keys(REPORTE_CATEGORIAS[modalReporteCategoria].subtipos);
+  return subtipos.length > 1 ? document.getElementById('rp-subtipo').value : subtipos[0];
+}
+
+document.getElementById('btn-infraestructura').addEventListener('click', ()=> abrirModalReporte('infraestructura'));
+document.getElementById('btn-capin-annoni').addEventListener('click', ()=> abrirModalReporte('capin_annoni'));
+document.getElementById('reporte-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-reporte').style.display = 'none';
+});
+document.getElementById('rp-mapa').addEventListener('click', ()=>{
+  modoColocarReporte = {
+    categoria: modalReporteCategoria,
+    subtipo: subtipoReporteSeleccionado(),
+    obs: document.getElementById('rp-obs').value.trim(),
+    fecha: document.getElementById('rp-fecha').value || fechaISOHoy()
+  };
+  document.getElementById('modal-reporte').style.display = 'none';
+  mostrarAvisoModo();
 });
 
 /* ======================= ALERTAS Y UMBRALES (reglas, sin IA) ======================= */

@@ -112,3 +112,6 @@ jobs:
 
       - name: "Buscar caravana (solo La Vuelta) -- padron animales_caravana, estados de carencia, caravana en el tratamiento"
         run: node tests/probar_caravana.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-movil/index.html pone-chico-movil/index.html
+
+      - name: "Reportes de campo (Infraestructura / Capin Annoni) -- GPS de un toque, tocar el mapa, marcar resuelto, sincronizado"
+        run: node tests/probar_infraestructura.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html

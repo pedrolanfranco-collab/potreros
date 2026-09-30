@@ -169,6 +169,12 @@ async function probarSimple(archivo){
     chequear('boton Sincronizar ahora presente', !!doc.getElementById('btn-sincronizar'));
     chequear('boton Desaparecidos (lista) presente', !!doc.getElementById('btn-desaparecidos'));
   }
+  // 30/9/2026: Infraestructura/Capín Annoni SÍ están en @simple (no gateados
+  // por @completo como el resto de Herramientas) -- justamente el modo
+  // "para el empleado" es el que se usa caminando el campo, donde se
+  // encuentran estos problemas. No dependen de que haya potreros.
+  chequear('boton Infraestructura presente', !!doc.getElementById('btn-infraestructura'));
+  chequear('boton Capín Annoni presente', !!doc.getElementById('btn-capin-annoni'));
 
   // ---- Historial: solo se muestra lo cargado desde este dispositivo ----
   // (un evento remoto sí queda en el estado/stock -- eso no cambia, sólo
