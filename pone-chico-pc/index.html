@@ -446,7 +446,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.72 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.73 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -796,7 +796,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.72","versionMovil":"1.73","simpleHabilitado":true,"versionMovilSimple":"1.16","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.73","versionMovil":"1.74","simpleHabilitado":true,"versionMovilSimple":"1.17","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -994,6 +994,53 @@ function usuarioActual(){ return (localStorage.getItem(USUARIO_KEY) || '').trim(
 const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
 const ESTABLECIMIENTO = CONFIG.establecimiento;
+
+/* ===== Texto que viene de afuera (30/9/2026, auditoría de seguridad) =====
+   La clave de Supabase es pública y las políticas dejan insertar a cualquiera,
+   así que TODO lo que llega de eventos_sync/sanidad/caravanas (y de un KML/GPX)
+   se trata como no confiable: se pinta con esc() en los innerHTML, y además se
+   pasa por limpiarTextoRemoto() apenas entra, para que un nombre de potrero o
+   una observación con HTML no pueda ejecutar código en los demás celulares.
+   Function declarations a propósito: se usan antes de esta línea (hoisting). */
+function esc(v){
+  return String(v == null ? '' : v).replace(/[&<>"'`]/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
+}
+/* Saca < > y comillas dobles/backtick de todo string (también dentro de
+   objetos/arreglos), descarta claves de prototipo y corta strings larguísimos.
+   No escapa (no agrega &amp;): esc() lo hace al pintar. */
+function limpiarTextoRemoto(v, prof){
+  prof = prof || 0;
+  if(typeof v === 'string') return v.replace(/[<>]/g, '').replace(/["`]/g, "'").slice(0, 2000);
+  if(v === null || typeof v !== 'object') return v;
+  if(prof > 8) return null;
+  if(Array.isArray(v)) return v.map(x => limpiarTextoRemoto(x, prof + 1));
+  const out = {};
+  Object.keys(v).forEach(k=>{
+    if(k === '__proto__' || k === 'constructor' || k === 'prototype') return;
+    out[k] = limpiarTextoRemoto(v[k], prof + 1);
+  });
+  return out;
+}
+function nombrePotreroValido(n){ return typeof n === 'string' && n.trim().length > 0 && n.length <= 60; }
+function coordsValidas(c){
+  return Array.isArray(c) && c.length >= 3 && c.length <= 5000 && c.every(p =>
+    Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]) &&
+    Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180);
+}
+/* Un evento con un número que no es número (o absurdo) se descarta entero:
+   entraría al stock como NaN/Infinity. */
+function detalleNumericoValido(d){
+  const numOk = (x, max) => x == null || (typeof x === 'number' && Number.isFinite(x) && Math.abs(x) <= max);
+  if(!numOk(d.cantidad, 100000) || !numOk(d.mm, 2000) || !numOk(d.machos, 100000) || !numOk(d.hembras, 100000)) return false;
+  if(!numOk(d.lat, 90) || !numOk(d.lon, 180)) return false;
+  if(d.items != null){
+    if(!Array.isArray(d.items) || d.items.length > 200) return false;
+    if(!d.items.every(it => it && typeof it === 'object' && numOk(it.cantidad, 100000))) return false;
+  }
+  return true;
+}
+
 /* Vacas preñadas / ovejas encarneradas de la temporada -- bases para el % de
    nacidos de cada especie en 📊 Stock total › Temporada. Arrancan del valor
    de CONFIG (por si nunca se editaron) pero viven en `estado` porque Pedro
@@ -1009,7 +1056,9 @@ const ESTABLECIMIENTO = CONFIG.establecimiento;
 const POTREROS_NUEVOS_KEY = ESTABLECIMIENTO + '_potreros_nuevos';
 try{
   const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
-  nuevosGuardados.forEach(p=>{
+  nuevosGuardados.forEach(p0=>{
+    const p = limpiarTextoRemoto(p0);
+    if(!p || !nombrePotreroValido(p.nombre) || !coordsValidas(p.coords)) return;
     if(!POTREROS_GEO.some(x=>x.nombre===p.nombre)) POTREROS_GEO.push(p);
   });
 }catch(e){ /* si el guardado está corrupto, se ignora */ }
@@ -1351,7 +1400,9 @@ let _aplicandoRemoto = false;
 function aplicarEventoRemoto(row, potrerosSucios){
   _aplicandoRemoto = true;
   try{
+  row = limpiarTextoRemoto(row);
   const d = row.detalle || {};
+  if(typeof d !== 'object' || !detalleNumericoValido(d)) return; // evento con números que no son números: se descarta
   // 10/9/2026: eventos viejos en Supabase todavía dicen "Cerro" (nombre
   // equivocado, renombrado a "Rincon") -- se traducen acá para que una
   // resincronización completa (dispositivo nuevo, "Restablecer datos de
@@ -1453,6 +1504,8 @@ function aplicarEventoRemoto(row, potrerosSucios){
     // Fase 7: antes esto era 100% local, colocado a mano o importado de
     // un archivo nunca llegaba a los demás dispositivos).
     estado.puntos = estado.puntos || [];
+    // Tipo desconocido o sin coordenadas: se descarta (TIPOS_PUNTO[d.tipo].icono rompería el render de todos)
+    if(!Object.prototype.hasOwnProperty.call(TIPOS_PUNTO, d.tipo) || !Number.isFinite(d.lat) || !Number.isFinite(d.lon) || typeof d.id !== 'string') return;
     if(!estado.puntos.some(p=>p.id===d.id)){
       const punto = {id: d.id, tipo: d.tipo, subtipo: d.subtipo, nombre: d.nombre||null, lat: d.lat, lon: d.lon};
       estado.puntos.push(punto);
@@ -1476,6 +1529,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
   // antes del guard de abajo. Idempotentes por id.
   if(row.tipo === 'reporte_creado'){
     estado.reportes = estado.reportes || [];
+    if(!Object.prototype.hasOwnProperty.call(REPORTE_CATEGORIAS, d.categoria) || !Number.isFinite(d.lat) || !Number.isFinite(d.lon) || typeof d.id !== 'string') return;
     if(!estado.reportes.some(r=>r.id===d.id)){
       const reporte = {id: d.id, categoria: d.categoria, subtipo: d.subtipo, obs: d.obs||null, fecha: d.fecha || row.fecha_cliente || fechaHoy(), lat: d.lat, lon: d.lon, resuelto: false, fechaResuelto: null};
       estado.reportes.push(reporte);
@@ -1514,7 +1568,8 @@ function aplicarEventoRemoto(row, potrerosSucios){
   // potrero todavía no existe en este dispositivo -- es lo que este bloque crea.
   if(row.tipo === 'potrero_creado'){
     if(!potrero || POTREROS_GEO.some(x=>x.nombre===potrero)) return; // ya lo tengo (evento repetido o creado localmente)
-    const p = {nombre: potrero, coords: d.coords, area: d.area||null};
+    if(!nombrePotreroValido(potrero) || !coordsValidas(d.coords)) return; // nombre o límite inválido: no se crea
+    const p = {nombre: potrero, coords: d.coords.map(c=>[c[0], c[1]]), area: Number.isFinite(d.area) ? d.area : null};
     POTREROS_GEO.push(p);
     try{
       const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
@@ -1530,8 +1585,8 @@ function aplicarEventoRemoto(row, potrerosSucios){
   }
   if(row.tipo === 'potrero_limite_actualizado'){
     const p = potrero && POTREROS_GEO.find(x=>x.nombre===potrero);
-    if(!p) return;
-    p.coords = d.coords; p.area = d.area||null;
+    if(!p || !coordsValidas(d.coords)) return;
+    p.coords = d.coords.map(c=>[c[0], c[1]]); p.area = Number.isFinite(d.area) ? d.area : null;
     AREA_CALCULADA[potrero] = calcAreaHa(p.coords);
     try{
       const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
@@ -1960,9 +2015,11 @@ async function sincronizar(mostrarToast){
     await vaciarColaStock();
     let query = client.from('eventos_sync').select('*').eq('establecimiento', ESTABLECIMIENTO).order('creado_en', {ascending:true});
     if(estado.ultimaSincronizacion) query = query.gt('creado_en', estado.ultimaSincronizacion);
-    const { data, error } = await query;
+    const res = await query;
+    const error = res.error;
     if(error){ console.warn('Error al sincronizar eventos_sync:', error.message || error); return; }
-    if(!data){ return; }
+    if(!res.data){ return; }
+    const data = limpiarTextoRemoto(res.data);
     let cambios = 0;
     const miId = idDispositivo();
     data.forEach(row=>{
@@ -2435,7 +2492,7 @@ POTREROS_GEO.forEach(p=>{ COORDS_ORIGINALES[p.nombre] = {coords: p.coords, area:
 try{
   const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
   POTREROS_GEO.forEach(p=>{
-    if(limitesGuardados[p.nombre]){
+    if(limitesGuardados[p.nombre] && coordsValidas(limitesGuardados[p.nombre].coords)){
       p.coords = limitesGuardados[p.nombre].coords;
       p.area = limitesGuardados[p.nombre].area;
     }
@@ -2449,10 +2506,10 @@ POTREROS_GEO.forEach(p=>{ AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords); });
 function idEtiqueta(nombre){ return 'lbl-' + nombre.replace(/[^a-zA-Z0-9]/g,'_'); }
 function popupContenidoPotrero(nombre){
   const total = totalPotrero(nombre);
-  if(total===0) return `<strong>${nombre}</strong><br><span style="color:#8a8465;">Sin animales</span>`;
+  if(total===0) return `<strong>${esc(nombre)}</strong><br><span style="color:#8a8465;">Sin animales</span>`;
   const det = detalleAnimales(estado.potreros[nombre].animales).sort((a,b)=> a.cat.localeCompare(b.cat,'es') || a.dueno.localeCompare(b.dueno,'es'));
   const filas = det.map(d=>`${d.cat} — ${d.dueno}: <strong>${d.cant}</strong>`).join('<br>');
-  return `<strong>${nombre}</strong> · ${total} animal${total===1?'':'es'}<hr style="margin:5px 0;border:none;border-top:1px solid #ddd;">${filas}`;
+  return `<strong>${esc(nombre)}</strong> · ${total} animal${total===1?'':'es'}<hr style="margin:5px 0;border:none;border-top:1px solid #ddd;">${filas}`;
 }
 function actualizarEtiquetasMapa(){
   POTREROS_GEO.forEach(p=>{
@@ -2539,7 +2596,7 @@ function iconoPunto(tipo){
 
 function crearMarcadorPunto(punto){
   const marker = L.marker([punto.lat, punto.lon], {icon: iconoPunto(punto.tipo)}).addTo(map);
-  marker.bindPopup(`<strong>${punto.nombre || punto.subtipo}</strong><br>${punto.subtipo}`);
+  marker.bindPopup(`<strong>${esc(punto.nombre || punto.subtipo)}</strong><br>${esc(punto.subtipo)}`);
   puntosLayers[punto.id] = marker;
 }
 
@@ -2602,7 +2659,7 @@ function iconoReporte(reporte){
 
 function crearMarcadorReporte(reporte){
   const marker = L.marker([reporte.lat, reporte.lon], {icon: iconoReporte(reporte)}).addTo(map);
-  marker.bindPopup(`<strong>${reporte.subtipo}</strong><br>${reporte.fecha}${reporte.obs?('<br>'+reporte.obs):''}`);
+  marker.bindPopup(`<strong>${esc(reporte.subtipo)}</strong><br>${esc(reporte.fecha)}${reporte.obs?('<br>'+esc(reporte.obs)):''}`);
   reportesLayers[reporte.id] = marker;
 }
 
@@ -2781,15 +2838,15 @@ function renderLista(filtro=''){
     card.innerHTML = `
       <div class="fila-top">
         <div>
-          <div class="nombre">${nombre}
-          ${alertas.length ? '<span title="'+alertas.join(' · ')+'">⚠️</span>':''}
-          ${casosPotrero.length ? '<span title="'+casosPotrero.map(c=>c.pendiente+' '+c.categoria+' desaparecidos').join(' · ')+'">❓</span>':''}</div>
+          <div class="nombre">${esc(nombre)}
+          ${alertas.length ? '<span title="'+esc(alertas.join(' · '))+'">⚠️</span>':''}
+          ${casosPotrero.length ? '<span title="'+esc(casosPotrero.map(c=>c.pendiente+' '+c.categoria+' desaparecidos').join(' · '))+'">❓</span>':''}</div>
           <div class="area">${areaHa(nombre).toFixed(1)} ha ${carga>0 ? `· <span class="carga-badge">${carga.toFixed(2)} UG/ha</span>` : ''}</div>
         </div>
         <div class="badge-total ${total===0?'vacio':''}"${total<0?' style="background:#d32f2f;color:#fff;"':''}>${total}</div>
       </div>
       <div class="ocupacion-badge ocupacion-${ocup.tipo}">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
-      ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span${v<0?' style="color:#d32f2f;font-weight:700;"':''}>${k}: ${v}</span>`).join('')}</div>` : ''}
+      ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span${v<0?' style="color:#d32f2f;font-weight:700;"':''}>${esc(k)}: ${v}</span>`).join('')}</div>` : ''}
     `;
     if(casosPotrero.length){
       card.style.borderLeft = '4px solid #c68a3b';
@@ -2815,7 +2872,7 @@ function renderSugerenciasBuscador(filtro){
   const todos = POTREROS_GEO.map(p=>p.nombre);
   const nombres = f ? todos.filter(n=> n.toLowerCase().includes(f)).slice(0,8) : todos;
   if(!nombres.length){ cont.style.display = 'none'; cont.innerHTML = ''; return; }
-  cont.innerHTML = nombres.map(n=>`<div class="sugerencia-potrero" data-potrero="${n}">${n}</div>`).join('');
+  cont.innerHTML = nombres.map(n=>`<div class="sugerencia-potrero" data-potrero="${esc(n)}">${esc(n)}</div>`).join('');
   cont.style.display = 'block';
   cont.querySelectorAll('[data-potrero]').forEach(el=>{
     el.addEventListener('mousedown', (e)=>{
@@ -2873,11 +2930,11 @@ function renderDetalle(nombre){
   const historialVisible = historial;
 
   det.innerHTML = `
-    <div class="detalle-titulo"><h2>${nombre}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
+    <div class="detalle-titulo"><h2>${esc(nombre)}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
     <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong></div>
     <div class="ocupacion-badge ocupacion-${ocup.tipo}" style="margin-bottom:10px;">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
     ${alertasPotrero.length ? `<div style="background:#fbe6d9;border-left:3px solid var(--rojo-hacienda);border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a3420;">${alertasPotrero.map(a=>'⚠️ '+a).join('<br>')}</div>` : ''}
-    ${casosPotrero.length ? `<div style="background:#fdf1de;border-left:3px solid #c68a3b;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a5220;">${casosPotrero.map(c=>`❓ ${c.pendiente} de ${c.cantidadOriginal} ${c.categoria}${c.dueno?' de '+c.dueno:''} desaparecidos desde ${c.fecha} — <span style="cursor:pointer;text-decoration:underline;" data-abrir-desaparecidos="1">resolver</span>`).join('<br>')}</div>` : ''}
+    ${casosPotrero.length ? `<div style="background:#fdf1de;border-left:3px solid #c68a3b;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a5220;">${casosPotrero.map(c=>`❓ ${c.pendiente} de ${c.cantidadOriginal} ${esc(c.categoria)}${c.dueno?' de '+esc(c.dueno):''} desaparecidos desde ${esc(c.fecha)} — <span style="cursor:pointer;text-decoration:underline;" data-abrir-desaparecidos="1">resolver</span>`).join('<br>')}</div>` : ''}
 
     <table class="tabla-animales">
       <thead><tr><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead>
@@ -2904,14 +2961,14 @@ function renderDetalle(nombre){
     <div id="historial">
       <h3>Historial</h3>
       ${historialVisible.length ? historialVisible.slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||'')).slice(0,15).map(h=>`
-        <div class="hist-item ${h.tipo}${h.eliminado?' eliminado':''}">
-          <span class="fecha">${h.fecha}</span> — ${h.detalle}
+        <div class="hist-item ${esc(h.tipo)}${h.eliminado?' eliminado':''}">
+          <span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}
           ${(h.id && h.extra && !h.eliminado) ? `
           <span class="hist-acciones">
-            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo!=='retorno_campo_ajeno') ? `<button class="hist-btn" data-hist-editar="${h.id}" title="Editar">✏️</button>` : ''}
-            ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${h.id}" title="Agregar/editar caravana">🏷️</button>` : ''}
-            ${(CONFIG.dicoseHabilitado && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${h.id}" title="Agregar/editar guía">📄</button>` : ''}
-            <button class="hist-btn" data-hist-borrar="${h.id}" title="Borrar">🗑</button>
+            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo!=='retorno_campo_ajeno') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
+            ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana">🏷️</button>` : ''}
+            ${(CONFIG.dicoseHabilitado && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${esc(h.id)}" title="Agregar/editar guía">📄</button>` : ''}
+            <button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>
           </span>` : ''}
         </div>
       `).join('') : '<div class="hist-vacio">Todavía no hay movimientos en este potrero.</div>'}
@@ -2949,7 +3006,7 @@ function renderDetalle(nombre){
 function abrirDetalleDuenoPotrero(nombre){
   const animales = estado.potreros[nombre].animales;
   const detalle = detalleAnimales(animales).sort((a,b)=> a.cat.localeCompare(b.cat,'es') || a.dueno.localeCompare(b.dueno,'es'));
-  const filas = detalle.map(d=>`<tr${d.cant<0?' style="color:#d32f2f;font-weight:700;"':''}><td>${d.cat}</td><td>${textoFirma(d.dueno)}</td><td class="num">${d.cant}</td></tr>`).join('');
+  const filas = detalle.map(d=>`<tr${d.cant<0?' style="color:#d32f2f;font-weight:700;"':''}><td>${esc(d.cat)}</td><td>${esc(textoFirma(d.dueno))}</td><td class="num">${d.cant}</td></tr>`).join('');
   document.getElementById('detalle-dueno-titulo').textContent = `👤 ${nombre} — por dueño`;
   document.getElementById('detalle-dueno-tabla').innerHTML = `<table class="tabla-animales">
     <thead><tr><th>Categoría</th><th>${CONFIG.duenoLabel}</th><th style="text-align:right;">Cant.</th></tr></thead>
@@ -3081,7 +3138,7 @@ function opcionesCategoriasNacimiento(seleccionada){
   return CATEGORIAS_CRIA.map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
 }
 function opcionesPotreros(excluir){
-  return POTREROS_GEO.map(p=>p.nombre).filter(n=>n!==excluir).sort().map(n=>`<option value="${n}">${n}</option>`).join('');
+  return POTREROS_GEO.map(p=>p.nombre).filter(n=>n!==excluir).sort().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
 function filasCategoriasMover(nombre){
   const animales = estado.potreros[nombre].animales;
@@ -3092,10 +3149,10 @@ function filasCategoriasMover(nombre){
     return `
     <div class="form-row" style="align-items:center;gap:8px;">
       <label style="display:flex;align-items:center;gap:6px;flex:1;font-weight:normal;">
-        <input type="checkbox" class="mov-check" data-key="${key}" data-cat="${x.cat}" data-dueno="${x.dueno}" checked>
-        ${x.cat} (${textoFirma(x.dueno)}) <span style="color:var(--texto-suave);font-size:12px;">(hay ${x.cant})</span>
+        <input type="checkbox" class="mov-check" data-key="${esc(key)}" data-cat="${esc(x.cat)}" data-dueno="${esc(x.dueno)}" checked>
+        ${esc(x.cat)} (${esc(textoFirma(x.dueno))}) <span style="color:var(--texto-suave);font-size:12px;">(hay ${x.cant})</span>
       </label>
-      <input type="number" class="mov-cant" data-key="${key}" min="1" value="${x.cant}" style="width:70px;">
+      <input type="number" class="mov-cant" data-key="${esc(key)}" min="1" value="${x.cant}" style="width:70px;">
     </div>`;
   }).join('');
 }
@@ -3125,7 +3182,7 @@ function mostrarFormularioAgregarInicial(nombre){
   let filaIdx = 1;
   zona.innerHTML = `
     <div class="form-accion">
-      <h3>Agregar animales a ${nombre}</h3>
+      <h3>Agregar animales a ${esc(nombre)}</h3>
       <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Categoría · ${CONFIG.duenoLabel} · Cantidad</label>
       <div id="f-filas-agregar">${filaAgregarAnimales(0)}</div>
       <button type="button" class="btn btn-secundario" id="f-agregar-fila" style="margin:8px 0;">+ Agregar otra categoría</button>
@@ -3189,7 +3246,7 @@ function mostrarFormulario(nombre, accion, prefill){
     if(prefill){
       zona.innerHTML = `
         <div class="form-accion">
-          <h3>Agregar animales a ${nombre}</h3>
+          <h3>Agregar animales a ${esc(nombre)}</h3>
           <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill.categoria)}</select></div>
           <div class="form-row"><label>${CONFIG.duenoLabel}</label>
             <select id="f-dueno">${opcionesDuenos(prefill.dueno, true)}</select>
@@ -3231,7 +3288,7 @@ function mostrarFormulario(nombre, accion, prefill){
     }
     if(totalPotrero(nombre)>0){
       zona.innerHTML = `<div class="form-accion">
-        <p style="font-size:13px;color:var(--texto-suave);margin:0 0 10px 0;">"＋ Agregar animales" es para cargar el stock inicial de un potrero vacío. ${nombre} ya tiene animales cargados — para sumar más adelante preferí 💰 Compra, 🐄 Nacimiento, o ⇄ Mover si vienen de otro potrero.</p>
+        <p style="font-size:13px;color:var(--texto-suave);margin:0 0 10px 0;">"＋ Agregar animales" es para cargar el stock inicial de un potrero vacío. ${esc(nombre)} ya tiene animales cargados — para sumar más adelante preferí 💰 Compra, 🐄 Nacimiento, o ⇄ Mover si vienen de otro potrero.</p>
         <div class="form-botones">
           <button class="btn btn-agregar" id="f-agregar-igual">Agregar igual</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -3247,13 +3304,13 @@ function mostrarFormulario(nombre, accion, prefill){
 
   if(accion==='mover'){
     if(totalPotrero(nombre)===0){
-      zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">No hay animales en ${nombre} para mover.</p></div>`;
+      zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">No hay animales en ${esc(nombre)} para mover.</p></div>`;
       return;
     }
     zona.innerHTML = `
       <div class="form-accion">
-        <h3>Mover animales desde ${nombre}</h3>
-        <div class="form-row"><label>Potrero destino</label><select id="f-destino"><option value="${nombre}">(sin mover — recategorizar en ${nombre})</option>${opcionesPotreros(nombre)}</select></div>
+        <h3>Mover animales desde ${esc(nombre)}</h3>
+        <div class="form-row"><label>Potrero destino</label><select id="f-destino"><option value="${esc(nombre)}">(sin mover — recategorizar en ${esc(nombre)})</option>${opcionesPotreros(nombre)}</select></div>
         <div class="form-row"><label>Categoría destino (opcional)</label><select id="f-cat-destino"><option value="">— mantener la categoría de cada una —</option>${opcionesCategorias()}</select></div>
         <div class="form-row"><label>Dueño destino (opcional)</label><select id="f-dueno-destino"><option value="__mantener__" selected>— mantener el dueño de cada una —</option>${opcionesDuenos()}</select></div>
         <label style="font-size:13px;font-weight:600;display:block;margin:10px 0 4px;">Categorías a mover</label>
@@ -3340,12 +3397,12 @@ function mostrarFormulario(nombre, accion, prefill){
     const animales = estado.potreros[nombre].animales;
     const resumen = detalleAnimales(animales).filter(d=>d.cant>0).map(d=>`${d.cant} ${d.cat} (${textoFirma(d.dueno)})`).join(', ');
     if(total===0){
-      zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">No hay animales en ${nombre} para mover.</p></div>`;
+      zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">No hay animales en ${esc(nombre)} para mover.</p></div>`;
       return;
     }
     zona.innerHTML = `
       <div class="form-accion">
-        <h3>Mover TODO el potrero ${nombre}</h3>
+        <h3>Mover TODO el potrero ${esc(nombre)}</h3>
         <p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 8px 0;">Se van a mover ${total} animales: ${resumen}</p>
         <div class="form-row"><label>Potrero destino</label><select id="f-destino">${opcionesPotreros(nombre)}</select></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
@@ -3391,7 +3448,7 @@ function mostrarFormulario(nombre, accion, prefill){
   if(accion==='compraventa'){
     zona.innerHTML = `
       <div class="form-accion">
-        <h3>Compra / Venta en ${nombre}</h3>
+        <h3>Compra / Venta en ${esc(nombre)}</h3>
         <div class="form-row"><label>Operación</label>
           <select id="f-tipo-op">
             <option value="Compra"${prefill&&prefill._tipoOp==='Venta'?'':' selected'}>Compra (ingresan animales)</option>
@@ -3464,7 +3521,7 @@ function mostrarFormulario(nombre, accion, prefill){
   if(accion==='nacimiento'){
     zona.innerHTML = `
       <div class="form-accion">
-        <h3>Registrar nacimiento en ${nombre}</h3>
+        <h3>Registrar nacimiento en ${esc(nombre)}</h3>
         <div class="form-row"><label>Categoría de la cría</label><select id="f-cat">${opcionesCategoriasNacimiento(prefill?prefill.categoria:'Terneros')}</select></div>
         <div class="form-row"><label>${CONFIG.duenoLabel} (de la madre)</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
@@ -3500,7 +3557,7 @@ function mostrarFormulario(nombre, accion, prefill){
   if(accion==='muerte'){
     zona.innerHTML = `
       <div class="form-accion">
-        <h3>Registrar muerte en ${nombre}</h3>
+        <h3>Registrar muerte en ${esc(nombre)}</h3>
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
         <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
@@ -3543,7 +3600,7 @@ function mostrarFormulario(nombre, accion, prefill){
   if(accion==='desaparecido'){
     zona.innerHTML = `
       <div class="form-accion">
-        <h3>Registrar desaparición en ${nombre}</h3>
+        <h3>Registrar desaparición en ${esc(nombre)}</h3>
         <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Para un animal que salió del potrero sin que sepas dónde está (cruzó a otro campo, etc.) — se resta de acá y queda en 🛠 Herramientas › ❓ Desaparecidos hasta que aparezca o se dé por perdido.</p>
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
         <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
@@ -3967,7 +4024,7 @@ async function calcularEstadisticasNacimientos(){
         .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto','senalada','senalada_editada','senalada_eliminada'])
         .order('creado_en', {ascending:true});
       if(!res.error){
-        eventos = res.data||[];
+        eventos = limpiarTextoRemoto(res.data||[]);
         localStorage.setItem(cacheKey, JSON.stringify(eventos));
         fuente = 'online';
       }
@@ -4120,7 +4177,7 @@ async function calcularEstadisticasMuertes(){
       const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo')
         .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido','correccion']);
       if(!res.error){
-        eventos = res.data||[];
+        eventos = limpiarTextoRemoto(res.data||[]);
         localStorage.setItem(cacheKey, JSON.stringify(eventos));
         fuente = 'online';
       }
@@ -4259,7 +4316,7 @@ async function cargarStock(){
   if(casosStock.length){
     const totalPend = casosStock.reduce((s,c)=>s+c.pendiente,0);
     avisoDesap.innerHTML = `<div style="background:#fdf1de;border-left:3px solid #c68a3b;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a5220;cursor:pointer;">
-      ❓ Faltan ${totalPend} animal${totalPend===1?'':'es'} (${casosStock.length} caso${casosStock.length===1?'':'s'} sin resolver) — ${casosStock.map(c=>`${c.pendiente} ${c.categoria}${c.dueno?' de '+c.dueno:''} en ${c.potreroOrigen}`).join(', ')}. <span style="text-decoration:underline;">Ver en Desaparecidos</span>
+      ❓ Faltan ${totalPend} animal${totalPend===1?'':'es'} (${casosStock.length} caso${casosStock.length===1?'':'s'} sin resolver) — ${casosStock.map(c=>`${c.pendiente} ${esc(c.categoria)}${c.dueno?' de '+esc(c.dueno):''} en ${esc(c.potreroOrigen)}`).join(', ')}. <span style="text-decoration:underline;">Ver en Desaparecidos</span>
     </div>`;
     avisoDesap.querySelector('div').addEventListener('click', ()=>{
       document.getElementById('modal-stock').style.display = 'none';
@@ -4298,7 +4355,7 @@ async function cargarStock(){
     const animales = estado.potreros[p.nombre].animales;
     const categorias = detalleAnimales(animales).map(x=>`${x.cat} (${textoFirma(x.dueno)}): ${x.cant}`).join(', ') || '—';
     const total = totalPotrero(p.nombre);
-    return `<div class="potrero-card"><div class="nombre"${total<0?' style="color:#d32f2f;"':''}>${p.nombre} — ${total} animal${total===1?'':'es'}</div><div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${categorias}</div></div>`;
+    return `<div class="potrero-card"><div class="nombre"${total<0?' style="color:#d32f2f;"':''}>${esc(p.nombre)} — ${total} animal${total===1?'':'es'}</div><div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(categorias)}</div></div>`;
   }).join('') : '<p style="font-size:12.5px;color:var(--texto-suave);">Ningún potrero tiene animales cargados.</p>';
   if(vacios) htmlPotreros += `<p style="font-size:11.5px;color:var(--texto-suave);margin-top:6px;">+ ${vacios} potrero${vacios===1?'':'s'} vacío${vacios===1?'':'s'}.</p>`;
   document.getElementById('stock-panel-1').innerHTML = htmlPotreros;
@@ -4311,11 +4368,11 @@ async function cargarStock(){
     panelDueno.innerHTML = porDueno.length ? porDueno.map(d=>{
       const filasCat = Object.entries(d.categorias).sort((a,b)=> b[1]-a[1]);
       return `<div style="margin-bottom:16px;">
-        <div style="font-weight:600;font-size:13.5px;margin-bottom:4px;">${d.dueno}</div>
+        <div style="font-weight:600;font-size:13.5px;margin-bottom:4px;">${esc(d.dueno)}</div>
         <table class="tabla-animales">
           <thead><tr><th>Categoría</th><th style="text-align:right;">Animales</th></tr></thead>
           <tbody>
-            ${filasCat.map(([cat,cant])=>`<tr><td>${cat}</td><td class="num">${cant}</td></tr>`).join('')}
+            ${filasCat.map(([cat,cant])=>`<tr><td>${esc(cat)}</td><td class="num">${cant}</td></tr>`).join('')}
             <tr class="total"><td>Total</td><td class="num">${d.total}</td></tr>
           </tbody>
         </table>
@@ -4615,12 +4672,12 @@ function parsearPlacemarksPotrero(kmlTexto){
     const nombreEl = pm.getElementsByTagName('name')[0];
     const coordsEl = pm.getElementsByTagName('coordinates')[0];
     if(!nombreEl || !coordsEl) return null;
-    const nombre = nombreEl.textContent.trim();
+    const nombre = limpiarTextoRemoto(nombreEl.textContent.trim()).slice(0, 60).trim();
     const coords = coordsEl.textContent.trim().split(/\s+/).map(tupla=>{
       const [lon, lat] = tupla.split(',').map(Number);
       return [lat, lon];
-    }).filter(c=> !isNaN(c[0]) && !isNaN(c[1]));
-    if(!nombre || coords.length<3) return null;
+    }).filter(c=> Number.isFinite(c[0]) && Number.isFinite(c[1]) && Math.abs(c[0])<=90 && Math.abs(c[1])<=180);
+    if(!nombre || !coordsValidas(coords)) return null;
     return {nombre, coords};
   }).filter(Boolean);
 }
@@ -4703,9 +4760,9 @@ function parsearPlacemarksPunto(kmlTexto){
     const coordsEl = pointEl.getElementsByTagName('coordinates')[0];
     if(!coordsEl) return null;
     const [lon, lat] = coordsEl.textContent.trim().split(',').map(Number);
-    if(isNaN(lat) || isNaN(lon)) return null;
+    if(!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat)>90 || Math.abs(lon)>180) return null;
     const nombreEl = pm.getElementsByTagName('name')[0];
-    return {nombre: nombreEl ? nombreEl.textContent.trim() : '', lat, lon};
+    return {nombre: nombreEl ? limpiarTextoRemoto(nombreEl.textContent.trim()).slice(0, 60) : '', lat, lon};
   }).filter(Boolean);
 }
 /* GPX: waypoints <wpt lat=".." lon="..">, formato confirmado por Pedro
@@ -4716,9 +4773,9 @@ function parsearWaypointsGpx(gpxTexto){
   return wpts.map(w=>{
     const lat = Number(w.getAttribute('lat'));
     const lon = Number(w.getAttribute('lon'));
-    if(isNaN(lat) || isNaN(lon)) return null;
+    if(!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat)>90 || Math.abs(lon)>180) return null;
     const nombreEl = w.getElementsByTagName('name')[0];
-    return {nombre: nombreEl ? nombreEl.textContent.trim() : '', lat, lon};
+    return {nombre: nombreEl ? limpiarTextoRemoto(nombreEl.textContent.trim()).slice(0, 60) : '', lat, lon};
   }).filter(Boolean);
 }
 
@@ -4945,10 +5002,10 @@ function renderListaPuntos(){
   cont.innerHTML = estado.puntos.map(p=>`
     <div class="punto-item">
       <div class="info">
-        <span class="icono">${TIPOS_PUNTO[p.tipo].icono}</span>
-        <span>${p.nombre || p.subtipo} <span class="txt-sub">(${p.subtipo})</span></span>
+        <span class="icono">${esc((TIPOS_PUNTO[p.tipo]||{}).icono||'📍')}</span>
+        <span>${esc(p.nombre || p.subtipo)} <span class="txt-sub">(${esc(p.subtipo)})</span></span>
       </div>
-      <button data-del="${p.id}">Eliminar</button>
+      <button data-del="${esc(p.id)}">Eliminar</button>
     </div>
   `).join('');
   cont.querySelectorAll('[data-del]').forEach(btn=>{
@@ -5052,12 +5109,12 @@ function renderListaReportes(categoria){
   const fila = (r)=>`
     <div class="punto-item">
       <div class="info">
-        <span class="icono">${cat.subtipos[r.subtipo]||cat.icono}</span>
-        <span>${r.subtipo} <span class="txt-sub">${r.fecha}${r.obs?(' — '+r.obs):''}</span></span>
+        <span class="icono">${esc(cat.subtipos[r.subtipo]||cat.icono)}</span>
+        <span>${esc(r.subtipo)} <span class="txt-sub">${esc(r.fecha)}${r.obs?(' — '+esc(r.obs)):''}</span></span>
       </div>
       <div class="acciones">
-        ${r.resuelto ? '' : `<button data-resolver="${r.id}" style="color:#3f6b2f;">✓ Resuelto</button>`}
-        <button data-del="${r.id}">Eliminar</button>
+        ${r.resuelto ? '' : `<button data-resolver="${esc(r.id)}" style="color:#3f6b2f;">✓ Resuelto</button>`}
+        <button data-del="${esc(r.id)}">Eliminar</button>
       </div>
     </div>`;
   let html = activos.length ? activos.map(fila).join('') : '<div class="puntos-vacio">Sin reportes activos.</div>';
@@ -5148,9 +5205,9 @@ function renderAlertasLista(){
     return;
   }
   cont.innerHTML = conAlerta.map(x=>`
-    <div class="potrero-card" style="cursor:pointer;" data-nombre="${x.nombre}">
-      <div class="nombre">⚠️ ${x.nombre}</div>
-      <div style="font-size:12px;color:#7a3420;margin-top:4px;">${x.alertas.join('<br>')}</div>
+    <div class="potrero-card" style="cursor:pointer;" data-nombre="${esc(x.nombre)}">
+      <div class="nombre">⚠️ ${esc(x.nombre)}</div>
+      <div style="font-size:12px;color:#7a3420;margin-top:4px;">${x.alertas.map(esc).join('<br>')}</div>
     </div>
   `).join('');
   cont.querySelectorAll('[data-nombre]').forEach(el=>{
@@ -5195,14 +5252,14 @@ function renderDesaparecidosLista(){
   }
   cont.innerHTML = casos.map(c=>`
     <div class="potrero-card">
-      <div class="nombre">❓ ${c.potreroOrigen}</div>
-      <div style="font-size:12px;color:#7a5220;margin-top:4px;">${c.pendiente} de ${c.cantidadOriginal} ${c.categoria}${c.dueno?' de '+c.dueno:''} desde ${c.fecha}${c.obs?' — '+c.obs:''}</div>
+      <div class="nombre">❓ ${esc(c.potreroOrigen)}</div>
+      <div style="font-size:12px;color:#7a5220;margin-top:4px;">${c.pendiente} de ${c.cantidadOriginal} ${esc(c.categoria)}${c.dueno?' de '+esc(c.dueno):''} desde ${esc(c.fecha)}${c.obs?' — '+esc(c.obs):''}</div>
       <div class="form-botones" style="margin-top:8px;">
-        <button class="btn btn-agregar" data-encontrado="${c.casoId}">✅ Encontrado</button>
-        <button class="btn btn-secundario" data-perdido="${c.casoId}" style="color:var(--rojo-hacienda);">❌ Dar por perdido</button>
-        <button class="btn btn-secundario" data-muerte-desap="${c.casoId}" style="color:var(--rojo-hacienda);">🪦 Dar muerte</button>
+        <button class="btn btn-agregar" data-encontrado="${esc(c.casoId)}">✅ Encontrado</button>
+        <button class="btn btn-secundario" data-perdido="${esc(c.casoId)}" style="color:var(--rojo-hacienda);">❌ Dar por perdido</button>
+        <button class="btn btn-secundario" data-muerte-desap="${esc(c.casoId)}" style="color:var(--rojo-hacienda);">🪦 Dar muerte</button>
       </div>
-      <div id="form-resolver-${c.casoId}" style="display:none;margin-top:8px;"></div>
+      <div id="form-resolver-${esc(c.casoId)}" style="display:none;margin-top:8px;"></div>
     </div>
   `).join('');
   cont.querySelectorAll('[data-encontrado]').forEach(btn=>{
@@ -5281,7 +5338,7 @@ function abrirFormularioEncontrado(caso){
   cont.style.display = 'block';
   cont.innerHTML = `
     <div class="form-row"><label>Cantidad encontrada</label><input type="number" id="fe-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
-    <div class="form-row"><label>Potrero al que vuelve</label><select id="fe-potrero"><option value="${caso.potreroOrigen}">${caso.potreroOrigen} (de donde salió)</option>${opcionesPotreros(caso.potreroOrigen)}</select></div>
+    <div class="form-row"><label>Potrero al que vuelve</label><select id="fe-potrero"><option value="${esc(caso.potreroOrigen)}">${esc(caso.potreroOrigen)} (de donde salió)</option>${opcionesPotreros(caso.potreroOrigen)}</select></div>
     <div class="form-row"><label>Fecha</label><input type="date" id="fe-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="fe-confirmar">Confirmar</button>
@@ -5336,7 +5393,7 @@ function renderTablaMuertesFilas(filtroDueno){
   if(!lista.length){ cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Sin muertes registradas para este dueño.</p>'; return; }
   cont.innerHTML = `<table class="tabla-animales">
     <thead><tr><th>Categoría</th><th>Dueño</th><th style="text-align:right;">Cantidad</th><th>Último registro</th></tr></thead>
-    <tbody>${lista.map(f=>`<tr><td>${f.categoria}</td><td>${textoFirma(f.dueno)}</td><td class="num">${f.cantidad}</td><td>${f.ultima||''}</td></tr>`).join('')}</tbody>
+    <tbody>${lista.map(f=>`<tr><td>${esc(f.categoria)}</td><td>${esc(textoFirma(f.dueno))}</td><td class="num">${f.cantidad}</td><td>${esc(f.ultima||'')}</td></tr>`).join('')}</tbody>
   </table>`;
 }
 async function cargarTablaMuertes(filtroDueno, forzarRed){
@@ -5359,7 +5416,7 @@ async function cargarTablaMuertes(filtroDueno, forzarRed){
     cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">No se pudo traer el registro.</p>';
     return;
   }
-  muertesUltimosEventos = res.data || [];
+  muertesUltimosEventos = limpiarTextoRemoto(res.data || []);
   renderTablaMuertesFilas(filtroDueno);
 }
 document.getElementById('btn-desaparecidos').addEventListener('click', ()=>{
@@ -5408,7 +5465,7 @@ async function cargarSanidad(){
       const desde = sumarDiasISO(fechaISOHoy(), -260);
       const res = await client.from(TABLA_SANIDAD).select('*').gte('fecha', desde).order('fecha', {ascending:false});
       if(!res.error){
-        datos = res.data||[];
+        datos = limpiarTextoRemoto(res.data||[]);
         localStorage.setItem(cacheKey, JSON.stringify(datos));
       }
     }catch(e){ /* sigue con el cache */ }
@@ -5426,8 +5483,8 @@ async function cargarSanidad(){
 
 function tarjetaSanidad(c, extra){
   return `<div class="potrero-card">
-        <div class="nombre">${c.fecha||''} · ${c.categoria||'—'}${c.potrero?(' · potrero '+c.potrero):''}${c.dueno?(' · '+c.dueno):''}</div>
-        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${c.producto1||''}${c.dosis1?(' ('+c.dosis1+')'):''}${c.producto2?(' + '+c.producto2):''}${c.observaciones?(' — '+c.observaciones):''}</div>
+        <div class="nombre">${esc(c.fecha||'')} · ${esc(c.categoria||'—')}${c.potrero?(' · potrero '+esc(c.potrero)):''}${c.dueno?(' · '+esc(c.dueno)):''}</div>
+        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(c.producto1||'')}${c.dosis1?(' ('+esc(c.dosis1)+')'):''}${c.producto2?(' + '+esc(c.producto2)):''}${c.observaciones?(' — '+esc(c.observaciones)):''}</div>
         ${extra||''}
         ${lineaCalculoSanidad(c.fecha, c.producto1, c.dosis1, c.producto2, c.dosis2, c.cantidad, '')}
       </div>`;
@@ -5454,8 +5511,8 @@ function renderSanidadLista(cargas){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin tratamientos registrados todavía.</p>'
     : ultimasCargas.map(c=>tarjetaSanidad(c)).join('') + pendientes.map(p=>`
       <div class="potrero-card">
-        <div class="nombre">${p.fecha||''} · ${p.categoria||'—'}${p.potrero?(' · potrero '+p.potrero):''}${p.dueno?(' · '+p.dueno):''}</div>
-        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${p.producto1||''} — 📴 sin señal, en tu dispositivo</div>
+        <div class="nombre">${esc(p.fecha||'')} · ${esc(p.categoria||'—')}${p.potrero?(' · potrero '+esc(p.potrero)):''}${p.dueno?(' · '+esc(p.dueno)):''}</div>
+        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(p.producto1||'')} — 📴 sin señal, en tu dispositivo</div>
       </div>`).join('');
   html += seccionDetails('Últimos tratamientos', ultimasCargas.length + pendientes.length, cuerpoUltimos);
 
@@ -5487,7 +5544,7 @@ function renderSanidadLista(cargas){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Nada con más de 20 días de antelación por ahora.</p>'
     : proximos.map(c=> tarjetaSanidad(c,
         `<div style="font-size:12px;color:var(--texto-suave);margin-top:2px;">Próximo: ${fechaISOaDisplay(c.proximo)}</div>
-         <button class="btn btn-secundario" data-proximo-confirmar="${c.id}" style="margin-top:6px;font-size:12px;padding:4px 10px;">✓ Hecho, ya se trató</button>`
+         <button class="btn btn-secundario" data-proximo-confirmar="${esc(c.id)}" style="margin-top:6px;font-size:12px;padding:4px 10px;">✓ Hecho, ya se trató</button>`
       )).join('');
   html += seccionDetails('🔁 Próximos tratamientos (garrapaticidas)', proximos.length, cuerpoProximos);
 
@@ -5616,7 +5673,7 @@ async function cargarCatalogoProductos(){
         res = await client.from('productos_catalogo').select('producto,categoria,dias_retiro,valor_dosis_ml').order('producto');
       }
       if(!res.error){
-        const filas = res.data||[];
+        const filas = limpiarTextoRemoto(res.data||[]);
         catalogoProductos = filas.map(r=>r.producto).filter(Boolean);
         catalogoDatos = {};
         filas.forEach(r=>{ if(r.producto) catalogoDatos[r.producto] = {categoria: r.categoria, dias_retiro: r.dias_retiro, dias_residual: r.dias_residual!=null ? r.dias_residual : null, valor_dosis_ml: r.valor_dosis_ml}; });
@@ -5633,7 +5690,7 @@ async function cargarCatalogoProductos(){
 }
 function opcionesProductos(){
   let html = '<option value="">Elegir…</option>';
-  html += catalogoProductos.map(p=>`<option value="${p}">${p}</option>`).join('');
+  html += catalogoProductos.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
   html += '<option value="__otro__">Otro (escribir)…</option>';
   return html;
 }
@@ -5795,7 +5852,7 @@ async function buscarCaravana(id8){
     const res = await client.from(TABLA_CARAVANAS).select('*')
       .eq('establecimiento', ESTABLECIMIENTO).eq('id8', id8).limit(1);
     if(res.error) return {error: res.error.message || 'error de consulta'};
-    return {animal: (res.data && res.data[0]) || null};
+    return {animal: limpiarTextoRemoto((res.data && res.data[0]) || null)};
   }catch(e){
     return {error:'sin señal'};
   }
@@ -5834,10 +5891,10 @@ function fichaCaravanaHTML(a){
 
   return `<div class="modal-info" style="border-left:4px solid ${color};padding-left:10px;margin:10px 0;">
       <div style="font-weight:700;color:${color};font-size:15px;">${estado}</div>
-      <div>${detalle}</div>
+      <div>${esc(detalle)}</div>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${v}</td></tr>`).join('')}
+      ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${esc(v)}</td></tr>`).join('')}
     </table>`;
 }
 
@@ -5848,7 +5905,7 @@ async function ejecutarBusquedaCaravana(){
   caja.innerHTML = '<p class="modal-info">Buscando…</p>';
   const r = await buscarCaravana(id8);
   if(r.error){
-    caja.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">No se pudo consultar (${r.error}). Necesitás señal para buscar una caravana.</p>`;
+    caja.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">No se pudo consultar (${esc(r.error)}). Necesitás señal para buscar una caravana.</p>`;
     return;
   }
   if(!r.animal){
@@ -5903,8 +5960,8 @@ scc.addEventListener('change', async ()=>{
     const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
                     a.potrero && ('potrero ' + a.potrero)].filter(Boolean);
     const aviso = a.estado_carencia === 'NO APTO'
-      ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${a.fecha_apto||'?'}</b>` : '';
-    quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${id8}</b>: ${partes.join(', ')}${aviso}</p>`;
+      ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${esc(a.fecha_apto||'?')}</b>` : '';
+    quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${esc(id8)}</b>: ${esc(partes.join(', '))}${aviso}</p>`;
   }
 });
 /* Confirmación explícita de "no tiene caravana": deja constancia
@@ -5945,13 +6002,13 @@ function renderLluviasLista(){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin lluvias registradas todavía.</p>'
     : lista.map(l=>`
       <div class="potrero-card">
-        <div class="nombre">${l.fecha}
+        <div class="nombre">${esc(l.fecha)}
           <span class="hist-acciones">
-            <button class="hist-btn" data-lluvia-editar="${l.id}" title="Editar">✏️</button>
-            <button class="hist-btn" data-lluvia-borrar="${l.id}" title="Borrar">🗑</button>
+            <button class="hist-btn" data-lluvia-editar="${esc(l.id)}" title="Editar">✏️</button>
+            <button class="hist-btn" data-lluvia-borrar="${esc(l.id)}" title="Borrar">🗑</button>
           </span>
         </div>
-        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${l.mm} mm${l.usuario?(' — '+l.usuario):''}</div>
+        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(l.mm)} mm${l.usuario?(' — '+esc(l.usuario)):''}</div>
       </div>`).join('');
   cont.querySelectorAll('[data-lluvia-editar]').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarLluvia(btn.dataset.lluviaEditar); });
@@ -6003,8 +6060,8 @@ function renderEventosClimaLista(){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin otros eventos registrados todavía.</p>'
     : lista.map(ev=>`
       <div class="potrero-card">
-        <div class="nombre">${ev.fecha} — ${ev.tipo}</div>
-        ${ev.obs || ev.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${ev.obs||''}${ev.obs && ev.usuario?' — ':''}${ev.usuario||''}</div>` : ''}
+        <div class="nombre">${esc(ev.fecha)} — ${esc(ev.tipo)}</div>
+        ${ev.obs || ev.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(ev.obs||'')}${ev.obs && ev.usuario?' — ':''}${esc(ev.usuario||'')}</div>` : ''}
       </div>`).join('');
 }
 /* Abortos -- mismo criterio que "evento_clima": del establecimiento
@@ -6019,8 +6076,8 @@ function renderAbortosLista(){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin abortos registrados todavía.</p>'
     : lista.map(ab=>`
       <div class="potrero-card">
-        <div class="nombre">${ab.fecha} — ${(ab.cantidad||1) > 1 ? (ab.cantidad+' animales · ') : ''}${MOTIVO_TXT[ab.motivo]||ab.motivo}</div>
-        ${ab.obs || ab.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${ab.obs||''}${ab.obs && ab.usuario?' — ':''}${ab.usuario||''}</div>` : ''}
+        <div class="nombre">${esc(ab.fecha)} — ${(ab.cantidad||1) > 1 ? (esc(ab.cantidad)+' animales · ') : ''}${esc(MOTIVO_TXT[ab.motivo]||ab.motivo)}</div>
+        ${ab.obs || ab.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(ab.obs||'')}${ab.obs && ab.usuario?' — ':''}${esc(ab.usuario||'')}</div>` : ''}
       </div>`).join('');
 }
 /* Señalada -- mismo criterio que Abortos: del establecimiento entero, sin
@@ -6038,13 +6095,13 @@ function renderSenaladasLista(){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin señaladas registradas todavía.</p>'
     : lista.map(sn=>`
       <div class="potrero-card">
-        <div class="nombre">${sn.fecha} — ${sn.machos||0} macho / ${sn.hembras||0} hembra
+        <div class="nombre">${esc(sn.fecha)} — ${esc(sn.machos||0)} macho / ${esc(sn.hembras||0)} hembra
           <span class="hist-acciones">
-            <button class="hist-btn" data-senalada-editar="${sn.id}" title="Editar">✏️</button>
-            <button class="hist-btn" data-senalada-borrar="${sn.id}" title="Borrar">🗑</button>
+            <button class="hist-btn" data-senalada-editar="${esc(sn.id)}" title="Editar">✏️</button>
+            <button class="hist-btn" data-senalada-borrar="${esc(sn.id)}" title="Borrar">🗑</button>
           </span>
         </div>
-        ${sn.obs || sn.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${sn.obs||''}${sn.obs && sn.usuario?' — ':''}${sn.usuario||''}</div>` : ''}
+        ${sn.obs || sn.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(sn.obs||'')}${sn.obs && sn.usuario?' — ':''}${esc(sn.usuario||'')}</div>` : ''}
       </div>`).join('');
   cont.querySelectorAll('[data-senalada-editar]').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarSenalada(btn.dataset.senaladaEditar); });
@@ -6511,7 +6568,7 @@ function parseComandoVoz(textoOriginal){
   return { accion, categoria, dueno, cantidad, origen, destino, precio };
 }
 function opcionesPotrerosTodos(seleccionado){
-  return '<option value="">—</option>' + POTREROS_GEO.map(p=>p.nombre).slice().sort().map(n=>`<option value="${n}" ${n===seleccionado?'selected':''}>${n}</option>`).join('');
+  return '<option value="">—</option>' + POTREROS_GEO.map(p=>p.nombre).slice().sort().map(n=>`<option value="${esc(n)}" ${n===seleccionado?'selected':''}>${esc(n)}</option>`).join('');
 }
 function renderInterpretacionVoz(datos){
   const cont = document.getElementById('voz-interpretado');
