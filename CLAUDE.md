@@ -392,7 +392,7 @@ no implícito.
 
 | Tabla | SELECT | INSERT | UPDATE | DELETE |
 |---|---|---|---|---|
-| `eventos_sync` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL", sin distinguir comando)* |
+| `eventos_sync` | ✅ | ✅ | ❌ | ❌ *(desde el 30/9/2026: dos políticas, `eventos_sync_select` y `eventos_sync_insert`, solo para `anon`; antes una sola "ALL". Es un registro de solo-agregar: "borrar"/"editar" un movimiento inserta un evento `correccion`, nunca hace DELETE/UPDATE)* |
 | `productos_catalogo` | ✅ | ✅ | ❌ | ✅ |
 | `sanidad_carga` (La Vuelta) | ✅ | ✅ | ✅ | ❌ |
 | `sanidad_carga_maria_laura` | ✅ | ✅ | ❌ | ❌ |
@@ -415,6 +415,17 @@ ahí la política "ALL" en vez del patrón sin `UPDATE` de `productos_catalogo`
 `CONFIG.stockSupabase`**: solo `true` en La Vuelta por ahora; en María
 Laura/Pone Chico el código está pero es un no-op hasta que se confirme el
 funcionamiento real y se les active el flag.
+
+**Auditoría de seguridad (30/9/2026)** — resumen de lo hecho y lo pendiente:
+`eventos_sync` ya no permite UPDATE/DELETE a `anon` (verificado en Supabase:
+antes un DELETE de `anon` borraba 1 fila, después 0; `count(*)` sin cambios).
+La app no hace ni DELETE ni UPDATE sobre esa tabla (0 usos en el template), así
+que no hubo que tocar código. **Sigue abierto** el resto de la tabla de arriba
+(lectura/escritura pública en las demás tablas, y `animales_caravana` legible
+completa con la clave pública). Los datos que llegan de Supabase y de KML/GPX
+se tratan como no confiables: `esc()` al pintar y `limpiarTextoRemoto()` al
+entrar (ver `tests/probar_seguridad_remoto.js`). Backups: `scripts/backup/`
+(el plan de Supabase es gratuito, sin backups automáticos).
 
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del
