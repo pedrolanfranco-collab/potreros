@@ -21,3 +21,6 @@ tenedores_detectados.csv
 padron_baston.csv
 scripts/snig/*.xls
 scripts/snig/*.xlsx
+
+# config local de las herramientas (servidor de preview, permisos): no es del proyecto
+.claude/

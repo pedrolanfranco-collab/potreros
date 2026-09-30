@@ -4575,7 +4575,26 @@ function fichaCaravanaHTML(a){
   ].filter(([,v]) => v !== null && v !== undefined && v !== '');
 
   let estado, color, detalle;
-  if(a.estado_carencia === 'NO APTO'){
+  /* 30/9/2026: el animal que ya no está en el campo se muestra IGUAL, y el
+     cartel de que se fue va primero. Si se vendió o se faenó, su período de
+     espera no le importa a nadie: lo que hay que saber, parado en la manga con
+     esa caravana en la mano, es que ese animal no debería estar ahí. Por eso
+     esta rama corta antes que las de carencia y no se suma abajo. */
+  if(a.estado_vida && a.estado_vida !== 'ACTIVO'){
+    const probable = a.estado_vida === 'BAJA PROBABLE';
+    color = '#5a6572';
+    estado = '📤 YA NO ESTÁ EN EL CAMPO';
+    if(a.baja_motivo === 'faenado' || a.baja_motivo === 'muerto'){
+      detalle = a.baja_motivo === 'faenado'
+        ? 'El SNIG lo declara faenado.'
+        : 'El SNIG lo declara muerto.';
+    }else{
+      detalle = 'Salió del campo'
+        + (a.baja_fecha ? ` el ${a.baja_fecha}` : '')
+        + (a.baja_guia ? `, con la guía ${a.baja_guia}` : '') + '.';
+    }
+    if(probable) detalle += ' Falta el export del SNIG de ese dueño para confirmarlo, así que tomalo como probable.';
+  }else if(a.estado_carencia === 'NO APTO'){
     color = 'var(--rojo-hacienda)';
     estado = '⛔ NO APTO';
     detalle = `No puede ir a faena hasta el ${a.fecha_apto||'?'}`

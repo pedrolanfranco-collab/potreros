@@ -88,6 +88,30 @@ const PADRON = [
     estado_carencia:'CARENCIA DESCONOCIDA', fecha_apto:null, dias_restantes:null,
     producto_carencia:'G0', proximo_tratamiento:null,
     ultimo_peso:null, peso_fecha:null, ultima_lectura:'2026-04-01' },
+  // 30/9/2026: el que ya no esta en el campo. Sigue publicado a proposito: si
+  // alguien escanea esa caravana en la manga, que le diga que se vendio es
+  // mucho mas util que un "no encontrado". Ojo con el estado_carencia: quedo
+  // APTO, y el cartel de que se fue TIENE que ganarle.
+  { establecimiento:'la_vuelta', id8:'50319677', ide:'858000050319677', sexo:'MACHO',
+    categoria:'Novillo 2-3', gen:'2', propietario:'PEDRO', potrero:'8',
+    estado_carencia:'APTO', fecha_apto:null, dias_restantes:null,
+    producto_carencia:null, proximo_tratamiento:null,
+    ultimo_peso:null, peso_fecha:null, ultima_lectura:'2025-07-31',
+    estado_vida:'BAJA', baja_motivo:'se fue', baja_fecha:'2025-07-31',
+    baja_guia:'D373808' },
+  { establecimiento:'la_vuelta', id8:'43497476', ide:'858000043497476', sexo:'MACHO',
+    categoria:'Novillo 2-3', gen:'2', propietario:'SILVIA', potrero:'21',
+    estado_carencia:'APTO', fecha_apto:null, dias_restantes:null,
+    producto_carencia:null, proximo_tratamiento:null,
+    ultimo_peso:null, peso_fecha:null, ultima_lectura:'2026-01-10',
+    estado_vida:'BAJA', baja_motivo:'faenado', baja_fecha:null, baja_guia:null },
+  { establecimiento:'la_vuelta', id8:'62192088', ide:'858000062192088', sexo:'HEMBRA',
+    categoria:'Vaquillona', gen:'5', propietario:'PERICO', potrero:'3',
+    estado_carencia:'APTO', fecha_apto:null, dias_restantes:null,
+    producto_carencia:null, proximo_tratamiento:null,
+    ultimo_peso:null, peso_fecha:null, ultima_lectura:'2026-08-10',
+    estado_vida:'BAJA PROBABLE', baja_motivo:'se fue', baja_fecha:'2026-08-10',
+    baja_guia:'D975720' },
 ];
 
 // animales_caravana esta partido por establecimiento y buscarCaravana() filtra
@@ -215,6 +239,33 @@ async function probarArchivo(archivo){
     chequear('NO APTO: muestra hasta cuando', /2026-12-31/.test(txt));
     chequear('NO APTO: muestra los dias que faltan', /98/.test(txt));
     chequear('NO APTO: nombra el producto', /EON/.test(txt));
+
+    // ---------- buscar: animal que ya no esta en el campo ----------
+    // Los tres son APTO en su carencia: si el cartel de la carencia le ganara
+    // al de la baja, el que esta en la manga leeria "APTO" de un animal que se
+    // vendio hace un ano.
+    doc.getElementById('cv-numero').value = '50319677';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('baja: dice que ya no esta en el campo', /YA NO ESTÁ EN EL CAMPO/.test(txt));
+    chequear('baja: muestra la fecha de salida', /2025-07-31/.test(txt));
+    chequear('baja: muestra la guia', /D373808/.test(txt));
+    chequear('baja: el cartel de la baja le gana al de la carencia',
+             !/✅ APTO/.test(txt));
+
+    doc.getElementById('cv-numero').value = '43497476';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('faenado: lo dice con esa palabra', /faenado/i.test(txt));
+    chequear('faenado: no inventa una fecha que no tiene', !/null/.test(txt));
+
+    doc.getElementById('cv-numero').value = '62192088';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('baja probable: avisa que falta confirmarlo', /probable/i.test(txt));
 
     // ---------- buscar: carencia desconocida ----------
     doc.getElementById('cv-numero').value = '44444444';
