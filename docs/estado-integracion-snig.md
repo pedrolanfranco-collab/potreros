@@ -34,23 +34,27 @@ sin respuesta medida.
   - 746 animales, **todos vivos**, todos con 8 dígitos, **sin ceros
     perdidos y sin repetidos**. La clave `(establecimiento, id8)` sirve.
   - 21 con `Errores: Si`, 5 `No Trazado`, 16 sin sexo o sin edad.
-  - Los 746 bajo un solo código: `130563651`.
+  - Los 746 bajo un solo código: `[cód. La Vuelta]`.
 - No trae categoría: se deriva de `Sexo` + `Edad(meses)`. El SNIG no dice
   si un macho está castrado, así que **todos los machos de +3 años caen
   en "Novillos +3 años"** y los toros hay que descontarlos a mano.
 
 ### Los códigos (tenedores)
 
+> Los códigos reales no se versionan (este repo es público): están en
+> `scripts/snig/tenedores.csv`, que queda solo en la PC. Acá se nombran por
+> etiqueta, `[cód. …]`.
+
 Formato: **numérico de 9 dígitos = tiene campo propio**; **prefijo FF =
 no tiene campo**.
 
 | código | quién | rol | export |
 |---|---|---|---|
-| `130563651` | La Vuelta (campo) / firma **Pedro Lanfranco** | tenedor y propietario | sí, el que ya bajamos |
-| `FF0567061` | **Silvia Dutra** | propietaria **y tenedora**, sin campo | hay que bajarlo aparte |
-| `FF0133347` | **Fideicomiso** | confirmar si es como Silvia | **sin acceso** |
-| `130718973` | **Walter Lanfranco** | campo propio, ganado a pastoreo | **sin acceso**; se conocen sus 5 toros |
-| `111000344` | María Laura | — | transitorio, confirmar |
+| `[cód. La Vuelta]` | La Vuelta (campo) / firma **Pedro Lanfranco** | tenedor y propietario | sí, el que ya bajamos |
+| `[cód. Silvia]` | **Silvia Dutra** | propietaria **y tenedora**, sin campo | hay que bajarlo aparte |
+| `[cód. Fideicomiso]` | **Fideicomiso** | confirmar si es como Silvia | **sin acceso** |
+| `[cód. Walter]` | **Walter Lanfranco** | campo propio, ganado a pastoreo | **sin acceso**; se conocen sus 5 toros |
+| `[cód. María Laura]` | María Laura | — | transitorio, confirmar |
 | *(vacío)* | Pone Chico | — | sin DICOSE todavía |
 
 **Consecuencia clave: los 746 NO son el stock de La Vuelta, son el stock
@@ -148,7 +152,7 @@ falta su export, nada más.
 - [ ] El **"📊 Stock total"** de la app, para ver contra qué comparar.
 
 **Datos que faltan conseguir:**
-- [ ] Export del SNIG de `FF0567061` (Silvia) — se entra al SNIG con **ese
+- [ ] Export del SNIG de `[cód. Silvia]` (Silvia) — se entra al SNIG con **ese
       DICOSE y su contraseña**, no con el de Pedro.
 - [ ] Las caravanas de los **5 toros de Walter** → van a un
       `padron_manual.csv`.
@@ -183,8 +187,8 @@ falta su export, nada más.
   del bastón es referencia ("dónde lo vi la última vez"), no stock.
 - **El peso va a `animales_caravana.ultimo_peso`**, no a `eventos_sync`:
   una pesada no cambia el stock y ensuciaría el replay.
-- **Los códigos se comparan sin distinguir mayúsculas.** `ff0567061` y
-  `FF0567061` son el mismo; el SNIG puede mandarlos de las dos formas.
+- **Los códigos se comparan sin distinguir mayúsculas.** `ff…` y
+  `FF…` son el mismo; el SNIG puede mandarlos de las dos formas.
 
 ---
 

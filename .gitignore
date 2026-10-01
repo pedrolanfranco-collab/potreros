@@ -24,3 +24,6 @@ scripts/snig/*.xlsx
 
 # config local de las herramientas (servidor de preview, permisos): no es del proyecto
 .claude/
+
+# Config local de Claude Code (permisos y rutas de esta PC)
+.claude/
