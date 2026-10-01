@@ -71,6 +71,20 @@ function stubLeaflet(win){
   win.JSZip = function(){ return { file(){}, generateAsync(){ return Promise.resolve(new win.Blob([])); } }; };
 }
 
+/* Las fechas de carencia van RELATIVAS A HOY (1/10/2026). Desde que los dias
+   que faltan se cuentan en el celular y no se publican (ver carenciaHoy() en
+   el template), una fecha fija haria que el numero esperado cambiara cada dia
+   y la prueba se rompiera sola manana. Con esto, "fecha_apto a 40 dias" tiene
+   que dar 40 siempre.
+   Se arma con los componentes LOCALES, igual que diasHasta(): con
+   toISOString() (UTC) correrias un dia cada tarde en Uruguay. */
+function masDias(n){
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  const p = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
 // Tres animales que cubren los tres estados posibles.
 const PADRON = [
   { establecimiento:'la_vuelta', id8:'57179343', ide:'858000057179343', sexo:'HEMBRA',
@@ -78,9 +92,13 @@ const PADRON = [
     estado_carencia:'APTO', fecha_apto:null, dias_restantes:null,
     producto_carencia:null, proximo_tratamiento:'2026-10-08',
     ultimo_peso:292, peso_fecha:'2025-11-13', ultima_lectura:'2026-08-24' },
+  // El dias_restantes:98 esta puesto A PROPOSITO y esta MAL: es el valor viejo
+  // que quedo en la columna de Supabase de cuando se publicaba (1/10/2026). La
+  // ficha tiene que decir 40, contados contra la fecha de hoy del celular, y
+  // no 98. Si alguna vez vuelve a decir 98, el calculo se fue de nuevo a la PC.
   { establecimiento:'la_vuelta', id8:'37620042', ide:'858000037620042', sexo:'MACHO',
     categoria:'Novillito 1-2', gen:'4', propietario:'SILVIA', potrero:'21',
-    estado_carencia:'NO APTO', fecha_apto:'2026-12-31', dias_restantes:98,
+    estado_carencia:'NO APTO', fecha_apto:masDias(40), dias_restantes:98,
     producto_carencia:'EON', proximo_tratamiento:'2026-11-02',
     ultimo_peso:340, peso_fecha:'2026-05-10', ultima_lectura:'2026-09-03' },
   { establecimiento:'la_vuelta', id8:'44444444', ide:'858000044444444', sexo:'HEMBRA',
@@ -88,6 +106,39 @@ const PADRON = [
     estado_carencia:'CARENCIA DESCONOCIDA', fecha_apto:null, dias_restantes:null,
     producto_carencia:'G0', proximo_tratamiento:null,
     ultimo_peso:null, peso_fecha:null, ultima_lectura:'2026-04-01' },
+  /* 1/10/2026, los tres casos que aparecen cuando el padron se publica una vez
+     al dia y el plazo sigue corriendo solo. El padron los trae NO APTO porque
+     eso era cierto la ultima vez que corrio la PC. */
+  // Plazo vencido entre corridas: tiene que decir APTO. Dejarlo en NO APTO
+  // frena un embarque por nada.
+  { establecimiento:'la_vuelta', id8:'11112222', ide:'858000011112222', sexo:'MACHO',
+    categoria:'Novillo 2-3', gen:'3', propietario:'PEDRO', potrero:'7',
+    estado_carencia:'NO APTO', fecha_apto:masDias(-3),
+    producto_carencia:'CYDECTIN', proximo_tratamiento:null,
+    ultimo_peso:null, peso_fecha:null, ultima_lectura:'2026-09-20' },
+  // El borde: el dia de fecha_apto el animal YA esta apto, igual que decide
+  // animales.py (fecha_apto > hoy -> NO APTO; o sea igual a hoy es apto).
+  { establecimiento:'la_vuelta', id8:'33334444', ide:'858000033334444', sexo:'HEMBRA',
+    categoria:'Vaca', gen:'2', propietario:'PEDRO', potrero:'7',
+    estado_carencia:'NO APTO', fecha_apto:masDias(0),
+    producto_carencia:'EON', proximo_tratamiento:null,
+    ultimo_peso:null, peso_fecha:null, ultima_lectura:'2026-09-20' },
+  // Un dia: "falta 1 dia", no "faltan 1 dias".
+  { establecimiento:'la_vuelta', id8:'55556666', ide:'858000055556666', sexo:'HEMBRA',
+    categoria:'Vaquillona', gen:'4', propietario:'MILI', potrero:'7',
+    estado_carencia:'NO APTO', fecha_apto:masDias(1),
+    producto_carencia:'EON', proximo_tratamiento:null,
+    ultimo_peso:null, peso_fecha:null, ultima_lectura:'2026-09-20' },
+  /* Y el que NO se puede ascender nunca: carencia desconocida CON una
+     fecha_apto vieja de otro producto (pasa de verdad -- animales.py no la
+     limpia cuando un segundo producto sin plazo lo deja en duda). Que la fecha
+     este cumplida no dice nada del producto sin plazo. Es el mismo criterio
+     que plazos_propuestos.csv: sin plazo confirmado, nunca apto. */
+  { establecimiento:'la_vuelta', id8:'77778888', ide:'858000077778888', sexo:'MACHO',
+    categoria:'Toro', gen:'1', propietario:'PEDRO', potrero:'7',
+    estado_carencia:'CARENCIA DESCONOCIDA', fecha_apto:masDias(-200),
+    producto_carencia:'BENZOATO HC', proximo_tratamiento:null,
+    ultimo_peso:null, peso_fecha:null, ultima_lectura:'2026-09-20' },
   // 30/9/2026: el que ya no esta en el campo. Sigue publicado a proposito: si
   // alguien escanea esa caravana en la manga, que le diga que se vendio es
   // mucho mas util que un "no encontrado". Ojo con el estado_carencia: quedo
@@ -236,9 +287,45 @@ async function probarArchivo(archivo){
     await esperar(40);
     txt = doc.getElementById('cv-resultado').textContent;
     chequear('NO APTO: lo dice', /NO APTO/.test(txt));
-    chequear('NO APTO: muestra hasta cuando', /2026-12-31/.test(txt));
-    chequear('NO APTO: muestra los dias que faltan', /98/.test(txt));
+    chequear('NO APTO: muestra hasta cuando', txt.includes(masDias(40)));
+    chequear('NO APTO: cuenta los dias que faltan con la fecha de hoy',
+             /faltan 40 días/.test(txt), txt);
+    chequear('NO APTO: ignora el dias_restantes viejo de la tabla',
+             !/98/.test(txt), txt);
     chequear('NO APTO: nombra el producto', /EON/.test(txt));
+
+    // ---------- el plazo vencio entre dos corridas de la PC ----------
+    doc.getElementById('cv-numero').value = '11112222';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('plazo vencido: pasa a APTO aunque el padron diga NO APTO',
+             /✅ APTO/.test(txt) && !/⛔/.test(txt), txt);
+    chequear('plazo vencido: dice cuando termino y por que producto',
+             txt.includes(masDias(-3)) && /CYDECTIN/.test(txt), txt);
+    chequear('plazo vencido: no dice "faltan -3 dias"', !/faltan -/.test(txt), txt);
+
+    doc.getElementById('cv-numero').value = '33334444';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('el dia mismo de fecha_apto ya esta apto (igual que animales.py)',
+             /✅ APTO/.test(txt), txt);
+
+    doc.getElementById('cv-numero').value = '55556666';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('un solo dia se dice en singular',
+             /falta 1 día/.test(txt) && !/faltan 1 día/.test(txt), txt);
+
+    // El que no se asciende NUNCA por mas que pase el tiempo.
+    doc.getElementById('cv-numero').value = '77778888';
+    doc.getElementById('cv-buscar').dispatchEvent(new win.Event('click', {bubbles:true}));
+    await esperar(40);
+    txt = doc.getElementById('cv-resultado').textContent;
+    chequear('sin plazo confirmado, el tiempo NO lo vuelve apto',
+             /SIN CONFIRMAR/.test(txt) && !/✅/.test(txt), txt);
 
     // ---------- buscar: animal que ya no esta en el campo ----------
     // Los tres son APTO en su carencia: si el cartel de la carencia le ganara

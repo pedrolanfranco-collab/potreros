@@ -2265,6 +2265,23 @@ function diasDesde(fechaISO){
   const desde = new Date(fechaISO+'T00:00:00');
   return Math.round((hoy - desde) / 86400000);
 }
+/* Cuántos días faltan para una fecha (negativo si ya pasó).
+   NO es -diasDesde(): esa arranca de fechaISOHoy(), que es toISOString(), o
+   sea UTC. En Uruguay (UTC-3) a partir de las 21:00 locales eso ya devuelve
+   el día siguiente, y un día de más contado de noche puede dar por terminado
+   un período de espera que todavía corre. Acá el "hoy" se arma con los
+   componentes LOCALES de la fecha, que es el día que ve el que está en la
+   manga. */
+function diasHasta(fechaISO){
+  if(!fechaISO) return null;
+  const h = new Date();
+  const hoy = new Date(h.getFullYear(), h.getMonth(), h.getDate());
+  const p = String(fechaISO).slice(0,10).split('-');
+  if(p.length !== 3) return null;
+  const hasta = new Date(+p[0], +p[1]-1, +p[2]);
+  if(isNaN(hasta)) return null;
+  return Math.round((hasta - hoy) / 86400000);
+}
 function fechaISOaDisplay(fechaISO){
   if(!fechaISO) return '';
   const [y,m,d] = fechaISO.split('-');
@@ -6290,6 +6307,32 @@ async function buscarCaravana(id8){
   }
 }
 
+/* La carencia, resuelta con la fecha de HOY del celular (1/10/2026).
+   El padrón lo publica la PC una vez al día (publicar_animales.py), y hasta
+   hoy publicaba también los días que faltaban. Ese número baja uno por día
+   solo: aparecía como "cambio" en las ~750 fichas NO APTAS en cada corrida,
+   tapando los cambios de verdad en el resumen, y si la corrida no se hacía
+   quedaba viejo — "faltan 12 días" leído tres días después son 9. La
+   fecha_apto, en cambio, es el dato firme: sale del plazo del producto y no
+   se mueve. Así que se publica esa y la cuenta se hace acá.
+
+   Lo mismo con el estado: un animal cuyo plazo venció ayer seguía diciendo
+   NO APTO hasta que corriera la PC, y eso frena un embarque por nada.
+
+   OJO, y es el único sentido permitido: esto solo puede volver APTO a un
+   NO APTO cuyo plazo YA VENCIÓ, que es aritmética sobre un plazo confirmado
+   (exactamente lo que va a decir la próxima corrida). CARENCIA DESCONOCIDA no
+   se toca nunca — un producto sin plazo confirmado NO se vuelve apto porque
+   pase el tiempo, eso lo decide la base con la cota de la tabla de plazos. */
+function carenciaHoy(a){
+  if(a.estado_carencia !== 'NO APTO') return {estado: a.estado_carencia, faltan: null};
+  const faltan = diasHasta(a.fecha_apto);
+  // Sin fecha_apto no hay con qué contar: queda NO APTO, que es lo restrictivo.
+  if(faltan == null) return {estado:'NO APTO', faltan: null};
+  if(faltan <= 0) return {estado:'APTO', faltan: null, vencio: a.fecha_apto};
+  return {estado:'NO APTO', faltan};
+}
+
 function fichaCaravanaHTML(a){
   const filas = [
     ['Categoría', a.categoria],
@@ -6303,6 +6346,7 @@ function fichaCaravanaHTML(a){
   ].filter(([,v]) => v !== null && v !== undefined && v !== '');
 
   let estado, color, detalle;
+  const car = carenciaHoy(a);
   /* 30/9/2026: el animal que ya no está en el campo se muestra IGUAL, y el
      cartel de que se fue va primero. Si se vendió o se faenó, su período de
      espera no le importa a nadie: lo que hay que saber, parado en la manga con
@@ -6322,13 +6366,14 @@ function fichaCaravanaHTML(a){
         + (a.baja_guia ? `, con la guía ${a.baja_guia}` : '') + '.';
     }
     if(probable) detalle += ' Falta el export del SNIG de ese dueño para confirmarlo, así que tomalo como probable.';
-  }else if(a.estado_carencia === 'NO APTO'){
+  }else if(car.estado === 'NO APTO'){
     color = 'var(--rojo-hacienda)';
     estado = '⛔ NO APTO';
+    const cuantos = car.faltan === 1 ? 'falta 1 día' : `faltan ${car.faltan} días`;
     detalle = `No puede ir a faena hasta el ${a.fecha_apto||'?'}`
-      + (a.dias_restantes != null ? ` — faltan ${a.dias_restantes} días` : '')
+      + (car.faltan != null ? ` — ${cuantos}` : '')
       + (a.producto_carencia ? `, por ${a.producto_carencia}` : '');
-  }else if(a.estado_carencia === 'CARENCIA DESCONOCIDA'){
+  }else if(car.estado === 'CARENCIA DESCONOCIDA'){
     color = '#b7791f';
     estado = '⚠️ SIN CONFIRMAR';
     detalle = 'No se sabe si está apto: '
@@ -6337,7 +6382,12 @@ function fichaCaravanaHTML(a){
   }else{
     color = '#1e7b34';
     estado = '✅ APTO';
-    detalle = 'Sin período de espera pendiente.';
+    /* car.vencio solo viene cuando el plazo se cumplió DESPUÉS de la última
+       corrida de la PC. Decir cuál era y cuándo terminó es lo que permite
+       creerle al cartel verde a un animal que la ficha trae como NO APTO. */
+    detalle = car.vencio
+      ? `El período de espera${a.producto_carencia ? ` por ${a.producto_carencia}` : ''} terminó el ${car.vencio}.`
+      : 'Sin período de espera pendiente.';
   }
 
   return `<div class="modal-info" style="border-left:4px solid ${color};padding-left:10px;margin:10px 0;">
@@ -6410,7 +6460,9 @@ scc.addEventListener('change', async ()=>{
     const a = r.animal;
     const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
                     a.potrero && ('potrero ' + a.potrero)].filter(Boolean);
-    const aviso = a.estado_carencia === 'NO APTO'
+    // Por carenciaHoy() y no por a.estado_carencia: si el plazo venció entre
+    // la última corrida de la PC y hoy, el padrón todavía lo trae NO APTO.
+    const aviso = carenciaHoy(a).estado === 'NO APTO'
       ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${esc(a.fecha_apto||'?')}</b>` : '';
     quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${esc(id8)}</b>: ${esc(partes.join(', '))}${aviso}</p>`;
   }
