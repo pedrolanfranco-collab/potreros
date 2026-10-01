@@ -415,6 +415,35 @@ async function probarArchivo(archivo){
     // Solo La Vuelta tiene ese animal en el padron de prueba.
     chequear('al tipear la caravana dice de quien es', /Novillito 1-2/.test(quien));
     chequear('y avisa si ese animal esta en carencia', /NO APTO/.test(quien));
+
+    /* 1/10/2026: el animal dado de baja avisa ACA tambien, no solo en la ficha
+       del buscador. Cargarle un tratamiento a una caravana que se vendio es,
+       casi siempre, un numero mal tipeado -- y si no lo dice acá, el que está
+       en la manga no lo ve nunca, porque este form no abre la ficha. */
+    const leerQuien = async (car) => {
+      const c = doc.getElementById('sc-caravana');
+      c.value = car;
+      c.dispatchEvent(new win.Event('change', {bubbles:true}));
+      await esperar(40);
+      return doc.getElementById('sc-caravana-quien').textContent;
+    };
+    let q = await leerQuien('50319677');
+    chequear('"quien es": avisa que ese animal ya no esta en el campo',
+             /YA NO ESTÁ EN EL CAMPO/.test(q), q);
+    chequear('"quien es": dice cuando salio y con que guia',
+             /2025-07-31/.test(q) && /D373808/.test(q), q);
+    // Ese animal quedo APTO en su carencia: si el ✓ verde le ganara, el aviso
+    // de la baja se perderia justo donde mas hace falta.
+    chequear('"quien es": el aviso de la baja le gana al de la carencia',
+             !/✓/.test(q), q);
+    chequear('"quien es": avisar no impide guardar',
+             !doc.getElementById('sc-guardar').disabled);
+    q = await leerQuien('43497476');
+    chequear('"quien es": faenado lo dice con esa palabra', /faenado/i.test(q), q);
+    chequear('"quien es": faenado no inventa fecha ni guia',
+             !/null|undefined/.test(q), q);
+    q = await leerQuien('62192088');
+    chequear('"quien es": la baja probable se dice probable', /probable/i.test(q), q);
   } else {
     // Maria Laura/Pone Chico no tienen padron propio -- "quien es" no
     // encuentra nada, pero eso no impide cargar la caravana (mas abajo).

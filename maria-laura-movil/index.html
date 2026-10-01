@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="María Laura">
 <meta name="theme-color" content="#7a5236">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha384-c6Rcwz4e4CITMbu/NBmnNS8yN2sC3cUElMEMfP3vqqKFp7GOYaaBBCqmaWBjmkjb" crossorigin="anonymous" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -446,7 +446,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.04</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.06</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -758,11 +758,11 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha384-NElt3Op+9NBMCYaef5HxeJmU4Xeard/Lku8ek6hoPTvYkQPh3zLIrJP7KiRocsxO" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.04","versionMovil":"3.04","simpleHabilitado":true,"versionMovilSimple":"1.18","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.06","versionMovil":"3.06","simpleHabilitado":true,"versionMovilSimple":"1.20","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -4942,6 +4942,24 @@ function carenciaHoy(a){
   return {estado:'NO APTO', faltan};
 }
 
+/* El motivo de una baja en una frase corta, para la línea de "quién es" del
+   formulario de tratamiento, donde no hay lugar para oraciones enteras.
+   fichaCaravanaHTML() dice lo mismo abajo en prosa larga, a propósito: son dos
+   anchos distintos. Si cambia el criterio de una (un baja_motivo nuevo, por
+   ejemplo), mirar la otra. */
+function resumenBaja(a){
+  let t;
+  if(a.baja_motivo === 'faenado' || a.baja_motivo === 'muerto'){
+    t = 'el SNIG lo declara ' + a.baja_motivo;
+  }else{
+    t = 'salió del campo'
+      + (a.baja_fecha ? ' el ' + a.baja_fecha : '')
+      + (a.baja_guia ? ', guía ' + a.baja_guia : '');
+  }
+  if(a.estado_vida === 'BAJA PROBABLE') t += ' — probable, falta el export del SNIG';
+  return t;
+}
+
 function fichaCaravanaHTML(a){
   const filas = [
     ['Categoría', a.categoria],
@@ -5069,6 +5087,20 @@ scc.addEventListener('change', async ()=>{
     const a = r.animal;
     const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
                     a.potrero && ('potrero ' + a.potrero)].filter(Boolean);
+    /* 1/10/2026: la baja va PRIMERO y le gana a la carencia, igual que en la
+       ficha del buscador. Si el SNIG dice que ese animal no está, el período
+       de espera no es lo que hay que mirar: lo que importa es que se le está
+       por cargar un tratamiento a una caravana que se fue del campo, y lo más
+       probable es que el número esté mal tipeado.
+
+       Avisa, NO bloquea: puede ser una baja probable, o un animal que volvió,
+       y una carga de Sanidad que no se puede guardar en la manga es peor que
+       una carga con un número a revisar. Mismo criterio que "no está en el
+       padrón", acá al lado, que también deja guardar. */
+    if(a.estado_vida && a.estado_vida !== 'ACTIVO'){
+      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">📤 <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — <b>YA NO ESTÁ EN EL CAMPO</b> (${esc(resumenBaja(a))}). Revisá el número.</p>`;
+      return;
+    }
     // Por carenciaHoy() y no por a.estado_carencia: si el plazo venció entre
     // la última corrida de la PC y hoy, el padrón todavía lo trae NO APTO.
     const aviso = carenciaHoy(a).estado === 'NO APTO'
