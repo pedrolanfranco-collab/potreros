@@ -17,7 +17,7 @@ There are three establishments, each with a **PC** variant and a **móvil**
 | `la-vuelta-pc/`, `la-vuelta-movil/` | La Vuelta | 31 paddocks, owner-per-animal as **optional** "Firma" (Pedro Lanfranco, Silvia Dutra, Fideicomiso, Walter Lanfranco) — for DICOSE, not a person-per-owner model like the other two |
 | `maria-laura-pc/`, `maria-laura-movil/` | María Laura | 5 paddocks (Tajamar, Casco, Uno, Rincon, Manantial), owner-per-animal as **required** `Dueño` |
 | `pone-chico-pc/`, `pone-chico-movil/` | Pone Chico | newest establishment, starts with zero paddocks — they're added later via "Importar KML/KMZ" |
-| `la-vuelta-test/` | — | disposable clone of `la-vuelta-movil` for testing on a phone without touching real data; not kept in sync automatically |
+| `la-vuelta-test/` | — | disposable clone of `la-vuelta-movil-campo` for testing on a phone; not kept in sync automatically. **Since 1/10/2026 it has no Supabase at all** (`clienteSupabase()` returns `null`, URL/key removed): before, it wrote to the real tables under the label `la_vuelta_test` (136 table calls on startup; 7 `eventos_sync` + 5 `stock_potreros` rows are still there). Guarded by `tests/probar_test_aislado.js` in CI. If you refresh it from `la-vuelta-movil-campo`, re-apply that change or the test fails. |
 
 Each folder is served at `pedrolanfranco-collab.github.io/potreros/<folder>/`
 and contains: `index.html` (the whole app, **generated — see below**),

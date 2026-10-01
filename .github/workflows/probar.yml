@@ -118,3 +118,6 @@ jobs:
 
       - name: "Seguridad (auditoria 30/9/2026) -- HTML y datos invalidos que llegan por eventos_sync no inyectan nada ni rompen el render"
         run: node tests/probar_seguridad_remoto.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
+      - name: "la-vuelta-test aislada (auditoria 1/10/2026) -- la copia de prueba nunca habla con Supabase"
+        run: node tests/probar_test_aislado.js la-vuelta-test/index.html

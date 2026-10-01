@@ -443,7 +443,7 @@
 </head>
 <body>
 <div id="app">
-  <div id="banner-prueba">🧪 MODO PRUEBA — no afecta los datos reales</div>
+  <div id="banner-prueba">🧪 MODO PRUEBA — sin conexión a la base, no afecta los datos reales</div>
   <header>
     <div class="brand">
       <div>
@@ -827,8 +827,8 @@ const USUARIO_KEY = 'potreros_nombre_usuario';
 function usuarioActual(){ return (localStorage.getItem(USUARIO_KEY) || '').trim(); }
 
 /* ======================= SINCRONIZACIÓN (Supabase) ======================= */
-const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
+const SUPABASE_URL = ''; // sin Supabase en la copia de prueba (ver clienteSupabase)
+const SUPABASE_ANON_KEY = '';
 const ESTABLECIMIENTO = CONFIG.establecimiento;
 /* Vacas preñadas / ovejas encarneradas de la temporada -- bases para el % de
    nacidos de cada especie en 📊 Stock total › Temporada. Arrancan del valor
@@ -975,10 +975,11 @@ function idDispositivo(){
 }
 let supabaseClient = null;
 function clienteSupabase(){
-  if(!supabaseClient && window.supabase && window.supabase.createClient){
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
-  return supabaseClient;
+  // 1/10/2026 (auditoría de seguridad): esta copia de PRUEBA ya NO se conecta a
+  // Supabase. Antes escribía en las mismas tablas de producción (con la etiqueta
+  // la_vuelta_test) y podía mezclar sanidad_carga/stock_potreros con datos reales.
+  // Todo queda en este teléfono: no sincroniza, no publica stock, no sube sanidad.
+  return null;
 }
 function enviarEvento(tipo, potrero, detalle, fecha){
   // event_id es columna `uuid` en Supabase -- tiene que ser un UUID real
