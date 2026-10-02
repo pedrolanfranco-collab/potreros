@@ -379,6 +379,29 @@ called from `sincronizar()` right after `vaciarColaSync()`).
   as free text (not in the catalog) shows nothing calculated, same
   graceful-degradation as the dropdown itself.
 
+### Pesadas (2/10/2026, solo La Vuelta, `CONFIG.pesadasHistorial`)
+
+El historial de pesadas por animal y la ganancia diaria **ya los calcula la PC**
+(`animales.py`, tabla `pesadas` de `xrs2_lecturas.db`, carpeta `Lector XRS2` de
+OneDrive: umbrales 80–900 kg y 21 días mínimos entre pesadas) y
+`publicar_animales.py` los sube a `animales_caravana` (columnas `pesadas jsonb`,
+`ganancia_diaria`, `pesadas_totales`; SQL en `scripts/snig/alter_pesadas.sql`,
+**correrlo antes de publicar**). La app solo lee y no recalcula nada. Cada
+elemento de `pesadas` es `{f, p, g, s, o, c, a}` (fecha, kg, ganancia del
+intervalo, sospechosa, potrero del bastón, categoría, sesión).
+
+- **Por animal**: bloque "Pesadas" en la ficha de caravana
+  (`pesadasFichaHTML()`), PC y móvil (también sale en la simple, que comparte
+  `fichaCaravanaHTML`).
+- **Por lote**: "⚖️ Pesadas" (`#modal-pesadas`, solo variantes completas). Lote =
+  **sesión del bastón** (`f` + `a`), NO fecha+potrero: 719 de las 1039 pesadas
+  históricas tienen el potrero vacío y el resto viene tipeado a mano
+  ("EMBARCADER6", "FORCER"). Promedio/mayor/menor excluyen las sospechosas. La
+  proporción es pesados / stock **actual** del potrero en la app (con
+  categoría si se filtra, "—" si el nombre del bastón no coincide).
+- La consulta del lote pagina de a 1000 (PostgREST corta sin avisar). Test:
+  `tests/probar_pesadas.js`.
+
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
 RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este

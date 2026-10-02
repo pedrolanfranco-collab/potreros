@@ -186,7 +186,10 @@ falta su export, nada más.
   se separan el día que alguien mueva hacienda sin bastón. El `POTRERO`
   del bastón es referencia ("dónde lo vi la última vez"), no stock.
 - **El peso va a `animales_caravana.ultimo_peso`**, no a `eventos_sync`:
-  una pesada no cambia el stock y ensuciaría el replay.
+  una pesada no cambia el stock y ensuciaría el replay. Desde el 2/10/2026 el
+  historial completo viaja ahí mismo (`pesadas`, `ganancia_diaria`,
+  `pesadas_totales`); ver "Pesadas" en el CLAUDE.md. (Nota: `publicar_animales.py`
+  ya existe y corre; los pendientes de arriba sobre el publicador están viejos.)
 - **Los códigos se comparan sin distinguir mayúsculas.** `ff…` y
   `FF…` son el mismo; el SNIG puede mandarlos de las dos formas.
 

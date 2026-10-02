@@ -511,6 +511,7 @@
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
       <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
       <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
+      <button class="btn btn-json" id="btn-pesadas" style="display:none;">⚖️ Pesadas</button>
       <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
       <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
       <button class="btn btn-kmz" id="btn-dibujar-potrero">✏️ Dibujar potrero</button>
@@ -731,6 +732,21 @@
     </div>
     <div id="cv-resultado"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="caravana-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-pesadas" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>⚖️ Pesadas por lote</h3>
+    <button class="btn-cerrar-x" id="pesadas-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Cada lote es una sesión de pesada del bastón. Elegí una para ver peso promedio, mayor, menor y qué parte del lote se pesó.</p>
+    <div id="pe-mensaje"></div>
+    <div id="pe-cuerpo" style="display:none;">
+      <div class="form-row"><label>Sesión</label><select id="pe-sesion"></select></div>
+      <div class="form-row"><label>Categoría</label><select id="pe-categoria"></select></div>
+      <div class="form-row"><label>Comparar con potrero</label><select id="pe-potrero"></select></div>
+      <div id="pe-resumen"></div>
+    </div>
+    <div class="form-botones"><button class="btn btn-secundario" id="pesadas-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -3129,6 +3145,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['detalle-dueno-cerrar-x', 'detalle-dueno-cerrar'],
   ['dp-cerrar-x', 'dp-cancelar'],
   ['caravana-cerrar-x', 'caravana-cerrar'],
+  ['pesadas-cerrar-x', 'pesadas-cerrar'],
 ].forEach(([xId, targetId])=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
@@ -5919,6 +5936,55 @@ function resumenBaja(a){
   return t;
 }
 
+/* ======================= PESADAS (historial y lote) ======================= */
+/* 2/10/2026. Las pesadas las arma la PC (animales.py, tabla 'pesadas' de
+   xrs2_lecturas.db) y las publica junto con el padrón en
+   animales_caravana.pesadas (jsonb, una lista por animal):
+     {f:fecha, p:kg, g:ganancia diaria del intervalo|null, s:sospechosa,
+      o:potrero cargado en el bastón (puede venir vacío), c:categoría, a:sesión}
+   La app SOLO LEE, y NO recalcula nada: los umbrales (80-900 kg, 21 días
+   mínimos entre pesadas para tener ganancia) viven en animales.py. Si cambian
+   allá, acá no hay que tocar nada.
+
+   Gateado por CONFIG.pesadasHistorial (La Vuelta primero). Una pesada NO es un
+   evento de stock, así que nunca pasa por eventos_sync (ver estado-integracion-
+   snig.md). */
+function pesadasDeAnimal(a){
+  if(!a || !Array.isArray(a.pesadas)) return [];
+  return a.pesadas.filter(x => x && x.f && isFinite(Number(x.p)) && Number(x.p) > 0);
+}
+function fmtNumES(n, dec){
+  return (Math.round(Number(n) * Math.pow(10, dec)) / Math.pow(10, dec)).toFixed(dec).replace('.', ',');
+}
+function fmtKg(n){ return n == null ? '—' : fmtNumES(n, 1).replace(/,0$/, '') + ' kg'; }
+function fmtGdp(g){
+  if(g == null || !isFinite(Number(g))) return '—';
+  return (Number(g) >= 0 ? '+' : '') + fmtNumES(g, 2) + ' kg/día';
+}
+function pesadasFichaHTML(a){
+  const todas = pesadasDeAnimal(a);
+  if(!todas.length) return '';
+  const buenas = todas.filter(x => x.s !== true);
+  let resumen;
+  if(a.ganancia_diaria != null && isFinite(Number(a.ganancia_diaria))){
+    resumen = `Ganancia diaria promedio: <b>${esc(fmtGdp(a.ganancia_diaria))}</b>`;
+  }else if(buenas.length <= 1){
+    resumen = 'Una sola pesada válida: todavía no hay datos para calcular la ganancia.';
+  }else{
+    resumen = 'Las pesadas están muy seguidas (menos de 21 días): no se calcula la ganancia.';
+  }
+  const filas = todas.slice().sort((x, y) => String(y.f).localeCompare(String(x.f))).map(x =>
+    `<tr><td style="padding:2px 6px;">${esc(x.f)}</td>`
+    + `<td style="padding:2px 6px;font-weight:600;">${esc(fmtKg(x.p))}${x.s === true ? ' <span style="color:#b7791f;">(dudosa)</span>' : ''}</td>`
+    + `<td style="padding:2px 6px;">${esc(fmtGdp(x.g))}</td>`
+    + `<td style="padding:2px 6px;color:#5a6572;">${esc(x.a || '')}</td></tr>`).join('');
+  return `<div class="modal-info" style="margin-top:10px;"><b>⚖️ Pesadas</b> (${todas.length})<br>${resumen}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <tr style="color:#5a6572;"><td style="padding:2px 6px;">Fecha</td><td style="padding:2px 6px;">Peso</td><td style="padding:2px 6px;">Ganancia</td><td style="padding:2px 6px;">Sesión</td></tr>
+      ${filas}
+    </table>`;
+}
+
 function fichaCaravanaHTML(a){
   const filas = [
     ['Categoría', a.categoria],
@@ -5982,7 +6048,7 @@ function fichaCaravanaHTML(a){
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${esc(v)}</td></tr>`).join('')}
-    </table>`;
+    </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}`;
 }
 
 async function ejecutarBusquedaCaravana(){
@@ -6019,6 +6085,179 @@ if(CONFIG.caravanasHabilitado){
   const cvc = document.getElementById('caravana-cerrar');
   if(cvc) cvc.addEventListener('click', ()=>{
     document.getElementById('modal-caravana').style.display = 'none';
+  });
+}
+
+/* --- Pesadas por lote (sesión del bastón) ---
+   Un "lote pesado" es una SESIÓN: los animales que salieron de un mismo archivo
+   del bastón (misma fecha + mismo nombre de sesión, p.a). NO se agrupa por
+   fecha+potrero: el 69% de las pesadas históricas tiene el potrero vacío, y el
+   resto viene tipeado a mano en el bastón ("EMBARCADER6", "FORCER", "CALLE",
+   que no son potreros de la app). El potrero se usa solo para la proporción, y
+   se puede elegir a mano.
+
+   Proporción = pesados / cabezas que la app tiene HOY en ese potrero (o de esa
+   categoría si se filtra). Es stock actual, no el de la fecha de la pesada. */
+let PESADAS_SESIONES = [];
+async function cargarSesionesPesadas(){
+  const client = clienteSupabase();
+  if(!client) return {error:'sin conexión'};
+  const filas = [];
+  try{
+    // PostgREST corta en 1000 filas sin avisar: se pagina (La Vuelta tiene >1100).
+    for(let desde = 0; ; desde += 1000){
+      const res = await client.from(TABLA_CARAVANAS)
+        .select('id8,categoria,propietario,estado_vida,pesadas')
+        .eq('establecimiento', ESTABLECIMIENTO).order('id8')
+        .range(desde, desde + 999);
+      if(res.error) return {error: res.error.message || 'error de consulta'};
+      const lote = limpiarTextoRemoto(res.data || []);
+      filas.push(...lote);
+      if(lote.length < 1000) break;
+    }
+  }catch(e){
+    return {error:'sin señal'};
+  }
+  const porClave = {};
+  filas.forEach(an=>{
+    pesadasDeAnimal(an).forEach(x=>{
+      const k = x.f + '|' + (x.a || '');
+      const s = porClave[k] = porClave[k] || {clave:k, f:x.f, a:x.a || '', potreros:{}, items:[]};
+      const pot = String(x.o || '').trim();
+      if(pot) s.potreros[pot] = (s.potreros[pot] || 0) + 1;
+      s.items.push({id8:an.id8, categoria:x.c || an.categoria || '', p:Number(x.p),
+                    g:(x.g == null || !isFinite(Number(x.g))) ? null : Number(x.g), s:x.s === true});
+    });
+  });
+  const sesiones = Object.values(porClave).sort((x, y) =>
+    String(y.f).localeCompare(String(x.f)) || String(x.a).localeCompare(String(y.a)));
+  sesiones.forEach(s=>{
+    const top = Object.entries(s.potreros).sort((x, y)=>y[1]-x[1])[0];
+    s.potrero = top ? top[0] : '';
+  });
+  return {sesiones};
+}
+
+function resumenSesionPesadas(items){
+  const buenas = items.filter(x => !x.s);
+  if(!buenas.length) return {n:0, sospechosas: items.length - buenas.length};
+  const pesos = buenas.map(x => x.p);
+  const mayor = buenas.reduce((m, x) => x.p > m.p ? x : m);
+  const menor = buenas.reduce((m, x) => x.p < m.p ? x : m);
+  const conG = buenas.filter(x => x.g != null);
+  return {
+    n: buenas.length,
+    prom: pesos.reduce((s, v) => s + v, 0) / buenas.length,
+    mayor, menor,
+    gdp: conG.length ? conG.reduce((s, x) => s + x.g, 0) / conG.length : null,
+    gdpN: conG.length,
+    sospechosas: items.length - buenas.length,
+  };
+}
+
+/* Cabezas de un potrero hoy, según la app. null si el potrero no existe aquí o
+   si se filtra una categoría que no tiene ninguna clave en ese potrero (el
+   nombre del bastón no coincide con una categoría de la app): ahí mostrar "—"
+   es más honesto que un 0% inventado. */
+function stockPotreroParaPesadas(nombre, cat){
+  const p = estado.potreros[nombre];
+  if(!p) return null;
+  if(!cat) return totalPotrero(nombre);
+  let hay = false, suma = 0;
+  Object.entries(p.animales).forEach(([key, cant])=>{
+    if(partesClave(key).cat === cat){ hay = true; suma += Number(cant || 0); }
+  });
+  return hay ? suma : null;
+}
+
+function nombrePotreroApp(txt){
+  const t = String(txt || '').trim().toLowerCase();
+  if(!t) return '';
+  return Object.keys(estado.potreros).find(n => n.toLowerCase() === t) || '';
+}
+
+function pintarPesadasLote(){
+  const caja = document.getElementById('pe-resumen');
+  const selSes = document.getElementById('pe-sesion');
+  const s = PESADAS_SESIONES.find(x => x.clave === selSes.value);
+  if(!s){ caja.innerHTML = ''; return; }
+  const cat = document.getElementById('pe-categoria').value;
+  const pot = document.getElementById('pe-potrero').value;
+  const items = cat ? s.items.filter(x => x.categoria === cat) : s.items;
+  const r = resumenSesionPesadas(items);
+  if(!r.n){
+    caja.innerHTML = '<p class="modal-info">No hay pesadas válidas con ese filtro.</p>';
+    return;
+  }
+  const stock = pot ? stockPotreroParaPesadas(pot, cat) : null;
+  let prop;
+  if(!pot) prop = 'elegí un potrero para compararlo';
+  else if(stock == null || stock <= 0) prop = `— (la app no tiene ${cat ? esc(cat) + ' en ' : 'animales en '}${esc(pot)})`;
+  else prop = `<b>${r.n} de ${stock}</b> (${Math.round(r.n * 100 / stock)}%) de las cabezas actuales de ${esc(pot)}${cat ? ' (' + esc(cat) + ')' : ''}`;
+  const orden = items.slice().sort((x, y) => y.p - x.p);
+  caja.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr><td style="padding:3px 6px;color:#5a6572;">Animales pesados</td><td style="padding:3px 6px;font-weight:600;">${r.n}</td></tr>
+      <tr><td style="padding:3px 6px;color:#5a6572;">Peso promedio</td><td style="padding:3px 6px;font-weight:600;">${esc(fmtKg(r.prom))}</td></tr>
+      <tr><td style="padding:3px 6px;color:#5a6572;">Mayor</td><td style="padding:3px 6px;font-weight:600;">${esc(fmtKg(r.mayor.p))} · ${esc(r.mayor.id8)}</td></tr>
+      <tr><td style="padding:3px 6px;color:#5a6572;">Menor</td><td style="padding:3px 6px;font-weight:600;">${esc(fmtKg(r.menor.p))} · ${esc(r.menor.id8)}</td></tr>
+      <tr><td style="padding:3px 6px;color:#5a6572;">Ganancia diaria prom.</td><td style="padding:3px 6px;font-weight:600;">${r.gdp == null ? '— (sin pesada anterior)' : esc(fmtGdp(r.gdp)) + ` (${r.gdpN} animales)`}</td></tr>
+      <tr><td style="padding:3px 6px;color:#5a6572;">Proporción del lote</td><td style="padding:3px 6px;">${prop}</td></tr>
+    </table>
+    ${r.sospechosas ? `<p class="modal-info" style="color:#b7791f;">${r.sospechosas} pesada${r.sospechosas === 1 ? '' : 's'} dudosa${r.sospechosas === 1 ? '' : 's'} (fuera de rango) no entra${r.sospechosas === 1 ? '' : 'n'} en estos números.</p>` : ''}
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;">
+      <tr style="color:#5a6572;"><td style="padding:2px 6px;">Caravana</td><td style="padding:2px 6px;">Categoría</td><td style="padding:2px 6px;">Peso</td><td style="padding:2px 6px;">Ganancia</td></tr>
+      ${orden.map(x=>`<tr><td style="padding:2px 6px;">${esc(x.id8)}</td><td style="padding:2px 6px;">${esc(x.categoria)}</td><td style="padding:2px 6px;font-weight:600;">${esc(fmtKg(x.p))}${x.s ? ' <span style="color:#b7791f;">(dudosa)</span>' : ''}</td><td style="padding:2px 6px;">${esc(fmtGdp(x.g))}</td></tr>`).join('')}
+    </table>`;
+}
+
+function elegirSesionPesadas(){
+  const s = PESADAS_SESIONES.find(x => x.clave === document.getElementById('pe-sesion').value);
+  const cats = s ? [...new Set(s.items.map(x => x.categoria).filter(Boolean))].sort() : [];
+  document.getElementById('pe-categoria').innerHTML =
+    '<option value="">Todas</option>' + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  const sugerido = s ? nombrePotreroApp(s.potrero) : '';
+  document.getElementById('pe-potrero').innerHTML =
+    '<option value="">— no comparar —</option>'
+    + Object.keys(estado.potreros).sort().map(n => `<option value="${esc(n)}" ${n === sugerido ? 'selected' : ''}>${esc(n)}</option>`).join('');
+  pintarPesadasLote();
+}
+
+async function abrirPesadasLote(){
+  const modal = document.getElementById('modal-pesadas');
+  const cuerpo = document.getElementById('pe-cuerpo');
+  const msg = document.getElementById('pe-mensaje');
+  modal.style.display = 'flex';
+  cuerpo.style.display = 'none';
+  msg.innerHTML = '<p class="modal-info">Cargando pesadas…</p>';
+  const r = await cargarSesionesPesadas();
+  if(r.error){
+    msg.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">No se pudo consultar (${esc(r.error)}). Necesitás señal para ver las pesadas.</p>`;
+    return;
+  }
+  PESADAS_SESIONES = r.sesiones;
+  if(!PESADAS_SESIONES.length){
+    msg.innerHTML = '<p class="modal-info">Todavía no hay pesadas publicadas.</p>';
+    return;
+  }
+  msg.innerHTML = '';
+  cuerpo.style.display = '';
+  document.getElementById('pe-sesion').innerHTML = PESADAS_SESIONES.map(s =>
+    `<option value="${esc(s.clave)}">${esc(s.f)} · ${esc(s.a || 'sin nombre')} · ${s.items.length} animales</option>`).join('');
+  elegirSesionPesadas();
+}
+
+// El modal solo existe en las variantes completas (PC y móvil), no en la simple.
+if(CONFIG.pesadasHistorial && document.getElementById('modal-pesadas')){
+  const bp = document.getElementById('btn-pesadas');
+  if(bp){
+    bp.style.display = '';
+    bp.addEventListener('click', abrirPesadasLote);
+  }
+  document.getElementById('pe-sesion').addEventListener('change', elegirSesionPesadas);
+  document.getElementById('pe-categoria').addEventListener('change', pintarPesadasLote);
+  document.getElementById('pe-potrero').addEventListener('change', pintarPesadasLote);
+  document.getElementById('pesadas-cerrar').addEventListener('click', ()=>{
+    document.getElementById('modal-pesadas').style.display = 'none';
   });
 }
 
