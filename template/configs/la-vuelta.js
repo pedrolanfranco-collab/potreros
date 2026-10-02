@@ -2407,7 +2407,7 @@ module.exports = {
   "versionPc": "3.35",
   "versionMovil": "3.36",
   "simpleHabilitado": true,
-  "versionMovilSimple": "1.19",
+  "versionMovilSimple": "1.20",
   "duenoLabel": "Firma",
   "duenoObligatorio": false,
   "textoSinAsignar": "(sin firma)",

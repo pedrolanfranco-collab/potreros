@@ -438,6 +438,22 @@
   .dibujo-controles .db-terminar{background:#4a7a3a;color:#fff;}
   .dibujo-controles .db-terminar:disabled{background:#5a5a4a;color:#aaa;cursor:not-allowed;}
   .dibujo-controles .db-cancelar{background:var(--rojo-hacienda);color:#fff;}
+  /* Campo: cartel de una fila con solo las especies, para darle más pantalla al mapa. Los otros 4 números siguen en el DOM (actualizarResumen() los escribe), solo se esconden. */
+  header{padding:5px 12px;flex-wrap:nowrap;gap:8px;border-bottom-width:2px;}
+  .brand > div{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:6px;}
+  header h1{font-size:16px;line-height:1.1;flex-basis:100%;}
+  header h1 span{display:none;}
+  #estado-conexion{order:1;margin-top:0 !important;line-height:1.2;}
+  header .sub{order:2;font-size:11px;margin-top:0;line-height:1.2;}
+  header .sub::before{content:"· ";}
+  .resumen{gap:12px;flex-wrap:nowrap;}
+  .resumen .stat{display:none;}
+  .resumen .stat.stat-especie{display:block;}
+  .resumen .stat .num{font-size:16px;line-height:1.15;}
+  .resumen .stat .lbl{line-height:1.1;}
+  @media (max-width:820px){
+    #map{height:60vh;}
+  }
 </style>
 </head>
 <body>
@@ -446,16 +462,16 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.20</div>
+        <div class="sub">v1.21</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
     <div class="resumen">
       <div class="stat"><div class="num" id="res-potreros">0</div><div class="lbl">Potreros</div></div>
       <div class="stat"><div class="num" id="res-ha">0</div><div class="lbl">Hectáreas</div></div>
-      <div class="stat"><div class="num" id="res-vacunos">0</div><div class="lbl">Vacunos</div></div>
-      <div class="stat"><div class="num" id="res-ovinos">0</div><div class="lbl">Ovinos</div></div>
-      <div class="stat"><div class="num" id="res-equinos">0</div><div class="lbl">Equinos</div></div>
+      <div class="stat stat-especie"><div class="num" id="res-vacunos">0</div><div class="lbl">Vacunos</div></div>
+      <div class="stat stat-especie"><div class="num" id="res-ovinos">0</div><div class="lbl">Ovinos</div></div>
+      <div class="stat stat-especie"><div class="num" id="res-equinos">0</div><div class="lbl">Equinos</div></div>
       <div class="stat"><div class="num" id="res-ug">0</div><div class="lbl">UG totales</div></div>
       <div class="stat"><div class="num" id="res-dotacion">0</div><div class="lbl">UG / ha</div></div>
     </div>
@@ -646,7 +662,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.76","versionMovil":"1.77","simpleHabilitado":true,"versionMovilSimple":"1.20","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.76","versionMovil":"1.77","simpleHabilitado":true,"versionMovilSimple":"1.21","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 

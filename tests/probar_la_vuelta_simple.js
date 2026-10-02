@@ -176,6 +176,21 @@ async function probarSimple(archivo){
   chequear('boton Infraestructura presente', !!doc.getElementById('btn-infraestructura'));
   chequear('boton Capín Annoni presente', !!doc.getElementById('btn-capin-annoni'));
 
+  // 2/10/2026: cartel de una fila con solo las especies (más pantalla para
+  // el mapa). Los otros 4 números siguen en el DOM -- actualizarResumen()
+  // los escribe sin chequear null -- pero ocultos.
+  ['res-potreros','res-ha','res-ug','res-dotacion'].forEach(id=>{
+    const el = doc.getElementById(id);
+    chequear(`cartel: ${id} sigue en el DOM`, !!el);
+    chequear(`cartel: ${id} oculto en Campo`, !!el && win.getComputedStyle(el.parentElement).display === 'none');
+  });
+  ['res-vacunos','res-ovinos','res-equinos'].forEach(id=>{
+    const el = doc.getElementById(id);
+    chequear(`cartel: ${id} visible en Campo`, !!el && win.getComputedStyle(el.parentElement).display !== 'none');
+    chequear(`cartel: ${id} muestra un número`, !!el && /^\d+$/.test(el.textContent.trim()), el && el.textContent);
+  });
+  chequear('cartel: el subtítulo de Campo es solo la versión', /^v\d+\.\d+$/.test(doc.querySelector('header .sub').textContent.trim()), doc.querySelector('header .sub').textContent);
+
   // ---- Historial: solo se muestra lo cargado desde este dispositivo ----
   // (un evento remoto sí queda en el estado/stock -- eso no cambia, sólo
   // se oculta de la lista que se le muestra al empleado)
@@ -315,6 +330,19 @@ async function probarSimple(archivo){
   return win;
 }
 
+// El cartel compacto es solo de Campo (marcador @simple): la móvil completa
+// tiene que seguir mostrando los 7 números y su subtítulo largo.
+async function probarCartelNoSeFiltra(archivoCompleto){
+  console.log(`\n=== Cartel de ${archivoCompleto} (no debe cambiar) ===`);
+  const { win, errores } = await levantar(archivoCompleto, crearServidor());
+  if(errores.length){ chequear('completa carga sin errores', false, errores.join(' | ')); return; }
+  ['res-potreros','res-ha','res-vacunos','res-ovinos','res-equinos','res-ug','res-dotacion'].forEach(id=>{
+    const el = win.document.getElementById(id);
+    chequear(`completa: ${id} visible`, !!el && win.getComputedStyle(el.parentElement).display !== 'none');
+  });
+  chequear('completa: conserva el subtítulo largo', win.document.querySelector('header .sub').textContent.includes('·'), win.document.querySelector('header .sub').textContent);
+}
+
 async function probarSincroniza(archivoSimple, archivoCompleto){
   console.log(`\n=== Sincroniza ${archivoSimple} <-> ${archivoCompleto} (mismo establecimiento) ===`);
   const servidorSimple = crearServidor();
@@ -372,6 +400,7 @@ async function probarSincroniza(archivoSimple, archivoCompleto){
   for(const { simple, completo } of pares){
     await probarSimple(simple);
     await probarSincroniza(simple, completo);
+    if(completo) await probarCartelNoSeFiltra(completo);
   }
 
   console.log(`\n${fallas===0?'TODO OK':'HAY FALLAS: '+fallas}`);
