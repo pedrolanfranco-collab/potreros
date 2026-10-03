@@ -270,6 +270,36 @@ requieren que el potrero ya exista localmente (`lluvia`,
 `potrero_creado`) se procesan **antes** del guard `if(!potrero ||
 !estado.potreros[potrero]) return;`, no después.
 
+**Editar/borrar en la PC (3/10/2026, a pedido de Pedro).** En las 3 apps PC
+(solo ahí: móvil completa y Campo no ganan botones) cualquier registro se
+puede editar y borrar, siempre con `confirm()`:
+- *Historial de un potrero*: ✏️ y 🗑 también en lo que cargó otro dispositivo.
+  Esas entradas no traen `extra` sino `origDatos` (sin el potrero, que es donde
+  está la entrada): `datosHistorial(h, potreroHost)` arma los datos para
+  `construirAjusteInverso()`, que revierte el stock igual que siempre. Un
+  movimiento sincronizado son dos entradas sin `grupoId` (origen y destino):
+  `tacharOtraPuntaSincronizada()` tacha la otra por igualdad de `origDatos`.
+  ✏️ = deshacer (evento `correccion` de siempre) + abrir el formulario
+  precargado (`abrirFormularioEdicion()`, bloque `@pc`): si Pedro cancela el
+  formulario, lo original queda deshecho. Los renglones que son solo texto (carga
+  inicial desde planilla, "Corrección…") no tienen datos y siguen sin botones.
+  `agregarCaravanaMuerte`/`agregarGuiaCompraventa` editan `origDatos` donde ya
+  vive: nunca crearle un `extra` incompleto a una entrada sincronizada (rompe
+  `construirAjusteInverso`).
+- *Abortos y eventos climáticos*: eventos `aborto_editado`, `aborto_eliminado`,
+  `evento_clima_editado`, `evento_clima_eliminado` (edición/baja directa, sin
+  reversar stock, como lluvia/señalada). Los **recibe** `aplicarEventoRemoto()`
+  en todas las variantes, y `calcularEstadisticasNacimientos()` (hay dos copias,
+  `@pc` y `@movil`) reconstruye los abortos por id para que el % se corrija.
+- Ver `tests/probar_editar_borrar_pc.js`. **Pendiente (no pedido):** borrar/editar
+  una compra o venta no saca el registro de `estado.transacciones` ni un
+  envío/retorno de la lista de campo ajeno; borrar una pérdida o muerte de
+  desaparecido no se tacha en los otros dispositivos (la corrección no lleva
+  `casoId`); `buscarMejor()` solo mira `origDatos`, así que el dispositivo que
+  originó un evento no tacha su propio renglón cuando otro lo corrige; borrar un
+  desaparecido con resoluciones las deja huérfanas. Sanidad no se puede
+  editar/borrar (faltan políticas UPDATE/DELETE en Supabase).
+
 **Cuidado al escribir un `.select(...)` nuevo contra `eventos_sync`:
 listar explícitamente TODAS las columnas que la función va a leer,
 incluida `potrero`.** Es una columna de la fila (no vive dentro de

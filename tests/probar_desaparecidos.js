@@ -261,8 +261,6 @@ async function probarArchivo(archivo, tieneDueno){
   const entradaMuerteDesap = est.potreros[origen].historial.find(h=>h.tipo==='muerte_desaparecido' && !h.eliminado);
   chequear('queda una entrada de historial "muerte_desaparecido" con la caravana',
     !!entradaMuerteDesap && /12345678/.test(entradaMuerteDesap.detalle), entradaMuerteDesap && entradaMuerteDesap.detalle);
-  chequear('"Dar muerte" no ofrece el botón ✏️ Editar (hay que borrar y recargar)',
-    !doc.querySelector(`[data-hist-editar="${entradaMuerteDesap.id}"]`));
 
   // 20/9/2026: la caravana SÍ se puede agregar/editar después con 🏷️, sin
   // pasar por borrar y recargar -- caso real de Pedro ("se puede agregar
@@ -271,6 +269,12 @@ async function probarArchivo(archivo, tieneDueno){
   // seleccionActual -- hay que volver a abrir el potrero para que
   // renderDetalle() dibuje el historial de nuevo.
   win.__seleccionar(origen);
+  // (esta comprobación vivía antes de reabrir el potrero, con el historial sin dibujar, y pasaba
+  // en vacío.) La móvil sigue sin ✏️ en esta entrada (hay que borrar y recargar); desde el
+  // 3/10/2026 la PC sí lo ofrece: deshace y reabre Desaparecidos para resolver el caso de nuevo.
+  const esPC = /-pc[\/]/.test(archivo);
+  chequear(esPC ? '"Dar muerte" en la PC ofrece ✏️ Editar' : '"Dar muerte" en la móvil no ofrece ✏️ Editar (hay que borrar y recargar)',
+    esPC === !!doc.querySelector(`[data-hist-editar="${entradaMuerteDesap.id}"]`));
   const btnCaravana = doc.querySelector(`[data-hist-caravana="${entradaMuerteDesap.id}"]`);
   chequear('"Dar muerte" SÍ ofrece el botón 🏷️ Caravana', !!btnCaravana);
   win.prompt = () => '99990000';

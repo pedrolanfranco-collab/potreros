@@ -446,7 +446,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.76 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.77 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -636,6 +636,7 @@
     <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="ev-obs" placeholder="Ej: heló fuerte, se quemaron las pasturas bajas"></div>
     <div class="form-botones" style="margin-bottom:12px;">
       <button class="btn btn-agregar" id="ev-guardar">Registrar evento</button>
+      <button class="btn btn-secundario" id="ev-cancelar-edicion" style="display:none;">Cancelar edición</button>
     </div>
     <div id="eventos-clima-lista"></div>
     <h4 style="margin:16px 0 6px;font-size:13px;">🐄 Abortos</h4>
@@ -650,6 +651,7 @@
     <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="ab-obs" placeholder="Ej: potrero 9, vaca de Silvia"></div>
     <div class="form-botones" style="margin-bottom:12px;">
       <button class="btn btn-agregar" id="ab-guardar">Registrar aborto</button>
+      <button class="btn btn-secundario" id="ab-cancelar-edicion" style="display:none;">Cancelar edición</button>
     </div>
     <div id="abortos-lista"></div>
     <h4 style="margin:16px 0 6px;font-size:13px;">🐑 Señalada</h4>
@@ -812,7 +814,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.76","versionMovil":"1.77","simpleHabilitado":true,"versionMovilSimple":"1.22","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.77","versionMovil":"1.78","simpleHabilitado":true,"versionMovilSimple":"1.23","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1466,6 +1468,28 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
+  // 3/10/2026: editar/borrar un evento climático o un aborto -- solo la PC los
+  // genera, pero CUALQUIER dispositivo tiene que aplicarlos al sincronizar (mismo
+  // criterio que lluvia_editada / senalada_editada).
+  if(row.tipo === 'evento_clima_editado'){
+    const evc = (estado.eventosClima||[]).find(x=>x.id===d.id);
+    if(evc){ evc.fecha = d.fecha; evc.tipo = d.tipo; evc.obs = d.obs||null; }
+    return;
+  }
+  if(row.tipo === 'evento_clima_eliminado'){
+    estado.eventosClima = (estado.eventosClima||[]).filter(x=>x.id!==d.id);
+    return;
+  }
+  if(row.tipo === 'aborto_editado'){
+    const ab = (estado.abortos||[]).find(x=>x.id===d.id);
+    if(ab){ ab.fecha = d.fecha; ab.motivo = d.motivo; ab.cantidad = d.cantidad||1; ab.obs = d.obs||null; }
+    return;
+  }
+  if(row.tipo === 'aborto_eliminado'){
+    estado.abortos = (estado.abortos||[]).filter(x=>x.id!==d.id);
+    return;
+  }
+
   if(row.tipo === 'aborto'){
     // 19/9/2026: mismo criterio que "lluvia"/"evento_clima" -- del
     // establecimiento entero, sin potrero, antes del guard de abajo. No
@@ -1679,7 +1703,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     const detalleCA = row.tipo === 'envio_campo_ajeno'
       ? `Envío a campo ajeno (sincronizado): ${itemsTxtCA}${sufGuiaCA}${sufObsCA}`
       : `Retorno de campo ajeno (sincronizado): ${itemsTxtCA}${sufGuiaCA}${sufObsCA}`;
-    const origDatosCA = {potrero, items, guia: d.guia||null};
+    const origDatosCA = {potrero, items, guia: d.guia||null, obs: d.obs||null};
     registrarHistorial(potrero, row.tipo, detalleCA, undefined, undefined, fechaEvt).origDatos = origDatosCA;
     estado.campoAjeno.historial = estado.campoAjeno.historial || [];
     if(!estado.campoAjeno.historial.some(m=>m.id===row.event_id)){
@@ -1856,7 +1880,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     // Mismo objeto para las dos entradas (origen y destino) -- asi una
     // correccion futura las encuentra a las dos con un solo emparejamiento,
     // igual que ya hace `extra` en las cargas locales.
-    const origDatosMov = {potrero, destino: d.destino, categoria: d.categoria, categoriaDestino: d.categoriaDestino||d.categoria, dueno: d.dueno||null, cantidad: d.cantidad};
+    const origDatosMov = {potrero, destino: d.destino, categoria: d.categoria, categoriaDestino: d.categoriaDestino||d.categoria, dueno: d.dueno||null, cantidad: d.cantidad, obs: d.obs||null};
     if(d.destino === potrero){
       const detalle = d.categoriaDestino && d.categoriaDestino!==d.categoria
         ? `${d.categoria}${d.dueno?' de '+d.dueno:''} → ${d.categoriaDestino} (${d.cantidad}, cambio de categoría, sincronizado)${sufObsMov}`
@@ -1922,7 +1946,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     registrarCambioOcupacion(potrero, totalAntesOrigen, fechaEvt);
     registrarCambioOcupacion(d.destino, totalAntesDestino, fechaEvt);
     const sufObsMov = d.obs ? ` (${d.obs})` : '';
-    const origDatosMulti = {potrero, destino: d.destino, items: d.items};
+    const origDatosMulti = {potrero, destino: d.destino, items: d.items, obs: d.obs||null};
     if(d.destino === potrero){
       registrarHistorial(potrero, 'movimiento_multi', `Recategorización (sincronizado): ${detalleTxt.join(', ')}${sufObsMov}`, undefined, undefined, fechaEvt).origDatos = origDatosMulti;
     }else{
@@ -1989,13 +2013,17 @@ function aplicarEventoRemoto(row, potrerosSucios){
   registrarCambioOcupacion(potrero, totalAntes, fechaEvt);
   if(potrerosSucios) potrerosSucios.add(potrero);
 
+  // 3/10/2026: obs/precio/contraparte para que la PC pueda precargar el formulario al
+  // editar una entrada que cargó otro dispositivo (los matchers de las correcciones
+  // solo miran categoría/cantidad/dueño, así que estos campos de más no los afectan)
+  const origDatosGenerico = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, caravana: d.caravana||null, guia: d.guia||null, obs: d.obs||null, precio: d.precio||null, contraparte: d.contraparte||null};
   let detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}`;
   if(d.precio) detalleTxt += ` a USD ${d.precio}/cab`;
   if(d.contraparte) detalleTxt += ` — ${d.contraparte}`;
   if(d.guia) detalleTxt += ` — guía ${d.guia}`;
   if(d.obs) detalleTxt += ` (${d.obs})`;
   if(d.caravana) detalleTxt += ` — caravana ${d.caravana}`;
-  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt).origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, caravana: d.caravana||null, guia: d.guia||null};
+  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt).origDatos = origDatosGenerico;
 
   if(row.tipo==='compra' || row.tipo==='venta'){
     estado.transacciones = estado.transacciones || [];
@@ -2332,8 +2360,18 @@ function aplicarAjusteReversion(ajuste, fecha){
     registrarCambioOcupacion(ajuste.destino, totalAntesD, fecha);
   }
 }
-function construirAjusteInverso(h){
-  const e = h.extra; if(!e) return null;
+/* Datos con los que se puede reconstruir el ajuste inverso de una entrada de
+   historial: `extra` si la cargó este dispositivo, o `origDatos` si llegó
+   sincronizada de otro (esa no trae el potrero, que es justo donde está la
+   entrada -- salvo en los movimientos, que ya lo traen). 3/10/2026: la PC
+   puede editar/borrar también lo cargado desde otros dispositivos. */
+function datosHistorial(h, potreroHost){
+  if(h.extra) return h.extra;
+  if(h.origDatos) return Object.assign({potrero: potreroHost}, h.origDatos);
+  return null;
+}
+function construirAjusteInverso(h, potreroHost){
+  const e = datosHistorial(h, potreroHost); if(!e) return null;
   if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
     return {tipo:'restar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
   }
@@ -2383,50 +2421,160 @@ function ubicarHistorial(id){
   }
   return null;
 }
-function marcarEliminadoPorGrupo(grupoId, idExcluir){
+function marcarEliminadoPorGrupo(grupoId, idExcluir, sufijo){
   POTREROS_GEO.forEach(p=>{
     (estado.potreros[p.nombre].historial||[]).forEach(h=>{
       if(h.grupoId===grupoId && h.id!==idExcluir && !h.eliminado){
         h.eliminado = true;
-        h.detalle = h.detalle + ' — ELIMINADO';
+        h.detalle = h.detalle + (sufijo || ' — ELIMINADO');
       }
     });
   });
 }
+/* Un movimiento que llegó sincronizado de otro dispositivo aparece en el
+   potrero de origen y en el de destino como dos entradas SIN grupoId (cada
+   una con su copia de origDatos). Al borrarlo o editarlo desde acá se tacha
+   también la otra punta, buscándola por igualdad de origDatos -- mismo
+   criterio que buscarMejor() del lado receptor de una corrección. */
+function tacharOtraPuntaSincronizada(h, potreroHost, sufijo){
+  if(h.extra || !h.origDatos) return;
+  const od = JSON.stringify(h.origDatos);
+  const fecha = parseFechaDMY(h.fecha);
+  [h.origDatos.potrero, h.origDatos.destino].forEach(nombre=>{
+    if(!nombre || nombre===potreroHost || !estado.potreros[nombre]) return;
+    let mejor = null, mejorDist = Infinity;
+    (estado.potreros[nombre].historial||[]).forEach(x=>{
+      if(x.eliminado || x.extra || x.id===h.id || x.tipo!==h.tipo || !x.origDatos) return;
+      if(JSON.stringify(x.origDatos)!==od) return;
+      const dist = Math.abs(parseFechaDMY(x.fecha) - fecha);
+      if(dist < mejorDist){ mejorDist = dist; mejor = x; }
+    });
+    if(mejor){ mejor.eliminado = true; mejor.detalle = mejor.detalle + sufijo; }
+  });
+}
 function borrarHistorial(id){
   const ub = ubicarHistorial(id);
-  if(!ub || ub.entry.eliminado || !ub.entry.extra) return;
+  if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
   if(!confirm('¿Seguro que querés borrar este movimiento? Ajusta la cantidad de animales en el potrero correspondiente. No se puede deshacer.')) return;
   const h = ub.entry;
-  const ajuste = construirAjusteInverso(h);
+  const ajuste = construirAjusteInverso(h, ub.potrero);
   aplicarAjusteReversion(ajuste);
   h.eliminado = true;
   h.detalle = h.detalle + ' — ELIMINADO';
   if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id);
+  tacharOtraPuntaSincronizada(h, ub.potrero, ' — ELIMINADO');
   enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste, fechaOriginal: h.fecha});
   guardarEstado(); actualizarTodo(); renderDetalle(ub.potrero);
   publicarStockPotreros([ub.potrero, ajuste && ajuste.potrero, ajuste && ajuste.origen, ajuste && ajuste.destino]);
   toast('Movimiento eliminado y corregido');
 }
 const ACCION_POR_TIPO_HIST = {ingreso:'agregar', nacimiento:'nacimiento', muerte:'muerte', compra:'compraventa', venta:'compraventa', desaparecido:'desaparecido'};
+/* 3/10/2026, a pedido de Pedro: en la PC se puede editar CUALQUIER entrada
+   del historial (también las que cargó otro dispositivo, y los movimientos,
+   envíos a campo ajeno y resoluciones de desaparecidos). Editar = deshacer lo
+   cargado (se manda la corrección de siempre) + abrir el formulario que
+   corresponde, precargado con los datos originales. */
+function fechaISODeHistorial(h, datos){
+  return (datos && datos._fechaISO) || String(h.fecha||'').split('/').reverse().join('-');
+}
+/* Una compra/venta que llegó sincronizada trae categoría/cantidad/dueño pero
+   (las que ya estaban guardadas, de antes de este cambio) no precio,
+   contraparte ni notas -- esos datos están en la transacción que se generó
+   con ella. */
+function transaccionDeHistorial(h, datos, potreroHost){
+  const tipoOp = h.tipo==='venta' ? 'Venta' : 'Compra';
+  return (estado.transacciones||[]).find(t=> t.potrero===potreroHost && t.tipo===tipoOp
+    && t.categoria===datos.categoria && t.cantidad===datos.cantidad
+    && (t.dueno||null)===(datos.dueno||null) && t.fecha===h.fecha) || null;
+}
+function precargarMover(datos, fechaISO){
+  const items = datos.items || [{categoria: datos.categoria, categoriaDestino: datos.categoriaDestino, dueno: datos.dueno, cantidad: datos.cantidad}];
+  const el = id => document.getElementById(id);
+  const tieneOpcion = (sel, valor)=> Array.from(sel.options).some(o=>o.value===valor);
+  if(datos.destino && tieneOpcion(el('f-destino'), datos.destino)) el('f-destino').value = datos.destino;
+  const conCat = items.find(it=> it.categoriaDestino && it.categoriaDestino!==it.categoria);
+  if(conCat && tieneOpcion(el('f-cat-destino'), conCat.categoriaDestino)) el('f-cat-destino').value = conCat.categoriaDestino;
+  // duenoDestino puede valer '' (sin asignar, elegido a propósito): comparar contra undefined
+  const conDueno = items.find(it=> it.duenoDestino !== undefined);
+  if(conDueno && tieneOpcion(el('f-dueno-destino'), conDueno.duenoDestino)) el('f-dueno-destino').value = conDueno.duenoDestino;
+  const cantidades = new Map(items.map(it=>[claveAnimal(it.categoria, it.dueno), it.cantidad]));
+  document.querySelectorAll('.mov-check').forEach(chk=>{ chk.checked = cantidades.has(chk.dataset.key); });
+  document.querySelectorAll('.mov-cant').forEach(inp=>{ if(cantidades.has(inp.dataset.key)) inp.value = cantidades.get(inp.dataset.key); });
+  el('f-fecha').value = fechaISO;
+  el('f-obs').value = datos.obs || '';
+}
+function precargarCampoAjeno(h, datos, fechaISO){
+  document.getElementById('btn-lluvias').click(); // abre y reinicia el modal donde vive Campo ajeno
+  const el = id => document.getElementById(id);
+  el('ca-tipo').value = h.tipo==='envio_campo_ajeno' ? 'envio' : 'retorno';
+  el('ca-label-potrero').textContent = h.tipo==='envio_campo_ajeno' ? 'Potrero de origen' : 'Potrero de destino';
+  el('ca-potrero').value = datos.potrero;
+  el('ca-guia').value = datos.guia || '';
+  const items = datos.items || [];
+  el('ca-filas').innerHTML = items.map((it,i)=>filaCampoAjeno(i)).join('');
+  campoAjenoFilaIdx = items.length;
+  el('ca-filas').querySelectorAll('.ca-fila').forEach((fila,i)=>{
+    fila.querySelector('.ca-cat').value = items[i].categoria;
+    fila.querySelector('.ca-dueno').value = items[i].dueno || '';
+    fila.querySelector('.ca-cant').value = items[i].cantidad;
+  });
+  actualizarBotonesQuitarCampoAjeno();
+  el('ca-fecha').value = fechaISO;
+  el('ca-obs').value = datos.obs || '';
+}
+function abrirFormularioEdicion(h, datos, potreroHost){
+  const fechaISO = fechaISODeHistorial(h, datos);
+  // un movimiento se vuelve a cargar desde su potrero de ORIGEN (donde los animales acaban de volver)
+  const base = (h.tipo==='movimiento' || h.tipo==='movimiento_multi' || h.tipo==='movimiento_todo') && datos.potrero ? datos.potrero : potreroHost;
+  if(base!==potreroHost) seleccionarPotrero(base); else renderDetalle(base);
+  if(h.tipo==='movimiento' || h.tipo==='movimiento_multi'){
+    mostrarFormulario(base, 'mover');
+    precargarMover(datos, fechaISO);
+  } else if(h.tipo==='movimiento_todo'){
+    mostrarFormulario(base, 'mover-todo');
+    const destino = document.getElementById('f-destino');
+    if(destino && datos.destino && Array.from(destino.options).some(o=>o.value===datos.destino)) destino.value = datos.destino;
+    const fecha = document.getElementById('f-fecha');
+    if(fecha) fecha.value = fechaISO;
+  } else if(h.tipo==='envio_campo_ajeno' || h.tipo==='retorno_campo_ajeno'){
+    precargarCampoAjeno(h, datos, fechaISO);
+  } else if(h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido'){
+    renderDesaparecidosLista();
+    document.getElementById('modal-desaparecidos').style.display = 'flex';
+  } else {
+    const prefill = Object.assign({}, datos, {_fechaISO: fechaISO});
+    if(h.tipo==='compra' || h.tipo==='venta'){
+      prefill._tipoOp = h.tipo==='venta' ? 'Venta' : 'Compra';
+      if(prefill.precio==null && !prefill.contraparte && !prefill.obs){
+        const t = transaccionDeHistorial(h, datos, potreroHost);
+        if(t){
+          prefill.precio = t.precioUnitario;
+          prefill.contraparte = t.contraparte || null;
+          prefill.guia = prefill.guia || t.guia || null;
+          if(t.notas && t.notas!=='sincronizado' && t.notas!=='voz') prefill.obs = t.notas;
+        }
+      }
+    }
+    mostrarFormulario(base, ACCION_POR_TIPO_HIST[h.tipo], prefill);
+  }
+}
 function editarHistorial(id){
   const ub = ubicarHistorial(id);
-  if(!ub || ub.entry.eliminado || !ub.entry.extra) return;
+  if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
   const h = ub.entry;
-  if(h.tipo==='movimiento' || h.tipo==='movimiento_todo' || h.tipo==='movimiento_multi' || h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido'){
-    toast('Para corregir esto, borralo y volvé a cargarlo.');
-    return;
-  }
-  if(!confirm('Esto va a borrar el movimiento actual y abrir el formulario para volver a cargarlo corregido. ¿Continuar?')) return;
-  const ajuste = construirAjusteInverso(h);
+  const msgEditar = 'Esto va a deshacer el movimiento actual (ajusta la cantidad de animales) y abrir el formulario para volver a cargarlo corregido. Si cancelás el formulario, el movimiento original queda deshecho. ¿Continuar?';
+  if(!confirm(msgEditar)) return;
+  const datos = datosHistorial(h, ub.potrero);
+  const ajuste = construirAjusteInverso(h, ub.potrero);
   aplicarAjusteReversion(ajuste);
   h.eliminado = true;
   h.detalle = h.detalle + ' — EDITADO (ver movimiento nuevo)';
+  if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id, ' — EDITADO (ver movimiento nuevo)');
+  tacharOtraPuntaSincronizada(h, ub.potrero, ' — EDITADO (ver movimiento nuevo)');
   enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste, fechaOriginal: h.fecha});
   guardarEstado(); actualizarTodo();
   publicarStockPotreros([ub.potrero, ajuste && ajuste.potrero, ajuste && ajuste.origen, ajuste && ajuste.destino]);
-  renderDetalle(ub.potrero);
-  mostrarFormulario(ub.potrero, ACCION_POR_TIPO_HIST[h.tipo], h.extra);
+  abrirFormularioEdicion(h, datos, ub.potrero);
   toast('Corregí los datos y confirmá para volver a cargarlo');
 }
 /* 20/9/2026: agregar o editar la caravana de una muerte (directa o de un
@@ -2440,21 +2588,24 @@ function agregarCaravanaMuerte(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || (ub.entry.tipo!=='muerte' && ub.entry.tipo!=='muerte_desaparecido')) return;
   const h = ub.entry;
-  const actual = (h.extra && h.extra.caravana) || '';
+  // 3/10/2026: una entrada sincronizada de otro dispositivo (solo origDatos) también
+  // puede tener este botón en la PC -- NO se le crea un `extra` incompleto encima
+  // (rompería construirAjusteInverso): se edita el dato donde ya vive.
+  const datos = h.extra || h.origDatos || (h.extra = {});
+  const actual = datos.caravana || '';
   const nueva = prompt('Caravana (mín. 8 dígitos, vacío para borrarla):', actual);
   if(nueva === null) return;
   const limpia = nueva.trim();
   if(limpia && !/^\d{8,}$/.test(limpia)){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
   const caravana = limpia || null;
-  h.extra = h.extra || {};
-  const viejaTxt = h.extra.caravana ? ` — caravana ${h.extra.caravana}` : '';
+  const viejaTxt = datos.caravana ? ` — caravana ${datos.caravana}` : '';
   const nuevaTxt = caravana ? ` — caravana ${caravana}` : '';
-  h.extra.caravana = caravana;
+  datos.caravana = caravana;
   h.detalle = viejaTxt ? h.detalle.replace(viejaTxt, nuevaTxt)
     : nuevaTxt ? h.detalle.replace(/( \(no vuelven\)|$)/, `${nuevaTxt}$1`) : h.detalle;
   guardarEstado();
   enviarEvento('correccion', ub.potrero, {tipoOriginal: h.tipo, accion:'agregar_caravana', casoId: h.casoId,
-    categoria: h.extra.categoria, cantidad: h.extra.cantidad, dueno: h.extra.dueno, caravana, fechaOriginal: h.fecha});
+    categoria: datos.categoria, cantidad: datos.cantidad, dueno: datos.dueno, caravana, fechaOriginal: h.fecha});
   renderDetalle(ub.potrero);
   toast(caravana ? 'Caravana guardada' : 'Caravana borrada');
 }
@@ -2466,20 +2617,20 @@ function agregarGuiaCompraventa(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || (ub.entry.tipo!=='compra' && ub.entry.tipo!=='venta')) return;
   const h = ub.entry;
-  const actual = (h.extra && h.extra.guia) || '';
+  const datos = h.extra || h.origDatos || (h.extra = {}); // ver nota en agregarCaravanaMuerte
+  const actual = datos.guia || '';
   const nueva = prompt('Nº de guía (1 letra + 6 dígitos, vacío para borrarla):', actual);
   if(nueva === null) return;
   const limpia = nueva.trim().toUpperCase();
   if(limpia && !/^[A-Z]\d{6}$/.test(limpia)){ toast('La guía debe tener 1 letra y 6 dígitos (ej: A592366)'); return; }
   const guia = limpia || null;
-  h.extra = h.extra || {};
-  const viejaTxt = h.extra.guia ? ` — guía ${h.extra.guia}` : '';
+  const viejaTxt = datos.guia ? ` — guía ${datos.guia}` : '';
   const nuevaTxt = guia ? ` — guía ${guia}` : '';
-  h.extra.guia = guia;
+  datos.guia = guia;
   h.detalle = viejaTxt ? h.detalle.replace(viejaTxt, nuevaTxt) : (nuevaTxt ? h.detalle + nuevaTxt : h.detalle);
   guardarEstado();
   enviarEvento('correccion', ub.potrero, {tipoOriginal: h.tipo, accion:'agregar_guia',
-    categoria: h.extra.categoria, cantidad: h.extra.cantidad, dueno: h.extra.dueno, guia, fechaOriginal: h.fecha});
+    categoria: datos.categoria, cantidad: datos.cantidad, dueno: datos.dueno, guia, fechaOriginal: h.fecha});
   renderDetalle(ub.potrero);
   toast(guia ? 'Guía guardada' : 'Guía borrada');
 }
@@ -2996,9 +3147,9 @@ function renderDetalle(nombre){
       ${historialVisible.length ? historialVisible.slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||'')).slice(0,15).map(h=>`
         <div class="hist-item ${esc(h.tipo)}${h.eliminado?' eliminado':''}">
           <span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}
-          ${(h.id && h.extra && !h.eliminado) ? `
+          ${(h.id && (h.extra || h.origDatos) && !h.eliminado) ? `
           <span class="hist-acciones">
-            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo!=='retorno_campo_ajeno') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
+            <button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>
             ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana">🏷️</button>` : ''}
             ${(CONFIG.dicoseHabilitado && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${esc(h.id)}" title="Agregar/editar guía">📄</button>` : ''}
             <button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>
@@ -4055,7 +4206,7 @@ async function calcularEstadisticasNacimientos(){
       // punta contra Supabase real antes y después del fix.
       const res = await client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
         .eq('establecimiento', ESTABLECIMIENTO)
-        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto','senalada','senalada_editada','senalada_eliminada'])
+        .in('tipo', ['nacimiento','correccion','muerte','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto','aborto_editado','aborto_eliminado','senalada','senalada_editada','senalada_eliminada'])
         .order('creado_en', {ascending:true});
       if(!res.error){
         eventos = limpiarTextoRemoto(res.data||[]);
@@ -4080,6 +4231,8 @@ async function calcularEstadisticasNacimientos(){
   // siempre después de corregir un registro. Bug real encontrado probando
   // en el navegador: una edición de 4->5 machos seguía mostrando 4.
   const senaladasPorId = {};
+  // 3/10/2026: lo mismo para los abortos, que ahora también se editan/borran
+  const abortosPorId = {};
   const acumular = (categoria, fc, delta)=>{
     if(!porMesCategoria[categoria]) return; // Terneras/Potros/as viejos: ya no se cuentan
     if(!fc || typeof fc !== 'string') return;
@@ -4100,13 +4253,17 @@ async function calcularEstadisticasNacimientos(){
     const m = parseInt(partes[1],10), y = parseInt(partes[2],10);
     return !!(m && y && m>=8 && m<=12 && y===anioTemporada);
   };
-  (eventos||[]).forEach(ev=>{
+  (eventos||[]).forEach((ev, idx)=>{
     const d = ev.detalle || {};
     if(ev.tipo==='nacimiento'){
       tocarSaldoTemporada(saldo, ev.potrero, d.categoria, d.cantidad||0, false);
       acumular(d.categoria, ev.fecha_cliente, d.cantidad||0);
     } else if(ev.tipo==='aborto'){
-      if(enTemporada(ev.fecha_cliente)) abortosTemporada += (d.cantidad||1);
+      abortosPorId[d.id || ('sin_id_' + idx)] = {fecha: ev.fecha_cliente, cantidad: d.cantidad||1};
+    } else if(ev.tipo==='aborto_editado'){
+      if(abortosPorId[d.id]) abortosPorId[d.id] = {fecha: d.fecha, cantidad: d.cantidad||1};
+    } else if(ev.tipo==='aborto_eliminado'){
+      delete abortosPorId[d.id];
     } else if(ev.tipo==='senalada'){
       senaladasPorId[d.id] = {fecha: ev.fecha_cliente, machos: d.machos||0, hembras: d.hembras||0};
     } else if(ev.tipo==='senalada_editada'){
@@ -4148,6 +4305,7 @@ async function calcularEstadisticasNacimientos(){
       }
     }
   });
+  Object.values(abortosPorId).forEach(ab=>{ if(enTemporada(ab.fecha)) abortosTemporada += ab.cantidad; });
   let senaladosMachos = 0, senaladosHembras = 0;
   Object.values(senaladasPorId).forEach(sn=>{
     if(enTemporada(sn.fecha)){ senaladosMachos += sn.machos; senaladosHembras += sn.hembras; }
@@ -6402,9 +6560,20 @@ function renderEventosClimaLista(){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin otros eventos registrados todavía.</p>'
     : lista.map(ev=>`
       <div class="potrero-card">
-        <div class="nombre">${esc(ev.fecha)} — ${esc(ev.tipo)}</div>
+        <div class="nombre">${esc(ev.fecha)} — ${esc(ev.tipo)}
+          <span class="hist-acciones">
+            <button class="hist-btn" data-clima-editar="${esc(ev.id)}" title="Editar">✏️</button>
+            <button class="hist-btn" data-clima-borrar="${esc(ev.id)}" title="Borrar">🗑</button>
+          </span>
+        </div>
         ${ev.obs || ev.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(ev.obs||'')}${ev.obs && ev.usuario?' — ':''}${esc(ev.usuario||'')}</div>` : ''}
       </div>`).join('');
+  cont.querySelectorAll('[data-clima-editar]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); editarEventoClima(btn.dataset.climaEditar); });
+  });
+  cont.querySelectorAll('[data-clima-borrar]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); borrarEventoClima(btn.dataset.climaBorrar); });
+  });
 }
 /* Abortos -- mismo criterio que "evento_clima": del establecimiento
    entero, no de un potrero. No resta stock (el feto nunca se contó como
@@ -6418,10 +6587,92 @@ function renderAbortosLista(){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin abortos registrados todavía.</p>'
     : lista.map(ab=>`
       <div class="potrero-card">
-        <div class="nombre">${esc(ab.fecha)} — ${(ab.cantidad||1) > 1 ? (esc(ab.cantidad)+' animales · ') : ''}${esc(MOTIVO_TXT[ab.motivo]||ab.motivo)}</div>
+        <div class="nombre">${esc(ab.fecha)} — ${(ab.cantidad||1) > 1 ? (esc(ab.cantidad)+' animales · ') : ''}${esc(MOTIVO_TXT[ab.motivo]||ab.motivo)}
+          <span class="hist-acciones">
+            <button class="hist-btn" data-aborto-editar="${esc(ab.id)}" title="Editar">✏️</button>
+            <button class="hist-btn" data-aborto-borrar="${esc(ab.id)}" title="Borrar">🗑</button>
+          </span>
+        </div>
         ${ab.obs || ab.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(ab.obs||'')}${ab.obs && ab.usuario?' — ':''}${esc(ab.usuario||'')}</div>` : ''}
       </div>`).join('');
+  cont.querySelectorAll('[data-aborto-editar]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); editarAborto(btn.dataset.abortoEditar); });
+  });
+  cont.querySelectorAll('[data-aborto-borrar]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); borrarAborto(btn.dataset.abortoBorrar); });
+  });
 }
+/* 3/10/2026, a pedido de Pedro: editar/borrar un evento climático o un aborto
+   (solo en la PC). Mismo patrón que Señaladas (editarSenalada/borrarSenalada):
+   edición/baja directa sin reversar nada (no tocan stock), sincronizada como
+   evento aparte (evento_clima_editado/_eliminado, aborto_editado/_eliminado)
+   que CUALQUIER dispositivo aplica en aplicarEventoRemoto(). */
+let editandoEventoClimaId = null;
+let editandoAbortoId = null;
+function cancelarEdicionEventoClima(){
+  editandoEventoClimaId = null;
+  document.getElementById('ev-fecha').value = fechaISOHoy();
+  document.getElementById('ev-obs').value = '';
+  document.getElementById('ev-guardar').textContent = 'Registrar evento';
+  document.getElementById('ev-cancelar-edicion').style.display = 'none';
+}
+function cancelarEdicionAborto(){
+  editandoAbortoId = null;
+  document.getElementById('ab-cantidad').value = '1';
+  document.getElementById('ab-fecha').value = fechaISOHoy();
+  document.getElementById('ab-obs').value = '';
+  document.getElementById('ab-guardar').textContent = 'Registrar aborto';
+  document.getElementById('ab-cancelar-edicion').style.display = 'none';
+}
+function editarEventoClima(id){
+  const ev = (estado.eventosClima||[]).find(x=>x.id===id);
+  if(!ev) return;
+  editandoEventoClimaId = id;
+  const [d,m,y] = ev.fecha.split('/');
+  document.getElementById('ev-fecha').value = `${y}-${m}-${d}`;
+  document.getElementById('ev-tipo').value = ev.tipo;
+  document.getElementById('ev-obs').value = ev.obs||'';
+  document.getElementById('ev-guardar').textContent = 'Guardar corrección';
+  document.getElementById('ev-cancelar-edicion').style.display = '';
+  document.getElementById('ev-obs').focus();
+}
+function borrarEventoClima(id){
+  const ev = (estado.eventosClima||[]).find(x=>x.id===id);
+  if(!ev) return;
+  if(!confirm(`¿Borrar el evento "${ev.tipo}" del ${ev.fecha}? No se puede deshacer.`)) return;
+  estado.eventosClima = (estado.eventosClima||[]).filter(x=>x.id!==id);
+  guardarEstado();
+  enviarEvento('evento_clima_eliminado', ESTABLECIMIENTO, {id});
+  if(editandoEventoClimaId===id) cancelarEdicionEventoClima();
+  renderEventosClimaLista();
+  toast('Evento borrado');
+}
+function editarAborto(id){
+  const ab = (estado.abortos||[]).find(x=>x.id===id);
+  if(!ab) return;
+  editandoAbortoId = id;
+  const [d,m,y] = ab.fecha.split('/');
+  document.getElementById('ab-fecha').value = `${y}-${m}-${d}`;
+  document.getElementById('ab-motivo').value = ab.motivo;
+  document.getElementById('ab-cantidad').value = ab.cantidad||1;
+  document.getElementById('ab-obs').value = ab.obs||'';
+  document.getElementById('ab-guardar').textContent = 'Guardar corrección';
+  document.getElementById('ab-cancelar-edicion').style.display = '';
+  document.getElementById('ab-cantidad').focus();
+}
+function borrarAborto(id){
+  const ab = (estado.abortos||[]).find(x=>x.id===id);
+  if(!ab) return;
+  if(!confirm(`¿Borrar el aborto del ${ab.fecha}${(ab.cantidad||1)>1 ? ' ('+ab.cantidad+' animales)' : ''}? Se recalcula el % de abortos. No se puede deshacer.`)) return;
+  estado.abortos = (estado.abortos||[]).filter(x=>x.id!==id);
+  guardarEstado();
+  enviarEvento('aborto_eliminado', ESTABLECIMIENTO, {id});
+  if(editandoAbortoId===id) cancelarEdicionAborto();
+  renderAbortosLista();
+  toast('Aborto borrado');
+}
+document.getElementById('ev-cancelar-edicion').addEventListener('click', cancelarEdicionEventoClima);
+document.getElementById('ab-cancelar-edicion').addEventListener('click', cancelarEdicionAborto);
 /* Señalada -- mismo criterio que Abortos: del establecimiento entero, sin
    potrero. No toca stock; es un conteo aparte (discriminado macho/hembra)
    para el % de señalada sobre ovejas encarneradas, ver
@@ -6539,6 +6790,12 @@ document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ab-fecha').value = fechaISOHoy();
   document.getElementById('ab-fecha').max = fechaISOHoy();
   document.getElementById('ab-obs').value = '';
+  editandoEventoClimaId = null;
+  document.getElementById('ev-guardar').textContent = 'Registrar evento';
+  document.getElementById('ev-cancelar-edicion').style.display = 'none';
+  editandoAbortoId = null;
+  document.getElementById('ab-guardar').textContent = 'Registrar aborto';
+  document.getElementById('ab-cancelar-edicion').style.display = 'none';
   editandoSenaladaId = null;
   document.getElementById('sn-guardar').textContent = 'Registrar señalada';
   document.getElementById('sn-cancelar-edicion').style.display = 'none';
@@ -6734,6 +6991,15 @@ document.getElementById('ev-guardar').addEventListener('click', ()=>{
   const obs = document.getElementById('ev-obs').value.trim();
   if(!fechaISO){ toast('Elegí una fecha'); return; }
   const fecha = fechaISOaDisplay(fechaISO);
+  if(editandoEventoClimaId){
+    const evc = (estado.eventosClima||[]).find(x=>x.id===editandoEventoClimaId);
+    if(evc){ evc.fecha = fecha; evc.tipo = tipo; evc.obs = obs||null; guardarEstado(); }
+    enviarEvento('evento_clima_editado', ESTABLECIMIENTO, {id: editandoEventoClimaId, fecha, tipo, obs: obs||null});
+    cancelarEdicionEventoClima();
+    renderEventosClimaLista();
+    toast('Evento corregido');
+    return;
+  }
   const id = generarIdHistorial();
   const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
   estado.eventosClima = estado.eventosClima || [];
@@ -6754,6 +7020,15 @@ document.getElementById('ab-guardar').addEventListener('click', ()=>{
   if(!fechaISO){ toast('Elegí una fecha'); return; }
   if(!cantidad || cantidad<1){ toast('Ingresá una cantidad válida'); return; }
   const fecha = fechaISOaDisplay(fechaISO);
+  if(editandoAbortoId){
+    const abe = (estado.abortos||[]).find(x=>x.id===editandoAbortoId);
+    if(abe){ abe.fecha = fecha; abe.motivo = motivo; abe.cantidad = cantidad; abe.obs = obs||null; guardarEstado(); }
+    enviarEvento('aborto_editado', ESTABLECIMIENTO, {id: editandoAbortoId, fecha, motivo, cantidad, obs: obs||null});
+    cancelarEdicionAborto();
+    renderAbortosLista();
+    toast('Aborto corregido');
+    return;
+  }
   const id = generarIdHistorial();
   const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
   estado.abortos = estado.abortos || [];
