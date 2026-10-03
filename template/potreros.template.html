@@ -1526,10 +1526,10 @@ async function vaciarColaStock(){
 /* Bandera de solo-lectura para registrarHistorial(): true mientras se está
    procesando un evento remoto (aplicarEventoRemoto es síncrona, sin await
    interno, así que no hay riesgo de que se entrevere con una acción local
-   del usuario) -- la usa la variante "simple" para poder filtrar el
-   historial mostrado a "solo lo cargado desde este dispositivo", sin tocar
-   ninguna llamada a registrarHistorial() ni el motor de sincronización en
-   sí (ver "@simple" en Selección y detalle). */
+   del usuario). Marca como `remoto` los renglones de historial que vienen de
+   otros dispositivos. Campo ya no los oculta (3/10/2026, a pedido: todos los
+   dispositivos ven las intervenciones de los distintos usuarios); el nombre
+   de quien lo cargó va dentro del detalle ("... — Fulano"). */
 let _aplicandoRemoto = false;
 function aplicarEventoRemoto(row, potrerosSucios){
   _aplicandoRemoto = true;
@@ -3275,12 +3275,7 @@ function renderDetalle(nombre){
   const ocup = estadoOcupacion(nombre);
   const alertasPotrero = calcularAlertas(nombre);
   const casosPotrero = listarCasosDesaparecidos().filter(c=>c.potreroOrigen===nombre);
-<!-- @completo:start -->
   const historialVisible = historial;
-<!-- @completo:end -->
-<!-- @simple:start -->
-  const historialVisible = historial.filter(h=>!h.remoto);
-<!-- @simple:end -->
 
   det.innerHTML = `
     <div class="detalle-titulo"><h2>${esc(nombre)}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>

@@ -778,7 +778,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.76","versionMovil":"1.77","simpleHabilitado":true,"versionMovilSimple":"1.21","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.76","versionMovil":"1.77","simpleHabilitado":true,"versionMovilSimple":"1.22","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1374,10 +1374,10 @@ async function vaciarColaStock(){
 /* Bandera de solo-lectura para registrarHistorial(): true mientras se está
    procesando un evento remoto (aplicarEventoRemoto es síncrona, sin await
    interno, así que no hay riesgo de que se entrevere con una acción local
-   del usuario) -- la usa la variante "simple" para poder filtrar el
-   historial mostrado a "solo lo cargado desde este dispositivo", sin tocar
-   ninguna llamada a registrarHistorial() ni el motor de sincronización en
-   sí (ver "@simple" en Selección y detalle). */
+   del usuario). Marca como `remoto` los renglones de historial que vienen de
+   otros dispositivos. Campo ya no los oculta (3/10/2026, a pedido: todos los
+   dispositivos ven las intervenciones de los distintos usuarios); el nombre
+   de quien lo cargó va dentro del detalle ("... — Fulano"). */
 let _aplicandoRemoto = false;
 function aplicarEventoRemoto(row, potrerosSucios){
   _aplicandoRemoto = true;

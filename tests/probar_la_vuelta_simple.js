@@ -191,9 +191,10 @@ async function probarSimple(archivo){
   });
   chequear('cartel: el subtítulo de Campo es solo la versión', /^v\d+\.\d+$/.test(doc.querySelector('header .sub').textContent.trim()), doc.querySelector('header .sub').textContent);
 
-  // ---- Historial: solo se muestra lo cargado desde este dispositivo ----
-  // (un evento remoto sí queda en el estado/stock -- eso no cambia, sólo
-  // se oculta de la lista que se le muestra al empleado)
+  // ---- Historial: 3/10/2026, a pedido de Pedro, Campo muestra TAMBIÉN lo que
+  // cargaron otros usuarios desde otros dispositivos (antes, desde el
+  // 22/9/2026, solo mostraba lo propio). Cada renglón lleva el nombre de
+  // quien lo cargó, y los ajenos son de solo lectura (sin ✏️/🗑). ----
   if(potreroConAnimales){
     const potreroHist = potreroConAnimales;
     win.seleccionarPotrero(potreroHist);
@@ -207,21 +208,24 @@ async function probarSimple(archivo){
     win.aplicarEventoRemoto({
       dispositivo: 'otro-dispositivo-cualquiera',
       tipo: 'nacimiento', potrero: potreroHist,
-      detalle: {categoria: 'Terneros', cantidad: 9, usuario: 'Pedro'},
+      detalle: {categoria: 'Terneros', cantidad: 9, usuario: 'Silvia'},
       fecha_cliente: win.fechaHoy()
     }, new Set());
     const totalHistorialReal = win.__est().potreros[potreroHist].historial.length;
 
     win.renderDetalle(potreroHist); // fuerza a re-renderizar con el evento remoto ya aplicado
-    const itemsMostrados = doc.querySelectorAll('#historial .hist-item').length;
-    chequear('el evento remoto SÍ quedó en el estado (no se pierde, solo se oculta)',
+    const items = Array.from(doc.querySelectorAll('#historial .hist-item'));
+    chequear('el evento remoto quedó en el estado marcado como remoto',
       win.__est().potreros[potreroHist].historial.some(h=>h.remoto===true && h.tipo==='nacimiento' && h.detalle.includes('9 Terneros')));
-    chequear('el historial mostrado tiene menos filas que el historial real (el remoto está oculto)',
-      itemsMostrados < totalHistorialReal, `mostrados=${itemsMostrados} reales=${totalHistorialReal}`);
-    chequear('el movimiento cargado LOCALMENTE sigue visible en el historial mostrado',
-      doc.getElementById('historial').innerHTML.includes('2 Terneros'));
-    chequear('el movimiento del OTRO dispositivo NO aparece en el historial mostrado',
-      !doc.getElementById('historial').innerHTML.includes('9 Terneros'));
+    chequear('el historial mostrado tiene todas las filas del historial real (hasta el tope de 15)',
+      items.length === Math.min(totalHistorialReal, 15), `mostrados=${items.length} reales=${totalHistorialReal}`);
+    const filaLocal = items.find(el => el.textContent.includes('2 Terneros'));
+    const filaOtro = items.find(el => el.textContent.includes('9 Terneros'));
+    chequear('el movimiento cargado LOCALMENTE aparece en el historial', !!filaLocal);
+    chequear('el movimiento del OTRO dispositivo TAMBIÉN aparece en el historial', !!filaOtro);
+    chequear('el renglón del otro usuario dice quién lo cargó', !!filaOtro && filaOtro.textContent.includes('— Silvia'), filaOtro && filaOtro.textContent.trim());
+    chequear('el renglón propio se puede editar/borrar', !!filaLocal && !!filaLocal.querySelector('.hist-btn'));
+    chequear('el renglón del otro usuario es de solo lectura (sin botones)', !!filaOtro && !filaOtro.querySelector('.hist-btn'));
   }
 
   // ---- las advertencias (⚠️ carga/ocupación) NO se muestran, ni en el detalle ni en la lista ----
@@ -330,6 +334,48 @@ async function probarSimple(archivo){
   return win;
 }
 
+// 3/10/2026: dos celulares Campo con usuarios distintos, sincronizados por el
+// mismo servidor -- cada uno tiene que ver en su historial lo que cargó el otro.
+async function probarDosCampo(archivoSimple){
+  console.log(`\n=== Dos dispositivos ${archivoSimple} (historial de los distintos usuarios) ===`);
+  const servidor = crearServidor();
+  const A = await levantar(archivoSimple, servidor);
+  const B = await levantar(archivoSimple, servidor);
+  if(A.errores.length || B.errores.length){ chequear('los dos Campo cargan sin errores', false, [...A.errores, ...B.errores].join(' | ')); return; }
+  const conAnimales = A.win.__potrerosGeo().find(p => A.win.totalPotrero(p.nombre) > 0);
+  if(!conAnimales){ console.log('  (sin potreros seedeados -- se saltea)'); return; }
+  const potrero = conAnimales.nombre;
+  A.win.localStorage.setItem('potreros_nombre_usuario', 'Ana');
+  B.win.localStorage.setItem('potreros_nombre_usuario', 'Beto');
+
+  A.win.seleccionarPotrero(potrero);
+  A.win.mostrarFormulario(potrero, 'nacimiento');
+  A.win.document.getElementById('f-cat').value = 'Terneros';
+  A.win.document.getElementById('f-cant').value = '4';
+  A.win.document.getElementById('f-fecha').value = A.win.fechaISOHoy();
+  A.win.document.getElementById('f-confirmar').click();
+  await new Promise(r => setTimeout(r, 30));
+
+  B.win.seleccionarPotrero(potrero);
+  B.win.mostrarFormulario(potrero, 'nacimiento');
+  B.win.document.getElementById('f-cat').value = 'Terneros';
+  B.win.document.getElementById('f-cant').value = '7';
+  B.win.document.getElementById('f-fecha').value = B.win.fechaISOHoy();
+  B.win.document.getElementById('f-confirmar').click();
+  await new Promise(r => setTimeout(r, 30));
+
+  await A.win.sincronizar(true);
+  await B.win.sincronizar(true);
+  A.win.renderDetalle(potrero);
+  B.win.renderDetalle(potrero);
+  const histA = A.win.document.getElementById('historial').textContent;
+  const histB = B.win.document.getElementById('historial').textContent;
+  chequear('Ana ve lo suyo y lo de Beto en el historial', histA.includes('4 Terneros') && histA.includes('7 Terneros'), histA.replace(/\s+/g, ' ').slice(0, 300));
+  chequear('Beto ve lo suyo y lo de Ana en el historial', histB.includes('4 Terneros') && histB.includes('7 Terneros'), histB.replace(/\s+/g, ' ').slice(0, 300));
+  chequear('Ana ve que lo de Beto lo cargó Beto', /7 Terneros[^\n]*— Beto/.test(histA.replace(/\s+/g, ' ')), histA.replace(/\s+/g, ' ').slice(0, 300));
+  chequear('Beto ve que lo de Ana lo cargó Ana', /4 Terneros[^\n]*— Ana/.test(histB.replace(/\s+/g, ' ')), histB.replace(/\s+/g, ' ').slice(0, 300));
+}
+
 // El cartel compacto es solo de Campo (marcador @simple): la móvil completa
 // tiene que seguir mostrando los 7 números y su subtítulo largo.
 async function probarCartelNoSeFiltra(archivoCompleto){
@@ -400,6 +446,7 @@ async function probarSincroniza(archivoSimple, archivoCompleto){
   for(const { simple, completo } of pares){
     await probarSimple(simple);
     await probarSincroniza(simple, completo);
+    await probarDosCampo(simple);
     if(completo) await probarCartelNoSeFiltra(completo);
   }
 
