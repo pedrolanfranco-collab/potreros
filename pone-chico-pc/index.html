@@ -446,7 +446,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.81 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.82 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -814,7 +814,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.81","versionMovil":"1.82","simpleHabilitado":true,"versionMovilSimple":"1.27","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.82","versionMovil":"1.83","simpleHabilitado":true,"versionMovilSimple":"1.28","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -2439,6 +2439,27 @@ function datosCorreccionDeCaso(h, datos){
   return (h.tipo==='perdida' || h.tipo==='muerte_desaparecido') && h.casoId
     ? {casoId: h.casoId, cantidad: datos && datos.cantidad} : {};
 }
+/* Resoluciones vigentes (encontrado / pérdida / muerte) de un caso de desaparecido.
+   6/10/2026: borrar o editar el desaparecido con resoluciones vivas las dejaba
+   huérfanas y duplicaba stock (el desaparecido devuelve lo que restó y el
+   "encontrado" ya había sumado lo hallado por su lado), así que se pide
+   deshacer primero esas. */
+function resolucionesVivasDeCaso(casoId){
+  const lista = [];
+  POTREROS_GEO.forEach(p=>{
+    (estado.potreros[p.nombre].historial||[]).forEach(h=>{
+      if((h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido') && h.casoId===casoId && !h.eliminado) lista.push(h);
+    });
+  });
+  return lista;
+}
+function avisarSiTieneResoluciones(h){
+  if(h.tipo!=='desaparecido') return false;
+  const n = resolucionesVivasDeCaso(h.id).length;
+  if(!n) return false;
+  toast(`Este desaparecido ya tiene ${n} resolución${n===1?'':'es'} cargada${n===1?'':'s'} (encontrado, pérdida o muerte): primero borrá ${n===1?'esa':'esas'}.`);
+  return true;
+}
 function construirAjusteInverso(h, potreroHost){
   const e = datosHistorial(h, potreroHost); if(!e) return null;
   if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
@@ -2524,6 +2545,7 @@ function tacharOtraPuntaSincronizada(h, potreroHost, sufijo){
 function borrarHistorial(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
+  if(avisarSiTieneResoluciones(ub.entry)) return;
   if(!confirm('¿Seguro que querés borrar este movimiento? Ajusta la cantidad de animales en el potrero correspondiente. No se puede deshacer.')) return;
   const h = ub.entry;
   const ajuste = construirAjusteInverso(h, ub.potrero);
@@ -2632,6 +2654,7 @@ function abrirFormularioEdicion(h, datos, potreroHost, transaccion){
 function editarHistorial(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
+  if(avisarSiTieneResoluciones(ub.entry)) return;
   const h = ub.entry;
   const msgEditar = 'Esto va a deshacer el movimiento actual (ajusta la cantidad de animales) y abrir el formulario para volver a cargarlo corregido. Si cancelás el formulario, el movimiento original queda deshecho. ¿Continuar?';
   if(!confirm(msgEditar)) return;

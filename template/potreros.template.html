@@ -2639,6 +2639,27 @@ function datosCorreccionDeCaso(h, datos){
   return (h.tipo==='perdida' || h.tipo==='muerte_desaparecido') && h.casoId
     ? {casoId: h.casoId, cantidad: datos && datos.cantidad} : {};
 }
+/* Resoluciones vigentes (encontrado / pérdida / muerte) de un caso de desaparecido.
+   6/10/2026: borrar o editar el desaparecido con resoluciones vivas las dejaba
+   huérfanas y duplicaba stock (el desaparecido devuelve lo que restó y el
+   "encontrado" ya había sumado lo hallado por su lado), así que se pide
+   deshacer primero esas. */
+function resolucionesVivasDeCaso(casoId){
+  const lista = [];
+  POTREROS_GEO.forEach(p=>{
+    (estado.potreros[p.nombre].historial||[]).forEach(h=>{
+      if((h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido') && h.casoId===casoId && !h.eliminado) lista.push(h);
+    });
+  });
+  return lista;
+}
+function avisarSiTieneResoluciones(h){
+  if(h.tipo!=='desaparecido') return false;
+  const n = resolucionesVivasDeCaso(h.id).length;
+  if(!n) return false;
+  toast(`Este desaparecido ya tiene ${n} resolución${n===1?'':'es'} cargada${n===1?'':'s'} (encontrado, pérdida o muerte): primero borrá ${n===1?'esa':'esas'}.`);
+  return true;
+}
 function construirAjusteInverso(h, potreroHost){
   const e = datosHistorial(h, potreroHost); if(!e) return null;
   if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
@@ -2724,6 +2745,7 @@ function tacharOtraPuntaSincronizada(h, potreroHost, sufijo){
 function borrarHistorial(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
+  if(avisarSiTieneResoluciones(ub.entry)) return;
   if(!confirm('¿Seguro que querés borrar este movimiento? Ajusta la cantidad de animales en el potrero correspondiente. No se puede deshacer.')) return;
   const h = ub.entry;
   const ajuste = construirAjusteInverso(h, ub.potrero);
@@ -2834,6 +2856,7 @@ function abrirFormularioEdicion(h, datos, potreroHost, transaccion){
 function editarHistorial(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
+  if(avisarSiTieneResoluciones(ub.entry)) return;
   const h = ub.entry;
 <!-- @movil:start -->
   if(h.tipo==='movimiento' || h.tipo==='movimiento_todo' || h.tipo==='movimiento_multi' || h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido'){

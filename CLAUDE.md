@@ -291,8 +291,10 @@ puede editar y borrar, siempre con `confirm()`:
   reversar stock, como lluvia/señalada). Los **recibe** `aplicarEventoRemoto()`
   en todas las variantes, y `calcularEstadisticasNacimientos()` (hay dos copias,
   `@pc` y `@movil`) reconstruye los abortos por id para que el % se corrija.
-- Ver `tests/probar_editar_borrar_pc.js`. **Pendiente (no pedido):** borrar un desaparecido que ya tiene resoluciones
-  (encontrados/pérdidas) las deja huérfanas.
+- Ver `tests/probar_editar_borrar_pc.js`. **Sin pendientes salvo Sanidad (ver abajo).** Borrar o editar un desaparecido que ya
+  tiene resoluciones vivas (encontrado/pérdida/muerte) se bloquea con un aviso
+  (`avisarSiTieneResoluciones()`, 6/10/2026): dejaría las resoluciones huérfanas y
+  duplicaría stock; hay que borrar primero esas.
   (Resuelto el 6/10/2026: `buscarMejor()` ahora mira `origDatos || extra`, así que
   el celular que cargó un evento también tacha su renglón cuando otro lo corrige;
   los items se comparan con `canon()`, sin importar el orden de claves que

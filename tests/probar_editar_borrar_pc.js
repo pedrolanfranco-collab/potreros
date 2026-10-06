@@ -672,6 +672,26 @@ async function probarResolucionesDesaparecidos(A, B, F, C, servidor){
   chequear('borrar solo la muerte deja pendiente 1 en las 4 apps (se tachó la correcta)',
     [A, B, F, C].every(dev => pendiente(dev.win, 'caso-prueba-partes') === 1), [A, B, F, C].map(dev => pendiente(dev.win, 'caso-prueba-partes')).join(','));
   chequear('la pérdida de 2 sigue vigente en la otra PC', !!entradas(B.win, p).find(h => h.tipo === 'perdida' && h.casoId === 'caso-prueba-partes' && !h.eliminado));
+  // 3) borrar/editar el DESAPARECIDO con resoluciones vivas se bloquea (dejaría las resoluciones huérfanas y duplicaría stock)
+  const desA = entradas(A.win, p).find(h => h.tipo === 'desaparecido' && h.id === 'caso-prueba-partes');
+  const stockAntes = stock(A.win, p, key), eventosAntes = servidor.filas.eventos_sync.length;
+  A.win.borrarHistorial(desA.id); // (el historial solo dibuja las 15 más recientes: se llama a la misma función que el botón 🗑)
+  chequear('borrar el desaparecido con una pérdida cargada se bloquea y avisa',
+    !desA.eliminado && stock(A.win, p, key) === stockAntes && /resolución/.test(A.win.document.getElementById('toast').textContent),
+    A.win.document.getElementById('toast').textContent);
+  A.win.editarHistorial(desA.id);
+  chequear('editarlo también se bloquea, sin deshacer nada', !desA.eliminado && stock(A.win, p, key) === stockAntes && servidor.filas.eventos_sync.length === eventosAntes);
+  // se deshace la resolución que quedaba (la pérdida de 2) y recién ahí se puede borrar
+  const perdidaViva = entradas(A.win, p).find(h => h.tipo === 'perdida' && h.casoId === 'caso-prueba-partes' && !h.eliminado);
+  A.win.borrarHistorial(perdidaViva.id);
+  await dormir(40);
+  A.win.borrarHistorial(desA.id);
+  await dormir(40);
+  chequear('sin resoluciones vivas, borrar el desaparecido devuelve las 3 cabezas', desA.eliminado === true && stock(A.win, p, key) === stockAntes + 3,
+    `${stock(A.win, p, key)} vs ${stockAntes + 3}`);
+  await sincronizarTodos(B, F, C);
+  chequear('y las otras apps quedan con el mismo stock', [B, F, C].every(dev => stock(dev.win, p, key) === stock(A.win, p, key)),
+    [B, F, C].map(dev => stock(dev.win, p, key)).join(',') + ' vs ' + stock(A.win, p, key));
 }
 
 async function probarAbortosYClima(A, B, F, C, servidor){
