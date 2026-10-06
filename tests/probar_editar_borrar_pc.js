@@ -415,6 +415,70 @@ function estado_quitar(dev, p, entry){
   if(i >= 0) h.splice(i, 1);
 }
 
+/* 6/10/2026: el dispositivo que CARGÓ el evento tiene `extra` (no `origDatos`);
+   cuando otro dispositivo lo corrige (acá, la PC) también tiene que tachar su
+   propio renglón, no solo corregir el stock. Antes quedaba como vigente. */
+async function probarOrigenPropio(A, B, F, C, servidor){
+  console.log('  -- el celular que cargó el evento tacha su propio renglón cuando otro lo corrige');
+  const geo = F.win.__potrerosGeo();
+  let p = null, claves = [];
+  for(const g of geo){
+    const animales = F.win.__est().potreros[g.nombre].animales;
+    const ks = Object.keys(animales).filter(x => animales[x] >= 5);
+    if(ks.length && (!p || ks.length > claves.length)){ p = g.nombre; claves = ks; if(ks.length >= 2) break; }
+  }
+  if(!p){ console.log('  (sin stock suficiente -- se saltea)'); return; }
+  const q = geo.map(g => g.nombre).find(n => n !== p);
+  const key = claves[0];
+  const { cat, dueno: du } = F.win.partesClave(key);
+  const ISOhoy = F.win.fechaISOHoy();
+
+  // el celular (móvil completa) carga una muerte y un movimiento (con 1 o 2 categorías) por sus formularios
+  F.win.seleccionarPotrero(p);
+  F.win.mostrarFormulario(p, 'muerte');
+  const f = F.win.document;
+  f.getElementById('f-cat').value = cat; f.getElementById('f-dueno').value = du;
+  f.getElementById('f-cant').value = '1'; f.getElementById('f-fecha').value = ISOhoy; f.getElementById('f-obs').value = 'propio-1';
+  f.getElementById('f-confirmar').click();
+  await dormir(30);
+  F.win.seleccionarPotrero(p);
+  F.win.mostrarFormulario(p, 'mover');
+  f.getElementById('f-destino').value = q;
+  const aMover = claves.slice(0, 2);
+  f.querySelectorAll('.mov-check').forEach(c => { c.checked = aMover.includes(c.dataset.key); });
+  f.querySelectorAll('.mov-cant').forEach(i => { if(aMover.includes(i.dataset.key)) i.value = '1'; });
+  f.getElementById('f-fecha').value = ISOhoy; f.getElementById('f-obs').value = 'propio-mov';
+  f.getElementById('f-confirmar').click();
+  await dormir(30);
+  const miMuerte = entradas(F.win, p).find(h => h.tipo === 'muerte' && h.extra && h.extra.obs === 'propio-1');
+  const miMov = entradas(F.win, q).find(h => h.tipo === 'movimiento_multi' && h.extra && h.extra.obs === 'propio-mov');
+  chequear('el celular cargó la muerte y el movimiento por sus formularios', !!miMuerte && !!miMov && miMov.extra.items.length === aMover.length);
+
+  // la PC los sincroniza y los borra
+  await sincronizarTodos(A);
+  A.win.confirm = () => true;
+  const suMuerte = entradas(A.win, p).find(h => h.tipo === 'muerte' && h.origDatos && h.origDatos.obs === 'propio-1');
+  const suMov = entradas(A.win, q).find(h => h.tipo === 'movimiento_multi' && h.origDatos && h.origDatos.obs === 'propio-mov');
+  A.win.renderDetalle(p);
+  click(A.win, A.win.document.querySelector(`[data-hist-borrar="${suMuerte.id}"]`));
+  A.win.renderDetalle(q);
+  click(A.win, A.win.document.querySelector(`[data-hist-borrar="${suMov.id}"]`));
+  await dormir(40);
+  // Postgres (jsonb) reordena las claves de lo que viaja por eventos_sync: se imita acá
+  servidor.filas.eventos_sync.filter(r => r.tipo === 'correccion' && r.detalle.reversar && r.detalle.reversar.items).forEach(r => {
+    r.detalle.reversar.items = r.detalle.reversar.items.map(it => {
+      const o = {}; Object.keys(it).reverse().forEach(k => { o[k] = it[k]; }); return o;
+    });
+  });
+
+  await sincronizarTodos(F);
+  chequear('la muerte propia queda tachada en el celular que la cargó', miMuerte.eliminado === true && /ELIMINADO/.test(miMuerte.detalle), miMuerte.detalle);
+  chequear('el movimiento propio queda tachado en sus dos puntas', miMov.eliminado === true &&
+    entradas(F.win, p).filter(h => h.tipo === 'movimiento_multi' && h.extra && h.extra.obs === 'propio-mov').every(h => h.eliminado), JSON.stringify(entradas(F.win, p).slice(0, 2)));
+  chequear('y no se agrega la línea suelta "Corrección (sincronizada)"', !entradas(F.win, p).some(h => h.tipo === 'correccion') && !entradas(F.win, q).some(h => h.tipo === 'correccion'));
+  chequear('el stock del celular coincide con el de la PC', foto(F.win) === foto(A.win));
+}
+
 async function probarAbortosYClima(A, B, F, C, servidor){
   console.log('  -- abortos y otros eventos (helada, granizo...)');
   const d = A.win.document;
@@ -544,7 +608,10 @@ async function probarEstablecimiento(archivoPc){
   const errores = [...A.errores, ...B.errores, ...F.errores, ...C.errores];
   chequear('las 4 apps (2 PC, móvil completa, Campo) cargan sin errores', errores.length === 0, errores.join(' | '));
   if(errores.length) return;
-  if(A.win.__potrerosGeo().length) await probarHistorial(A, B, F, C, servidor);
+  if(A.win.__potrerosGeo().length){
+    await probarHistorial(A, B, F, C, servidor);
+    await probarOrigenPropio(A, B, F, C, servidor);
+  }
   else console.log('  (sin potreros seedeados -- se saltea la parte de historial)');
   await probarAbortosYClima(A, B, F, C, servidor);
 }

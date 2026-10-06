@@ -295,9 +295,11 @@ puede editar y borrar, siempre con `confirm()`:
   una compra o venta no saca el registro de `estado.transacciones` ni un
   envío/retorno de la lista de campo ajeno; borrar una pérdida o muerte de
   desaparecido no se tacha en los otros dispositivos (la corrección no lleva
-  `casoId`); `buscarMejor()` solo mira `origDatos`, así que el dispositivo que
-  originó un evento no tacha su propio renglón cuando otro lo corrige; borrar un
-  desaparecido con resoluciones las deja huérfanas. Sanidad no se puede
+  `casoId`); borrar un desaparecido con resoluciones las deja huérfanas.
+  (Resuelto el 6/10/2026: `buscarMejor()` ahora mira `origDatos || extra`, así que
+  el celular que cargó un evento también tacha su renglón cuando otro lo corrige;
+  los items se comparan con `canon()`, sin importar el orden de claves que
+  reordena Postgres.) Sanidad no se puede
   editar/borrar (faltan políticas UPDATE/DELETE en Supabase).
 
 **Cuidado al escribir un `.select(...)` nuevo contra `eventos_sync`:
