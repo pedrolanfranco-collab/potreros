@@ -1322,9 +1322,12 @@ function cargarEstado(){
   return estadoInicial();
 }
 
+let _ultimoGuardado = null; // lo último que ESTA página escribió o leyó de STORAGE_KEY
 function guardarEstado(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+    const json = JSON.stringify(estado);
+    localStorage.setItem(STORAGE_KEY, json);
+    _ultimoGuardado = json;
   }catch(e){
     console.warn("No se pudo guardar en este navegador", e);
   }
@@ -8470,6 +8473,30 @@ if(!usuarioActual()){
 /* ======================= INICIO ======================= */
 actualizarTodo();
 actualizarEstadoSync();
+
+/* 6/10/2026, a pedido de Pedro: la móvil completa y Campo (y dos pestañas de
+   la misma app) comparten localStorage y el ID de dispositivo, así que NO se
+   sincronizan entre sí por Supabase (cada una descarta los eventos de su propio
+   dispositivo) y una página ya abierta seguía mostrando su copia en memoria --
+   y al guardar pisaba lo que la otra había cargado. Ahora, cuando otra página
+   guarda (evento `storage`) o cuando esta vuelve a estar visible, se vuelve a
+   leer el estado guardado y se redibuja. Si hay una sincronización en curso se
+   espera, para no cambiar `estado` a mitad de camino. */
+function refrescarSiOtraPaginaGuardo(){
+  let actual = null;
+  try{ actual = localStorage.getItem(STORAGE_KEY); }catch(e){ return; }
+  if(!actual || actual === _ultimoGuardado) return;
+  if(sincronizando){ setTimeout(refrescarSiOtraPaginaGuardo, 700); return; }
+  _ultimoGuardado = actual;
+  estado = cargarEstado();
+  actualizarTodo();
+  actualizarEstadoSync();
+  const formAbierto = document.querySelector('#form-zona .form-accion');
+  if(seleccionActual && estado.potreros[seleccionActual] && !formAbierto) renderDetalle(seleccionActual);
+}
+try{ _ultimoGuardado = localStorage.getItem(STORAGE_KEY); }catch(e){}
+window.addEventListener('storage', (e)=>{ if(e.key === STORAGE_KEY) refrescarSiOtraPaginaGuardo(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') refrescarSiOtraPaginaGuardo(); });
 </script>
 <script>
 if (navigator.storage && navigator.storage.persist) {

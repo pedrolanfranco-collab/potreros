@@ -446,7 +446,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.77 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.78 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -814,7 +814,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.77","versionMovil":"1.78","simpleHabilitado":true,"versionMovilSimple":"1.23","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.78","versionMovil":"1.79","simpleHabilitado":true,"versionMovilSimple":"1.24","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1208,9 +1208,12 @@ function cargarEstado(){
   return estadoInicial();
 }
 
+let _ultimoGuardado = null; // lo último que ESTA página escribió o leyó de STORAGE_KEY
 function guardarEstado(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+    const json = JSON.stringify(estado);
+    localStorage.setItem(STORAGE_KEY, json);
+    _ultimoGuardado = json;
   }catch(e){
     console.warn("No se pudo guardar en este navegador", e);
   }
@@ -7447,6 +7450,30 @@ if(!usuarioActual()){
 /* ======================= INICIO ======================= */
 actualizarTodo();
 actualizarEstadoSync();
+
+/* 6/10/2026, a pedido de Pedro: la móvil completa y Campo (y dos pestañas de
+   la misma app) comparten localStorage y el ID de dispositivo, así que NO se
+   sincronizan entre sí por Supabase (cada una descarta los eventos de su propio
+   dispositivo) y una página ya abierta seguía mostrando su copia en memoria --
+   y al guardar pisaba lo que la otra había cargado. Ahora, cuando otra página
+   guarda (evento `storage`) o cuando esta vuelve a estar visible, se vuelve a
+   leer el estado guardado y se redibuja. Si hay una sincronización en curso se
+   espera, para no cambiar `estado` a mitad de camino. */
+function refrescarSiOtraPaginaGuardo(){
+  let actual = null;
+  try{ actual = localStorage.getItem(STORAGE_KEY); }catch(e){ return; }
+  if(!actual || actual === _ultimoGuardado) return;
+  if(sincronizando){ setTimeout(refrescarSiOtraPaginaGuardo, 700); return; }
+  _ultimoGuardado = actual;
+  estado = cargarEstado();
+  actualizarTodo();
+  actualizarEstadoSync();
+  const formAbierto = document.querySelector('#form-zona .form-accion');
+  if(seleccionActual && estado.potreros[seleccionActual] && !formAbierto) renderDetalle(seleccionActual);
+}
+try{ _ultimoGuardado = localStorage.getItem(STORAGE_KEY); }catch(e){}
+window.addEventListener('storage', (e)=>{ if(e.key === STORAGE_KEY) refrescarSiOtraPaginaGuardo(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') refrescarSiOtraPaginaGuardo(); });
 </script>
 <script>
 if (navigator.storage && navigator.storage.persist) {
