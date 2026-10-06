@@ -1993,6 +1993,9 @@ function aplicarEventoRemoto(row, potrerosSucios){
       if(hDestino) tachar(hDestino);
       marcado = !!(hOrigen || hDestino);
     }
+    if(d.tipoOriginal==='compra' || d.tipoOriginal==='venta'){
+      quitarTransaccion(d.tipoOriginal==='venta' ? 'Venta' : 'Compra', r.potrero || potrero, r.categoria, r.dueno, r.cantidad, d.fechaOriginal || fechaEvt);
+    }
     aplicarAjusteReversion(d.reversar, fechaEvt);
     if(potrerosSucios && r){ [r.potrero, r.origen, r.destino].forEach(n=>{ if(n) potrerosSucios.add(n); }); }
     if(!marcado){
@@ -2582,6 +2585,18 @@ function datosHistorial(h, potreroHost){
   if(h.origDatos) return Object.assign({potrero: potreroHost}, h.origDatos);
   return null;
 }
+/* Cada compra/venta deja, además de la entrada de historial y el stock, un
+   registro en estado.transacciones (es lo que cuenta el reporte económico de la
+   PC). 6/10/2026: borrar o editar la entrada también saca ese registro -- antes
+   el reporte seguía contando una venta que ya no existía, y al editar quedaba
+   duplicada. Se busca por tipo+potrero+categoría+dueño+cantidad+fecha y se saca
+   UNA (una entrada = una transacción). Devuelve la sacada, o null. */
+function quitarTransaccion(tipoOp, potrero, categoria, dueno, cantidad, fecha){
+  const lista = estado.transacciones || [];
+  const i = lista.findIndex(t=> t.tipo===tipoOp && t.potrero===potrero && t.categoria===categoria
+    && t.cantidad===cantidad && (t.dueno||'')===(dueno||'') && t.fecha===fecha);
+  return i === -1 ? null : lista.splice(i, 1)[0];
+}
 function construirAjusteInverso(h, potreroHost){
   const e = datosHistorial(h, potreroHost); if(!e) return null;
   if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
@@ -2671,6 +2686,10 @@ function borrarHistorial(id){
   const h = ub.entry;
   const ajuste = construirAjusteInverso(h, ub.potrero);
   aplicarAjusteReversion(ajuste);
+  if(h.tipo==='compra' || h.tipo==='venta'){
+    const dt = datosHistorial(h, ub.potrero);
+    quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, dt.categoria, dt.dueno, dt.cantidad, h.fecha);
+  }
   h.eliminado = true;
   h.detalle = h.detalle + ' — ELIMINADO';
   if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id);
@@ -2691,15 +2710,9 @@ function fechaISODeHistorial(h, datos){
   return (datos && datos._fechaISO) || String(h.fecha||'').split('/').reverse().join('-');
 }
 /* Una compra/venta que llegó sincronizada trae categoría/cantidad/dueño pero
-   (las que ya estaban guardadas, de antes de este cambio) no precio,
-   contraparte ni notas -- esos datos están en la transacción que se generó
-   con ella. */
-function transaccionDeHistorial(h, datos, potreroHost){
-  const tipoOp = h.tipo==='venta' ? 'Venta' : 'Compra';
-  return (estado.transacciones||[]).find(t=> t.potrero===potreroHost && t.tipo===tipoOp
-    && t.categoria===datos.categoria && t.cantidad===datos.cantidad
-    && (t.dueno||null)===(datos.dueno||null) && t.fecha===h.fecha) || null;
-}
+   (las que ya estaban guardadas, de antes del 3/10/2026) no precio, contraparte
+   ni notas -- esos datos están en la transacción que se generó con ella, que
+   editarHistorial() saca de estado.transacciones y pasa a abrirFormularioEdicion(). */
 function precargarMover(datos, fechaISO){
   const items = datos.items || [{categoria: datos.categoria, categoriaDestino: datos.categoriaDestino, dueno: datos.dueno, cantidad: datos.cantidad}];
   const el = id => document.getElementById(id);
@@ -2735,7 +2748,7 @@ function precargarCampoAjeno(h, datos, fechaISO){
   el('ca-fecha').value = fechaISO;
   el('ca-obs').value = datos.obs || '';
 }
-function abrirFormularioEdicion(h, datos, potreroHost){
+function abrirFormularioEdicion(h, datos, potreroHost, transaccion){
   const fechaISO = fechaISODeHistorial(h, datos);
   // un movimiento se vuelve a cargar desde su potrero de ORIGEN (donde los animales acaban de volver)
   const base = (h.tipo==='movimiento' || h.tipo==='movimiento_multi' || h.tipo==='movimiento_todo') && datos.potrero ? datos.potrero : potreroHost;
@@ -2759,7 +2772,7 @@ function abrirFormularioEdicion(h, datos, potreroHost){
     if(h.tipo==='compra' || h.tipo==='venta'){
       prefill._tipoOp = h.tipo==='venta' ? 'Venta' : 'Compra';
       if(prefill.precio==null && !prefill.contraparte && !prefill.obs){
-        const t = transaccionDeHistorial(h, datos, potreroHost);
+        const t = transaccion; // la que se acaba de sacar de estado.transacciones
         if(t){
           prefill.precio = t.precioUnitario;
           prefill.contraparte = t.contraparte || null;
@@ -2790,6 +2803,8 @@ function editarHistorial(id){
   const datos = datosHistorial(h, ub.potrero);
   const ajuste = construirAjusteInverso(h, ub.potrero);
   aplicarAjusteReversion(ajuste);
+  const transaccionQuitada = (h.tipo==='compra' || h.tipo==='venta')
+    ? quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, datos.categoria, datos.dueno, datos.cantidad, h.fecha) : null;
   h.eliminado = true;
   h.detalle = h.detalle + ' — EDITADO (ver movimiento nuevo)';
 <!-- @pc:start -->
@@ -2800,7 +2815,7 @@ function editarHistorial(id){
   guardarEstado(); actualizarTodo();
   publicarStockPotreros([ub.potrero, ajuste && ajuste.potrero, ajuste && ajuste.origen, ajuste && ajuste.destino]);
 <!-- @pc:start -->
-  abrirFormularioEdicion(h, datos, ub.potrero);
+  abrirFormularioEdicion(h, datos, ub.potrero, transaccionQuitada);
 <!-- @pc:end -->
 <!-- @movil:start -->
   renderDetalle(ub.potrero);

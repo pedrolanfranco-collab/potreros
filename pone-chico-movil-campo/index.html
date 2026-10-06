@@ -462,7 +462,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v1.25</div>
+        <div class="sub">v1.26</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -662,7 +662,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.79","versionMovil":"1.80","simpleHabilitado":true,"versionMovilSimple":"1.25","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.80","versionMovil":"1.81","simpleHabilitado":true,"versionMovilSimple":"1.26","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1709,6 +1709,9 @@ function aplicarEventoRemoto(row, potrerosSucios){
       if(hDestino) tachar(hDestino);
       marcado = !!(hOrigen || hDestino);
     }
+    if(d.tipoOriginal==='compra' || d.tipoOriginal==='venta'){
+      quitarTransaccion(d.tipoOriginal==='venta' ? 'Venta' : 'Compra', r.potrero || potrero, r.categoria, r.dueno, r.cantidad, d.fechaOriginal || fechaEvt);
+    }
     aplicarAjusteReversion(d.reversar, fechaEvt);
     if(potrerosSucios && r){ [r.potrero, r.origen, r.destino].forEach(n=>{ if(n) potrerosSucios.add(n); }); }
     if(!marcado){
@@ -2239,6 +2242,18 @@ function datosHistorial(h, potreroHost){
   if(h.origDatos) return Object.assign({potrero: potreroHost}, h.origDatos);
   return null;
 }
+/* Cada compra/venta deja, además de la entrada de historial y el stock, un
+   registro en estado.transacciones (es lo que cuenta el reporte económico de la
+   PC). 6/10/2026: borrar o editar la entrada también saca ese registro -- antes
+   el reporte seguía contando una venta que ya no existía, y al editar quedaba
+   duplicada. Se busca por tipo+potrero+categoría+dueño+cantidad+fecha y se saca
+   UNA (una entrada = una transacción). Devuelve la sacada, o null. */
+function quitarTransaccion(tipoOp, potrero, categoria, dueno, cantidad, fecha){
+  const lista = estado.transacciones || [];
+  const i = lista.findIndex(t=> t.tipo===tipoOp && t.potrero===potrero && t.categoria===categoria
+    && t.cantidad===cantidad && (t.dueno||'')===(dueno||'') && t.fecha===fecha);
+  return i === -1 ? null : lista.splice(i, 1)[0];
+}
 function construirAjusteInverso(h, potreroHost){
   const e = datosHistorial(h, potreroHost); if(!e) return null;
   if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
@@ -2328,6 +2343,10 @@ function borrarHistorial(id){
   const h = ub.entry;
   const ajuste = construirAjusteInverso(h, ub.potrero);
   aplicarAjusteReversion(ajuste);
+  if(h.tipo==='compra' || h.tipo==='venta'){
+    const dt = datosHistorial(h, ub.potrero);
+    quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, dt.categoria, dt.dueno, dt.cantidad, h.fecha);
+  }
   h.eliminado = true;
   h.detalle = h.detalle + ' — ELIMINADO';
   if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id);
@@ -2351,6 +2370,8 @@ function editarHistorial(id){
   const datos = datosHistorial(h, ub.potrero);
   const ajuste = construirAjusteInverso(h, ub.potrero);
   aplicarAjusteReversion(ajuste);
+  const transaccionQuitada = (h.tipo==='compra' || h.tipo==='venta')
+    ? quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, datos.categoria, datos.dueno, datos.cantidad, h.fecha) : null;
   h.eliminado = true;
   h.detalle = h.detalle + ' — EDITADO (ver movimiento nuevo)';
   enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste, fechaOriginal: h.fecha});

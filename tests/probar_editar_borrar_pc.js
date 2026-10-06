@@ -479,6 +479,71 @@ async function probarOrigenPropio(A, B, F, C, servidor){
   chequear('el stock del celular coincide con el de la PC', foto(F.win) === foto(A.win));
 }
 
+/* 6/10/2026: borrar/editar una compra o venta también saca el registro de
+   estado.transacciones (lo que cuenta el reporte económico de la PC), en el
+   dispositivo que lo hace y en los demás al sincronizar. Antes la venta borrada
+   seguía contando y al editar quedaba duplicada. */
+async function probarTransacciones(A, B, F, C, servidor){
+  console.log('  -- compra/venta: el registro de transacciones se corrige al borrar y al editar');
+  const estab = A.win.__establecimiento();
+  const geo = A.win.__potrerosGeo();
+  let p = null, key = null;
+  for(const g of geo){
+    const animales = A.win.__est().potreros[g.nombre].animales;
+    const k = Object.keys(animales).find(x => animales[x] >= 10);
+    if(k){ p = g.nombre; key = k; break; }
+  }
+  if(!p){ console.log('  (sin stock suficiente -- se saltea)'); return; }
+  const { cat, dueno: du } = A.win.partesClave(key);
+  const hoy = A.win.fechaHoy(), ISOhoy = A.win.fechaISOHoy();
+  const cuantas = (win, marca) => (win.__est().transacciones || []).filter(t => t.contraparte === marca).length;
+  const d = A.win.document;
+  const botonDe = (win, potrero, id, cual) => { win.renderDetalle(potrero); return win.document.querySelector(`[data-hist-${cual}="${id}"]`); };
+  A.win.confirm = () => true;
+
+  // 1) una compra cargada en la propia PC, y se borra
+  A.win.seleccionarPotrero(p);
+  A.win.mostrarFormulario(p, 'compraventa');
+  d.getElementById('f-tipo-op').value = 'Compra'; d.getElementById('f-cat').value = cat; d.getElementById('f-dueno').value = du;
+  d.getElementById('f-cant').value = '3'; d.getElementById('f-fecha').value = ISOhoy;
+  d.getElementById('f-precio').value = '700'; d.getElementById('f-contraparte').value = 'T-local';
+  d.getElementById('f-confirmar').click();
+  await dormir(30);
+  chequear('la compra cargada en la PC genera su transacción', cuantas(A.win, 'T-local') === 1);
+  const eLocal = entradas(A.win, p).find(h => h.tipo === 'compra' && h.extra && h.extra.contraparte === 'T-local');
+  click(A.win, botonDe(A.win, p, eLocal.id, 'borrar'));
+  await dormir(30);
+  chequear('borrarla saca también su transacción', cuantas(A.win, 'T-local') === 0);
+
+  // 2) una venta que cargó otro dispositivo: se borra desde la PC y las demás apps la sacan al sincronizar
+  await inyectar(servidor, estab, 'venta', p, { categoria: cat, dueno: du, cantidad: 2, precio: 950, contraparte: 'T-remota', obs: null, guia: null }, hoy);
+  await sincronizarTodos(A, B, F, C);
+  chequear('la venta de otro dispositivo está en las transacciones de las 4 apps',
+    [A, B, F, C].every(dev => cuantas(dev.win, 'T-remota') === 1), [A, B, F, C].map(dev => cuantas(dev.win, 'T-remota')).join(','));
+  const eRemota = entradas(A.win, p).find(h => h.tipo === 'venta' && h.origDatos && h.origDatos.contraparte === 'T-remota');
+  click(A.win, botonDe(A.win, p, eRemota.id, 'borrar'));
+  await dormir(40);
+  chequear('borrar la venta saca su transacción de la PC', cuantas(A.win, 'T-remota') === 0);
+  await sincronizarTodos(B, F, C);
+  chequear('y de la otra PC, la móvil y Campo cuando sincronizan', [B, F, C].every(dev => cuantas(dev.win, 'T-remota') === 0),
+    [B, F, C].map(dev => cuantas(dev.win, 'T-remota')).join(','));
+
+  // 3) editar una compra: no queda duplicada
+  await inyectar(servidor, estab, 'compra', p, { categoria: cat, dueno: du, cantidad: 4, precio: 600, contraparte: 'T-editar', obs: null, guia: null }, hoy);
+  await sincronizarTodos(A, B);
+  chequear('la compra de otro dispositivo tiene su transacción', cuantas(A.win, 'T-editar') === 1);
+  const eEd = entradas(A.win, p).find(h => h.tipo === 'compra' && h.origDatos && h.origDatos.contraparte === 'T-editar');
+  click(A.win, botonDe(A.win, p, eEd.id, 'editar'));
+  chequear('al editar, la transacción vieja se saca', cuantas(A.win, 'T-editar') === 0);
+  chequear('y el formulario viene con precio y contraparte', d.getElementById('f-precio').value === '600' && d.getElementById('f-contraparte').value === 'T-editar');
+  d.getElementById('f-confirmar').click();
+  await dormir(30);
+  chequear('al guardar la corrección queda UNA transacción, no dos', cuantas(A.win, 'T-editar') === 1, String(cuantas(A.win, 'T-editar')));
+  await sincronizarTodos(B, F, C);
+  chequear('las demás apps también quedan con una sola', [B, F, C].every(dev => cuantas(dev.win, 'T-editar') === 1),
+    [B, F, C].map(dev => cuantas(dev.win, 'T-editar')).join(','));
+}
+
 async function probarAbortosYClima(A, B, F, C, servidor){
   console.log('  -- abortos y otros eventos (helada, granizo...)');
   const d = A.win.document;
@@ -611,6 +676,7 @@ async function probarEstablecimiento(archivoPc){
   if(A.win.__potrerosGeo().length){
     await probarHistorial(A, B, F, C, servidor);
     await probarOrigenPropio(A, B, F, C, servidor);
+    await probarTransacciones(A, B, F, C, servidor);
   }
   else console.log('  (sin potreros seedeados -- se saltea la parte de historial)');
   await probarAbortosYClima(A, B, F, C, servidor);
