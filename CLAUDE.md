@@ -291,17 +291,21 @@ puede editar y borrar, siempre con `confirm()`:
   reversar stock, como lluvia/señalada). Los **recibe** `aplicarEventoRemoto()`
   en todas las variantes, y `calcularEstadisticasNacimientos()` (hay dos copias,
   `@pc` y `@movil`) reconstruye los abortos por id para que el % se corrija.
-- Ver `tests/probar_editar_borrar_pc.js`. **Pendiente (no pedido):** borrar/editar
-  un envío/retorno no saca el renglón de la lista de campo ajeno; borrar una pérdida o muerte de
-  desaparecido no se tacha en los otros dispositivos (la corrección no lleva
-  `casoId`); borrar un desaparecido con resoluciones las deja huérfanas.
+- Ver `tests/probar_editar_borrar_pc.js`. **Pendiente (no pedido):** borrar un desaparecido que ya tiene resoluciones
+  (encontrados/pérdidas) las deja huérfanas.
   (Resuelto el 6/10/2026: `buscarMejor()` ahora mira `origDatos || extra`, así que
   el celular que cargó un evento también tacha su renglón cuando otro lo corrige;
   los items se comparan con `canon()`, sin importar el orden de claves que
   reordena Postgres.)
   Resuelto el 6/10/2026 también: borrar/editar una compra o venta saca su registro de
   `estado.transacciones` (`quitarTransaccion()`, local y al recibir la corrección), así
-  que el reporte económico ya no cuenta una venta borrada ni la duplica al editar. Sanidad no se puede
+  que el reporte económico ya no cuenta una venta borrada ni la duplica al editar.
+  Y el 6/10/2026 el campo ajeno: borrar/editar un envío/retorno saca su renglón de
+  `estado.campoAjeno.historial` (`quitarMovimientoCampoAjeno()`, también al recibir la
+  corrección). Y las pérdidas / muertes de desaparecido: su corrección lleva `casoId` y
+  `cantidad` (`datosCorreccionDeCaso()`) y el receptor tacha por ahí (no tienen `reversar`
+  porque no tocan stock), así el caso vuelve a figurar pendiente en todos los
+  dispositivos. Sanidad no se puede
   editar/borrar (faltan políticas UPDATE/DELETE en Supabase).
 
 **Cuidado al escribir un `.select(...)` nuevo contra `eventos_sync`:

@@ -544,6 +544,136 @@ async function probarTransacciones(A, B, F, C, servidor){
     [B, F, C].map(dev => cuantas(dev.win, 'T-editar')).join(','));
 }
 
+/* 6/10/2026 (solo La Vuelta, DICOSE): borrar/editar un envío o retorno a campo
+   ajeno también saca su renglón de la lista "🌾 Campo ajeno"
+   (estado.campoAjeno.historial), en el dispositivo que lo hace y en los demás. */
+async function probarCampoAjenoLista(A, B, F, C, servidor){
+  if(!A.win.__config().dicoseHabilitado){ console.log('  (campo ajeno: solo La Vuelta -- se saltea)'); return; }
+  console.log('  -- campo ajeno: la lista se corrige al borrar y al editar');
+  const estab = A.win.__establecimiento();
+  let p = null, key = null;
+  for(const g of A.win.__potrerosGeo()){
+    const animales = A.win.__est().potreros[g.nombre].animales;
+    const k = Object.keys(animales).find(x => animales[x] >= 10);
+    if(k){ p = g.nombre; key = k; break; }
+  }
+  if(!p){ console.log('  (sin stock suficiente -- se saltea)'); return; }
+  const { cat, dueno: du } = A.win.partesClave(key);
+  const hoy = A.win.fechaHoy(), ISOhoy = A.win.fechaISOHoy();
+  const d = A.win.document;
+  const cuantos = (win, marca) => ((win.__est().campoAjeno || {}).historial || []).filter(m => m.obs === marca).length;
+  const boton = (potrero, id, cual) => { A.win.renderDetalle(potrero); return A.win.document.querySelector(`[data-hist-${cual}="${id}"]`); };
+  A.win.confirm = () => true;
+
+  // 1) un envío cargado en la propia PC, y se borra
+  click(A.win, d.getElementById('btn-lluvias'));
+  d.getElementById('ca-tipo').value = 'envio'; d.getElementById('ca-potrero').value = p;
+  d.querySelector('#ca-filas .ca-cat').value = cat; d.querySelector('#ca-filas .ca-dueno').value = du; d.querySelector('#ca-filas .ca-cant').value = '2';
+  d.getElementById('ca-fecha').value = ISOhoy; d.getElementById('ca-obs').value = 'CA-local';
+  d.getElementById('ca-guardar').click();
+  await dormir(30);
+  chequear('el envío cargado en la PC aparece en la lista', cuantos(A.win, 'CA-local') === 1);
+  const eLocal = entradas(A.win, p).find(h => h.tipo === 'envio_campo_ajeno' && h.extra && h.extra.obs === 'CA-local');
+  click(A.win, boton(p, eLocal.id, 'borrar'));
+  await dormir(30);
+  chequear('borrarlo desde el historial lo saca también de la lista "Campo ajeno"', cuantos(A.win, 'CA-local') === 0);
+
+  // 2) un retorno que cargó otro dispositivo: se borra desde la PC y las demás apps lo sacan al sincronizar
+  await inyectar(servidor, estab, 'retorno_campo_ajeno', p, { items: [{ categoria: cat, dueno: du, cantidad: 1 }], guia: null, obs: 'CA-remoto' }, hoy);
+  await sincronizarTodos(A, B, F, C);
+  chequear('el retorno de otro dispositivo está en la lista de las 4 apps', [A, B, F, C].every(dev => cuantos(dev.win, 'CA-remoto') === 1),
+    [A, B, F, C].map(dev => cuantos(dev.win, 'CA-remoto')).join(','));
+  const eRem = entradas(A.win, p).find(h => h.tipo === 'retorno_campo_ajeno' && h.origDatos && h.origDatos.obs === 'CA-remoto');
+  click(A.win, boton(p, eRem.id, 'borrar'));
+  await dormir(40);
+  chequear('borrarlo lo saca de la lista de la PC', cuantos(A.win, 'CA-remoto') === 0);
+  // Postgres (jsonb) reordena las claves de los items que viajan por eventos_sync: se imita acá
+  servidor.filas.eventos_sync.filter(r => r.tipo === 'correccion' && r.detalle.reversar && r.detalle.reversar.items).forEach(r => {
+    r.detalle.reversar.items = r.detalle.reversar.items.map(it => { const o = {}; Object.keys(it).reverse().forEach(k => { o[k] = it[k]; }); return o; });
+  });
+  await sincronizarTodos(B, F, C);
+  chequear('y de la otra PC, la móvil y Campo cuando sincronizan', [B, F, C].every(dev => cuantos(dev.win, 'CA-remoto') === 0),
+    [B, F, C].map(dev => cuantos(dev.win, 'CA-remoto')).join(','));
+
+  // 3) editar un envío: no queda duplicado en la lista
+  await inyectar(servidor, estab, 'envio_campo_ajeno', p, { items: [{ categoria: cat, dueno: du, cantidad: 2 }], guia: 'A654321', obs: 'CA-editar' }, hoy);
+  await sincronizarTodos(A, B);
+  chequear('el envío de otro dispositivo está en la lista', cuantos(A.win, 'CA-editar') === 1);
+  const eEd = entradas(A.win, p).find(h => h.tipo === 'envio_campo_ajeno' && h.origDatos && h.origDatos.obs === 'CA-editar');
+  click(A.win, boton(p, eEd.id, 'editar'));
+  chequear('al editar, el renglón viejo sale de la lista', cuantos(A.win, 'CA-editar') === 0);
+  chequear('y el formulario viene precargado', d.getElementById('ca-obs').value === 'CA-editar' && d.getElementById('ca-guia').value === 'A654321');
+  d.getElementById('ca-guardar').click();
+  await dormir(30);
+  chequear('al guardar la corrección queda UN renglón, no dos', cuantos(A.win, 'CA-editar') === 1, String(cuantos(A.win, 'CA-editar')));
+  await sincronizarTodos(B, F, C);
+  chequear('las demás apps también quedan con uno solo', [B, F, C].every(dev => cuantos(dev.win, 'CA-editar') === 1),
+    [B, F, C].map(dev => cuantos(dev.win, 'CA-editar')).join(','));
+}
+
+/* 6/10/2026: borrar una "pérdida" o una "muerte de desaparecido" no toca stock
+   (ya se había restado al desaparecer), así que su corrección no llevaba
+   `reversar` y los demás dispositivos no sabían qué renglón tachar: el caso
+   seguía resuelto en un lado y pendiente en otro. Ahora la corrección lleva
+   casoId y cantidad. */
+async function probarResolucionesDesaparecidos(A, B, F, C, servidor){
+  console.log('  -- desaparecidos: borrar una pérdida o una muerte se refleja en los otros dispositivos');
+  const estab = A.win.__establecimiento();
+  let p = null, key = null;
+  for(const g of A.win.__potrerosGeo()){
+    const animales = A.win.__est().potreros[g.nombre].animales;
+    const k = Object.keys(animales).find(x => animales[x] >= 10);
+    if(k){ p = g.nombre; key = k; break; }
+  }
+  if(!p){ console.log('  (sin stock suficiente -- se saltea)'); return; }
+  const { cat, dueno: du } = A.win.partesClave(key);
+  const hoy = A.win.fechaHoy(), ISOhoy = A.win.fechaISOHoy();
+  const pendiente = (win, casoId) => { const c = win.listarCasosDesaparecidos().find(x => x.casoId === casoId); return c ? c.pendiente : 0; };
+  const boton = (id) => { A.win.renderDetalle(p); return A.win.document.querySelector(`[data-hist-borrar="${id}"]`); };
+  A.win.confirm = () => true;
+
+  // 1) el celular (móvil completa) declara un desaparecido y lo da por perdido desde Desaparecidos
+  F.win.seleccionarPotrero(p);
+  F.win.mostrarFormulario(p, 'desaparecido');
+  const f = F.win.document;
+  f.getElementById('f-cat').value = cat; f.getElementById('f-dueno').value = du;
+  f.getElementById('f-cant').value = '2'; f.getElementById('f-fecha').value = ISOhoy; f.getElementById('f-obs').value = 'DES-propio';
+  f.getElementById('f-confirmar').click();
+  await dormir(30);
+  const desF = entradas(F.win, p).find(h => h.tipo === 'desaparecido' && h.extra && h.extra.obs === 'DES-propio');
+  F.win.renderDesaparecidosLista();
+  click(F.win, f.querySelector(`[data-perdido="${desF.id}"]`));
+  await dormir(30);
+  const perdidaF = entradas(F.win, p).find(h => h.tipo === 'perdida' && h.casoId === desF.id);
+  chequear('el celular declaró el desaparecido y lo cerró como pérdida', !!perdidaF && pendiente(F.win, desF.id) === 0);
+  await sincronizarTodos(A, B, C);
+  const perdidaA = entradas(A.win, p).find(h => h.tipo === 'perdida' && h.casoId === desF.id);
+  chequear('la PC ve la pérdida con ✏️ y 🗑', !!perdidaA && !!boton(perdidaA.id) );
+  click(A.win, boton(perdidaA.id));
+  await dormir(40);
+  chequear('la PC la borra y el caso vuelve a quedar pendiente por las 2', perdidaA.eliminado === true && pendiente(A.win, desF.id) === 2, String(pendiente(A.win, desF.id)));
+  await sincronizarTodos(F, B, C);
+  chequear('el celular que la cargó también tacha su pérdida', perdidaF.eliminado === true && /ELIMINADO/.test(perdidaF.detalle), perdidaF.detalle);
+  chequear('y en el celular el caso vuelve a figurar pendiente', pendiente(F.win, desF.id) === 2, String(pendiente(F.win, desF.id)));
+  chequear('la otra PC y Campo también lo ven pendiente', pendiente(B.win, desF.id) === 2 && pendiente(C.win, desF.id) === 2,
+    pendiente(B.win, desF.id) + ',' + pendiente(C.win, desF.id));
+  chequear('y no queda la línea suelta "Corrección (sincronizada)" en el celular', !entradas(F.win, p).some(h => h.tipo === 'correccion'));
+
+  // 2) un caso resuelto en partes: se borra solo la muerte (1), la pérdida (2) sigue
+  await inyectar(servidor, estab, 'desaparecido', p, { categoria: cat, dueno: du, cantidad: 3, obs: 'DES-partes', casoId: 'caso-prueba-partes' }, hoy);
+  await inyectar(servidor, estab, 'muerte_desaparecido', p, { categoria: cat, dueno: du, cantidad: 1, caravana: null, casoId: 'caso-prueba-partes' }, hoy);
+  await inyectar(servidor, estab, 'perdida', p, { categoria: cat, dueno: du, cantidad: 2, casoId: 'caso-prueba-partes' }, hoy);
+  await sincronizarTodos(A, B, F, C);
+  chequear('el caso en partes está resuelto en las 4 apps', [A, B, F, C].every(dev => pendiente(dev.win, 'caso-prueba-partes') === 0));
+  const muerteA = entradas(A.win, p).find(h => h.tipo === 'muerte_desaparecido' && h.casoId === 'caso-prueba-partes');
+  click(A.win, boton(muerteA.id));
+  await dormir(40);
+  await sincronizarTodos(B, F, C);
+  chequear('borrar solo la muerte deja pendiente 1 en las 4 apps (se tachó la correcta)',
+    [A, B, F, C].every(dev => pendiente(dev.win, 'caso-prueba-partes') === 1), [A, B, F, C].map(dev => pendiente(dev.win, 'caso-prueba-partes')).join(','));
+  chequear('la pérdida de 2 sigue vigente en la otra PC', !!entradas(B.win, p).find(h => h.tipo === 'perdida' && h.casoId === 'caso-prueba-partes' && !h.eliminado));
+}
+
 async function probarAbortosYClima(A, B, F, C, servidor){
   console.log('  -- abortos y otros eventos (helada, granizo...)');
   const d = A.win.document;
@@ -677,6 +807,8 @@ async function probarEstablecimiento(archivoPc){
     await probarHistorial(A, B, F, C, servidor);
     await probarOrigenPropio(A, B, F, C, servidor);
     await probarTransacciones(A, B, F, C, servidor);
+    await probarCampoAjenoLista(A, B, F, C, servidor);
+    await probarResolucionesDesaparecidos(A, B, F, C, servidor);
   }
   else console.log('  (sin potreros seedeados -- se saltea la parte de historial)');
   await probarAbortosYClima(A, B, F, C, servidor);

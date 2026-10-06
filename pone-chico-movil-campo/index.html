@@ -462,7 +462,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v1.26</div>
+        <div class="sub">v1.27</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -662,7 +662,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.80","versionMovil":"1.81","simpleHabilitado":true,"versionMovilSimple":"1.26","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.81","versionMovil":"1.82","simpleHabilitado":true,"versionMovilSimple":"1.27","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1652,8 +1652,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     // sin tachar (el stock sí se corregía, pero el renglón seguía como vigente).
     // Los items se comparan sin importar el orden de las claves: Postgres (jsonb)
     // las reordena en lo que viaja por eventos_sync, y el `extra` local no.
-    const canon = x => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v))
-      ? Object.keys(v).sort().reduce((o, key)=>{ o[key] = v[key]; return o; }, {}) : v);
+    const canon = canonJSON;
     const buscarMejor = (nombrePotrero, matcher)=>{
       const hist = (estado.potreros[nombrePotrero]||{}).historial || [];
       let mejor = null, mejorDist = Infinity;
@@ -1709,8 +1708,24 @@ function aplicarEventoRemoto(row, potrerosSucios){
       if(hDestino) tachar(hDestino);
       marcado = !!(hOrigen || hDestino);
     }
+    if(!marcado && d.casoId && (d.tipoOriginal==='perdida' || d.tipoOriginal==='muerte_desaparecido')){
+      // el caso puede haberse resuelto en partes (varias entradas con el mismo casoId):
+      // se tacha la de esa cantidad más cercana a la fecha original
+      let mejorCaso = null, distCaso = Infinity;
+      ((estado.potreros[potrero]||{}).historial || []).forEach(h=>{
+        if(h.eliminado || h.tipo!==d.tipoOriginal || h.casoId!==d.casoId) return;
+        const od = h.origDatos || h.extra || {};
+        if(d.cantidad!==undefined && od.cantidad!==d.cantidad) return;
+        const dist = Math.abs(parseFechaDMY(h.fecha) - fechaObjetivo);
+        if(dist < distCaso){ distCaso = dist; mejorCaso = h; }
+      });
+      if(mejorCaso){ tachar(mejorCaso); marcado = true; }
+    }
     if(d.tipoOriginal==='compra' || d.tipoOriginal==='venta'){
       quitarTransaccion(d.tipoOriginal==='venta' ? 'Venta' : 'Compra', r.potrero || potrero, r.categoria, r.dueno, r.cantidad, d.fechaOriginal || fechaEvt);
+    }
+    if(d.tipoOriginal==='envio_campo_ajeno' || d.tipoOriginal==='retorno_campo_ajeno'){
+      quitarMovimientoCampoAjeno(d.tipoOriginal==='envio_campo_ajeno' ? 'envio' : 'retorno', r.potrero || potrero, r.items, d.fechaOriginal || fechaEvt);
     }
     aplicarAjusteReversion(d.reversar, fechaEvt);
     if(potrerosSucios && r){ [r.potrero, r.origen, r.destino].forEach(n=>{ if(n) potrerosSucios.add(n); }); }
@@ -2254,6 +2269,33 @@ function quitarTransaccion(tipoOp, potrero, categoria, dueno, cantidad, fecha){
     && t.cantidad===cantidad && (t.dueno||'')===(dueno||'') && t.fecha===fecha);
   return i === -1 ? null : lista.splice(i, 1)[0];
 }
+/* JSON con las claves ordenadas: para comparar `items` sin importar el orden de
+   las claves (Postgres/jsonb las reordena en lo que viaja por eventos_sync). */
+function canonJSON(x){
+  return JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v))
+    ? Object.keys(v).sort().reduce((o, key)=>{ o[key] = v[key]; return o; }, {}) : v);
+}
+/* Mismo problema que quitarTransaccion() pero para la lista "🌾 Campo ajeno"
+   (estado.campoAjeno.historial, solo La Vuelta/DICOSE): borrar o editar el
+   envío/retorno desde el historial de un potrero corregía el stock pero dejaba
+   el renglón en esa lista (6/10/2026). Se busca por tipo ('envio'|'retorno') +
+   potrero + fecha + items y se saca UNO. */
+function quitarMovimientoCampoAjeno(tipoLista, potrero, items, fecha){
+  const lista = (estado.campoAjeno && estado.campoAjeno.historial) || [];
+  const itemsStr = canonJSON(items || []);
+  const i = lista.findIndex(m=> m.tipo===tipoLista && m.potrero===potrero && m.fecha===fecha && canonJSON(m.items||[])===itemsStr);
+  return i === -1 ? null : lista.splice(i, 1)[0];
+}
+/* "Dar por perdido" y "Dar muerte" de un desaparecido NO tocan stock (ya se había
+   restado al declarar la desaparición), así que su corrección no lleva
+   `reversar` y los demás dispositivos no tenían cómo saber qué renglón tachar:
+   la resolución seguía vigente allá y el caso figuraba resuelto en un lado y
+   pendiente en otro. 6/10/2026: la corrección lleva el casoId y la cantidad, y
+   el receptor tacha por ahí (ver aplicarEventoRemoto, rama 'correccion'). */
+function datosCorreccionDeCaso(h, datos){
+  return (h.tipo==='perdida' || h.tipo==='muerte_desaparecido') && h.casoId
+    ? {casoId: h.casoId, cantidad: datos && datos.cantidad} : {};
+}
 function construirAjusteInverso(h, potreroHost){
   const e = datosHistorial(h, potreroHost); if(!e) return null;
   if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
@@ -2347,11 +2389,15 @@ function borrarHistorial(id){
     const dt = datosHistorial(h, ub.potrero);
     quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, dt.categoria, dt.dueno, dt.cantidad, h.fecha);
   }
+  if(h.tipo==='envio_campo_ajeno' || h.tipo==='retorno_campo_ajeno'){
+    const dt = datosHistorial(h, ub.potrero);
+    quitarMovimientoCampoAjeno(h.tipo==='envio_campo_ajeno' ? 'envio' : 'retorno', ub.potrero, dt.items, h.fecha);
+  }
   h.eliminado = true;
   h.detalle = h.detalle + ' — ELIMINADO';
   if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id);
   tacharOtraPuntaSincronizada(h, ub.potrero, ' — ELIMINADO');
-  enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste, fechaOriginal: h.fecha});
+  enviarEvento('correccion', ub.potrero, Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste, fechaOriginal: h.fecha}, datosCorreccionDeCaso(h, datosHistorial(h, ub.potrero))));
   guardarEstado(); actualizarTodo(); renderDetalle(ub.potrero);
   publicarStockPotreros([ub.potrero, ajuste && ajuste.potrero, ajuste && ajuste.origen, ajuste && ajuste.destino]);
   toast('Movimiento eliminado y corregido');
@@ -2372,9 +2418,12 @@ function editarHistorial(id){
   aplicarAjusteReversion(ajuste);
   const transaccionQuitada = (h.tipo==='compra' || h.tipo==='venta')
     ? quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, datos.categoria, datos.dueno, datos.cantidad, h.fecha) : null;
+  if(h.tipo==='envio_campo_ajeno' || h.tipo==='retorno_campo_ajeno'){
+    quitarMovimientoCampoAjeno(h.tipo==='envio_campo_ajeno' ? 'envio' : 'retorno', ub.potrero, datos.items, h.fecha);
+  }
   h.eliminado = true;
   h.detalle = h.detalle + ' — EDITADO (ver movimiento nuevo)';
-  enviarEvento('correccion', ub.potrero, {historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste, fechaOriginal: h.fecha});
+  enviarEvento('correccion', ub.potrero, Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste, fechaOriginal: h.fecha}, datosCorreccionDeCaso(h, datos)));
   guardarEstado(); actualizarTodo();
   publicarStockPotreros([ub.potrero, ajuste && ajuste.potrero, ajuste && ajuste.origen, ajuste && ajuste.destino]);
   renderDetalle(ub.potrero);
