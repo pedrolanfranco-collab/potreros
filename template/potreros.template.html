@@ -1263,7 +1263,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], transacciones: [], lluvias: [], eventosClima: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], pendientesPotrero: {}, transacciones: [], lluvias: [], eventosClima: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
     ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0
@@ -1540,6 +1540,50 @@ async function vaciarColaStock(){
    dispositivos ven las intervenciones de los distintos usuarios); el nombre
    de quien lo cargó va dentro del detalle ("... — Fulano"). */
 let _aplicandoRemoto = false;
+
+/* 7/10/2026: un evento que menciona un potrero que ESTE dispositivo todavía no
+   conoce (típico: alguien importó/dibujó un potrero nuevo y cargó algo hacia él
+   antes de que este dispositivo recibiera el `potrero_creado`) se descartaba en
+   silencio, mientras que un dispositivo que sí lo conocía lo aplicaba: dos
+   dispositivos con el mismo historial terminaban con stock distinto (caso real:
+   OMBU con −2 caballos y −5 yeguas en una PC y 0 en las demás). Ahora el evento
+   se ESTACIONA (estado.pendientesPotrero, entero, sin aplicarlo a medias) y se
+   aplica cuando el potrero aparece (aplicarPendientesDePotrero), así el resultado
+   final no depende del orden en que cada dispositivo se enteró.
+   CORTE_PENDIENTES: los eventos anteriores siguen descartándose como siempre; si
+   no, un dispositivo nuevo calcularía distinto que los ya instalados (el
+   movimiento del 13/9 a Piquete descontaría OMBU solo en los nuevos) y se crearía
+   una divergencia nueva en vez de cerrar la vieja. Topes: 100 eventos por nombre y
+   50 nombres, para que datos basura no llenen el almacenamiento. */
+const CORTE_PENDIENTES = '2026-10-07T09:00:00Z';
+function debeEstacionar(row){
+  const t = row && row.creado_en ? Date.parse(row.creado_en) : NaN;
+  return Number.isFinite(t) && t >= Date.parse(CORTE_PENDIENTES);
+}
+function estacionarEvento(nombre, row){
+  if(typeof nombre !== 'string' || !nombre) return;
+  estado.pendientesPotrero = estado.pendientesPotrero || {};
+  let lista = estado.pendientesPotrero[nombre];
+  if(!lista){
+    if(Object.keys(estado.pendientesPotrero).length >= 50) return;
+    lista = estado.pendientesPotrero[nombre] = [];
+  }
+  if(lista.length >= 100) return;
+  if(row.event_id && lista.some(r=>r.event_id===row.event_id)) return;
+  lista.push(row);
+  console.warn(`Evento ${row.tipo} estacionado: el potrero "${nombre}" todavía no existe en este dispositivo`);
+}
+function aplicarPendientesDePotrero(nombre, potrerosSucios){
+  const lista = (estado.pendientesPotrero || {})[nombre];
+  if(!lista || !lista.length) return;
+  delete estado.pendientesPotrero[nombre];
+  lista.forEach(r=> aplicarEventoRemoto(r, potrerosSucios));
+}
+function aplicarPendientesDePotreroLocal(nombre){
+  const sucios = new Set();
+  aplicarPendientesDePotrero(nombre, sucios);
+  if(sucios.size) publicarStockPotreros([...sucios]);
+}
 function aplicarEventoRemoto(row, potrerosSucios){
   _aplicandoRemoto = true;
   try{
@@ -1746,6 +1790,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     estado.potreros[potrero] = {animales:{}, historial:[], fechaIngreso:null, fechaSalida:null};
     AREA_CALCULADA[potrero] = calcAreaHa(p.coords);
     dibujarPotrero(p);
+    aplicarPendientesDePotrero(potrero, potrerosSucios);
     return;
   }
   if(row.tipo === 'potrero_limite_actualizado'){
@@ -1778,6 +1823,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
   if(row.tipo === 'potrero_eliminado'){
+    if(potrero && estado.pendientesPotrero) delete estado.pendientesPotrero[potrero];
     const idx = potrero ? POTREROS_GEO.findIndex(x=>x.nombre===potrero) : -1;
     if(idx===-1) return;
     POTREROS_GEO.splice(idx,1);
@@ -1795,7 +1841,10 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
-  if(!potrero || !estado.potreros[potrero]) return;
+  if(!potrero || !estado.potreros[potrero]){
+    if(potrero && debeEstacionar(row)) estacionarEvento(potrero, row);
+    return;
+  }
   const fechaEvt = row.fecha_cliente || fechaHoy();
 
   if(row.tipo === 'envio_campo_ajeno' || row.tipo === 'retorno_campo_ajeno'){
@@ -1843,6 +1892,9 @@ function aplicarEventoRemoto(row, potrerosSucios){
   }
 
   if(row.tipo === 'correccion'){
+    const rDesc = d.reversar || {};
+    const potreroDesconocido = [rDesc.potrero, rDesc.origen, rDesc.destino].find(n=> n && !estado.potreros[n]);
+    if(potreroDesconocido && debeEstacionar(row)){ estacionarEvento(potreroDesconocido, row); return; }
     if(d.accion === 'reclasificar'){
       // Un evento mal tipeado (ej. una "Muerte" que en realidad fue un
       // ajuste de conteo, no un animal real) se saca del conteo de
@@ -2037,6 +2089,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
   }
 
   if(row.tipo === 'movimiento'){
+    if(d.destino && !estado.potreros[d.destino] && debeEstacionar(row)){ estacionarEvento(d.destino, row); return; }
     if(!d.destino || !estado.potreros[d.destino]) return;
     const keyOrigen = claveAnimal(d.categoria, d.dueno);
     const keyDestino = claveAnimal(d.categoriaDestino || d.categoria, d.dueno);
@@ -2079,6 +2132,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
   }
 
   if(row.tipo === 'movimiento_todo'){
+    if(d.destino && !estado.potreros[d.destino] && Array.isArray(d.items) && debeEstacionar(row)){ estacionarEvento(d.destino, row); return; }
     if(!d.destino || !estado.potreros[d.destino] || !Array.isArray(d.items)) return;
     const origenAnimales = estado.potreros[potrero].animales;
     const destAnimales = estado.potreros[d.destino].animales;
@@ -2108,6 +2162,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
   }
 
   if(row.tipo === 'movimiento_multi'){
+    if(d.destino && !estado.potreros[d.destino] && Array.isArray(d.items) && debeEstacionar(row)){ estacionarEvento(d.destino, row); return; }
     if(!d.destino || !estado.potreros[d.destino] || !Array.isArray(d.items)) return;
     const origenAnimales = estado.potreros[potrero].animales;
     const destAnimales = estado.potreros[d.destino].animales;
@@ -3405,6 +3460,7 @@ function terminarDibujoPotrero(){
   AREA_CALCULADA[nombre] = calcAreaHa(p.coords);
   dibujarPotrero(p);
   enviarEvento('potrero_creado', nombre, {coords: p.coords, area: p.area});
+  aplicarPendientesDePotreroLocal(nombre);
   try{
     const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
     nuevosGuardados.push(p);
@@ -5401,6 +5457,7 @@ async function importarLimitesKML(archivo){
       AREA_CALCULADA[p.nombre] = calcAreaHa(p.coords);
       dibujarPotrero(p);
       enviarEvento('potrero_creado', p.nombre, {coords: p.coords, area: p.area});
+      aplicarPendientesDePotreroLocal(p.nombre);
       creados++;
       return;
     }

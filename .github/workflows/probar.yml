@@ -125,6 +125,9 @@ jobs:
       - name: "Movil completa y Campo comparten almacenamiento (6/10/2026) -- una pagina abierta se actualiza sola cuando la otra guarda"
         run: node tests/probar_actualizar_solo.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 
+      - name: "Evento hacia un potrero todavia desconocido (7/10/2026) -- se estaciona y se aplica cuando el potrero aparece; el pasado no cambia"
+        run: node tests/probar_evento_potrero_desconocido.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
       - name: "Seguridad (auditoria 30/9/2026) -- HTML y datos invalidos que llegan por eventos_sync no inyectan nada ni rompen el render"
         run: node tests/probar_seguridad_remoto.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 

@@ -310,6 +310,20 @@ puede editar y borrar, siempre con `confirm()`:
   dispositivos. Sanidad no se puede
   editar/borrar (faltan políticas UPDATE/DELETE en Supabase).
 
+**Evento hacia un potrero que este dispositivo todavía no conoce (7/10/2026).** Antes se
+descartaba en silencio (guards de `aplicarEventoRemoto()`), mientras que un dispositivo que sí
+conocía el potrero (importado a mano antes de que existiera el `potrero_creado`) lo aplicaba:
+mismo historial, distinto stock (caso real: OMBU con −2 caballos / −5 yeguas en una PC y 0 en
+las demás). Ahora, si el evento es posterior a `CORTE_PENDIENTES`, se **estaciona entero** en
+`estado.pendientesPotrero[nombre]` (`estacionarEvento()`; topes 100 por nombre y 50 nombres) y
+se aplica al aparecer el potrero (`aplicarPendientesDePotrero()`, llamado desde la rama remota
+`potrero_creado` y las dos creaciones locales: dibujar y importar KML; `potrero_eliminado` lo
+descarta). Una `correccion` cuyo ajuste toca un potrero desconocido se estaciona detrás del
+evento que corrige. Los eventos anteriores al corte se siguen descartando como siempre, para que
+un dispositivo nuevo no calcule distinto que los ya instalados. Test:
+`tests/probar_evento_potrero_desconocido.js`. Pendiente: si un potrero nunca llega a existir en
+un dispositivo, sus eventos esperan para siempre (no debería pasar desde el 13/9).
+
 **Cuidado al escribir un `.select(...)` nuevo contra `eventos_sync`:
 listar explícitamente TODAS las columnas que la función va a leer,
 incluida `potrero`.** Es una columna de la fila (no vive dentro de
