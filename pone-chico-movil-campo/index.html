@@ -462,7 +462,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v1.29</div>
+        <div class="sub">v1.30</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -662,7 +662,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.83","versionMovil":"1.84","simpleHabilitado":true,"versionMovilSimple":"1.29","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.84","versionMovil":"1.85","simpleHabilitado":true,"versionMovilSimple":"1.30","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -4446,7 +4446,8 @@ async function cargarSanidad(){
 
 function tarjetaSanidad(c, extra){
   return `<div class="potrero-card">
-        <div class="nombre">${esc(c.fecha||'')} · ${esc(c.categoria||'—')}${c.potrero?(' · potrero '+esc(c.potrero)):''}${c.dueno?(' · '+esc(c.dueno)):''}</div>
+        <div class="nombre">${esc(c.fecha||'')} · ${esc(c.categoria||'—')}${c.potrero?(' · potrero '+esc(c.potrero)):''}${c.dueno?(' · '+esc(c.dueno)):''}
+        </div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(c.producto1||'')}${c.dosis1?(' ('+esc(c.dosis1)+')'):''}${c.producto2?(' + '+esc(c.producto2)):''}${c.observaciones?(' — '+esc(c.observaciones)):''}</div>
         ${extra||''}
         ${lineaCalculoSanidad(c.fecha, c.producto1, c.dosis1, c.producto2, c.dosis2, c.cantidad, '')}
@@ -4474,7 +4475,8 @@ function renderSanidadLista(cargas){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin tratamientos registrados todavía.</p>'
     : ultimasCargas.map(c=>tarjetaSanidad(c)).join('') + pendientes.map(p=>`
       <div class="potrero-card">
-        <div class="nombre">${esc(p.fecha||'')} · ${esc(p.categoria||'—')}${p.potrero?(' · potrero '+esc(p.potrero)):''}${p.dueno?(' · '+esc(p.dueno)):''}</div>
+        <div class="nombre">${esc(p.fecha||'')} · ${esc(p.categoria||'—')}${p.potrero?(' · potrero '+esc(p.potrero)):''}${p.dueno?(' · '+esc(p.dueno)):''}
+        </div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(p.producto1||'')} — 📴 sin señal, en tu dispositivo</div>
       </div>`).join('');
   html += seccionDetails('Últimos tratamientos', ultimasCargas.length + pendientes.length, cuerpoUltimos);
@@ -4783,6 +4785,7 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   toast('Tratamiento cargado');
   await cargarSanidad();
 });
+
 
 /* ======================= BUSCAR CARAVANA ======================= */
 /* 24/9/2026. El padron por animal lo publica la PC a 'animales_caravana'

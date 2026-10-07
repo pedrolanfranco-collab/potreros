@@ -446,7 +446,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.83 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.84 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -814,7 +814,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.83","versionMovil":"1.84","simpleHabilitado":true,"versionMovilSimple":"1.29","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.84","versionMovil":"1.85","simpleHabilitado":true,"versionMovilSimple":"1.30","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -5829,9 +5829,21 @@ async function cargarSanidad(){
   renderSanidadLista(datos);
 }
 
+/* 7/10/2026 (solo PC): botones ✏️/🗑 de una tarjeta de tratamiento. En La Vuelta
+   solo si el Excel de respaldo todavia no lo importo (importado_en vacio): lo
+   ya importado se corrige en el Excel, para que app y Excel nunca queden
+   distintos. En Maria Laura/Pone Chico (sin Excel) siempre. */
+function botonesTratamiento(c, enCola){
+  return `<span class="hist-acciones">
+            <button class="hist-btn" data-sanidad-editar="${esc(c.id)}"${enCola?' data-sanidad-cola="1"':''} title="Editar">✏️</button>
+            <button class="hist-btn" data-sanidad-borrar="${esc(c.id)}"${enCola?' data-sanidad-cola="1"':''} title="Borrar">🗑</button>
+          </span>`;
+}
 function tarjetaSanidad(c, extra){
   return `<div class="potrero-card">
-        <div class="nombre">${esc(c.fecha||'')} · ${esc(c.categoria||'—')}${c.potrero?(' · potrero '+esc(c.potrero)):''}${c.dueno?(' · '+esc(c.dueno)):''}</div>
+        <div class="nombre">${esc(c.fecha||'')} · ${esc(c.categoria||'—')}${c.potrero?(' · potrero '+esc(c.potrero)):''}${c.dueno?(' · '+esc(c.dueno)):''}
+          ${botonesTratamiento(c, false)}
+        </div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(c.producto1||'')}${c.dosis1?(' ('+esc(c.dosis1)+')'):''}${c.producto2?(' + '+esc(c.producto2)):''}${c.observaciones?(' — '+esc(c.observaciones)):''}</div>
         ${extra||''}
         ${lineaCalculoSanidad(c.fecha, c.producto1, c.dosis1, c.producto2, c.dosis2, c.cantidad, '')}
@@ -5859,7 +5871,9 @@ function renderSanidadLista(cargas){
     ? '<p style="font-size:13px;color:var(--texto-suave);">Sin tratamientos registrados todavía.</p>'
     : ultimasCargas.map(c=>tarjetaSanidad(c)).join('') + pendientes.map(p=>`
       <div class="potrero-card">
-        <div class="nombre">${esc(p.fecha||'')} · ${esc(p.categoria||'—')}${p.potrero?(' · potrero '+esc(p.potrero)):''}${p.dueno?(' · '+esc(p.dueno)):''}</div>
+        <div class="nombre">${esc(p.fecha||'')} · ${esc(p.categoria||'—')}${p.potrero?(' · potrero '+esc(p.potrero)):''}${p.dueno?(' · '+esc(p.dueno)):''}
+          ${botonesTratamiento(p, true)}
+        </div>
         <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">${esc(p.producto1||'')} — 📴 sin señal, en tu dispositivo</div>
       </div>`).join('');
   html += seccionDetails('Últimos tratamientos', ultimasCargas.length + pendientes.length, cuerpoUltimos);
@@ -5897,6 +5911,12 @@ function renderSanidadLista(cargas){
   html += seccionDetails('🔁 Próximos tratamientos (garrapaticidas)', proximos.length, cuerpoProximos);
 
   cont.innerHTML = html;
+  cont.querySelectorAll('[data-sanidad-editar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarTratamiento(btn.dataset.sanidadEditar, !!btn.dataset.sanidadCola, cargas); });
+  });
+  cont.querySelectorAll('[data-sanidad-borrar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); borrarTratamiento(btn.dataset.sanidadBorrar, !!btn.dataset.sanidadCola); });
+  });
   cont.querySelectorAll('[data-proximo-confirmar]').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{
       ev.stopPropagation();
@@ -6078,8 +6098,11 @@ function valorProducto(idBase){
    CONFIG.caravanasHabilitado (ver bloque "BUSCAR CARAVANA"), pero el modo
    se resuelve acá para no duplicar el resto del formulario/guardado. */
 let sanidadModoIndividual = false;
+let sanidadEditandoId = null, sanidadEditandoEnCola = false;
 async function abrirFormSanidad(individual){
   sanidadModoIndividual = individual;
+  sanidadEditandoId = null; sanidadEditandoEnCola = false;
+  document.getElementById('sc-guardar').textContent = 'Guardar';
   document.getElementById('sc-fecha').value = fechaISOHoy();
   document.getElementById('sc-fecha').max = fechaISOHoy();
   document.getElementById('sc-categoria').innerHTML = opcionesCategorias();
@@ -6113,6 +6136,8 @@ document.getElementById('btn-cargar-sanidad').addEventListener('click', ()=> abr
 document.getElementById('btn-cargar-sanidad-individual').addEventListener('click', ()=> abrirFormSanidad(true));
 document.getElementById('sc-cancelar').addEventListener('click', ()=>{
   document.getElementById('form-sanidad').style.display = 'none';
+  sanidadEditandoId = null; sanidadEditandoEnCola = false;
+  document.getElementById('sc-guardar').textContent = 'Guardar';
 });
 document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   const fechaISO = document.getElementById('sc-fecha').value;
@@ -6159,6 +6184,7 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   // (false sugeriría que se confirmó activamente, y ahí ni se preguntó).
   registro.caravana = sanidadModoIndividual ? caravana : null;
   registro.sin_caravana = sanidadModoIndividual ? sinCaravanaConfirmado : null;
+  if(sanidadEditandoId){ await guardarCorreccionTratamiento(registro); return; }
   await guardarSanidadCarga(registro);
   document.getElementById('form-sanidad').style.display = 'none';
   document.getElementById('sc-caravana').value = '';
@@ -6168,6 +6194,104 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   toast('Tratamiento cargado');
   await cargarSanidad();
 });
+
+/* ===== Editar / borrar un tratamiento ya cargado (7/10/2026, solo PC) =====
+   Los tratamientos viven en la tabla de CONFIG.tablaSanidad (no en
+   eventos_sync): se actualizan/borran ahi mismo y los demas dispositivos lo ven
+   la proxima vez que abren Sanidad. PostgREST contesta 200 con la lista vacia
+   cuando RLS bloquea (o no habia fila), asi que se pide la fila de vuelta
+   (.select) y solo se da por hecho si volvio exactamente una -- si no, se avisa
+   en vez de decir "borrado" sin que lo este. En La Vuelta el filtro
+   importado_en IS NULL hace lo mismo con lo que el Excel ya importo. */
+const MOTIVO_NO_SE_PUDO = 'No se pudo: falta el permiso en Supabase o el Excel ya lo importó (en ese caso se corrige en el Excel).';
+function filtroNoImportado(q){
+  return q;
+}
+function quitarDeMisCargas(id, cambios){
+}
+async function refrescarSanidadTrasCambio(){
+  await cargarSanidad();
+}
+function precargarProductoSanidad(idBase, valor){
+  if(!valor) return;
+  const sel = document.getElementById(idBase), libre = document.getElementById(idBase + '-otro');
+  if(sel.style.display !== 'none'){
+    if(catalogoProductos.includes(valor)){ sel.value = valor; }
+    else{ sel.value = '__otro__'; libre.style.display = ''; libre.value = valor; }
+  }else{
+    libre.value = valor;
+  }
+}
+function valorEnSelect(sel, valor){
+  if(valor == null) valor = '';
+  if(!Array.from(sel.options).some(o=>o.value===valor)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(valor)}">${esc(valor)}</option>`);
+  sel.value = valor;
+}
+async function editarTratamiento(id, enCola, cargas){
+  const c = enCola ? (estado.colaSanidad||[]).find(r=>r.id===id) : (cargas||[]).find(r=>r.id===id);
+  if(!c) return;
+  await abrirFormSanidad(!!(c.caravana || c.sin_caravana));
+  sanidadEditandoId = id; sanidadEditandoEnCola = enCola;
+  const el = x => document.getElementById(x);
+  el('sc-fecha').value = c.fecha || '';
+  valorEnSelect(el('sc-categoria'), c.categoria);
+  valorEnSelect(el('sc-dueno'), c.dueno);
+  valorEnSelect(el('sc-potrero'), c.potrero);
+  el('sc-cantidad').value = c.cantidad != null ? c.cantidad : '';
+  el('sc-gen').value = c.gen != null ? c.gen : '';
+  precargarProductoSanidad('sc-producto1', c.producto1);
+  precargarProductoSanidad('sc-producto2', c.producto2);
+  el('sc-dosis1').value = c.dosis1 != null ? c.dosis1 : '';
+  el('sc-dosis2').value = c.dosis2 != null ? c.dosis2 : '';
+  el('sc-obs').value = c.observaciones || '';
+  if(sanidadModoIndividual){
+    el('sc-caravana').value = c.caravana || '';
+    el('sc-sin-caravana').checked = c.sin_caravana === true;
+    el('sc-sin-caravana').dispatchEvent(new Event('change'));
+    if(c.caravana) el('sc-caravana').dispatchEvent(new Event('input'));
+  }
+  el('sc-guardar').textContent = 'Guardar corrección';
+  el('form-sanidad').scrollIntoView({block:'nearest'});
+}
+async function guardarCorreccionTratamiento(registro){
+  const id = sanidadEditandoId, enCola = sanidadEditandoEnCola;
+  const cambios = Object.assign({}, registro);
+  delete cambios.id; delete cambios.establecimiento;
+  if(enCola){
+    const i = (estado.colaSanidad||[]).findIndex(r=>r.id===id);
+    if(i >= 0){ estado.colaSanidad[i] = Object.assign({}, estado.colaSanidad[i], cambios); guardarEstado(); }
+  }else{
+    const client = clienteSupabase();
+    if(!client || !navigator.onLine){ toast('Para corregir un tratamiento ya cargado necesitás señal'); return; }
+    let res;
+    try{ res = await filtroNoImportado(client.from(TABLA_SANIDAD).update(cambios).eq('id', id)).select('id'); }
+    catch(e){ res = {error: e}; }
+    if(res.error || !res.data || res.data.length !== 1){ toast(MOTIVO_NO_SE_PUDO); return; }
+  }
+  quitarDeMisCargas(id, cambios);
+  sanidadEditandoId = null; sanidadEditandoEnCola = false;
+  document.getElementById('sc-guardar').textContent = 'Guardar';
+  document.getElementById('form-sanidad').style.display = 'none';
+  toast('Tratamiento corregido');
+  await refrescarSanidadTrasCambio();
+}
+async function borrarTratamiento(id, enCola){
+  if(!confirm('¿Borrar este tratamiento? No se puede deshacer.')) return;
+  if(enCola){
+    estado.colaSanidad = (estado.colaSanidad||[]).filter(r=>r.id!==id);
+    guardarEstado();
+  }else{
+    const client = clienteSupabase();
+    if(!client || !navigator.onLine){ toast('Para borrar un tratamiento ya cargado necesitás señal'); return; }
+    let res;
+    try{ res = await filtroNoImportado(client.from(TABLA_SANIDAD).delete().eq('id', id)).select('id'); }
+    catch(e){ res = {error: e}; }
+    if(res.error || !res.data || res.data.length !== 1){ toast(MOTIVO_NO_SE_PUDO); return; }
+  }
+  quitarDeMisCargas(id, null);
+  toast('Tratamiento borrado');
+  await refrescarSanidadTrasCambio();
+}
 
 /* ======================= BUSCAR CARAVANA ======================= */
 /* 24/9/2026. El padron por animal lo publica la PC a 'animales_caravana'

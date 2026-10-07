@@ -307,8 +307,7 @@ puede editar y borrar, siempre con `confirm()`:
   corrección). Y las pérdidas / muertes de desaparecido: su corrección lleva `casoId` y
   `cantidad` (`datosCorreccionDeCaso()`) y el receptor tacha por ahí (no tienen `reversar`
   porque no tocan stock), así el caso vuelve a figurar pendiente en todos los
-  dispositivos. Sanidad no se puede
-  editar/borrar (faltan políticas UPDATE/DELETE en Supabase).
+  dispositivos. Sanidad también (ver la sección Sanidad).
 
 **Evento hacia un potrero que este dispositivo todavía no conoce (7/10/2026).** Antes se
 descartaba en silencio (guards de `aplicarEventoRemoto()`), mientras que un dispositivo que sí
@@ -433,6 +432,16 @@ called from `sincronizar()` right after `vaciarColaSync()`).
   as free text (not in the catalog) shows nothing calculated, same
   graceful-degradation as the dropdown itself.
 
+- **Editar/borrar un tratamiento (7/10/2026, solo PC):** ✏️/🗑 en las tarjetas de Sanidad
+  (`editarTratamiento()` / `borrarTratamiento()`, bloque `@pc`). La tabla se actualiza/borra ahí mismo (no
+  hay evento: los demás dispositivos lo ven al abrir Sanidad). **PostgREST contesta 200 con lista vacía
+  cuando RLS bloquea**, así que se pide la fila de vuelta (`.select('id')`) y solo se da por hecho si
+  volvió exactamente una; si no, avisa. En La Vuelta se agrega `.is('importado_en', null)`: lo que el
+  Excel de respaldo ya importó no se toca desde la app (se corrige en el Excel) y la política de DELETE
+  de `sanidad_carga` lo exige también en la base. Las tarjetas de `estado.colaSanidad` (sin subir) se
+  editan/borran localmente. Requiere las políticas UPDATE/DELETE de la tabla de arriba. Test:
+  `tests/probar_sanidad_editar_borrar.js`.
+
 ### Pesadas (2/10/2026, solo La Vuelta, `CONFIG.pesadasHistorial`)
 
 El historial de pesadas por animal y la ganancia diaria **ya los calcula la PC**
@@ -471,9 +480,9 @@ no implícito.
 |---|---|---|---|---|
 | `eventos_sync` | ✅ | ✅ | ❌ | ❌ *(desde el 30/9/2026: dos políticas, `eventos_sync_select` y `eventos_sync_insert`, solo para `anon`; antes una sola "ALL". Es un registro de solo-agregar: "borrar"/"editar" un movimiento inserta un evento `correccion`, nunca hace DELETE/UPDATE)* |
 | `productos_catalogo` | ✅ | ✅ | ❌ | ✅ |
-| `sanidad_carga` (La Vuelta) | ✅ | ✅ | ✅ | ❌ |
-| `sanidad_carga_maria_laura` | ✅ | ✅ | ❌ | ❌ |
-| `sanidad_carga_pone_chico` | ✅ | ✅ | ❌ | ❌ |
+| `sanidad_carga` (La Vuelta) | ✅ | ✅ | ✅ | ✅ *(7/10/2026: solo filas con `importado_en` vacío)* |
+| `sanidad_carga_maria_laura` | ✅ | ✅ | ✅ | ✅ *(7/10/2026)* |
+| `sanidad_carga_pone_chico` | ✅ | ✅ | ✅ | ✅ *(7/10/2026)* |
 | `sanidad_ultimos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
 | `sanidad_proximos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
 | `stock_potreros` (16/9/2026) | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL", igual criterio que `eventos_sync`)* |
@@ -511,13 +520,13 @@ Dos cosas que explican comportamiento ya visto, no teoría:
   "bloqueado por RLS" de "no había ninguna fila para actualizar". El fix ya
   aplicado en el script publicador es no usar `PATCH` nunca contra esta
   tabla, solo `DELETE`+`POST` (que sí tienen política).
-- **`sanidad_carga_maria_laura`/`sanidad_carga_pone_chico` sin UPDATE ni
-  DELETE**: hoy la app solo inserta y lee de estas tablas (no hay "editar/
-  borrar una carga de Sanidad" para María Laura o Pone Chico, a diferencia
-  de La Vuelta). **Si alguna vez se agrega esa función para estos dos
-  establecimientos, agregar las políticas antes de escribir el código que
-  las asuma** — mismo error de secuencia (schema/permisos antes que
-  código) que ya pasó una vez.
+- **`sanidad_carga_maria_laura`/`sanidad_carga_pone_chico` tenían solo SELECT/INSERT**
+  hasta el 7/10/2026, cuando se agregó la función de editar/borrar un tratamiento (solo PC):
+  se crearon las políticas UPDATE y DELETE **antes** de publicar el código que las asume (el
+  mismo error de secuencia, schema/permisos después que código, ya pasó una vez con
+  `productos_catalogo`). Si esas políticas faltaran, la app avisa "No se pudo" en vez de decir
+  "borrado" (RLS contesta 200 vacío). `sanidad_carga` (La Vuelta) ganó DELETE solo para filas con
+  `importado_en` vacío.
 
 ### PWA / offline
 
