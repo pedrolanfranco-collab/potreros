@@ -8224,7 +8224,7 @@ function renderGuiasLista(){
           ${r.guia ? `<span style="font-weight:700;"> · Guía ${esc(r.guia)}</span>` : (r.sinGuia ? '<span style="color:var(--rojo-hacienda);font-weight:700;"> · ⚠ sin guía</span>' : '')}</div>
         <div style="font-size:12.5px;color:var(--texto-suave);margin-top:2px;">${esc(r.texto)}</div>
         ${r.tieneDatos ? `<div class="hist-acciones" style="margin-top:4px;">
-          ${(r.tipo==='compra' || r.tipo==='venta') ? `<button class="hist-btn" data-mg-guia="${esc(r.id)}" title="Agregar/editar guía">📄</button>` : ''}
+          ${(r.tipo==='compra' || r.tipo==='venta') ? `<button class="hist-btn" data-mg-editar="${esc(r.id)}" title="Editar (la deshace y abre el formulario precargado)">✏️</button><button class="hist-btn" data-mg-guia="${esc(r.id)}" title="Agregar/editar guía">📄</button>` : ''}
           ${r.tipo!=='traslado_entrada' ? `<button class="hist-btn" data-mg-borrar="${esc(r.id)}" title="Borrar">🗑</button>` : ''}
         </div>` : ''}
       </div>`).join('');
@@ -8371,6 +8371,8 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
   document.getElementById('mg-lista').addEventListener('click', (e)=>{
     const g = e.target.closest('[data-mg-guia]');
     if(g){ agregarGuiaCompraventa(g.dataset.mgGuia); return; }
+    const ed = e.target.closest('[data-mg-editar]');
+    if(ed){ editarHistorial(ed.dataset.mgEditar); return; }
     const b = e.target.closest('[data-mg-borrar]');
     if(b){ borrarHistorial(b.dataset.mgBorrar); }
   });

@@ -420,6 +420,7 @@ async function probarApp(archivo){
   // otro dispositivo aplica compra y venta
   await W2.sincronizar();
   chequear(`${etiqueta}: otro dispositivo recibe la compra y la venta`, W2.__est().potreros[potrero].animales[kV('Vacas')] !== undefined && (W2.__est().transacciones||[]).some(x=>x.guia==='L333333') && (W2.__est().transacciones||[]).some(x=>x.guia==='M444444'));
+  chequear(`${etiqueta}: la lista de Movimientos DICOSE tiene ✏️ en las compras/ventas (editar desde ahí)`, !!cvEl('mg-lista').querySelector('[data-mg-editar]'));
   // editar la compra desde el historial abre Movimientos DICOSE precargado
   if(typeof W.editarHistorial === 'function'){
     const hCompra = W.__est().potreros[potrero].historial.find(x=>x.tipo==='compra' && !x.eliminado && x.extra && x.extra.guia==='L333333');

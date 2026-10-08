@@ -447,7 +447,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.89 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.90 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -894,7 +894,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.89","versionMovil":"1.90","simpleHabilitado":true,"versionMovilSimple":"1.34","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.90","versionMovil":"1.91","simpleHabilitado":true,"versionMovilSimple":"1.34","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -7647,7 +7647,7 @@ function renderGuiasLista(){
           ${r.guia ? `<span style="font-weight:700;"> · Guía ${esc(r.guia)}</span>` : (r.sinGuia ? '<span style="color:var(--rojo-hacienda);font-weight:700;"> · ⚠ sin guía</span>' : '')}</div>
         <div style="font-size:12.5px;color:var(--texto-suave);margin-top:2px;">${esc(r.texto)}</div>
         ${r.tieneDatos ? `<div class="hist-acciones" style="margin-top:4px;">
-          ${(r.tipo==='compra' || r.tipo==='venta') ? `<button class="hist-btn" data-mg-guia="${esc(r.id)}" title="Agregar/editar guía">📄</button>` : ''}
+          ${(r.tipo==='compra' || r.tipo==='venta') ? `<button class="hist-btn" data-mg-editar="${esc(r.id)}" title="Editar (la deshace y abre el formulario precargado)">✏️</button><button class="hist-btn" data-mg-guia="${esc(r.id)}" title="Agregar/editar guía">📄</button>` : ''}
           ${r.tipo!=='traslado_entrada' ? `<button class="hist-btn" data-mg-borrar="${esc(r.id)}" title="Borrar">🗑</button>` : ''}
         </div>` : ''}
       </div>`).join('');
@@ -7794,6 +7794,8 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
   document.getElementById('mg-lista').addEventListener('click', (e)=>{
     const g = e.target.closest('[data-mg-guia]');
     if(g){ agregarGuiaCompraventa(g.dataset.mgGuia); return; }
+    const ed = e.target.closest('[data-mg-editar]');
+    if(ed){ editarHistorial(ed.dataset.mgEditar); return; }
     const b = e.target.closest('[data-mg-borrar]');
     if(b){ borrarHistorial(b.dataset.mgBorrar); }
   });
