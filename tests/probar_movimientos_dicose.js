@@ -111,7 +111,9 @@ function crearServidor(){
 // prender=true: el HTML se publica con guiasHabilitado:false (Release 1); el test lo prende para probar la UI
 async function levantar(archivo, servidor, prender){
   let html = fs.readFileSync(archivo, 'utf-8').replace(/<script src="https?:\/\/[^"]*"><\/script>/g, '');
-  if(prender) html = html.replace('"guiasHabilitado":false', '"guiasHabilitado":true');
+  // prender: true/false fuerza el flag en runtime; undefined lo deja como se publicó
+  if(prender === true) html = html.replace('"guiasHabilitado":false', '"guiasHabilitado":true');
+  if(prender === false) html = html.replace('"guiasHabilitado":true', '"guiasHabilitado":false');
   const errores = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', e => errores.push('jsdomError: ' + (e.stack || e.message)));
@@ -168,7 +170,12 @@ async function probarApp(archivo){
   console.log(`\n=== Movimientos DICOSE (${archivo}) ===`);
   const servidor = crearServidor();
 
-  // ---- 0) tal como se publica (Release 1): flag apagado => el botón no se ve ----
+  // ---- 0) el flag viene PRENDIDO en el HTML publicado (Release 2) y es lo único que gobierna el botón ----
+  const publicada = await levantar(archivo, servidor);
+  chequear(`${etiqueta}: carga sin errores (como se publica)`, publicada.errores.length===0, publicada.errores.join(' | '));
+  chequear(`${etiqueta}: CONFIG.guiasHabilitado viene prendido (Release 2)`, publicada.win.__config().guiasHabilitado === true, String(publicada.win.__config().guiasHabilitado));
+  const bPub = publicada.win.document.getElementById('btn-guias');
+  chequear(`${etiqueta}: tal como se publica el botón se ve`, !!bPub && bPub.style.display !== 'none');
   const apagada = await levantar(archivo, servidor, false);
   chequear(`${etiqueta}: carga sin errores (flag apagado)`, apagada.errores.length===0, apagada.errores.join(' | '));
   const bApagado = apagada.win.document.getElementById('btn-guias');
@@ -337,7 +344,9 @@ async function probarApp(archivo){
 async function probarSinUI(archivo){
   console.log(`\n=== Sin Movimientos DICOSE (${archivo}) ===`);
   const servidor = crearServidor();
-  const { win, errores } = await levantar(archivo, servidor, false);
+  // Campo de La Vuelta lleva el flag en su CONFIG (misma config del establecimiento) pero NO tiene la pantalla;
+  // Pone Chico no lo tiene: se levantan tal como se publican.
+  const { win, errores } = await levantar(archivo, servidor);
   chequear(`${archivo}: carga sin errores`, errores.length===0, errores.join(' | '));
   if(errores.length) return;
   const b = win.document.getElementById('btn-guias');
