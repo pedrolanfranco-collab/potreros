@@ -446,7 +446,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.15</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.16</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -505,6 +505,7 @@
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
+      <button class="btn btn-json" id="btn-guias" style="display:none;">📑 Movimientos DICOSE</button>
       <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
       <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
       <button class="btn btn-json" id="btn-pesadas" style="display:none;">⚖️ Pesadas</button>
@@ -715,6 +716,43 @@
     <div class="form-botones"><button class="btn btn-secundario" id="stock-cerrar">Cerrar</button></div>
   </div>
 </div>
+<div id="modal-guias" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>📑 Movimientos DICOSE</h3>
+    <button class="btn-cerrar-x" id="guias-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Todo lo que se movió con guía: compras, ventas, campo ajeno y traslados. Abajo se puede cargar una venta entre dueños del mismo campo que solo lleva guía.</p>
+    <h4 style="margin:8px 0 6px;font-size:13px;">Venta entre dueños (solo guía)</h4>
+    <p class="modal-info" style="margin:0 0 8px;">Los animales no se mueven de potrero: solo cambian de dueño, y queda la guía.</p>
+    <div class="form-row"><label>Potrero donde están</label><select id="mg-potrero"></select></div>
+    <div class="form-row"><label>Nº de guía</label><input type="text" id="mg-guia" placeholder="Ej: A592366" style="text-transform:uppercase;"></div>
+    <div class="form-row"><label>De (vende)</label><select id="mg-desde"></select></div>
+    <div class="form-row"><label>A (compra)</label><select id="mg-hacia"></select></div>
+    <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Categoría · Cantidad</label>
+    <div id="mg-filas"></div>
+    <button type="button" class="btn btn-secundario" id="mg-agregar-fila" style="margin:8px 0;">+ Agregar otra categoría</button>
+    <div class="form-row"><label>Fecha</label><input type="date" id="mg-fecha"></div>
+    <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="mg-obs" placeholder="Ej: venta a Silvia"></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="mg-guardar">Registrar</button>
+    </div>
+    <h4 style="margin:16px 0 6px;font-size:13px;">Lista de movimientos con guía</h4>
+    <div class="form-row"><label>Tipo</label>
+      <select id="mg-filtro-tipo">
+        <option value="">Todos</option>
+        <option value="compra">Compras</option>
+        <option value="venta">Ventas</option>
+        <option value="entre_duenos">Ventas entre dueños (solo guía)</option>
+        <option value="campo_ajeno">Campo ajeno (envíos y retornos)</option>
+        <option value="traslado">Traslados entre campos</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Buscar</label><input type="text" id="mg-filtro-texto" placeholder="Guía, dueño, categoría, potrero…"></div>
+    <div class="form-row"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="mg-filtro-sin"> Solo compras/ventas sin guía</label></div>
+    <div id="mg-resumen" style="font-size:12.5px;color:var(--texto-suave);margin:6px 0;"></div>
+    <div id="mg-lista"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="guias-cerrar">Cerrar</button></div>
+  </div>
+</div>
 <div id="modal-usuario" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>👤 ¿Quién sos?</h3>
@@ -794,7 +832,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.15","versionMovil":"3.15","simpleHabilitado":true,"versionMovilSimple":"1.31","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.16","versionMovil":"3.16","simpleHabilitado":true,"versionMovilSimple":"1.32","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":false,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1806,6 +1844,22 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
+  if(row.tipo === 'movimiento_guia'){
+    // 8/10/2026: venta entre dueños del MISMO campo que solo lleva guía (ej. Pedro le
+    // vende a Silvia sin que los animales salgan del potrero). El stock total del
+    // potrero no cambia: solo pasa de la clave (categoría, desde) a (categoría, hacia).
+    // No es compra/venta: no va a estado.transacciones ni a las estadísticas de temporada.
+    const itemsMG = Array.isArray(d.items) ? d.items : [];
+    const desdeMG = d.desde || '', haciaMG = d.hacia || '';
+    moverTitularidad(potrero, itemsMG, desdeMG, haciaMG);
+    if(potrerosSucios) potrerosSucios.add(potrero);
+    const itemsTxtMG = itemsMG.map(it=>`${it.cantidad} ${it.categoria}`).join(', ');
+    const detalleMG = `Venta entre dueños (sincronizado): ${textoFirma(desdeMG)} → ${textoFirma(haciaMG)}: ${itemsTxtMG}${d.guia?' — guía '+d.guia:''}${d.obs?' ('+d.obs+')':''}`;
+    const origDatosMG = {potrero, items: itemsMG, desde: desdeMG, hacia: haciaMG, guia: d.guia||null, obs: d.obs||null, movId: d.movId||null};
+    registrarHistorial(potrero, row.tipo, detalleMG, undefined, undefined, fechaEvt, d.usuario).origDatos = origDatosMG;
+    return;
+  }
+
   if(row.tipo === 'correccion'){
     const rDesc = d.reversar || {};
     const potreroDesconocido = [rDesc.potrero, rDesc.origen, rDesc.destino].find(n=> n && !estado.potreros[n]);
@@ -1960,6 +2014,11 @@ function aplicarEventoRemoto(row, potrerosSucios){
       // se ubica por trasladoId (estable entre dispositivos), no por contenido
       const potreroOriginal = r.potrero || potrero;
       const h = buscarMejor(potreroOriginal, od => !!od.trasladoId && od.trasladoId===r.trasladoId);
+      if(h){ tachar(h); marcado = true; }
+    } else if(r.tipo==='movimiento_guia_ajuste'){
+      // también por id estable (movId), no por contenido
+      const potreroOriginal = r.potrero || potrero;
+      const h = buscarMejor(potreroOriginal, od => !!od.movId && od.movId===r.movId);
       if(h){ tachar(h); marcado = true; }
     } else if(r.tipo==='mover'){
       // construirAjusteInverso invierte origen/destino y categoria/categoriaDestino:
@@ -2463,9 +2522,23 @@ function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha, usuari
    contrario exacto y lo aplica local y a los demas dispositivos como un
    evento mas (tipo 'correccion'), sin tocar ni reinterpretar los eventos
    viejos en Supabase -- por eso nunca se pierde la idempotencia. */
+/* Pasa `items` ({categoria, cantidad}) de un dueño a otro DENTRO del mismo potrero
+   (venta entre dueños con guía, y su anulación con los dueños al revés). Mueve a lo
+   sumo lo que el dueño de origen tiene, así el total del potrero nunca cambia. */
+function moverTitularidad(potrero, items, desde, hacia){
+  const p = estado.potreros[potrero]; if(!p) return;
+  (items||[]).forEach(it=>{
+    const kDesde = claveAnimal(it.categoria, desde), kHacia = claveAnimal(it.categoria, hacia);
+    const mov = Math.min(Math.max(0, p.animales[kDesde]||0), Number(it.cantidad)||0);
+    p.animales[kDesde] = (p.animales[kDesde]||0) - mov;
+    p.animales[kHacia] = (p.animales[kHacia]||0) + mov;
+  });
+}
 function aplicarAjusteReversion(ajuste, fecha){
   if(!ajuste) return;
-  if(ajuste.tipo==='sumar' || ajuste.tipo==='restar'){
+  if(ajuste.tipo==='movimiento_guia_ajuste'){
+    moverTitularidad(ajuste.potrero, ajuste.items, ajuste.hacia || '', ajuste.desde || '');
+  } else if(ajuste.tipo==='sumar' || ajuste.tipo==='restar'){
     const p = estado.potreros[ajuste.potrero]; if(!p) return;
     const key = claveAnimal(ajuste.categoria, ajuste.dueno);
     const totalAntes = totalPotrero(ajuste.potrero);
@@ -2627,6 +2700,10 @@ function construirAjusteInverso(h, potreroHost){
     // deshacer una salida de traslado = el potrero de origen recupera lo que salió
     return {tipo:'traslado_salida_ajuste', potrero: e.potrero, items: e.items, trasladoId: e.trasladoId || null};
   }
+  if(h.tipo==='movimiento_guia'){
+    // deshacer una venta entre dueños = pasar los animales de vuelta (hacia -> desde)
+    return {tipo:'movimiento_guia_ajuste', potrero: e.potrero, items: e.items, desde: e.desde || '', hacia: e.hacia || '', movId: e.movId || null};
+  }
   if(h.tipo==='movimiento'){
     return {tipo:'mover', origen: e.destino, destino: e.potrero, categoria: e.categoriaDestino || e.categoria, categoriaDestino: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
   }
@@ -2728,15 +2805,26 @@ function borrarHistorial(id){
   const idCorreccion = crypto.randomUUID();
   enviarEvento('correccion', ub.potrero, Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste, fechaOriginal: h.fecha}, datosCorreccionDeCaso(h, datosHistorial(h, ub.potrero))), undefined, {eventId: idCorreccion});
   if(h.tipo==='traslado_salida') enviarAnulacionTraslado(h, datosHistorial(h, ub.potrero), idCorreccion);
-  guardarEstado(); actualizarTodo(); renderDetalle(ub.potrero);
+  guardarEstado(); actualizarTodo(); refrescarTrasCambioHistorial(ub.potrero);
   publicarStockPotreros([ub.potrero, ajuste && ajuste.potrero, ajuste && ajuste.origen, ajuste && ajuste.destino]);
   toast('Movimiento eliminado y corregido');
+}
+/* Si el cambio se hizo desde "📑 Movimientos DICOSE" (modal abierto) se refresca esa
+   lista y NO se abre el panel de detalle del potrero; si no, el de siempre. */
+function guiasModalAbierto(){
+  const m = document.getElementById('modal-guias');
+  return !!m && m.style.display === 'flex';
+}
+function refrescarTrasCambioHistorial(potrero){
+  if(guiasModalAbierto() && typeof renderGuiasLista === 'function') renderGuiasLista();
+  else renderDetalle(potrero);
 }
 const ACCION_POR_TIPO_HIST = {ingreso:'agregar', nacimiento:'nacimiento', muerte:'muerte', compra:'compraventa', venta:'compraventa', desaparecido:'desaparecido'};
 function editarHistorial(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
   if(ub.entry.tipo==='traslado_salida' || ub.entry.tipo==='traslado_entrada'){ toast('Un traslado no se edita: borralo (se anula en los dos campos) y volvé a cargarlo.'); return; }
+  if(ub.entry.tipo==='movimiento_guia'){ toast('Una venta entre dueños no se edita: borrala y volvé a cargarla.'); return; }
   if(avisarSiTieneResoluciones(ub.entry)) return;
   const h = ub.entry;
   if(h.tipo==='movimiento' || h.tipo==='movimiento_todo' || h.tipo==='movimiento_multi' || h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido'){
@@ -2816,7 +2904,7 @@ function agregarGuiaCompraventa(id){
   guardarEstado();
   enviarEvento('correccion', ub.potrero, {tipoOriginal: h.tipo, accion:'agregar_guia',
     categoria: datos.categoria, cantidad: datos.cantidad, dueno: datos.dueno, guia, fechaOriginal: h.fecha});
-  renderDetalle(ub.potrero);
+  refrescarTrasCambioHistorial(ub.potrero);
   toast(guia ? 'Guía guardada' : 'Guía borrada');
 }
 
@@ -3436,7 +3524,7 @@ function renderDetalle(nombre){
           <span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}
           ${(h.id && h.extra && !h.eliminado) ? `
           <span class="hist-acciones">
-            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo!=='retorno_campo_ajeno' && h.tipo!=='traslado_salida' && h.tipo!=='traslado_entrada') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
+            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo!=='retorno_campo_ajeno' && h.tipo!=='traslado_salida' && h.tipo!=='traslado_entrada' && h.tipo!=='movimiento_guia') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
             ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana">🏷️</button>` : ''}
             ${(CONFIG.dicoseHabilitado && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${esc(h.id)}" title="Agregar/editar guía">📄</button>` : ''}
             ${h.tipo!=='traslado_entrada' ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
@@ -6195,6 +6283,157 @@ if(document.getElementById('tr-guardar')){
     publicarStockPotreros([origen]);
     renderTrasladoLista();
     toast(`Traslado a ${t.destinoNombre} registrado`);
+  });
+}
+
+/* 8/10/2026: "📑 Movimientos DICOSE" (CONFIG.guiasHabilitado). Dos cosas en una pantalla:
+   (1) la lista de TODO lo que se movió con guía -- compras, ventas, campo ajeno,
+   traslados y las ventas entre dueños -- leída del historial de los potreros, y
+   (2) el formulario de la venta entre dueños "solo guía" (evento `movimiento_guia`):
+   los animales no salen del potrero, solo pasan de un dueño a otro. Ver
+   aplicarEventoRemoto() (rama movimiento_guia) y borrarHistorial() (anular). */
+const TIPOS_CON_GUIA = ['compra','venta','envio_campo_ajeno','retorno_campo_ajeno','traslado_salida','traslado_entrada','movimiento_guia'];
+const ETIQUETA_TIPO_GUIA = {compra:'Compra', venta:'Venta', envio_campo_ajeno:'Envío a campo ajeno', retorno_campo_ajeno:'Retorno de campo ajeno',
+  traslado_salida:'Traslado enviado', traslado_entrada:'Traslado recibido', movimiento_guia:'Venta entre dueños'};
+const GRUPO_TIPO_GUIA = {compra:'compra', venta:'venta', envio_campo_ajeno:'campo_ajeno', retorno_campo_ajeno:'campo_ajeno',
+  traslado_salida:'traslado', traslado_entrada:'traslado', movimiento_guia:'entre_duenos'};
+function movimientosConGuia(){
+  const out = [];
+  POTREROS_GEO.forEach(p=>{
+    ((estado.potreros[p.nombre]||{}).historial||[]).forEach(h=>{
+      if(h.eliminado || !TIPOS_CON_GUIA.includes(h.tipo)) return;
+      const d = datosHistorial(h, p.nombre) || {};
+      const m = /guía ([A-Z]\d{6})/.exec(h.detalle||'');
+      const guia = d.guia || (m ? m[1] : null);
+      const cabezas = Array.isArray(d.items) ? d.items.reduce((s,it)=>s+(Number(it.cantidad)||0),0) : (Number(d.cantidad)||0);
+      out.push({id: h.id, potrero: p.nombre, fecha: h.fecha, tipo: h.tipo, guia, cabezas, texto: h.detalle || '',
+        sinGuia: !guia && (h.tipo==='compra' || h.tipo==='venta'), tieneDatos: !!(h.extra || h.origDatos)});
+    });
+  });
+  out.sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||''));
+  return out;
+}
+function renderGuiasLista(){
+  const cont = document.getElementById('mg-lista');
+  if(!cont) return;
+  const tipo = document.getElementById('mg-filtro-tipo').value;
+  const texto = document.getElementById('mg-filtro-texto').value.trim().toLowerCase();
+  const soloSin = document.getElementById('mg-filtro-sin').checked;
+  const todos = movimientosConGuia().filter(r=>
+    (!tipo || GRUPO_TIPO_GUIA[r.tipo]===tipo) &&
+    (!soloSin || r.sinGuia) &&
+    (!texto || `${r.guia||''} ${r.potrero} ${r.texto}`.toLowerCase().includes(texto)));
+  const sinGuia = todos.filter(r=>r.sinGuia).length;
+  const cab = todos.reduce((s,r)=>s+r.cabezas,0);
+  document.getElementById('mg-resumen').textContent = `${todos.length} movimiento${todos.length===1?'':'s'} · ${cab} cabezas${sinGuia ? ` · ${sinGuia} sin guía` : ''}`;
+  cont.innerHTML = !todos.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">No hay movimientos con ese filtro.</p>'
+    : todos.map(r=>`
+      <div class="potrero-card" data-mg-id="${esc(r.id)}">
+        <div class="nombre">${esc(r.fecha)} · ${esc(ETIQUETA_TIPO_GUIA[r.tipo])} · ${esc(r.potrero)}
+          ${r.guia ? `<span style="font-weight:700;"> · Guía ${esc(r.guia)}</span>` : (r.sinGuia ? '<span style="color:var(--rojo-hacienda);font-weight:700;"> · ⚠ sin guía</span>' : '')}</div>
+        <div style="font-size:12.5px;color:var(--texto-suave);margin-top:2px;">${esc(r.texto)}</div>
+        ${r.tieneDatos ? `<div class="hist-acciones" style="margin-top:4px;">
+          ${(r.tipo==='compra' || r.tipo==='venta') ? `<button class="hist-btn" data-mg-guia="${esc(r.id)}" title="Agregar/editar guía">📄</button>` : ''}
+          ${r.tipo!=='traslado_entrada' ? `<button class="hist-btn" data-mg-borrar="${esc(r.id)}" title="Borrar">🗑</button>` : ''}
+        </div>` : ''}
+      </div>`).join('');
+}
+function filaMovGuia(idx){
+  return `<div class="form-row mg-fila" data-idx="${idx}" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+    <select class="mg-cat" style="flex:3;">${opcionesCategorias()}</select>
+    <input type="number" class="mg-cant" min="1" value="1" style="flex:1;min-width:56px;">
+    <button type="button" class="mg-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+  </div>`;
+}
+function actualizarBotonesQuitarMovGuia(){
+  const filas = document.querySelectorAll('#mg-filas .mg-fila');
+  filas.forEach(f=>{ f.querySelector('.mg-quitar').style.visibility = filas.length>1 ? 'visible' : 'hidden'; });
+}
+let movGuiaFilaIdx = 1;
+function reiniciarFormularioGuias(){
+  document.getElementById('mg-potrero').innerHTML = opcionesPotrerosTodos();
+  document.getElementById('mg-desde').innerHTML = opcionesDuenos();
+  document.getElementById('mg-hacia').innerHTML = opcionesDuenos();
+  document.getElementById('mg-guia').value = '';
+  movGuiaFilaIdx = 1;
+  document.getElementById('mg-filas').innerHTML = filaMovGuia(0);
+  actualizarBotonesQuitarMovGuia();
+  document.getElementById('mg-fecha').value = fechaISOHoy();
+  document.getElementById('mg-fecha').max = fechaISOHoy();
+  document.getElementById('mg-obs').value = '';
+  document.getElementById('mg-filtro-tipo').value = '';
+  document.getElementById('mg-filtro-texto').value = '';
+  document.getElementById('mg-filtro-sin').checked = false;
+  renderGuiasLista();
+}
+if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
+  const bg = document.getElementById('btn-guias');
+  bg.style.display = '';
+  bg.addEventListener('click', ()=>{
+    reiniciarFormularioGuias();
+    document.getElementById('modal-guias').style.display = 'flex';
+  });
+  const cerrarGuias = ()=>{ document.getElementById('modal-guias').style.display = 'none'; };
+  document.getElementById('guias-cerrar').addEventListener('click', cerrarGuias);
+  document.getElementById('guias-cerrar-x').addEventListener('click', cerrarGuias);
+  ['mg-filtro-tipo','mg-filtro-sin'].forEach(id=> document.getElementById(id).addEventListener('change', renderGuiasLista));
+  document.getElementById('mg-filtro-texto').addEventListener('input', renderGuiasLista);
+  document.getElementById('mg-lista').addEventListener('click', (e)=>{
+    const g = e.target.closest('[data-mg-guia]');
+    if(g){ agregarGuiaCompraventa(g.dataset.mgGuia); return; }
+    const b = e.target.closest('[data-mg-borrar]');
+    if(b){ borrarHistorial(b.dataset.mgBorrar); }
+  });
+  document.getElementById('mg-agregar-fila').addEventListener('click', ()=>{
+    document.getElementById('mg-filas').insertAdjacentHTML('beforeend', filaMovGuia(movGuiaFilaIdx++));
+    actualizarBotonesQuitarMovGuia();
+  });
+  document.getElementById('mg-filas').addEventListener('click', (e)=>{
+    if(e.target.classList.contains('mg-quitar')){
+      e.target.closest('.mg-fila').remove();
+      actualizarBotonesQuitarMovGuia();
+    }
+  });
+  document.getElementById('mg-guardar').addEventListener('click', ()=>{
+    const potrero = document.getElementById('mg-potrero').value;
+    const guia = document.getElementById('mg-guia').value.trim().toUpperCase();
+    const desde = document.getElementById('mg-desde').value;
+    const hacia = document.getElementById('mg-hacia').value;
+    if(!potrero){ toast('Elegí el potrero donde están los animales'); return; }
+    if(!/^[A-Z]\d{6}$/.test(guia)){ toast('La guía es obligatoria: 1 letra y 6 dígitos (ej: A592366)'); return; }
+    if(desde === hacia){ toast('El que vende y el que compra tienen que ser distintos'); return; }
+    const fechaISO = document.getElementById('mg-fecha').value;
+    if(!fechaISO){ toast('Elegí una fecha'); return; }
+    const obs = document.getElementById('mg-obs').value.trim();
+    const items = Array.from(document.querySelectorAll('#mg-filas .mg-fila')).map(f=>({
+      categoria: f.querySelector('.mg-cat').value,
+      cantidad: parseInt(f.querySelector('.mg-cant').value,10)
+    })).filter(it=>it.cantidad && it.cantidad>0);
+    if(!items.length){ toast('Ingresá al menos una categoría con cantidad válida'); return; }
+    // bloquea si el dueño que vende no tiene tantos (sin confirm(): un saldo negativo local no
+    // se reproduce igual en los otros dispositivos)
+    const necesario = {};
+    items.forEach(it=>{ necesario[it.categoria] = (necesario[it.categoria]||0) + it.cantidad; });
+    const falta = Object.keys(necesario).find(c=> necesario[c] > ((estado.potreros[potrero].animales[claveAnimal(c, desde)])||0));
+    if(falta){
+      toast(`En ${potrero} ${textoFirma(desde)} tiene ${(estado.potreros[potrero].animales[claveAnimal(falta, desde)])||0} ${falta} y pedís ${necesario[falta]}`);
+      return;
+    }
+    const fecha = fechaISOaDisplay(fechaISO);
+    const movId = crypto.randomUUID();
+    moverTitularidad(potrero, items, desde, hacia);
+    const itemsTxt = items.map(it=>`${it.cantidad} ${it.categoria}`).join(', ');
+    registrarHistorial(potrero, 'movimiento_guia', `Venta entre dueños: ${textoFirma(desde)} → ${textoFirma(hacia)}: ${itemsTxt} — guía ${guia}${obs?' ('+obs+')':''}`,
+      {potrero, items, desde, hacia, guia, obs: obs||null, movId}, undefined, fecha);
+    guardarEstado();
+    enviarEvento('movimiento_guia', potrero, {items, desde, hacia, guia, obs: obs||null, movId}, fecha);
+    actualizarTodo();
+    publicarStockPotreros([potrero]);
+    document.getElementById('mg-guia').value = '';
+    document.getElementById('mg-obs').value = '';
+    renderGuiasLista();
+    toast(`Venta ${textoFirma(desde)} → ${textoFirma(hacia)} registrada (guía ${guia})`);
   });
 }
 document.getElementById('lluvias-cerrar').addEventListener('click', ()=>{
