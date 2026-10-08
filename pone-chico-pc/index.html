@@ -447,7 +447,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.87 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.88 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -869,7 +869,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.87","versionMovil":"1.88","simpleHabilitado":true,"versionMovilSimple":"1.33","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.88","versionMovil":"1.89","simpleHabilitado":true,"versionMovilSimple":"1.34","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -8281,12 +8281,31 @@ if ('serviceWorker' in navigator) {
       });
     }).catch(()=>{});
   });
-  let recargandoPorActualizacion = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (recargandoPorActualizacion) return;
+  /* 8/10/2026: antes se recargaba al instante cuando salía una versión nueva, y eso
+     podía borrar un formulario a medio llenar en la manga. Ahora: la primera instalación
+     no recarga (la página ya está cargada); una actualización espera a que no haya
+     formulario ni ventana abierta, o a que la app pase a segundo plano. */
+  const teniaControlador = !!navigator.serviceWorker.controller;
+  let actualizacionPendiente = false, recargandoPorActualizacion = false;
+  function sinNadaEnPantalla() {
+    if (document.querySelector('#form-zona .form-accion')) return false;
+    const a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return false;
+    return !Array.from(document.querySelectorAll('.modal-overlay')).some(m => getComputedStyle(m).display !== 'none');
+  }
+  function recargarSiCorresponde(forzar) {
+    if (!actualizacionPendiente || recargandoPorActualizacion) return;
+    if (!forzar && !sinNadaEnPantalla()) return;
     recargandoPorActualizacion = true;
     location.reload();
+  }
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!teniaControlador) return;
+    actualizacionPendiente = true;
+    recargarSiCorresponde(false);
   });
+  setInterval(() => recargarSiCorresponde(false), 4000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') recargarSiCorresponde(true); });
 }
 </script>
 </body>

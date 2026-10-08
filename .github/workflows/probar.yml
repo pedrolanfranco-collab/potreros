@@ -144,3 +144,5 @@ jobs:
         run: node tests/probar_test_aislado.js la-vuelta-test/index.html
       - name: "Service workers: precarga robusta, apertura offline y caches propias (auditoria Campo 8/10/2026)"
         run: node tests/probar_sw_offline.js
+      - name: "Actualizacion de la app no recarga con un formulario abierto (8/10/2026)"
+        run: node tests/probar_recarga_segura.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
