@@ -182,11 +182,12 @@ async function probarPar(archivoLV, archivoML){
 
   chequear(`${etiqueta}: las dos apps son de establecimientos distintos`, LV.__establecimiento()==='la_vuelta' && ML.__establecimiento()==='maria_laura', `${LV.__establecimiento()} / ${ML.__establecimiento()}`);
 
-  // ---- 0) El flag viene APAGADO en el HTML publicado (Release 1): sin UI ----
-  chequear(`${etiqueta}: CONFIG.trasladoHabilitado viene apagado (Release 1)`, LV.__config().trasladoHabilitado === false, String(LV.__config().trasladoHabilitado));
+  // ---- 0) El flag viene PRENDIDO en el HTML publicado (Release 2) y es lo único que gobierna la UI ----
+  chequear(`${etiqueta}: CONFIG.trasladoHabilitado viene prendido (Release 2)`, LV.__config().trasladoHabilitado === true, String(LV.__config().trasladoHabilitado));
+  LV.__config().trasladoHabilitado = false; // apagado en runtime: la sección tiene que quedar oculta
   LV.document.getElementById('btn-lluvias').click();
   chequear(`${etiqueta}: con el flag apagado la sección de traslado queda oculta`, LV.document.getElementById('traslado-seccion').style.display !== 'block');
-  LV.__config().trasladoHabilitado = true; // lo que hará el Release 2
+  LV.__config().trasladoHabilitado = true;
   LV.document.getElementById('btn-lluvias').click();
   const seccion = LV.document.getElementById('traslado-seccion');
   chequear(`${etiqueta}: con el flag prendido la sección aparece`, seccion.style.display === 'block');
@@ -351,11 +352,14 @@ async function probarSinUI(archivo){
   const { win, errores } = await levantar(archivo, servidor);
   chequear(`${archivo}: carga sin errores`, errores.length===0, errores.join(' | '));
   if(errores.length) return;
-  chequear(`${archivo}: CONFIG.trasladoHabilitado no está activo`, !win.__config().trasladoHabilitado);
+  // Campo de La Vuelta lleva el flag prendido en su CONFIG (es la misma config del establecimiento) pero NO tiene el
+  // formulario: lo que cuenta es que la sección no exista. En las demás apps el flag ni siquiera está.
+  if(!archivo.includes('la-vuelta')) chequear(`${archivo}: CONFIG.trasladoHabilitado no está activo`, !win.__config().trasladoHabilitado);
   const btn = win.document.getElementById('btn-lluvias');
   if(btn) btn.click();
   const seccion = win.document.getElementById('traslado-seccion');
   chequear(`${archivo}: la sección de traslado queda oculta o no existe`, !seccion || seccion.style.display !== 'block');
+  if(archivo.includes('la-vuelta')) chequear(`${archivo}: la variante Campo no tiene el formulario de traslado (ni el botón de registrar)`, !win.document.getElementById('tr-guardar'));
 }
 
 (async () => {
