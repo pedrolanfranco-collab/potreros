@@ -155,6 +155,18 @@ async function inyectar(servidor, estab, tipo, potrero, detalle, fecha){
 const stock = (win, p, key) => (win.__est().potreros[p].animales[key] || 0);
 const entradas = (win, p) => win.__est().potreros[p].historial;
 const click = (win, el) => el.dispatchEvent(new win.Event('click', { bubbles: true }));
+// 8/10/2026: en La Vuelta y María Laura la compra/venta se carga desde "📑 Movimientos DICOSE" (ids cv-*); en Pone Chico sigue en el panel del potrero (ids f-*)
+const idsCV = (win) => win.__config().guiasHabilitado
+  ? { tipo: 'cv-tipo', cat: 'cv-cat', dueno: 'cv-dueno', cant: 'cv-cant', fecha: 'cv-fecha', precio: 'cv-precio', contra: 'cv-contraparte', ok: 'cv-guardar', modal: true }
+  : { tipo: 'f-tipo-op', cat: 'f-cat', dueno: 'f-dueno', cant: 'f-cant', fecha: 'f-fecha', precio: 'f-precio', contra: 'f-contraparte', ok: 'f-confirmar', modal: false };
+const abrirCompraVenta = (win, p) => {
+  if(win.__config().guiasHabilitado){
+    win.document.getElementById('btn-guias').click();
+    const s = win.document.getElementById('mg-modo'); s.value = 'compraventa'; s.dispatchEvent(new win.Event('change', { bubbles: true }));
+    win.document.getElementById('cv-potrero').value = p;
+  } else { win.seleccionarPotrero(p); win.mostrarFormulario(p, 'compraventa'); }
+};
+
 function foto(win){
   const o = {};
   Object.keys(win.__est().potreros).sort().forEach(p=>{
@@ -299,11 +311,12 @@ async function probarHistorial(A, B, F, C, servidor){
   A.win.renderDetalle(p);
   click(A.win, A.win.document.querySelector(`[data-hist-editar="${eCompra.id}"]`));
   chequear('editar la compra la deshace (-5)', stock(A.win, p, key) === pc0 - 5);
+  const cv = idsCV(A.win);
   chequear('el formulario de compra viene precargado con precio y contraparte',
-    d.getElementById('f-tipo-op').value === 'Compra' && d.getElementById('f-cant').value === '5'
-      && d.getElementById('f-precio').value === '800' && d.getElementById('f-contraparte').value === 'Fulano',
+    d.getElementById(cv.tipo).value === 'Compra' && d.getElementById(cv.cant).value === '5'
+      && d.getElementById(cv.precio).value === '800' && d.getElementById(cv.contra).value === 'Fulano',
     d.getElementById('form-zona').innerHTML.slice(0, 300));
-  d.getElementById('f-confirmar').click();
+  d.getElementById(cv.ok).click();
   await dormir(30);
   chequear('guardar sin cambios deja el stock como estaba', stock(A.win, p, key) === pc0);
 
@@ -314,10 +327,10 @@ async function probarHistorial(A, B, F, C, servidor){
   A.win.renderDetalle(p);
   click(A.win, A.win.document.querySelector(`[data-hist-editar="${eVenta.id}"]`));
   chequear('el formulario de venta recupera precio y contraparte de la transacción',
-    d.getElementById('f-tipo-op').value === 'Venta' && d.getElementById('f-precio').value === '900' && d.getElementById('f-contraparte').value === 'Mengano',
+    d.getElementById(cv.tipo).value === 'Venta' && d.getElementById(cv.precio).value === '900' && d.getElementById(cv.contra).value === 'Mengano',
     d.getElementById('form-zona').innerHTML.slice(0, 300));
   chequear('editar la venta la deshace (+1)', stock(A.win, p, key) === pv0 + 1);
-  d.getElementById('f-cancelar').click();
+  if(!cv.modal) d.getElementById('f-cancelar').click(); else d.getElementById('guias-cerrar').click();
   chequear('cancelar el formulario deja la venta deshecha (comportamiento de siempre del editar)', stock(A.win, p, key) === pv0 + 1);
 
   // --- editar un movimiento desde el potrero de DESTINO: se vuelve a cargar desde el ORIGEN
@@ -392,7 +405,8 @@ async function probarHistorial(A, B, F, C, servidor){
     chequear('editar un envío a campo ajeno devuelve los animales al potrero y los saca de campo ajeno',
       stock(A.win, p, key) === pca0 + 2 && (A.win.__est().campoAjeno.animales[key] || 0) === ajeno0 - 2);
     chequear('y abre Campo ajeno con tipo, potrero, guía, cantidad y notas precargados',
-      d.getElementById('modal-lluvias').style.display === 'flex' && d.getElementById('ca-tipo').value === 'envio'
+      d.getElementById('modal-guias').style.display === 'flex' && d.getElementById('campo-ajeno-seccion').style.display === 'block'
+        && d.getElementById('mg-modo').value === 'campo_ajeno' && d.getElementById('ca-tipo').value === 'envio'
         && d.getElementById('ca-potrero').value === p && d.getElementById('ca-guia').value === 'A123456'
         && d.getElementById('ca-obs').value === 'pastoreo' && d.querySelectorAll('#ca-filas .ca-fila').length === 1
         && d.querySelector('#ca-filas .ca-cant').value === '2' && d.getElementById('ca-fecha').value === ISOhoy,
@@ -502,12 +516,12 @@ async function probarTransacciones(A, B, F, C, servidor){
   A.win.confirm = () => true;
 
   // 1) una compra cargada en la propia PC, y se borra
-  A.win.seleccionarPotrero(p);
-  A.win.mostrarFormulario(p, 'compraventa');
-  d.getElementById('f-tipo-op').value = 'Compra'; d.getElementById('f-cat').value = cat; d.getElementById('f-dueno').value = du;
-  d.getElementById('f-cant').value = '3'; d.getElementById('f-fecha').value = ISOhoy;
-  d.getElementById('f-precio').value = '700'; d.getElementById('f-contraparte').value = 'T-local';
-  d.getElementById('f-confirmar').click();
+  const cvl = idsCV(A.win);
+  abrirCompraVenta(A.win, p);
+  d.getElementById(cvl.tipo).value = 'Compra'; d.getElementById(cvl.cat).value = cat; d.getElementById(cvl.dueno).value = du;
+  d.getElementById(cvl.cant).value = '3'; d.getElementById(cvl.fecha).value = ISOhoy;
+  d.getElementById(cvl.precio).value = '700'; d.getElementById(cvl.contra).value = 'T-local';
+  d.getElementById(cvl.ok).click();
   await dormir(30);
   chequear('la compra cargada en la PC genera su transacción', cuantas(A.win, 'T-local') === 1);
   const eLocal = entradas(A.win, p).find(h => h.tipo === 'compra' && h.extra && h.extra.contraparte === 'T-local');
@@ -535,8 +549,9 @@ async function probarTransacciones(A, B, F, C, servidor){
   const eEd = entradas(A.win, p).find(h => h.tipo === 'compra' && h.origDatos && h.origDatos.contraparte === 'T-editar');
   click(A.win, botonDe(A.win, p, eEd.id, 'editar'));
   chequear('al editar, la transacción vieja se saca', cuantas(A.win, 'T-editar') === 0);
-  chequear('y el formulario viene con precio y contraparte', d.getElementById('f-precio').value === '600' && d.getElementById('f-contraparte').value === 'T-editar');
-  d.getElementById('f-confirmar').click();
+  const cve = idsCV(A.win);
+  chequear('y el formulario viene con precio y contraparte', d.getElementById(cve.precio).value === '600' && d.getElementById(cve.contra).value === 'T-editar');
+  d.getElementById(cve.ok).click();
   await dormir(30);
   chequear('al guardar la corrección queda UNA transacción, no dos', cuantas(A.win, 'T-editar') === 1, String(cuantas(A.win, 'T-editar')));
   await sincronizarTodos(B, F, C);
@@ -566,7 +581,8 @@ async function probarCampoAjenoLista(A, B, F, C, servidor){
   A.win.confirm = () => true;
 
   // 1) un envío cargado en la propia PC, y se borra
-  click(A.win, d.getElementById('btn-lluvias'));
+  click(A.win, d.getElementById('btn-guias'));
+  d.getElementById('mg-modo').value = 'campo_ajeno'; d.getElementById('mg-modo').dispatchEvent(new A.win.Event('change', { bubbles: true }));
   d.getElementById('ca-tipo').value = 'envio'; d.getElementById('ca-potrero').value = p;
   d.querySelector('#ca-filas .ca-cat').value = cat; d.querySelector('#ca-filas .ca-dueno').value = du; d.querySelector('#ca-filas .ca-cant').value = '2';
   d.getElementById('ca-fecha').value = ISOhoy; d.getElementById('ca-obs').value = 'CA-local';

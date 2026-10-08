@@ -764,6 +764,79 @@
       <button class="btn btn-secundario" id="sn-cancelar-edicion" style="display:none;">Cancelar edición</button>
     </div>
     <div id="senaladas-lista"></div>
+<!-- @completo:end -->
+    <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<!-- @completo:start -->
+<div id="modal-stock" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>📊 Stock total</h3>
+    <button class="btn-cerrar-x" id="stock-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Categorías, animales por potrero, nacimientos y muertes de la temporada.</p>
+    <div id="stock-resumen" style="font-size:12.5px;color:var(--texto-suave);margin-bottom:10px;"></div>
+    <div id="stock-desaparecidos-aviso"></div>
+    <div id="stock-tabs" style="display:flex;gap:4px;margin-bottom:12px;">
+      <button data-tab="0" class="stock-tab-btn">Categorías</button>
+      <button data-tab="1" class="stock-tab-btn">Potreros</button>
+      <button data-tab="2" class="stock-tab-btn">Temporada</button>
+<!-- @multiDueno:start -->
+      <button data-tab="3" class="stock-tab-btn">Por dueño</button>
+<!-- @multiDueno:end -->
+    </div>
+    <div data-panel="0" id="stock-panel-0"></div>
+    <div data-panel="1" id="stock-panel-1" style="display:none;"></div>
+    <div data-panel="2" id="stock-panel-2" style="display:none;"></div>
+<!-- @multiDueno:start -->
+    <div data-panel="3" id="stock-panel-3" style="display:none;"></div>
+<!-- @multiDueno:end -->
+    <div class="form-botones"><button class="btn btn-secundario" id="stock-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-guias" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>📑 Movimientos DICOSE</h3>
+    <button class="btn-cerrar-x" id="guias-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Todo lo que se movió con guía: compras, ventas, campo ajeno y traslados. Arriba se carga lo que falta; abajo está la lista.</p>
+    <div class="form-row" id="mg-modo-fila"><label>Qué querés cargar</label><select id="mg-modo"></select></div>
+    <div id="compraventa-seccion">
+      <h4 style="margin:8px 0 6px;font-size:13px;">💰 Compra / Venta</h4>
+      <p class="modal-info" style="margin:0 0 8px;">Compra: entran animales al potrero. Venta: salen del potrero. La guía es opcional.</p>
+      <div class="form-row"><label>Operación</label>
+        <select id="cv-tipo">
+          <option value="Compra">Compra (ingresan animales)</option>
+          <option value="Venta">Venta (salen animales)</option>
+        </select>
+      </div>
+      <div class="form-row"><label id="cv-label-potrero">Potrero donde entran</label><select id="cv-potrero"></select></div>
+      <div class="form-row"><label>Categoría</label><select id="cv-cat"></select></div>
+      <div class="form-row"><label id="cv-label-dueno">Dueño</label><select id="cv-dueno"></select></div>
+      <div class="form-row"><label>Cantidad</label><input type="number" id="cv-cant" min="1" value="1"></div>
+      <div class="form-row"><label>Fecha</label><input type="date" id="cv-fecha"></div>
+      <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="cv-precio" min="0" step="0.01" placeholder="Ej: 850"></div>
+      <div class="form-row"><label>Contraparte (opcional)</label><input type="text" id="cv-contraparte" placeholder="Comprador / vendedor / consignatario"></div>
+      <div class="form-row"><label>Nº de guía (opcional)</label><input type="text" id="cv-guia" placeholder="Ej: A592366" style="text-transform:uppercase;"></div>
+      <div class="form-row"><label>Notas (opcional)</label><input type="text" id="cv-obs" placeholder="Ej: remate, flete incluido..."></div>
+      <div class="form-botones" style="margin-bottom:12px;">
+        <button class="btn btn-compraventa" id="cv-guardar">Registrar</button>
+      </div>
+    </div>
+    <div id="mg-venta-seccion">
+    <h4 style="margin:8px 0 6px;font-size:13px;">Venta entre dueños (solo guía)</h4>
+    <p class="modal-info" style="margin:0 0 8px;">Los animales no se mueven de potrero: solo cambian de dueño, y queda la guía.</p>
+    <div class="form-row"><label>Potrero donde están</label><select id="mg-potrero"></select></div>
+    <div class="form-row"><label>Nº de guía</label><input type="text" id="mg-guia" placeholder="Ej: A592366" style="text-transform:uppercase;"></div>
+    <div class="form-row"><label>De (vende)</label><select id="mg-desde"></select></div>
+    <div class="form-row"><label>A (compra)</label><select id="mg-hacia"></select></div>
+    <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Categoría · Cantidad</label>
+    <div id="mg-filas"></div>
+    <button type="button" class="btn btn-secundario" id="mg-agregar-fila" style="margin:8px 0;">+ Agregar otra categoría</button>
+    <div class="form-row"><label>Fecha</label><input type="date" id="mg-fecha"></div>
+    <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="mg-obs" placeholder="Ej: venta a Silvia"></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="mg-guardar">Registrar</button>
+    </div>
+    </div>
     <div id="campo-ajeno-seccion" style="display:none;">
       <h4 style="margin:16px 0 6px;font-size:13px;">🌾 Campo ajeno</h4>
       <p class="modal-info" style="margin:0 0 8px;">Para animales propios que van a pastar al campo de un tercero, o que vuelven de ahí — queda registrado en la app, pero el cálculo de DICOSE lo sigue llevando el Excel.</p>
@@ -800,54 +873,6 @@
         <button class="btn btn-agregar" id="tr-guardar">Registrar traslado</button>
       </div>
       <div id="traslado-lista"></div>
-    </div>
-<!-- @completo:end -->
-    <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
-  </div>
-</div>
-<!-- @completo:start -->
-<div id="modal-stock" class="modal-overlay" style="display:none;">
-  <div class="modal-box">
-    <h3>📊 Stock total</h3>
-    <button class="btn-cerrar-x" id="stock-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
-    <p class="modal-info">Categorías, animales por potrero, nacimientos y muertes de la temporada.</p>
-    <div id="stock-resumen" style="font-size:12.5px;color:var(--texto-suave);margin-bottom:10px;"></div>
-    <div id="stock-desaparecidos-aviso"></div>
-    <div id="stock-tabs" style="display:flex;gap:4px;margin-bottom:12px;">
-      <button data-tab="0" class="stock-tab-btn">Categorías</button>
-      <button data-tab="1" class="stock-tab-btn">Potreros</button>
-      <button data-tab="2" class="stock-tab-btn">Temporada</button>
-<!-- @multiDueno:start -->
-      <button data-tab="3" class="stock-tab-btn">Por dueño</button>
-<!-- @multiDueno:end -->
-    </div>
-    <div data-panel="0" id="stock-panel-0"></div>
-    <div data-panel="1" id="stock-panel-1" style="display:none;"></div>
-    <div data-panel="2" id="stock-panel-2" style="display:none;"></div>
-<!-- @multiDueno:start -->
-    <div data-panel="3" id="stock-panel-3" style="display:none;"></div>
-<!-- @multiDueno:end -->
-    <div class="form-botones"><button class="btn btn-secundario" id="stock-cerrar">Cerrar</button></div>
-  </div>
-</div>
-<div id="modal-guias" class="modal-overlay" style="display:none;">
-  <div class="modal-box">
-    <h3>📑 Movimientos DICOSE</h3>
-    <button class="btn-cerrar-x" id="guias-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
-    <p class="modal-info">Todo lo que se movió con guía: compras, ventas, campo ajeno y traslados. Abajo se puede cargar una venta entre dueños del mismo campo que solo lleva guía.</p>
-    <h4 style="margin:8px 0 6px;font-size:13px;">Venta entre dueños (solo guía)</h4>
-    <p class="modal-info" style="margin:0 0 8px;">Los animales no se mueven de potrero: solo cambian de dueño, y queda la guía.</p>
-    <div class="form-row"><label>Potrero donde están</label><select id="mg-potrero"></select></div>
-    <div class="form-row"><label>Nº de guía</label><input type="text" id="mg-guia" placeholder="Ej: A592366" style="text-transform:uppercase;"></div>
-    <div class="form-row"><label>De (vende)</label><select id="mg-desde"></select></div>
-    <div class="form-row"><label>A (compra)</label><select id="mg-hacia"></select></div>
-    <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Categoría · Cantidad</label>
-    <div id="mg-filas"></div>
-    <button type="button" class="btn btn-secundario" id="mg-agregar-fila" style="margin:8px 0;">+ Agregar otra categoría</button>
-    <div class="form-row"><label>Fecha</label><input type="date" id="mg-fecha"></div>
-    <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="mg-obs" placeholder="Ej: venta a Silvia"></div>
-    <div class="form-botones" style="margin-bottom:12px;">
-      <button class="btn btn-agregar" id="mg-guardar">Registrar</button>
     </div>
     <h4 style="margin:16px 0 6px;font-size:13px;">Lista de movimientos con guía</h4>
     <div class="form-row"><label>Tipo</label>
@@ -3097,7 +3122,10 @@ function precargarMover(datos, fechaISO){
   el('f-obs').value = datos.obs || '';
 }
 function precargarCampoAjeno(h, datos, fechaISO){
-  document.getElementById('btn-lluvias').click(); // abre y reinicia el modal donde vive Campo ajeno
+  const bg = document.getElementById('btn-guias');
+  if(!bg || bg.style.display === 'none'){ toast('Campo ajeno se carga desde 📑 Movimientos DICOSE, que no está habilitado en esta app'); return; }
+  bg.click(); // abre y reinicia el modal donde vive Campo ajeno (Movimientos DICOSE)
+  mostrarModoGuias('campo_ajeno');
   const el = id => document.getElementById(id);
   el('ca-tipo').value = h.tipo==='envio_campo_ajeno' ? 'envio' : 'retorno';
   el('ca-label-potrero').textContent = h.tipo==='envio_campo_ajeno' ? 'Potrero de origen' : 'Potrero de destino';
@@ -3115,8 +3143,24 @@ function precargarCampoAjeno(h, datos, fechaISO){
   el('ca-fecha').value = fechaISO;
   el('ca-obs').value = datos.obs || '';
 }
+function armarPrefillCompraVenta(h, datos, fechaISO, transaccion){
+  const prefill = Object.assign({}, datos, {_fechaISO: fechaISO});
+  prefill._tipoOp = h.tipo==='venta' ? 'Venta' : 'Compra';
+  if(prefill.precio==null && !prefill.contraparte && !prefill.obs){
+    const t = transaccion; // la que se acaba de sacar de estado.transacciones
+    if(t){
+      prefill.precio = t.precioUnitario;
+      prefill.contraparte = t.contraparte || null;
+      prefill.guia = prefill.guia || t.guia || null;
+      if(t.notas && t.notas!=='sincronizado' && t.notas!=='voz') prefill.obs = t.notas;
+    }
+  }
+  return prefill;
+}
 function abrirFormularioEdicion(h, datos, potreroHost, transaccion){
   const fechaISO = fechaISODeHistorial(h, datos);
+  // 8/10/2026: en La Vuelta y María Laura la compra/venta se carga desde Movimientos DICOSE
+  if((h.tipo==='compra' || h.tipo==='venta') && abrirCompraVentaEnGuias(armarPrefillCompraVenta(h, datos, fechaISO, transaccion), potreroHost)) return;
   // un movimiento se vuelve a cargar desde su potrero de ORIGEN (donde los animales acaban de volver)
   const base = (h.tipo==='movimiento' || h.tipo==='movimiento_multi' || h.tipo==='movimiento_todo') && datos.potrero ? datos.potrero : potreroHost;
   if(base!==potreroHost) seleccionarPotrero(base); else renderDetalle(base);
@@ -3191,6 +3235,10 @@ function editarHistorial(id){
   abrirFormularioEdicion(h, datos, ub.potrero, transaccionQuitada);
 <!-- @pc:end -->
 <!-- @movil:start -->
+  if((h.tipo==='compra' || h.tipo==='venta') && typeof abrirCompraVentaEnGuias === 'function' && abrirCompraVentaEnGuias(h.extra, ub.potrero)){
+    toast('Corregí los datos y confirmá para volver a cargarlo');
+    return;
+  }
   renderDetalle(ub.potrero);
   mostrarFormulario(ub.potrero, ACCION_POR_TIPO_HIST[h.tipo], h.extra);
 <!-- @movil:end -->
@@ -3879,7 +3927,7 @@ function renderDetalle(nombre){
       <button class="btn btn-muerte" data-accion="muerte">✕ Muerte</button>
       <button class="btn btn-muerte" data-accion="desaparecido">❓ Desaparecido</button>
 <!-- @completo:start -->
-      <button class="btn btn-compraventa btn-full" data-accion="compraventa">💰 Compra / Venta</button>
+      ${CONFIG.guiasHabilitado ? '' : `<button class="btn btn-compraventa btn-full" data-accion="compraventa">💰 Compra / Venta</button>`}
 <!-- @completo:end -->
       <button class="btn btn-mover btn-full" data-accion="mover-todo" style="filter:brightness(0.9);">⇄⇄ Mover TODO el potrero</button>
     </div>
@@ -3914,7 +3962,7 @@ function renderDetalle(nombre){
 <!-- @movil:end -->
             ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana">🏷️</button>` : ''}
 <!-- @completo:start -->
-            ${(CONFIG.dicoseHabilitado && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${esc(h.id)}" title="Agregar/editar guía">📄</button>` : ''}
+            ${((CONFIG.dicoseHabilitado || CONFIG.guiasHabilitado) && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${esc(h.id)}" title="Agregar/editar guía">📄</button>` : ''}
 <!-- @completo:end -->
             ${h.tipo!=='traslado_entrada' ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
           </span>` : ''}
@@ -4198,6 +4246,53 @@ function mostrarFormularioAgregarInicial(nombre){
   document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
 }
 
+<!-- @completo:start -->
+/* 8/10/2026: el registro de una compra o venta, compartido por el formulario del panel del
+   potrero (Pone Chico, que lo conserva) y por "📑 Movimientos DICOSE" (La Vuelta y María
+   Laura, donde el botón del panel se sacó). Devuelve true si registró. */
+function registrarCompraVenta(o){
+  const {potrero, tipoOp, cat, dueno, cant, fechaISO, precio, contraparte, obs} = o;
+  if(!potrero || !estado.potreros[potrero]){ toast('Elegí un potrero'); return false; }
+  const guiaRaw = o.guiaRaw || '';
+  if(guiaRaw && !/^[A-Z]\d{6}$/.test(guiaRaw)){ toast('La guía debe tener 1 letra y 6 dígitos (ej: A592366)'); return false; }
+  const guia = guiaRaw || null;
+  if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return false; }
+  if(!fechaISO){ toast('Elegí una fecha'); return false; }
+  const fecha = fechaISOaDisplay(fechaISO);
+  const a = estado.potreros[potrero].animales;
+  const key = claveAnimal(cat, dueno);
+  const totalAntes = totalPotrero(potrero);
+
+  if(tipoOp==='Venta'){
+    const disponibles = a[key] || 0;
+    if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${potrero}`); return false; }
+    a[key] -= cant;
+  } else {
+    a[key] = (a[key]||0) + cant;
+  }
+  registrarCambioOcupacion(potrero, totalAntes, fecha);
+
+  const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
+  let detalle = `${tipoOp}: ${tipoOp==='Venta'?'-':'+'}${cant} ${cat}${dueno?' de '+dueno:''}`;
+  if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
+  if(contraparte) detalle += ` — ${contraparte}`;
+  if(guia) detalle += ` — guía ${guia}`;
+  if(obs) detalle += ` (${obs})`;
+  registrarHistorial(potrero, tipoOp==='Venta'?'venta':'compra', detalle, {potrero, categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null, _tipoOp: tipoOp, _fechaISO: fechaISO}, undefined, fecha);
+
+  estado.transacciones = estado.transacciones || [];
+  estado.transacciones.unshift({
+    fecha: fecha, potrero, tipo: tipoOp, categoria: cat, dueno, cantidad: cant,
+    precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte, guia, notas: obs
+  });
+  enviarEvento(tipoOp==='Venta'?'venta':'compra', potrero, {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null}, fecha);
+
+  guardarEstado(); actualizarTodo(); publicarStockPotreros([potrero]);
+  if(typeof renderGuiasLista === 'function' && guiasModalAbierto()) renderGuiasLista();
+  toast(`${tipoOp} registrada: ${cant} ${cat}${dueno?' ('+dueno+')':''} en ${potrero}`);
+  return true;
+}
+<!-- @completo:end -->
 function mostrarFormulario(nombre, accion, prefill){
   const zona = document.getElementById('form-zona');
 
@@ -4436,7 +4531,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="f-precio" min="0" step="0.01" placeholder="Ej: 850" value="${prefill&&prefill.precio?prefill.precio:''}"></div>
         <div class="form-row"><label>Contraparte (opcional)</label><input type="text" id="f-contraparte" placeholder="Comprador / vendedor / consignatario" value="${prefill&&prefill.contraparte?prefill.contraparte:''}"></div>
-        ${CONFIG.dicoseHabilitado ? `<div class="form-row"><label>Nº de guía (opcional)</label><input type="text" id="f-guia" placeholder="Ej: A592366" style="text-transform:uppercase;" value="${prefill&&prefill.guia?prefill.guia:''}"></div>` : ''}
+        ${(CONFIG.dicoseHabilitado || CONFIG.guiasHabilitado) ? `<div class="form-row"><label>Nº de guía (opcional)</label><input type="text" id="f-guia" placeholder="Ej: A592366" style="text-transform:uppercase;" value="${prefill&&prefill.guia?prefill.guia:''}"></div>` : ''}
         <div class="form-row"><label>Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: remate, flete incluido..." value="${prefill&&prefill.obs?prefill.obs:''}"></div>
         <div class="form-botones">
           <button class="btn btn-compraventa" id="f-confirmar">${prefill?'Guardar corrección':'Registrar'}</button>
@@ -4444,51 +4539,20 @@ function mostrarFormulario(nombre, accion, prefill){
         </div>
       </div>`;
     document.getElementById('f-confirmar').addEventListener('click', ()=>{
-      const tipoOp = document.getElementById('f-tipo-op').value;
-      const cat = document.getElementById('f-cat').value;
-      const dueno = document.getElementById('f-dueno').value;
-      const cant = parseInt(document.getElementById('f-cant').value,10);
-      const fechaISO = document.getElementById('f-fecha').value;
-      const precio = parseFloat(document.getElementById('f-precio').value);
-      const contraparte = document.getElementById('f-contraparte').value.trim();
-      const obs = document.getElementById('f-obs').value.trim();
       const guiaEl = document.getElementById('f-guia');
-      const guiaRaw = guiaEl ? guiaEl.value.trim().toUpperCase() : '';
-      if(guiaRaw && !/^[A-Z]\d{6}$/.test(guiaRaw)){ toast('La guía debe tener 1 letra y 6 dígitos (ej: A592366)'); return; }
-      const guia = guiaRaw || null;
-      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
-      if(!fechaISO){ toast('Elegí una fecha'); return; }
-      const fecha = fechaISOaDisplay(fechaISO);
-      const a = estado.potreros[nombre].animales;
-      const key = claveAnimal(cat, dueno);
-      const totalAntes = totalPotrero(nombre);
-
-      if(tipoOp==='Venta'){
-        const disponibles = a[key] || 0;
-        if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${nombre}`); return; }
-        a[key] -= cant;
-      } else {
-        a[key] = (a[key]||0) + cant;
-      }
-      registrarCambioOcupacion(nombre, totalAntes, fecha);
-
-      const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
-      let detalle = `${tipoOp}: ${tipoOp==='Venta'?'-':'+'}${cant} ${cat}${dueno?' de '+dueno:''}`;
-      if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
-      if(contraparte) detalle += ` — ${contraparte}`;
-      if(guia) detalle += ` — guía ${guia}`;
-      if(obs) detalle += ` (${obs})`;
-      registrarHistorial(nombre, tipoOp==='Venta'?'venta':'compra', detalle, {potrero: nombre, categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null, _tipoOp: tipoOp, _fechaISO: fechaISO}, undefined, fecha);
-
-      estado.transacciones = estado.transacciones || [];
-      estado.transacciones.unshift({
-        fecha: fecha, potrero: nombre, tipo: tipoOp, categoria: cat, dueno, cantidad: cant,
-        precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte, guia, notas: obs
+      const ok = registrarCompraVenta({
+        potrero: nombre,
+        tipoOp: document.getElementById('f-tipo-op').value,
+        cat: document.getElementById('f-cat').value,
+        dueno: document.getElementById('f-dueno').value,
+        cant: parseInt(document.getElementById('f-cant').value,10),
+        fechaISO: document.getElementById('f-fecha').value,
+        precio: parseFloat(document.getElementById('f-precio').value),
+        contraparte: document.getElementById('f-contraparte').value.trim(),
+        obs: document.getElementById('f-obs').value.trim(),
+        guiaRaw: guiaEl ? guiaEl.value.trim().toUpperCase() : ''
       });
-      enviarEvento(tipoOp==='Venta'?'venta':'compra', nombre, {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null}, fecha);
-
-      guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
-      toast(`${tipoOp} registrada: ${cant} ${cat}${dueno?' ('+dueno+')':''} en ${nombre}`);
+      if(ok) cerrarDetalle();
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
@@ -7888,21 +7952,6 @@ document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   renderEventosClimaLista();
   renderAbortosLista();
   renderSenaladasLista();
-  if(CONFIG.dicoseHabilitado){
-    document.getElementById('campo-ajeno-seccion').style.display = 'block';
-    document.getElementById('ca-potrero').innerHTML = opcionesPotrerosTodos();
-    document.getElementById('ca-label-potrero').textContent = 'Potrero de origen';
-    document.getElementById('ca-tipo').value = 'envio';
-    document.getElementById('ca-guia').value = '';
-    campoAjenoFilaIdx = 1;
-    document.getElementById('ca-filas').innerHTML = filaCampoAjeno(0);
-    actualizarBotonesQuitarCampoAjeno();
-    document.getElementById('ca-fecha').value = fechaISOHoy();
-    document.getElementById('ca-fecha').max = fechaISOHoy();
-    document.getElementById('ca-obs').value = '';
-    renderCampoAjenoLista();
-  }
-  if(CONFIG.trasladoHabilitado && CONFIG.traslado) reiniciarFormularioTraslado();
   // @completo:end
   document.getElementById('modal-lluvias').style.display = 'flex';
 });
@@ -7941,17 +7990,16 @@ if(document.getElementById('ca-tipo')){
     estado.campoAjeno = estado.campoAjeno || {animales:{}, historial:[]};
 
     if(tipo==='envio'){
-      const faltantes = items.filter(it=>{
-        const key = claveAnimal(it.categoria, it.dueno);
-        return it.cantidad > ((estado.potreros[potrero].animales[key])||0);
-      });
-      if(faltantes.length){
-        const detalleFaltantes = faltantes.map(it=>{
-          const key = claveAnimal(it.categoria, it.dueno);
-          const disp = estado.potreros[potrero].animales[key]||0;
-          return `${it.categoria}${it.dueno?' de '+it.dueno:''}: hay ${disp}, pedís ${it.cantidad}`;
-        }).join('\n');
-        if(!confirm(`Vas a dejar saldo negativo en ${potrero}:\n${detalleFaltantes}\n¿Continuar de todos modos?`)) return;
+      // 8/10/2026: el envío BLOQUEA si falta stock (como el traslado y la venta entre dueños). Antes
+      // preguntaba y seguía: el saldo negativo local no se reproduce igual en los otros dispositivos
+      // (el receptor trunca en 0) y dejaba stock fantasma en el potrero al anular el envío.
+      const necesario = {};
+      items.forEach(it=>{ const k = claveAnimal(it.categoria, it.dueno); necesario[k] = (necesario[k]||0) + it.cantidad; });
+      const falta = items.find(it=>{ const k = claveAnimal(it.categoria, it.dueno); return necesario[k] > ((estado.potreros[potrero].animales[k])||0); });
+      if(falta){
+        const k = claveAnimal(falta.categoria, falta.dueno);
+        toast(`En ${potrero} hay ${(estado.potreros[potrero].animales[k])||0} ${falta.categoria}${falta.dueno?' de '+falta.dueno:''} y pedís ${necesario[k]}`);
+        return;
       }
       const totalAntes = totalPotrero(potrero);
       items.forEach(it=>{
@@ -7992,6 +8040,7 @@ if(document.getElementById('ca-tipo')){
     actualizarTodo();
     publicarStockPotreros([potrero]);
     renderCampoAjenoLista();
+    if(typeof renderGuiasLista === 'function') renderGuiasLista();
     toast(tipo==='envio' ? 'Envío a campo ajeno registrado' : 'Retorno de campo ajeno registrado');
   });
 }
@@ -8038,7 +8087,6 @@ function renderTrasladoLista(){
 }
 function reiniciarFormularioTraslado(){
   const t = CONFIG.traslado || {};
-  document.getElementById('traslado-seccion').style.display = 'block';
   document.getElementById('tr-info').textContent = `Hacienda que se manda con guía a ${t.destinoNombre}: sale de acá y entra sola allá, en el potrero que elijas.`;
   document.getElementById('tr-label-destino').textContent = `Potrero de destino en ${t.destinoNombre}`;
   document.getElementById('tr-origen').innerHTML = opcionesPotrerosTodos();
@@ -8123,6 +8171,7 @@ if(document.getElementById('tr-guardar')){
     actualizarTodo();
     publicarStockPotreros([origen]);
     renderTrasladoLista();
+    if(typeof renderGuiasLista === 'function') renderGuiasLista();
     toast(`Traslado a ${t.destinoNombre} registrado`);
   });
 }
@@ -8192,7 +8241,86 @@ function actualizarBotonesQuitarMovGuia(){
   filas.forEach(f=>{ f.querySelector('.mg-quitar').style.visibility = filas.length>1 ? 'visible' : 'hidden'; });
 }
 let movGuiaFilaIdx = 1;
+/* 8/10/2026, a pedido de Pedro: "Campo ajeno" y "Traslado a otro campo" viven en
+   "📑 Movimientos DICOSE" (antes estaban en "Lluvias y otros eventos"). Un selector
+   muestra de a un formulario; la lista de abajo es la misma para todos. */
+function reiniciarFormulariosGuiaExtra(){
+  if(CONFIG.dicoseHabilitado){
+    document.getElementById('ca-potrero').innerHTML = opcionesPotrerosTodos();
+    document.getElementById('ca-label-potrero').textContent = 'Potrero de origen';
+    document.getElementById('ca-tipo').value = 'envio';
+    document.getElementById('ca-guia').value = '';
+    campoAjenoFilaIdx = 1;
+    document.getElementById('ca-filas').innerHTML = filaCampoAjeno(0);
+    actualizarBotonesQuitarCampoAjeno();
+    document.getElementById('ca-fecha').value = fechaISOHoy();
+    document.getElementById('ca-fecha').max = fechaISOHoy();
+    document.getElementById('ca-obs').value = '';
+    renderCampoAjenoLista();
+  }
+  if(CONFIG.trasladoHabilitado && CONFIG.traslado) reiniciarFormularioTraslado();
+}
+function mostrarModoGuias(modo){
+  const sel = document.getElementById('mg-modo');
+  if(sel && Array.from(sel.options).some(o=>o.value===modo)) sel.value = modo;
+  const m = sel ? sel.value : 'compraventa';
+  document.getElementById('compraventa-seccion').style.display = m==='compraventa' ? 'block' : 'none';
+  document.getElementById('mg-venta-seccion').style.display = m==='venta' ? 'block' : 'none';
+  document.getElementById('campo-ajeno-seccion').style.display = m==='campo_ajeno' ? 'block' : 'none';
+  document.getElementById('traslado-seccion').style.display = m==='traslado' ? 'block' : 'none';
+}
+/* Formulario "Compra / venta" de Movimientos DICOSE (reemplaza al botón del panel del potrero). */
+function actualizarRotulosCompraVenta(){
+  const venta = document.getElementById('cv-tipo').value === 'Venta';
+  document.getElementById('cv-label-potrero').textContent = venta ? 'Potrero de donde salen' : 'Potrero donde entran';
+  document.getElementById('cv-label-dueno').textContent = CONFIG.duenoLabel;
+}
+function reiniciarFormularioCompraVenta(){
+  document.getElementById('cv-tipo').value = 'Compra';
+  document.getElementById('cv-potrero').innerHTML = opcionesPotrerosTodos();
+  document.getElementById('cv-cat').innerHTML = opcionesCategorias();
+  document.getElementById('cv-dueno').innerHTML = opcionesDuenos();
+  document.getElementById('cv-cant').value = '1';
+  document.getElementById('cv-fecha').value = fechaISOHoy();
+  document.getElementById('cv-fecha').max = fechaISOHoy();
+  ['cv-precio','cv-contraparte','cv-guia','cv-obs'].forEach(id=>{ document.getElementById(id).value = ''; });
+  actualizarRotulosCompraVenta();
+}
+/* Precarga el formulario con una compra/venta ya cargada (editar desde el historial). */
+function precargarCompraVenta(prefill, potrero){
+  const el = id => document.getElementById(id);
+  const tieneOpcion = (sel, v)=> Array.from(sel.options).some(o=>o.value===v);
+  el('cv-tipo').value = prefill._tipoOp === 'Venta' ? 'Venta' : 'Compra';
+  actualizarRotulosCompraVenta();
+  const p = prefill.potrero || potrero;
+  if(p && tieneOpcion(el('cv-potrero'), p)) el('cv-potrero').value = p;
+  if(prefill.categoria && tieneOpcion(el('cv-cat'), prefill.categoria)) el('cv-cat').value = prefill.categoria;
+  if(tieneOpcion(el('cv-dueno'), prefill.dueno || '')) el('cv-dueno').value = prefill.dueno || '';
+  el('cv-cant').value = prefill.cantidad || 1;
+  if(prefill._fechaISO) el('cv-fecha').value = prefill._fechaISO;
+  el('cv-precio').value = prefill.precio || '';
+  el('cv-contraparte').value = prefill.contraparte || '';
+  el('cv-guia').value = prefill.guia || '';
+  el('cv-obs').value = prefill.obs || '';
+}
+/* Abre Movimientos DICOSE en "Compra / venta" ya precargado; false si esta app no lo tiene. */
+function abrirCompraVentaEnGuias(prefill, potrero){
+  const bg = document.getElementById('btn-guias');
+  if(!bg || bg.style.display === 'none') return false;
+  bg.click();
+  mostrarModoGuias('compraventa');
+  precargarCompraVenta(prefill, potrero);
+  return true;
+}
 function reiniciarFormularioGuias(){
+  const modos = [['compraventa','Compra / venta'], ['venta','Venta entre dueños (solo guía)']];
+  if(CONFIG.dicoseHabilitado) modos.push(['campo_ajeno','Envío / retorno de campo ajeno']);
+  if(CONFIG.trasladoHabilitado && CONFIG.traslado) modos.push(['traslado','Traslado a '+CONFIG.traslado.destinoNombre]);
+  document.getElementById('mg-modo').innerHTML = modos.map(([v,n])=>`<option value="${v}">${esc(n)}</option>`).join('');
+  document.getElementById('mg-modo-fila').style.display = modos.length>1 ? '' : 'none';
+  reiniciarFormulariosGuiaExtra();
+  reiniciarFormularioCompraVenta();
+  mostrarModoGuias('compraventa');
   document.getElementById('mg-potrero').innerHTML = opcionesPotrerosTodos();
   document.getElementById('mg-desde').innerHTML = opcionesDuenos();
   document.getElementById('mg-hacia').innerHTML = opcionesDuenos();
@@ -8218,6 +8346,26 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
   const cerrarGuias = ()=>{ document.getElementById('modal-guias').style.display = 'none'; };
   document.getElementById('guias-cerrar').addEventListener('click', cerrarGuias);
   document.getElementById('guias-cerrar-x').addEventListener('click', cerrarGuias);
+  document.getElementById('mg-modo').addEventListener('change', (e)=> mostrarModoGuias(e.target.value));
+  document.getElementById('cv-tipo').addEventListener('change', actualizarRotulosCompraVenta);
+  document.getElementById('cv-guardar').addEventListener('click', ()=>{
+    const ok = registrarCompraVenta({
+      potrero: document.getElementById('cv-potrero').value,
+      tipoOp: document.getElementById('cv-tipo').value,
+      cat: document.getElementById('cv-cat').value,
+      dueno: document.getElementById('cv-dueno').value,
+      cant: parseInt(document.getElementById('cv-cant').value,10),
+      fechaISO: document.getElementById('cv-fecha').value,
+      precio: parseFloat(document.getElementById('cv-precio').value),
+      contraparte: document.getElementById('cv-contraparte').value.trim(),
+      obs: document.getElementById('cv-obs').value.trim(),
+      guiaRaw: document.getElementById('cv-guia').value.trim().toUpperCase()
+    });
+    if(!ok) return;
+    document.getElementById('cv-cant').value = '1';
+    ['cv-precio','cv-contraparte','cv-guia','cv-obs'].forEach(id=>{ document.getElementById(id).value = ''; });
+    renderGuiasLista();
+  });
   ['mg-filtro-tipo','mg-filtro-sin'].forEach(id=> document.getElementById(id).addEventListener('change', renderGuiasLista));
   document.getElementById('mg-filtro-texto').addEventListener('input', renderGuiasLista);
   document.getElementById('mg-lista').addEventListener('click', (e)=>{

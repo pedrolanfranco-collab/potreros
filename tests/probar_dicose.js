@@ -123,6 +123,13 @@ async function levantar(archivo, servidor){
   return { win, errores };
 }
 
+// 8/10/2026: Campo ajeno y Traslado viven en "📑 Movimientos DICOSE" (antes en Lluvias): se abre ese modal y se elige el formulario
+function abrirModo(win, modo){
+  win.document.getElementById('btn-guias').click();
+  const sel = win.document.getElementById('mg-modo');
+  sel.value = modo;
+  sel.dispatchEvent(new win.Event('change', { bubbles: true }));
+}
 function setValor(win, id, val){
   const el = win.document.getElementById(id);
   el.value = val;
@@ -212,7 +219,7 @@ async function probarLaVuelta(archivoPc, archivoMovil){
     win.document.getElementById('f-fecha').value = win.fechaISOHoy();
     win.document.getElementById('f-confirmar').click();
 
-    win.document.getElementById('btn-lluvias').click();
+    abrirModo(win, 'campo_ajeno');
     chequear(`${archivo}: sección de campo ajeno visible (dicoseHabilitado)`, win.document.getElementById('campo-ajeno-seccion').style.display === 'block');
     chequear(`${archivo}: campo ajeno arranca con 1 fila de categoría`, win.document.querySelectorAll('#ca-filas .ca-fila').length === 1);
     win.document.getElementById('ca-agregar-fila').click();
@@ -241,7 +248,7 @@ async function probarLaVuelta(archivoPc, archivoMovil){
     chequear(`${archivo}: el texto del historial menciona la guía`, histEnvioMulti.detalle.includes('guía A111111'), histEnvioMulti.detalle);
 
     // ---- 5) Retorno de las mismas 2 categorías ----
-    win.document.getElementById('btn-lluvias').click(); // reabre y resetea a 1 fila
+    abrirModo(win, 'campo_ajeno'); // reabre y resetea a 1 fila
     win.document.getElementById('ca-agregar-fila').click();
     setValor(win, 'ca-tipo', 'retorno');
     win.document.getElementById('ca-potrero').value = potrero;
@@ -259,7 +266,7 @@ async function probarLaVuelta(archivoPc, archivoMovil){
     chequear(`${archivo}: retorno vacía el balde de Terneros`, win.__est().campoAjeno.animales[keyTernerosDueno0] === 0);
 
     // ---- 6) Borrar un envío (multi-categoría) revierte bien ----
-    win.document.getElementById('btn-lluvias').click();
+    abrirModo(win, 'campo_ajeno');
     win.document.getElementById('ca-agregar-fila').click();
     setValor(win, 'ca-tipo', 'envio');
     win.document.getElementById('ca-potrero').value = potrero;
@@ -304,9 +311,12 @@ async function probarSinDicose(archivoPc){
   if(potrero){
     win.seleccionarPotrero(potrero);
     win.mostrarFormulario(potrero, 'compraventa');
-    chequear(`${archivoPc}: #f-guia NO existe (dicoseHabilitado desactivado)`, !win.document.getElementById('f-guia'));
+    // 8/10/2026: María Laura gana el campo de guía por guiasHabilitado (Movimientos DICOSE); sin ninguno de los dos flags no existe
+    const conGuia = !!(win.__config().dicoseHabilitado || win.__config().guiasHabilitado);
+    chequear(`${archivoPc}: #f-guia ${conGuia ? 'existe (guiasHabilitado)' : 'NO existe (sin dicoseHabilitado ni guiasHabilitado)'}`, !!win.document.getElementById('f-guia') === conGuia);
   }
-  win.document.getElementById('btn-lluvias').click();
+  const bGuias = win.document.getElementById('btn-guias');
+  if(bGuias) bGuias.click();
   const seccion = win.document.getElementById('campo-ajeno-seccion');
   chequear(`${archivoPc}: sección de campo ajeno queda oculta`, !seccion || seccion.style.display !== 'block');
 }

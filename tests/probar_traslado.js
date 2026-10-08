@@ -141,6 +141,13 @@ async function levantar(archivo, servidor){
   return { win, errores };
 }
 
+// 8/10/2026: Campo ajeno y Traslado viven en "📑 Movimientos DICOSE" (antes en Lluvias): se abre ese modal y se elige el formulario
+function abrirModo(win, modo){
+  win.document.getElementById('btn-guias').click();
+  const sel = win.document.getElementById('mg-modo');
+  sel.value = modo;
+  sel.dispatchEvent(new win.Event('change', { bubbles: true }));
+}
 function setValor(win, el, val){
   el.value = val;
   el.dispatchEvent(new win.Event('change', { bubbles: true }));
@@ -149,7 +156,7 @@ function ultimoToast(win){ return win.__toasts[win.__toasts.length-1] || ''; }
 
 /* Llena el formulario "🚚 Traslado a otro campo" y aprieta Registrar. filas = [{cat, dueno, duenoDestino?, cant}] */
 function cargarTraslado(win, o){
-  win.document.getElementById('btn-lluvias').click();
+  abrirModo(win, 'traslado');
   win.document.getElementById('tr-origen').value = o.origen;
   win.document.getElementById('tr-destino').value = o.destino;
   win.document.getElementById('tr-guia').value = o.guia;
@@ -185,12 +192,12 @@ async function probarPar(archivoLV, archivoML){
   // ---- 0) El flag viene PRENDIDO en el HTML publicado (Release 2) y es lo único que gobierna la UI ----
   chequear(`${etiqueta}: CONFIG.trasladoHabilitado viene prendido (Release 2)`, LV.__config().trasladoHabilitado === true, String(LV.__config().trasladoHabilitado));
   LV.__config().trasladoHabilitado = false; // apagado en runtime: la sección tiene que quedar oculta
-  LV.document.getElementById('btn-lluvias').click();
-  chequear(`${etiqueta}: con el flag apagado la sección de traslado queda oculta`, LV.document.getElementById('traslado-seccion').style.display !== 'block');
+  LV.document.getElementById('btn-guias').click();
+  chequear(`${etiqueta}: con el flag apagado la opción de traslado no está en el selector y la sección queda oculta`, !Array.from(LV.document.getElementById('mg-modo').options).some(o=>o.value==='traslado') && LV.document.getElementById('traslado-seccion').style.display !== 'block');
   LV.__config().trasladoHabilitado = true;
-  LV.document.getElementById('btn-lluvias').click();
+  abrirModo(LV, 'traslado');
   const seccion = LV.document.getElementById('traslado-seccion');
-  chequear(`${etiqueta}: con el flag prendido la sección aparece`, seccion.style.display === 'block');
+  chequear(`${etiqueta}: con el flag prendido la sección aparece (en Movimientos DICOSE, no en Lluvias)`, seccion.style.display === 'block' && !LV.document.getElementById('modal-lluvias').contains(seccion));
   const destinos = Array.from(LV.document.getElementById('tr-destino').options).map(o=>o.value);
   chequear(`${etiqueta}: la lista de destino son los potreros de María Laura`, JSON.stringify(destinos) === JSON.stringify(['Tajamar','Casco','Uno','Rincon','Manantial']), destinos.join(','));
   chequear(`${etiqueta}: el texto nombra a María Laura`, LV.document.getElementById('tr-info').textContent.includes('María Laura'));
@@ -221,7 +228,7 @@ async function probarPar(archivoLV, archivoML){
   chequear(`${etiqueta}: saldo insuficiente BLOQUEA (no deja negativo)`, aLV[kVacasSilvia]===20 && servidor.filas.eventos_sync.length===0 && /hay 20/.test(ultimoToast(LV)), ultimoToast(LV));
 
   // ---- 2) sugerencia del dueño de allá por el mapa ----
-  LV.document.getElementById('btn-lluvias').click();
+  abrirModo(LV, 'traslado');
   const fila0 = LV.document.querySelector('#tr-filas .tr-fila');
   setValor(LV, fila0.querySelector('.tr-dueno'), 'Silvia Dutra');
   chequear(`${etiqueta}: al elegir Silvia Dutra se sugiere "Silvia" allá`, fila0.querySelector('.tr-dueno-dest').value === 'Silvia', fila0.querySelector('.tr-dueno-dest').value);
@@ -355,7 +362,7 @@ async function probarSinUI(archivo){
   // Campo de La Vuelta lleva el flag prendido en su CONFIG (es la misma config del establecimiento) pero NO tiene el
   // formulario: lo que cuenta es que la sección no exista. En las demás apps el flag ni siquiera está.
   if(!archivo.includes('la-vuelta')) chequear(`${archivo}: CONFIG.trasladoHabilitado no está activo`, !win.__config().trasladoHabilitado);
-  const btn = win.document.getElementById('btn-lluvias');
+  const btn = win.document.getElementById('btn-guias');
   if(btn) btn.click();
   const seccion = win.document.getElementById('traslado-seccion');
   chequear(`${archivo}: la sección de traslado queda oculta o no existe`, !seccion || seccion.style.display !== 'block');

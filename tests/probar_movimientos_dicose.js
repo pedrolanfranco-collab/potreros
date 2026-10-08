@@ -147,6 +147,8 @@ function ultimoToast(win){ return win.__toasts[win.__toasts.length-1] || ''; }
 /* Llena "Venta entre dueños" y aprieta Registrar. filas = [{cat, cant}] */
 function cargarVenta(win, o){
   win.document.getElementById('btn-guias').click();
+  const sm = win.document.getElementById('mg-modo');
+  sm.value = 'venta'; sm.dispatchEvent(new win.Event('change', { bubbles: true }));
   win.document.getElementById('mg-potrero').value = o.potrero;
   win.document.getElementById('mg-guia').value = o.guia;
   win.document.getElementById('mg-desde').value = o.desde;
@@ -327,6 +329,112 @@ async function probarApp(archivo){
   W.aplicarEventoRemoto({event_id:'e-z', creado_en:'2026-10-09T00:00:00Z', tipo:'movimiento_guia', potrero:'Potrero Que No Existe',
     detalle:{items:[{categoria:'Vacas', cantidad:2}], desde:dVende, hacia:dCompra, guia:'G555555', movId:'m-z'}, dispositivo:'otro'}, new Set());
   chequear(`${etiqueta}: un evento a un potrero desconocido se estaciona`, ((W.__est().pendientesPotrero||{})['Potrero Que No Existe']||[]).length===1);
+
+  // ---- 8b) Campo ajeno y Traslado viven en este modal (ya NO en Lluvias), elegibles con el selector ----
+  const cfg = W.__config();
+  const tieneCA = !!cfg.dicoseHabilitado, tieneTR = !!(cfg.trasladoHabilitado && cfg.traslado);
+  const lluv = W.document.getElementById('modal-lluvias');
+  chequear(`${etiqueta}: Campo ajeno y Traslado ya NO están dentro del modal de Lluvias`, !lluv.querySelector('#campo-ajeno-seccion') && !lluv.querySelector('#traslado-seccion'));
+  W.document.getElementById('btn-guias').click();
+  const modos = Array.from(W.document.getElementById('mg-modo').options).map(o=>o.value);
+  const esperados = ['compraventa', 'venta'].concat(tieneCA ? ['campo_ajeno'] : [], tieneTR ? ['traslado'] : []);
+  chequear(`${etiqueta}: el selector ofrece ${esperados.join(' + ')}`, JSON.stringify(modos)===JSON.stringify(esperados), modos.join(','));
+  chequear(`${etiqueta}: el selector solo se ve si hay más de una opción`, (W.document.getElementById('mg-modo-fila').style.display !== 'none') === (esperados.length>1));
+  const vis = id => W.document.getElementById(id).style.display === 'block';
+  chequear(`${etiqueta}: al abrir se ve solo Compra / venta (la opción por defecto)`, vis('compraventa-seccion') && !vis('mg-venta-seccion') && !vis('campo-ajeno-seccion') && !vis('traslado-seccion'));
+  const abrirModo = m => { W.document.getElementById('btn-guias').click(); const s = W.document.getElementById('mg-modo'); s.value = m; s.dispatchEvent(new W.Event('change', {bubbles:true})); };
+  if(tieneCA){
+    abrirModo('campo_ajeno');
+    chequear(`${etiqueta}: elegir "campo ajeno" muestra ese formulario y oculta los demás`, vis('campo-ajeno-seccion') && !vis('mg-venta-seccion') && !vis('traslado-seccion'));
+    const cargarCA = (cat, cant, guia) => {
+      W.document.getElementById('ca-tipo').value = 'envio'; W.document.getElementById('ca-potrero').value = potrero;
+      W.document.getElementById('ca-guia').value = guia; W.document.getElementById('ca-fecha').value = W.fechaISOHoy();
+      const f = W.document.querySelector('#ca-filas .ca-fila');
+      f.querySelector('.ca-cat').value = cat; f.querySelector('.ca-dueno').value = dVende; f.querySelector('.ca-cant').value = String(cant);
+      W.document.getElementById('ca-guardar').click();
+    };
+    const evCA = servidor.filas.eventos_sync.length, stockCA = aW[kV('Vacas')];
+    cargarCA('Vacas', 9999, 'J111111');
+    chequear(`${etiqueta}: un envío a campo ajeno sin stock BLOQUEA (no pregunta ni deja negativo)`, aW[kV('Vacas')]===stockCA && servidor.filas.eventos_sync.length===evCA && /hay/.test(ultimoToast(W)), ultimoToast(W));
+    abrirModo('campo_ajeno');
+    cargarCA('Vacas', 3, 'J111111');
+    await dormir(40);
+    chequear(`${etiqueta}: un envío válido descuenta del potrero y sube un evento`, aW[kV('Vacas')]===stockCA-3 && servidor.filas.eventos_sync.length===evCA+1);
+    chequear(`${etiqueta}: la lista de Movimientos DICOSE se refresca con el envío`, W.document.getElementById('mg-lista').textContent.includes('J111111'));
+  }
+  if(tieneTR){
+    abrirModo('traslado');
+    chequear(`${etiqueta}: elegir "traslado" muestra ese formulario y oculta los demás`, vis('traslado-seccion') && !vis('mg-venta-seccion') && !vis('campo-ajeno-seccion'));
+    W.document.getElementById('tr-origen').value = potrero; W.document.getElementById('tr-destino').value = 'Casco';
+    W.document.getElementById('tr-guia').value = 'K222222'; W.document.getElementById('tr-fecha').value = W.fechaISOHoy();
+    const ft = W.document.querySelector('#tr-filas .tr-fila');
+    ft.querySelector('.tr-cat').value = 'Vacas'; ft.querySelector('.tr-dueno').value = dVende;
+    ft.querySelector('.tr-dueno-dest').value = 'Pedro'; ft.querySelector('.tr-cant').value = '2';
+    const evTR = servidor.filas.eventos_sync.length;
+    W.document.getElementById('tr-guardar').click();
+    await dormir(60);
+    chequear(`${etiqueta}: un traslado desde acá sube sus dos eventos`, servidor.filas.eventos_sync.length===evTR+2, String(servidor.filas.eventos_sync.length-evTR));
+    chequear(`${etiqueta}: la lista de Movimientos DICOSE se refresca con el traslado`, W.document.getElementById('mg-lista').textContent.includes('K222222'));
+  }
+  if(!tieneCA && !tieneTR){
+    chequear(`${etiqueta}: sin campo ajeno ni traslado esas secciones no se ven nunca`, !vis('campo-ajeno-seccion') && !vis('traslado-seccion'));
+  }
+
+  // ---- 8c) Compra / venta vive en Movimientos DICOSE (el botón del panel del potrero se sacó en La Vuelta y María Laura) ----
+  W.seleccionarPotrero(potrero);
+  chequear(`${etiqueta}: el panel del potrero YA NO tiene el botón Compra / Venta`, !W.document.querySelector('[data-accion="compraventa"]'));
+  const cvEl = id => W.document.getElementById(id);
+  const abrirCV = () => { W.document.getElementById('btn-guias').click(); const s = cvEl('mg-modo'); s.value = 'compraventa'; s.dispatchEvent(new W.Event('change', {bubbles:true})); };
+  abrirCV();
+  chequear(`${etiqueta}: Compra / venta tiene campo de guía (también en María Laura)`, !!cvEl('cv-guia'));
+  cvEl('cv-tipo').value = 'Venta'; cvEl('cv-tipo').dispatchEvent(new W.Event('change', {bubbles:true}));
+  const rotVenta = cvEl('cv-label-potrero').textContent;
+  cvEl('cv-tipo').value = 'Compra'; cvEl('cv-tipo').dispatchEvent(new W.Event('change', {bubbles:true}));
+  chequear(`${etiqueta}: el rótulo del potrero cambia entre salida y entrada`, /salen/.test(rotVenta) && /entran/.test(cvEl('cv-label-potrero').textContent), rotVenta + ' / ' + cvEl('cv-label-potrero').textContent);
+  const llenarCV = o => {
+    cvEl('cv-tipo').value = o.tipo; cvEl('cv-potrero').value = o.potrero === undefined ? potrero : o.potrero;
+    cvEl('cv-cat').value = 'Vacas'; cvEl('cv-dueno').value = dVende; cvEl('cv-cant').value = String(o.cant);
+    cvEl('cv-fecha').value = W.fechaISOHoy(); cvEl('cv-precio').value = o.precio || ''; cvEl('cv-contraparte').value = o.contra || '';
+    cvEl('cv-guia').value = o.guia || ''; cvEl('cv-obs').value = '';
+    cvEl('cv-guardar').click();
+  };
+  const totCV0 = W.totalPotrero(potrero), trCV0 = (W.__est().transacciones || []).length, evCV0 = servidor.filas.eventos_sync.length, stCV0 = aW[kV('Vacas')];
+  llenarCV({tipo: 'Compra', cant: 4, precio: 100, contra: 'T-cv', guia: 'mal'});
+  chequear(`${etiqueta}: guía mal formada NO registra la compra`, aW[kV('Vacas')]===stCV0 && servidor.filas.eventos_sync.length===evCV0, ultimoToast(W));
+  llenarCV({tipo: 'Compra', cant: 4, potrero: ''});
+  chequear(`${etiqueta}: sin potrero NO registra`, aW[kV('Vacas')]===stCV0 && servidor.filas.eventos_sync.length===evCV0, ultimoToast(W));
+  llenarCV({tipo: 'Compra', cant: 4, precio: 100, contra: 'T-cv', guia: 'l333333'});
+  await dormir(40);
+  chequear(`${etiqueta}: la compra suma al potrero elegido`, aW[kV('Vacas')]===stCV0+4, String(aW[kV('Vacas')]));
+  chequear(`${etiqueta}: …genera su transacción (reporte económico) con la guía`, (W.__est().transacciones||[]).length===trCV0+1 && W.__est().transacciones[0].guia==='L333333' && W.__est().transacciones[0].contraparte==='T-cv');
+  const evCompra = servidor.filas.eventos_sync.slice(evCV0).find(r=>r.tipo==='compra');
+  chequear(`${etiqueta}: …y sube UN evento 'compra' con la guía, en el stream del propio campo`, !!evCompra && evCompra.detalle.guia==='L333333' && evCompra.establecimiento===W.__establecimiento() && evCompra.potrero===potrero && REGEX_UUID.test(evCompra.event_id), JSON.stringify(evCompra));
+  chequear(`${etiqueta}: la lista de Movimientos DICOSE se refresca con la compra`, cvEl('mg-lista').textContent.includes('L333333'));
+  chequear(`${etiqueta}: el formulario se limpia para la próxima (cantidad 1, guía vacía)`, cvEl('cv-cant').value==='1' && cvEl('cv-guia').value==='');
+  llenarCV({tipo: 'Venta', cant: 99999});
+  chequear(`${etiqueta}: una venta sin stock BLOQUEA`, aW[kV('Vacas')]===stCV0+4 && /Solo hay/.test(ultimoToast(W)), ultimoToast(W));
+  llenarCV({tipo: 'Venta', cant: 2, guia: 'M444444'});
+  await dormir(40);
+  chequear(`${etiqueta}: la venta resta del potrero elegido`, aW[kV('Vacas')]===stCV0+2, String(aW[kV('Vacas')]));
+  chequear(`${etiqueta}: el total del potrero cambió solo por lo comprado y vendido (+4 −2)`, W.totalPotrero(potrero)===totCV0+2, `${W.totalPotrero(potrero)} vs ${totCV0}`);
+  // otro dispositivo aplica compra y venta
+  await W2.sincronizar();
+  chequear(`${etiqueta}: otro dispositivo recibe la compra y la venta`, W2.__est().potreros[potrero].animales[kV('Vacas')] !== undefined && (W2.__est().transacciones||[]).some(x=>x.guia==='L333333') && (W2.__est().transacciones||[]).some(x=>x.guia==='M444444'));
+  // editar la compra desde el historial abre Movimientos DICOSE precargado
+  if(typeof W.editarHistorial === 'function'){
+    const hCompra = W.__est().potreros[potrero].historial.find(x=>x.tipo==='compra' && !x.eliminado && x.extra && x.extra.guia==='L333333');
+    W.confirm = () => true;
+    const stAntesEd = aW[kV('Vacas')];
+    W.editarHistorial(hCompra.id);
+    chequear(`${etiqueta}: editar la compra la deshace (-4)`, aW[kV('Vacas')]===stAntesEd-4, String(aW[kV('Vacas')]));
+    chequear(`${etiqueta}: …y abre Movimientos DICOSE en Compra / venta, precargado`,
+      cvEl('modal-guias').style.display==='flex' && vis('compraventa-seccion') && cvEl('cv-tipo').value==='Compra' && cvEl('cv-cant').value==='4'
+        && cvEl('cv-contraparte').value==='T-cv' && cvEl('cv-guia').value==='L333333' && cvEl('cv-potrero').value===potrero,
+      [cvEl('modal-guias').style.display, cvEl('cv-tipo').value, cvEl('cv-cant').value, cvEl('cv-contraparte').value, cvEl('cv-guia').value, cvEl('cv-potrero').value].join('|'));
+    cvEl('cv-guardar').click();
+    await dormir(40);
+    chequear(`${etiqueta}: guardar la corrección deja el stock como estaba`, aW[kV('Vacas')]===stAntesEd, String(aW[kV('Vacas')]));
+  }
 
   // ---- 9) cola offline ----
   W.navigator.onLine = false;
