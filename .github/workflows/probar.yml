@@ -142,3 +142,5 @@ jobs:
 
       - name: "la-vuelta-test aislada (auditoria 1/10/2026) -- la copia de prueba nunca habla con Supabase"
         run: node tests/probar_test_aislado.js la-vuelta-test/index.html
+      - name: "Service workers: precarga robusta, apertura offline y caches propias (auditoria Campo 8/10/2026)"
+        run: node tests/probar_sw_offline.js
