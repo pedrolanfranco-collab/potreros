@@ -477,6 +477,41 @@ async function probarPC(archivoPC, archivoMovil){
     chequear(etiqueta + ': al cambiar de operación se descartan las categorías extra', E(W, 'cv-extra-compra').children.length === 0 && E(W, 'cv-extra-venta').children.length === 0);
   }
 
+  // ---- 10c) con precio por pieza los kilos brutos son opcionales ----
+  {
+    const ev0 = servidor.filas.eventos_sync.length;
+    const nuevos = () => servidor.filas.eventos_sync.slice(ev0).filter(r => r.tipo === 'compra');
+    const aT0 = aW[kA('Terneros')] || 0;
+    abrirCV(W, 'Compra');
+    poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Terneros', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 8);
+    poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-guia', 'p700007'); poner(W, 'cv-origen', 'Walter Lanfranco', 'change'); poner(W, 'cv-comprador', 'Pedro', 'change');
+    poner(W, 'cv-tprecio', 'Kg', 'change'); poner(W, 'cv-pcompra', 450);
+    chequear(etiqueta + ': con precio por kg los kilos brutos siguen siendo obligatorios', (E(W, 'cv-guardar').click(), /Kilos brutos/.test(ultimoToast(W)) && nuevos().length === 0), ultimoToast(W));
+    poner(W, 'cv-tprecio', 'Pieza', 'change');
+    chequear(etiqueta + ': con precio por pieza el rótulo avisa que los kilos son opcionales', /opcional/.test(E(W, 'cv-label-kbrutos').textContent), E(W, 'cv-label-kbrutos').textContent);
+    chequear(etiqueta + ': …y la vista previa calcula el importe sin kilos (8 x 450 = 3.600)', /3\.600/.test(E(W, 'cv-resumen-compra').textContent), E(W, 'cv-resumen-compra').textContent);
+    E(W, 'cv-guardar').click();
+    await dormir(80);
+    const p1 = nuevos();
+    chequear(etiqueta + ': registra la compra sin kilos: importe 3.600, kilos vacíos y el stock sube 8', p1.length === 1 && p1[0].detalle.fin.kilosBrutos === null && p1[0].detalle.fin.kilosNeto === null && cerca(p1[0].detalle.fin.importe, 3600) && p1[0].detalle.fin.tipoPrecio === 'Pieza' && (aW[kA('Terneros')] || 0) === aT0 + 8, JSON.stringify(p1[0] && p1[0].detalle.fin));
+    chequear(etiqueta + ': el historial no muestra "— kg neto"', !/— kg/.test(W.__est().potreros[potrero].historial[0].detalle) && /3\.600/.test(W.__est().potreros[potrero].historial[0].detalle), W.__est().potreros[potrero].historial[0].detalle);
+    // varias categorías: la segunda por pieza y sin kilos
+    const ev1 = servidor.filas.eventos_sync.length;
+    abrirCV(W, 'Compra');
+    poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Terneros', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 10);
+    poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-guia', 'p700008'); poner(W, 'cv-origen', 'Walter Lanfranco', 'change'); poner(W, 'cv-comprador', 'Pedro', 'change');
+    poner(W, 'cv-kbrutos', 2000); poner(W, 'cv-pcompra', 1.7);
+    E(W, 'cv-agregar-linea-compra').click();
+    const lp = E(W, 'cv-extra-compra').querySelector('.cv-linea');
+    const ponerP = (cls, v, ev) => { const e = lp.querySelector(cls); e.value = String(v); e.dispatchEvent(new W.Event(ev || 'input', { bubbles: true })); };
+    ponerP('.cvl-cat', 'Vacas', 'change'); ponerP('.cvl-cant', 3); ponerP('.cvl-tp', 'Pieza', 'change'); ponerP('.cvl-pr', 500);
+    chequear(etiqueta + ': en la línea extra el rótulo también avisa que los kilos son opcionales', /opcional/.test(lp.querySelector('.cvl-lbl-kb').textContent), lp.querySelector('.cvl-lbl-kb').textContent);
+    E(W, 'cv-guardar').click();
+    await dormir(80);
+    const p2 = servidor.filas.eventos_sync.slice(ev1).filter(r => r.tipo === 'compra');
+    chequear(etiqueta + ': registra las dos (una por kg con kilos, otra por pieza sin kilos)', p2.length === 2 && cerca(p2[0].detalle.fin.importe, 2000 * 0.95 * 1.7, 0.01) && p2[1].detalle.fin.kilosBrutos === null && cerca(p2[1].detalle.fin.importe, 1500), JSON.stringify(p2.map(r => r.detalle.fin && r.detalle.fin.importe)));
+  }
+
   // ---- 11) retrocompatibilidad y datos hostiles ----
   const pX = potrero, kX = W2.claveAnimal('Toros', dueno), antesX = W2.__est().potreros[pX].animales[kX] || 0;
   W2.aplicarEventoRemoto({event_id: 'e-viejo', creado_en: '2026-10-09T13:00:00Z', tipo: 'compra', potrero: pX, dispositivo: 'viejo',

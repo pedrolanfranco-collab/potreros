@@ -836,7 +836,7 @@
           <div class="form-row"><label>Origen (a quién se compra)</label><select id="cv-origen"></select></div>
           <div id="cv-origen-dicose" style="font-size:12px;color:var(--texto-suave);margin:-4px 0 6px;"></div>
           <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px;">Kilos</label>
-          <div class="form-row"><label>Kilos brutos</label><input type="number" id="cv-kbrutos" min="0" step="0.1"></div>
+          <div class="form-row"><label id="cv-label-kbrutos">Kilos brutos</label><input type="number" id="cv-kbrutos" min="0" step="0.1"></div>
           <div class="form-row"><label>Destare (%)</label><input type="number" id="cv-destare" min="0" max="100" step="0.1" value="5"></div>
           <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px;">Precio y costos</label>
           <div class="form-row"><label>Tipo de precio</label>
@@ -4450,7 +4450,7 @@ function resumenFin(fin){
     return `${fmtNum(fin.kilos, 1)} kg ${fin.precioTipo || ''} a USD ${fmtNum(fin.precioKg)}/kg · bruto ${fmtNum(fin.importeBruto, 0)} · neto ${fmtNum(fin.neto, 0)}`;
   }
   if(fin.pieza && fin.pieza.rol === 'cria') return 'cría al pie de una Pieza';
-  return `${fmtNum(fin.kilosNeto, 1)} kg neto · USD ${fmtNum(fin.precio)}/${fin.tipoPrecio === 'Kg' ? 'kg' : 'pieza'} · importe ${fmtNum(fin.importe, 0)}${fin.importeCom ? ' + comisión ' + fmtNum(fin.importeCom, 0) : ''}${fin.flete ? ' + flete ' + fmtNum(fin.flete, 0) : ''}`;
+  return `${fin.kilosNeto != null ? fmtNum(fin.kilosNeto, 1) + ' kg neto · ' : ''}USD ${fmtNum(fin.precio)}/${fin.tipoPrecio === 'Kg' ? 'kg' : 'pieza'} · importe ${fmtNum(fin.importe, 0)}${fin.importeCom ? ' + comisión ' + fmtNum(fin.importeCom, 0) : ''}${fin.flete ? ' + flete ' + fmtNum(fin.flete, 0) : ''}`;
 }
 
 /* ===== Catálogos compartidos (tabla maestros_dicose de Supabase): compradores, comisionistas y
@@ -8637,6 +8637,7 @@ function mostrarBloquesCV(){
   document.getElementById('cv-variante-fila').style.display = (!venta && esVaca) ? '' : 'none';
   if(venta || !esVaca) document.getElementById('cv-variante').value = '';
   document.getElementById('cv-label-pcompra').textContent = document.getElementById('cv-tprecio').value === 'Kg' ? 'Precio U$S por kg' : 'Precio U$S por pieza (cabeza)';
+  document.getElementById('cv-label-kbrutos').textContent = document.getElementById('cv-tprecio').value === 'Kg' ? 'Kilos brutos' : 'Kilos brutos (opcional con precio por pieza)';
   // varias categorías: solo al cargar una operación nueva (✍ completa un renglón que ya existe)
   document.querySelectorAll('.cv-agregar-linea').forEach(b => { b.style.display = cvCompletarId ? 'none' : ''; });
   if(cvCompletarId) limpiarLineasCV();
@@ -8658,7 +8659,7 @@ function leerFinCV(){
     const faltan = [];
     if(!origen) faltan.push('Origen');
     if(!comprador) faltan.push('Comprador');
-    if(f.kilosBrutos === null) faltan.push('Kilos brutos');
+    if(f.kilosBrutos === null && f.tipoPrecio === 'Kg') faltan.push('Kilos brutos');       // con precio por pieza los kilos son opcionales
     if(f.precio === null) faltan.push('Precio');
     if(faltan.length) return {error: 'Faltan datos de la compra: ' + faltan.join(', ')};
     const c = calcCompra(f), variante = texto('cv-variante');
@@ -8733,7 +8734,7 @@ function htmlLineaCV(venta){
        <div class="form-row"><label>Precio tipo</label><select class="cvl-ptipo"><option value="1ª">1ª (en pie)</option><option value="2ª">2ª (en gancho)</option></select></div>
        ${num('cvl-pkg', '$/Kg (USD/kg)', 'min="0" step="0.01"')}${num('cvl-kpie', 'Kilos 1ª — en pie', 'min="0" step="0.1"')}${num('cvl-kres', 'Kilos 2ª — res (en gancho)', 'min="0" step="0.1"')}`
     : `<div class="form-row cvl-var-fila" style="display:none;"><label>Tipo de vaca</label><select class="cvl-var"><option value="">Vaca (cría)</option><option value="vcut">Vaca de última cría (VCUT)</option><option value="pieza">Vaca con cría al pie (Pieza: suma vaca y ternero)</option></select></div>
-       ${num('cvl-cant', 'Cantidad', 'min="1" value="1"')}${num('cvl-kb', 'Kilos brutos', 'min="0" step="0.1"')}${num('cvl-dest', 'Destare (%)', 'min="0" max="100" step="0.1" value="' + (document.getElementById('cv-destare').value || 5) + '"')}
+       ${num('cvl-cant', 'Cantidad', 'min="1" value="1"')}${num('cvl-kb', '<span class="cvl-lbl-kb">Kilos brutos</span>', 'min="0" step="0.1"')}${num('cvl-dest', 'Destare (%)', 'min="0" max="100" step="0.1" value="' + (document.getElementById('cv-destare').value || 5) + '"')}
        <div class="form-row"><label>Tipo de precio</label><select class="cvl-tp"><option value="Kg">Por kg</option><option value="Pieza">Por pieza (cabeza)</option></select></div>
        ${num('cvl-pr', 'Precio U$S (por kg o por pieza)', 'min="0" step="0.01"')}`;
   return `<div class="cv-linea" style="border-left:3px solid var(--borde,#cdbf9b);padding-left:8px;margin:8px 0;">${comunes}${cuerpo}</div>`;
@@ -8789,7 +8790,7 @@ function armarOperacionesCV(estricto){
     lineas.forEach((l, i) => {
       if(!l.cat) faltan.push('Categoría' + n(i));
       if(!(l.cant >= 1)) faltan.push('Cantidad' + n(i));
-      if(l.kilosBrutos === null) faltan.push('Kilos brutos' + n(i));
+      if(l.kilosBrutos === null && l.tipoPrecio === 'Kg') faltan.push('Kilos brutos' + n(i));      // con precio por pieza son opcionales
       if(l.precio === null) faltan.push('Precio' + n(i));
     });
     if(estricto && faltan.length) return {error: 'Faltan datos de la compra: ' + faltan.join(', ')};
@@ -9100,6 +9101,10 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
   zonaLineasCV.addEventListener('change', (e)=>{
     const l = e.target.closest('.cv-linea');
     if(!l) return;
+    if(e.target.classList.contains('cvl-tp')){
+      const lbl = l.querySelector('.cvl-lbl-kb');
+      if(lbl) lbl.textContent = e.target.value === 'Kg' ? 'Kilos brutos' : 'Kilos brutos (opcional con precio por pieza)';
+    }
     if(e.target.classList.contains('cvl-cat')){
       const fila = l.querySelector('.cvl-var-fila');
       if(fila){ fila.style.display = e.target.value === 'Vacas' ? '' : 'none'; if(e.target.value !== 'Vacas') l.querySelector('.cvl-var').value = ''; }
