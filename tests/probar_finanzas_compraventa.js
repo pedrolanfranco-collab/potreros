@@ -415,6 +415,68 @@ async function probarPC(archivoPC, archivoMovil){
     chequear(`${etiqueta}: otra PC también queda con el detalle completo`, !!h2 && !!h2.origDatos.fin && cerca(h2.origDatos.fin.importe, 3686.4, 0.01));
   }
 
+  // ---- 10b) varias categorías en una misma compra / venta (una guía con 40 Terneros + 15 Vacas) ----
+  {
+    const ev0 = servidor.filas.eventos_sync.length;
+    const nuevos = tipo => servidor.filas.eventos_sync.slice(ev0).filter(r => r.tipo === tipo);
+    const aT0 = aW[kA('Terneros')] || 0, aV0 = aW[kA('Vacas')] || 0;
+    abrirCV(W, 'Compra');
+    poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Terneros', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 40);
+    poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-guia', 'm500005'); poner(W, 'cv-origen', 'Walter Lanfranco', 'change'); poner(W, 'cv-comprador', 'Pedro', 'change');
+    poner(W, 'cv-kbrutos', 8000); poner(W, 'cv-destare', 5); poner(W, 'cv-pcompra', 1.6); poner(W, 'cv-pcom', 2); poner(W, 'cv-flete', 300);
+    chequear(etiqueta + ': hay un botón para agregar otra categoría de la guía', !!E(W, 'cv-agregar-linea-compra') && E(W, 'cv-agregar-linea-compra').style.display !== 'none');
+    E(W, 'cv-agregar-linea-compra').click();
+    const l2 = E(W, 'cv-extra-compra').querySelector('.cv-linea');
+    chequear(etiqueta + ': agrega una línea "Categoría 2" con sus propios kilos y precio', !!l2 && /Categoría 2/.test(l2.textContent) && !!l2.querySelector('.cvl-kb') && !!l2.querySelector('.cvl-pr'));
+    const ponerL = (cls, v, ev) => { const e = l2.querySelector(cls); e.value = String(v); e.dispatchEvent(new W.Event(ev || 'input', { bubbles: true })); };
+    ponerL('.cvl-cat', 'Vacas', 'change');
+    chequear(etiqueta + ': en la línea extra, Vacas ofrece VCUT / Pieza', l2.querySelector('.cvl-var-fila').style.display !== 'none');
+    ponerL('.cvl-var', 'vcut', 'change'); ponerL('.cvl-cant', 15); ponerL('.cvl-kb', 6000); ponerL('.cvl-dest', 5);
+    // falta el precio de la categoría 2: no registra NADA
+    E(W, 'cv-guardar').click();
+    await dormir(60);
+    chequear(etiqueta + ': si a una categoría le falta el precio avisa cuál y no registra ninguna', /Precio \(categoría 2\)/.test(ultimoToast(W)) && nuevos('compra').length === 0, ultimoToast(W));
+    ponerL('.cvl-pr', 2);
+    const res = E(W, 'cv-resumen-compra').textContent;
+    // línea 1: neto 7.600 -> 12.160 + 243,2 + flete 218,18 = 12.621,38; línea 2: neto 5.700 -> 11.400 + 228 + flete 81,82 = 11.709,82; total 24.331,20
+    chequear(etiqueta + ': la vista previa suma las dos categorías (55 cabezas, costo total 24.331)', /55 cabezas/.test(res) && /24\.331/.test(res), res);
+    E(W, 'cv-guardar').click();
+    await dormir(80);
+    const cs = nuevos('compra');
+    chequear(etiqueta + ': registra DOS compras con la misma guía, una por categoría', cs.length === 2 && cs.every(r => r.detalle.guia === 'M500005') && cs[0].detalle.categoria === 'Terneros' && cs[1].detalle.categoria === 'Vacas' && cs[0].detalle.cantidad === 40 && cs[1].detalle.cantidad === 15, JSON.stringify(cs.map(r => r.detalle.categoria + r.detalle.cantidad)));
+    chequear(etiqueta + ': cada una trae sus kilos e importe (importe 12.160 y 11.400, VCUT en la segunda)', cs.length === 2 && cerca(cs[0].detalle.fin.importe, 12160) && cerca(cs[1].detalle.fin.importe, 11400) && cs[1].detalle.fin.catExcel === 'VCUT' && cs[0].detalle.fin.catExcel === 'TERNERO');
+    chequear(etiqueta + ': el flete de 300 se reparte por cabezas (218,18 + 81,82) y la suma da exacto', cs.length === 2 && cerca(cs[0].detalle.fin.flete, 218.18) && cerca(cs[1].detalle.fin.flete, 81.82) && cerca(cs[0].detalle.fin.flete + cs[1].detalle.fin.flete, 300, 0.001));
+    chequear(etiqueta + ': el costo total de cada una incluye su parte del flete', cs.length === 2 && cerca(cs[0].detalle.fin.costoTotal, 12621.38, 0.01) && cerca(cs[1].detalle.fin.costoTotal, 11709.82, 0.01));
+    chequear(etiqueta + ': el stock sube 40 Terneros y 15 Vacas', (aW[kA('Terneros')] || 0) === aT0 + 40 && (aW[kA('Vacas')] || 0) === aV0 + 15);
+    chequear(etiqueta + ': el formulario queda limpio, sin líneas extra', E(W, 'cv-extra-compra').children.length === 0 && E(W, 'cv-guia').value === '' && E(W, 'cv-kbrutos').value === '');
+    // ---- venta con dos categorías: los descuentos se reparten por importe bruto ----
+    const evV = servidor.filas.eventos_sync.length;
+    abrirCV(W, 'Venta');
+    poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Terneros', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 10);
+    poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-guia', 'n600006'); poner(W, 'cv-destino', 'Frigorifico Canelones', 'change');
+    poner(W, 'cv-ptipo', '1ª', 'change'); poner(W, 'cv-pkg', 1.9); poner(W, 'cv-kpie', 4500); poner(W, 'cv-plazo', 30); poner(W, 'cv-imeba', 100);
+    E(W, 'cv-agregar-linea-venta').click();
+    const v2 = E(W, 'cv-extra-venta').querySelector('.cv-linea');
+    const ponerV = (cls, v, ev) => { const e = v2.querySelector(cls); e.value = String(v); e.dispatchEvent(new W.Event(ev || 'input', { bubbles: true })); };
+    ponerV('.cvl-cat', 'Vacas', 'change'); ponerV('.cvl-cant', 9999); ponerV('.cvl-ptipo', '2ª', 'change'); ponerV('.cvl-pkg', 4.5); ponerV('.cvl-kres', 1200);
+    E(W, 'cv-guardar').click();
+    await dormir(60);
+    chequear(etiqueta + ': si una categoría pide más de lo que hay, avisa y no vende ninguna', /Solo hay/.test(ultimoToast(W)) && servidor.filas.eventos_sync.slice(evV).filter(r => r.tipo === 'venta').length === 0 && (aW[kA('Terneros')] || 0) === aT0 + 40, ultimoToast(W));
+    ponerV('.cvl-cant', 5);
+    E(W, 'cv-guardar').click();
+    await dormir(80);
+    const vs = servidor.filas.eventos_sync.slice(evV).filter(r => r.tipo === 'venta');
+    chequear(etiqueta + ': registra DOS ventas con la misma guía y el destino', vs.length === 2 && vs.every(r => r.detalle.guia === 'N600006' && r.detalle.contraparte === 'Frigorifico Canelones'));
+    // bruto 1: 1,9 x 4.500 = 8.550; bruto 2: 4,5 x 1.200 = 5.400; IMEBA 100 en proporción: 61,29 + 38,71
+    chequear(etiqueta + ': el importe bruto de cada una sale de su precio y sus kilos (8.550 y 5.400)', vs.length === 2 && cerca(vs[0].detalle.fin.importeBruto, 8550) && cerca(vs[1].detalle.fin.importeBruto, 5400));
+    chequear(etiqueta + ': el IMEBA se reparte en proporción al bruto (61,29 + 38,71) y el neto de la primera lo descuenta', vs.length === 2 && cerca(vs[0].detalle.fin.imeba, 61.29) && cerca(vs[1].detalle.fin.imeba, 38.71) && cerca(vs[0].detalle.fin.imeba + vs[1].detalle.fin.imeba, 100, 0.001) && cerca(vs[0].detalle.fin.neto, 8488.71, 0.01));
+    chequear(etiqueta + ': el stock baja 10 Terneros y 5 Vacas', (aW[kA('Terneros')] || 0) === aT0 + 30 && (aW[kA('Vacas')] || 0) === aV0 + 10);
+    // cambiar de operación descarta las categorías extra
+    abrirCV(W, 'Compra'); E(W, 'cv-agregar-linea-compra').click();
+    poner(W, 'cv-tipo', 'Venta', 'change');
+    chequear(etiqueta + ': al cambiar de operación se descartan las categorías extra', E(W, 'cv-extra-compra').children.length === 0 && E(W, 'cv-extra-venta').children.length === 0);
+  }
+
   // ---- 11) retrocompatibilidad y datos hostiles ----
   const pX = potrero, kX = W2.claveAnimal('Toros', dueno), antesX = W2.__est().potreros[pX].animales[kX] || 0;
   W2.aplicarEventoRemoto({event_id: 'e-viejo', creado_en: '2026-10-09T13:00:00Z', tipo: 'compra', potrero: pX, dispositivo: 'viejo',

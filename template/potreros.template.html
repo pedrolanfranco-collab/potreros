@@ -843,6 +843,8 @@
             <select id="cv-tprecio"><option value="Kg">Por kg</option><option value="Pieza">Por pieza (cabeza)</option></select>
           </div>
           <div class="form-row"><label id="cv-label-pcompra">Precio U$S por kg</label><input type="number" id="cv-pcompra" min="0" step="0.01"></div>
+          <div id="cv-extra-compra"></div>
+          <button type="button" class="btn btn-secundario cv-agregar-linea" id="cv-agregar-linea-compra" style="margin:4px 0 10px;">➕ Agregar otra categoría de esta guía</button>
           <div class="form-row"><label>Comisionista</label><select id="cv-comisionista"></select></div>
           <div class="form-row"><label>% Comisión</label><input type="number" id="cv-pcom" min="0" max="100" step="0.1" value="0"></div>
           <div class="form-row"><label>Flete (U$S)</label><input type="number" id="cv-flete" min="0" step="0.01" value="0"></div>
@@ -862,6 +864,8 @@
           <div class="form-row"><label>$/Kg (USD/kg)</label><input type="number" id="cv-pkg" min="0" step="0.01"></div>
           <div class="form-row"><label>Kilos 1ª — en pie</label><input type="number" id="cv-kpie" min="0" step="0.1"></div>
           <div class="form-row"><label>Kilos 2ª — res (en gancho)</label><input type="number" id="cv-kres" min="0" step="0.1"></div>
+          <div id="cv-extra-venta"></div>
+          <button type="button" class="btn btn-secundario cv-agregar-linea" id="cv-agregar-linea-venta" style="margin:4px 0 10px;">➕ Agregar otra categoría de esta guía</button>
           <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px;">Descuentos y neto</label>
           <div class="form-row"><label>Plazo (días)</label><input type="number" id="cv-plazo" min="0" step="1"></div>
           <div class="form-row"><label>IMEBA ($)</label><input type="number" id="cv-imeba" min="0" step="0.01"></div>
@@ -8633,6 +8637,9 @@ function mostrarBloquesCV(){
   document.getElementById('cv-variante-fila').style.display = (!venta && esVaca) ? '' : 'none';
   if(venta || !esVaca) document.getElementById('cv-variante').value = '';
   document.getElementById('cv-label-pcompra').textContent = document.getElementById('cv-tprecio').value === 'Kg' ? 'Precio U$S por kg' : 'Precio U$S por pieza (cabeza)';
+  // varias categorías: solo al cargar una operación nueva (✍ completa un renglón que ya existe)
+  document.querySelectorAll('.cv-agregar-linea').forEach(b => { b.style.display = cvCompletarId ? 'none' : ''; });
+  if(cvCompletarId) limpiarLineasCV();
   actualizarResumenCV();
 }
 /* Lee los campos de PC. null = no se cargó nada del detalle completo (queda como una carga rápida);
@@ -8683,6 +8690,10 @@ function leerFinCV(){
 function actualizarResumenCV(){
   const venta = document.getElementById('cv-tipo').value === 'Venta';
   const cant = parseInt(document.getElementById('cv-cant').value, 10) || null;
+  if(hayLineasExtraCV()){
+    document.getElementById(venta ? 'cv-resumen-venta' : 'cv-resumen-compra').textContent = resumenVariasCV();
+    return;
+  }
   if(!venta){
     const c = calcCompra({cantidad: cant, tipoPrecio: document.getElementById('cv-tprecio').value, kilosBrutos: cvVal('cv-kbrutos'),
       destare: (cvVal('cv-destare') || 0) / 100, precio: cvVal('cv-pcompra'), pctCom: (cvVal('cv-pcom') || 0) / 100, flete: cvVal('cv-flete') || 0});
@@ -8699,6 +8710,174 @@ function actualizarResumenCV(){
       `Importe bruto: USD ${fmtNum(c.importeBruto)} · por cabeza USD ${fmtNum(c.brutoCab)}\n` +
       `Descuentos: ${fmtNum(c.descuentos)} · VALOR NETO: ${fmtNum(c.neto)}`;
   }
+}
+/* ---- Varias categorías en una misma compra / venta (una guía con 40 Terneros + 15 Vacas) ----
+   La primera categoría son los campos de siempre; las demás son "líneas" extra con sus propios kilos y precio.
+   Lo que es del camión / de la operación se carga una sola vez y se reparte entre las líneas: el flete por cabezas;
+   en la venta los descuentos en proporción al importe bruto. Cada línea queda como una compra (o venta) propia con la
+   MISMA guía, así el stock, las anulaciones y el Excel siguen usando la lógica de siempre. */
+function contenedorLineasCV(){
+  return document.getElementById(document.getElementById('cv-tipo').value === 'Venta' ? 'cv-extra-venta' : 'cv-extra-compra');
+}
+function hayLineasExtraCV(){ return document.querySelectorAll('#cv-extra-compra .cv-linea, #cv-extra-venta .cv-linea').length > 0; }
+function limpiarLineasCV(){
+  ['cv-extra-compra', 'cv-extra-venta'].forEach(id => { const e = document.getElementById(id); if(e) e.innerHTML = ''; });
+}
+function htmlLineaCV(venta){
+  const num = (cls, rotulo, attrs) => `<div class="form-row"><label>${rotulo}</label><input type="number" class="${cls}" ${attrs}></div>`;
+  const comunes = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><strong class="cvl-titulo" style="font-size:13px;"></strong>
+      <button type="button" class="hist-btn cvl-quitar" title="Quitar esta categoría">✕</button></div>
+    <div class="form-row"><label>Categoría</label><select class="cvl-cat"><option value="">— elegir —</option>${opcionesCategorias()}</select></div>`;
+  const cuerpo = venta
+    ? `${num('cvl-cant', 'Cantidad', 'min="1" value="1"')}
+       <div class="form-row"><label>Precio tipo</label><select class="cvl-ptipo"><option value="1ª">1ª (en pie)</option><option value="2ª">2ª (en gancho)</option></select></div>
+       ${num('cvl-pkg', '$/Kg (USD/kg)', 'min="0" step="0.01"')}${num('cvl-kpie', 'Kilos 1ª — en pie', 'min="0" step="0.1"')}${num('cvl-kres', 'Kilos 2ª — res (en gancho)', 'min="0" step="0.1"')}`
+    : `<div class="form-row cvl-var-fila" style="display:none;"><label>Tipo de vaca</label><select class="cvl-var"><option value="">Vaca (cría)</option><option value="vcut">Vaca de última cría (VCUT)</option><option value="pieza">Vaca con cría al pie (Pieza: suma vaca y ternero)</option></select></div>
+       ${num('cvl-cant', 'Cantidad', 'min="1" value="1"')}${num('cvl-kb', 'Kilos brutos', 'min="0" step="0.1"')}${num('cvl-dest', 'Destare (%)', 'min="0" max="100" step="0.1" value="' + (document.getElementById('cv-destare').value || 5) + '"')}
+       <div class="form-row"><label>Tipo de precio</label><select class="cvl-tp"><option value="Kg">Por kg</option><option value="Pieza">Por pieza (cabeza)</option></select></div>
+       ${num('cvl-pr', 'Precio U$S (por kg o por pieza)', 'min="0" step="0.01"')}`;
+  return `<div class="cv-linea" style="border-left:3px solid var(--borde,#cdbf9b);padding-left:8px;margin:8px 0;">${comunes}${cuerpo}</div>`;
+}
+function numerarLineasCV(){
+  Array.from(contenedorLineasCV().querySelectorAll('.cv-linea')).forEach((el, i) => { el.querySelector('.cvl-titulo').textContent = 'Categoría ' + (i + 2); });
+}
+function agregarLineaCV(){
+  contenedorLineasCV().insertAdjacentHTML('beforeend', htmlLineaCV(document.getElementById('cv-tipo').value === 'Venta'));
+  numerarLineasCV();
+  actualizarResumenCV();
+}
+/* Todas las líneas (la primera = campos de siempre) como datos crudos. */
+function lineasCV(){
+  const venta = document.getElementById('cv-tipo').value === 'Venta';
+  const v = id => document.getElementById(id).value;
+  const l0 = venta
+    ? {cat: v('cv-cat'), cant: parseInt(v('cv-cant'), 10), precioTipo: v('cv-ptipo'), precioKg: cvVal('cv-pkg'), kilosPie: cvVal('cv-kpie'), kilosRes: cvVal('cv-kres')}
+    : {cat: v('cv-cat'), cant: parseInt(v('cv-cant'), 10), variante: v('cv-variante'), tipoPrecio: v('cv-tprecio'), kilosBrutos: cvVal('cv-kbrutos'),
+       destare: (cvVal('cv-destare') || 0) / 100, precio: cvVal('cv-pcompra')};
+  const q = (el, s) => el.querySelector(s).value;
+  const extras = Array.from(contenedorLineasCV().querySelectorAll('.cv-linea')).map(el => venta
+    ? {cat: q(el, '.cvl-cat'), cant: parseInt(q(el, '.cvl-cant'), 10), precioTipo: q(el, '.cvl-ptipo'), precioKg: numONull(q(el, '.cvl-pkg')),
+       kilosPie: numONull(q(el, '.cvl-kpie')), kilosRes: numONull(q(el, '.cvl-kres'))}
+    : {cat: q(el, '.cvl-cat'), cant: parseInt(q(el, '.cvl-cant'), 10), variante: q(el, '.cvl-var'), tipoPrecio: q(el, '.cvl-tp'),
+       kilosBrutos: numONull(q(el, '.cvl-kb')), destare: (numONull(q(el, '.cvl-dest')) || 0) / 100, precio: numONull(q(el, '.cvl-pr'))});
+  return [l0].concat(extras);
+}
+/* Reparte un total en partes proporcionales a los pesos, a centavos; la última se lleva el resto (la suma da exacto). */
+function repartirCV(total, pesos){
+  const suma = pesos.reduce((s, x) => s + (x || 0), 0);
+  let acum = 0;
+  return pesos.map((p, i) => {
+    if(i === pesos.length - 1) return +(total - acum).toFixed(2);
+    const parte = +(total * (suma ? (p || 0) / suma : 1 / pesos.length)).toFixed(2);
+    acum += parte;
+    return parte;
+  });
+}
+const DESCUENTOS_CV = [['imeba', 'cv-imeba'], ['inia', 'cv-inia'], ['mevir', 'cv-mevir'], ['inac', 'cv-inac'], ['mgap', 'cv-mgap'], ['sepb', 'cv-sepb'], ['gastos', 'cv-gastos']];
+/* Calcula cada línea con su parte del flete / los descuentos. Con `estricto` valida lo obligatorio; sin él (vista previa) tolera vacíos.
+   Devuelve {error} o {ops: [{cat, cant, fin, contraparte, calc}]}. */
+function armarOperacionesCV(estricto){
+  const venta = document.getElementById('cv-tipo').value === 'Venta';
+  const texto = id => { const v = document.getElementById(id).value; return v === '__nuevo__' ? '' : v; };
+  const lineas = lineasCV();
+  const faltan = [];
+  const n = i => lineas.length > 1 ? ` (categoría ${i + 1})` : '';
+  if(!venta){
+    const origen = texto('cv-origen'), comprador = texto('cv-comprador');
+    if(!origen) faltan.push('Origen');
+    if(!comprador) faltan.push('Comprador');
+    lineas.forEach((l, i) => {
+      if(!l.cat) faltan.push('Categoría' + n(i));
+      if(!(l.cant >= 1)) faltan.push('Cantidad' + n(i));
+      if(l.kilosBrutos === null) faltan.push('Kilos brutos' + n(i));
+      if(l.precio === null) faltan.push('Precio' + n(i));
+    });
+    if(estricto && faltan.length) return {error: 'Faltan datos de la compra: ' + faltan.join(', ')};
+    const pctCom = (cvVal('cv-pcom') || 0) / 100, comisionista = texto('cv-comisionista') || 'Directo';
+    const fletes = repartirCV(cvVal('cv-flete') || 0, lineas.map(l => l.cant));
+    const ops = lineas.map((l, i) => {
+      const c = calcCompra({cantidad: l.cant, tipoPrecio: l.tipoPrecio, kilosBrutos: l.kilosBrutos, destare: l.destare, precio: l.precio, pctCom, flete: fletes[i]});
+      const fin = {v: 1, op: 'compra', catExcel: catExcelCompra(l.cat, l.variante), comprador, origen, tipoPrecio: l.tipoPrecio,
+        kilosBrutos: l.kilosBrutos, destare: l.destare, kilosNeto: c.kilosNeto, precio: l.precio, importe: c.importe,
+        pctCom, importeCom: c.importeCom, comisionista, flete: fletes[i], pagado: texto('cv-pago') !== 'Pendiente', km: cvVal('cv-km'), costoTotal: c.costoTotal};
+      if(l.variante) fin.variante = l.variante;
+      return {cat: l.cat, cant: l.cant, fin, contraparte: origen, calc: c};
+    });
+    return {ops};
+  }
+  const destino = texto('cv-destino');
+  if(!destino) faltan.push('Destino');
+  lineas.forEach((l, i) => {
+    if(!l.cat) faltan.push('Categoría' + n(i));
+    if(!(l.cant >= 1)) faltan.push('Cantidad' + n(i));
+    if(l.precioKg === null) faltan.push('$/Kg' + n(i));
+    if(l.precioTipo === '1ª' && l.kilosPie === null) faltan.push('Kilos 1ª en pie' + n(i));
+    if(l.precioTipo === '2ª' && l.kilosRes === null) faltan.push('Kilos 2ª (res)' + n(i));
+  });
+  if(estricto && faltan.length) return {error: 'Faltan datos de la venta: ' + faltan.join(', ')};
+  // los descuentos son de toda la operación: se reparten en proporción al importe bruto de cada línea
+  const brutos = lineas.map(l => calcVenta({cantidad: l.cant, precioTipo: l.precioTipo, precioKg: l.precioKg, kilosPie: l.kilosPie, kilosRes: l.kilosRes}).importeBruto);
+  const partes = {};
+  DESCUENTOS_CV.forEach(([k, id]) => { const tot = cvVal(id); partes[k] = tot === null ? lineas.map(() => null) : repartirCV(tot, brutos.some(x => x) ? brutos : lineas.map(l => l.cant)); });
+  const ops = lineas.map((l, i) => {
+    const d = {}; DESCUENTOS_CV.forEach(([k]) => { d[k] = partes[k][i]; });
+    const c = calcVenta(Object.assign({cantidad: l.cant, precioTipo: l.precioTipo, precioKg: l.precioKg, kilosPie: l.kilosPie, kilosRes: l.kilosRes}, d));
+    const fin = {v: 1, op: 'venta', catExcel: catExcelVenta(l.cat), destino, precioTipo: l.precioTipo, precioKg: l.precioKg,
+      kilosPie: l.kilosPie, kilosRes: l.kilosRes, kilos: c.kilos, importe: c.importeBruto, importeBruto: c.importeBruto,
+      plazo: cvVal('cv-plazo'), imeba: d.imeba, inia: d.inia, mevir: d.mevir, inac: d.inac, mgap: d.mgap, sepb: d.sepb, gastos: d.gastos,
+      descuentos: c.descuentos, neto: c.neto, pesoProm: c.pesoProm, rendimiento: c.rendimiento};
+    return {cat: l.cat, cant: l.cant, fin, contraparte: destino, calc: c};
+  });
+  return {ops};
+}
+/* Vista previa cuando hay varias categorías: una línea por categoría y el total de la guía. */
+function resumenVariasCV(){
+  const venta = document.getElementById('cv-tipo').value === 'Venta';
+  const r = armarOperacionesCV(false);
+  const suma = (k) => r.ops.reduce((s, o) => s + (o.calc[k] || 0), 0);
+  const cab = r.ops.reduce((s, o) => s + (o.cant || 0), 0);
+  const lineas = r.ops.map((o, i) => venta
+    ? `${i + 1}. ${o.cat || '—'} × ${o.cant || 0}: bruto USD ${fmtNum(o.calc.importeBruto)}`
+    : `${i + 1}. ${o.cat || '—'} × ${o.cant || 0}: importe USD ${fmtNum(o.calc.importe)} · costo USD ${fmtNum(o.calc.costoTotal)}`);
+  lineas.push(venta
+    ? `TOTAL DE LA GUÍA (${cab} cabezas): bruto USD ${fmtNum(suma('importeBruto'))} · descuentos ${fmtNum(suma('descuentos'))} · VALOR NETO ${fmtNum(suma('neto'))}`
+    : `TOTAL DE LA GUÍA (${cab} cabezas): importe USD ${fmtNum(suma('importe'))} · comisión ${fmtNum(suma('importeCom'))} · COSTO TOTAL USD ${fmtNum(suma('costoTotal'))}`);
+  return lineas.join('\n');
+}
+/* Registra todas las líneas juntas (todo o nada: se valida todo antes de registrar la primera). */
+function registrarVariasCV(base){
+  const r = armarOperacionesCV(true);
+  if(r.error){ toast(r.error); return false; }
+  const venta = base.tipoOp === 'Venta';
+  if(!base.potrero || !estado.potreros[base.potrero]){ toast('Elegí un potrero'); return false; }
+  if(base.guiaRaw && !/^[A-Z]\d{6}$/.test(base.guiaRaw)){ toast('La guía debe tener 1 letra y 6 dígitos (ej: A592366)'); return false; }
+  if(!base.fechaISO){ toast('Elegí una fecha'); return false; }
+  if(r.ops.some(o => !(o.cant >= 1))){ toast('Ingresá una cantidad válida en cada categoría'); return false; }
+  if(venta){
+    const pedido = {};
+    r.ops.forEach(o => { const k = claveAnimal(o.cat, base.dueno); pedido[k] = (pedido[k] || 0) + o.cant; });
+    const a = estado.potreros[base.potrero].animales;
+    const cat = o => r.ops.find(x => claveAnimal(x.cat, base.dueno) === o).cat;
+    for(const k of Object.keys(pedido)){
+      if(pedido[k] > (a[k] || 0)){ toast(`Solo hay ${a[k] || 0} ${cat(k)}${base.dueno ? ' de ' + base.dueno : ''} en ${base.potrero}; pedís ${pedido[k]}`); return false; }
+    }
+  }
+  let hechas = 0;
+  for(const o of r.ops){
+    const b = Object.assign({}, base, {cat: o.cat, cant: o.cant, fin: o.fin, contraparte: o.contraparte, precio: NaN});
+    let cria = null;
+    if(!venta && o.fin.variante === 'pieza'){
+      const piezaId = crypto.randomUUID();
+      o.fin.pieza = {id: piezaId, rol: 'vaca'};
+      cria = Object.assign({}, b, {cat: 'Terneros', precio: NaN,
+        fin: {v: 1, op: 'compra', catExcel: 'Pieza', variante: 'pieza', comprador: o.fin.comprador, origen: o.fin.origen, pieza: {id: piezaId, rol: 'cria'}}});
+    }
+    if(!registrarCompraVenta(b)) break;
+    hechas++;
+    if(cria) registrarCompraVenta(cria);
+  }
+  if(hechas) toast(`${venta ? 'Venta' : 'Compra'} registrada: ${hechas} categoría${hechas === 1 ? '' : 's'}, ${r.ops.reduce((s, o) => s + o.cant, 0)} cabezas${base.guiaRaw ? ' · guía ' + base.guiaRaw : ''}`);
+  return hechas === r.ops.length;
 }
 function abrirNuevoMaestroCV(tipo, selectId){
   cvNuevoCtx = {tipo, selectId};
@@ -8761,6 +8940,7 @@ function entrarModoCompletarCV(id){
   document.getElementById('cv-info').textContent = `Completando los datos de: ${ub.entry.detalle}. No cambia el stock.`;
   document.getElementById('cv-guardar').textContent = 'Guardar datos completos';
   document.getElementById('cv-cancelar-completar').style.display = '';
+  mostrarBloquesCV();
   subirAlFormularioGuias();
   toast('Completá kilos, precio y comisión arriba y tocá "Guardar datos completos"');
   return true;
@@ -8772,12 +8952,14 @@ function salirModoCompletarCV(){
   document.getElementById('cv-info').textContent = 'Compra: entran animales al potrero. Venta: salen del potrero. La guía es opcional.';
   document.getElementById('cv-guardar').textContent = 'Registrar';
   document.getElementById('cv-cancelar-completar').style.display = 'none';
+  mostrarBloquesCV();
 }
 // @pc:end
 function reiniciarFormularioCompraVenta(){
   // @pc:start
   salirModoCompletarCV();
   cerrarNuevoMaestroCV();
+  limpiarLineasCV();
   // @pc:end
   document.getElementById('cv-tipo').value = 'Compra';
   document.getElementById('cv-potrero').innerHTML = opcionesPotrerosTodos();
@@ -8894,7 +9076,12 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
   document.getElementById('guias-cerrar').addEventListener('click', cerrarGuias);
   document.getElementById('guias-cerrar-x').addEventListener('click', cerrarGuias);
   document.getElementById('mg-modo').addEventListener('change', (e)=> mostrarModoGuias(e.target.value));
-  document.getElementById('cv-tipo').addEventListener('change', actualizarRotulosCompraVenta);
+  document.getElementById('cv-tipo').addEventListener('change', ()=>{
+    // @pc:start
+    limpiarLineasCV();            // las categorías extra son de un tipo de operación: al cambiarlo se empieza de nuevo
+    // @pc:end
+    actualizarRotulosCompraVenta();
+  });
   // @pc:start
   ['cv-cat', 'cv-tprecio', 'cv-ptipo', 'cv-rapido'].forEach(id => document.getElementById(id).addEventListener('change', mostrarBloquesCV));
   ['cv-cant', 'cv-kbrutos', 'cv-destare', 'cv-pcompra', 'cv-pcom', 'cv-flete', 'cv-pkg', 'cv-kpie', 'cv-kres', 'cv-imeba', 'cv-inia', 'cv-mevir', 'cv-inac', 'cv-mgap', 'cv-sepb', 'cv-gastos']
@@ -8905,6 +9092,26 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
   });
   [['cv-comprador', 'comprador'], ['cv-comisionista', 'comisionista'], ['cv-origen', 'contraparte'], ['cv-destino', 'contraparte']].forEach(([id, tipo]) => {
     document.getElementById(id).addEventListener('change', (e)=>{ if(e.target.value === '__nuevo__') abrirNuevoMaestroCV(tipo, id); else actualizarDicoseInfoCV(); });
+  });
+  document.getElementById('cv-agregar-linea-compra').addEventListener('click', agregarLineaCV);
+  document.getElementById('cv-agregar-linea-venta').addEventListener('click', agregarLineaCV);
+  const zonaLineasCV = document.getElementById('cv-pc');
+  zonaLineasCV.addEventListener('input', (e)=>{ if(e.target.closest('.cv-linea')) actualizarResumenCV(); });
+  zonaLineasCV.addEventListener('change', (e)=>{
+    const l = e.target.closest('.cv-linea');
+    if(!l) return;
+    if(e.target.classList.contains('cvl-cat')){
+      const fila = l.querySelector('.cvl-var-fila');
+      if(fila){ fila.style.display = e.target.value === 'Vacas' ? '' : 'none'; if(e.target.value !== 'Vacas') l.querySelector('.cvl-var').value = ''; }
+    }
+    actualizarResumenCV();
+  });
+  zonaLineasCV.addEventListener('click', (e)=>{
+    const q = e.target.closest('.cvl-quitar');
+    if(!q) return;
+    q.closest('.cv-linea').remove();
+    numerarLineasCV();
+    actualizarResumenCV();
   });
   document.getElementById('cv-nuevo-ok').addEventListener('click', confirmarNuevoMaestroCV);
   document.getElementById('cv-nuevo-cancelar').addEventListener('click', cerrarNuevoMaestroCV);
@@ -8924,6 +9131,17 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
       guiaRaw: document.getElementById('cv-guia').value.trim().toUpperCase()
     };
     // @pc:start
+    if(!cvCompletarId && !document.getElementById('cv-rapido').checked && hayLineasExtraCV()){
+      if(registrarVariasCV(base)){
+        document.getElementById('cv-cant').value = '1';
+        ['cv-precio','cv-contraparte','cv-guia','cv-obs','cv-kbrutos','cv-pcompra','cv-km','cv-pkg','cv-kpie','cv-kres','cv-plazo','cv-imeba','cv-inia','cv-mevir','cv-inac','cv-mgap','cv-sepb','cv-gastos']
+          .forEach(id => { document.getElementById(id).value = ''; });
+        limpiarLineasCV();
+        actualizarResumenCV();
+        renderGuiasLista();
+      }
+      return;
+    }
     const leido = leerFinCV();
     if(leido && leido.error){ toast(leido.error); return; }
     if(cvCompletarId){
