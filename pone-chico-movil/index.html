@@ -447,7 +447,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.91</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.92</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -688,7 +688,7 @@
     <div class="form-row" id="mg-modo-fila"><label>Qué querés cargar</label><select id="mg-modo"></select></div>
     <div id="compraventa-seccion">
       <h4 style="margin:8px 0 6px;font-size:13px;">💰 Compra / Venta</h4>
-      <p class="modal-info" style="margin:0 0 8px;">Compra: entran animales al potrero. Venta: salen del potrero. La guía es opcional.</p>
+      <p class="modal-info" style="margin:0 0 8px;" id="cv-info">Compra: entran animales al potrero. Venta: salen del potrero. La guía es opcional.</p>
       <div class="form-row"><label>Operación</label>
         <select id="cv-tipo">
           <option value="Compra">Compra (ingresan animales)</option>
@@ -700,12 +700,15 @@
       <div class="form-row"><label id="cv-label-dueno">Dueño</label><select id="cv-dueno"></select></div>
       <div class="form-row"><label>Cantidad</label><input type="number" id="cv-cant" min="1" value="1"></div>
       <div class="form-row"><label>Fecha</label><input type="date" id="cv-fecha"></div>
-      <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="cv-precio" min="0" step="0.01" placeholder="Ej: 850"></div>
-      <div class="form-row"><label>Contraparte (opcional)</label><input type="text" id="cv-contraparte" placeholder="Comprador / vendedor / consignatario"></div>
+      <div id="cv-simple">
+        <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="cv-precio" min="0" step="0.01" placeholder="Ej: 850"></div>
+        <div class="form-row"><label>Contraparte (opcional)</label><input type="text" id="cv-contraparte" placeholder="Comprador / vendedor / consignatario"></div>
+      </div>
       <div class="form-row"><label>Nº de guía (opcional)</label><input type="text" id="cv-guia" placeholder="Ej: A592366" style="text-transform:uppercase;"></div>
       <div class="form-row"><label>Notas (opcional)</label><input type="text" id="cv-obs" placeholder="Ej: remate, flete incluido..."></div>
       <div class="form-botones" style="margin-bottom:12px;">
         <button class="btn btn-compraventa" id="cv-guardar">Registrar</button>
+        <button class="btn btn-secundario" id="cv-cancelar-completar" style="display:none;">Cancelar</button>
       </div>
     </div>
     <div id="mg-venta-seccion">
@@ -774,6 +777,7 @@
     </div>
     <div class="form-row"><label>Buscar</label><input type="text" id="mg-filtro-texto" placeholder="Guía, dueño, categoría, potrero…"></div>
     <div class="form-row"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="mg-filtro-sin"> Solo compras/ventas sin guía</label></div>
+    <div class="form-row"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="mg-filtro-faltan"> Solo las que faltan completar (kilos, precio…)</label></div>
     <div id="mg-resumen" style="font-size:12.5px;color:var(--texto-suave);margin:6px 0;"></div>
     <div id="mg-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="guias-cerrar">Cerrar</button></div>
@@ -858,7 +862,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.90","versionMovil":"1.91","simpleHabilitado":true,"versionMovilSimple":"1.34","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.91","versionMovil":"1.92","simpleHabilitado":true,"versionMovilSimple":"1.35","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1100,6 +1104,13 @@ function detalleNumericoValido(d){
     if(!Array.isArray(d.items) || d.items.length > 200) return false;
     if(!d.items.every(it => it && typeof it === 'object' && numOk(it.cantidad, 100000))) return false;
   }
+  if(!numOk(d.precio, 1e9)) return false;
+  if(d.fin != null){
+    if(typeof d.fin !== 'object' || Array.isArray(d.fin)) return false;
+    const campos = ['kilosBrutos','destare','kilosNeto','precio','importe','pctCom','importeCom','flete','km','costoTotal','precioKg','kilosPie','kilosRes',
+      'kilos','plazo','imeba','inia','mevir','inac','mgap','sepb','gastos','descuentos','neto','importeBruto','rendimiento','pesoProm'];
+    if(!campos.every(k => numOk(d.fin[k], 1e10))) return false;
+  }
   return true;
 }
 
@@ -1195,6 +1206,7 @@ function estadoInicial(){
   return {
     potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], pendientesPotrero: {}, transacciones: [], lluvias: [], eventosClima: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
+    maestros: {comprador: [], comisionista: [], contraparte: []}, colaMaestros: [],
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
     ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0
   };
@@ -1242,6 +1254,8 @@ function cargarEstado(){
       if(!parsed.colaSync) parsed.colaSync = [];
       if(!parsed.colaSanidad) parsed.colaSanidad = [];
       if(!parsed.colaStock) parsed.colaStock = [];
+      if(!parsed.maestros) parsed.maestros = {comprador: [], comisionista: [], contraparte: []};
+      if(!parsed.colaMaestros) parsed.colaMaestros = [];
       if(!parsed.historialSanidad) parsed.historialSanidad = [];
       if(parsed.ultimaSincronizacion===undefined) parsed.ultimaSincronizacion = null;
       if(parsed.vacasPrenadasTemporada===undefined) parsed.vacasPrenadasTemporada = CONFIG.vacasPrenadasTemporada || 0;
@@ -1968,6 +1982,31 @@ function aplicarEventoRemoto(row, potrerosSucios){
       }
       return;
     }
+    if(d.accion === 'completar_datos'){
+      // 9/10/2026: detalle completo (kilos, precios, comisión, descuentos) de una compra/venta YA cargada,
+      // típicamente desde la PC sobre algo que se cargó rápido en el celular. No toca el stock; mismo
+      // criterio de búsqueda que 'agregar_guia' (las compras/ventas no tienen id estable entre dispositivos).
+      const fechaObjetivoCD = parseFechaDMY(d.fechaOriginal || fechaEvt);
+      let mejorCD = null, mejorDistCD = Infinity;
+      ((estado.potreros[potrero]||{}).historial || []).forEach(h=>{
+        if(h.eliminado || h.tipo!==d.tipoOriginal) return;
+        const od = h.extra || h.origDatos;
+        if(!od || od.categoria!==d.categoria || od.cantidad!==d.cantidad || (od.dueno||null)!==(d.dueno||null)) return;
+        const dist = Math.abs(parseFechaDMY(h.fecha) - fechaObjetivoCD);
+        if(dist < mejorDistCD){ mejorDistCD = dist; mejorCD = h; }
+      });
+      if(mejorCD && d.fin && typeof d.fin === 'object'){
+        const odCD = mejorCD.extra || mejorCD.origDatos || {};
+        odCD.fin = d.fin; odCD.precio = d.precio || odCD.precio || null; if(d.contraparte) odCD.contraparte = d.contraparte;
+        if(typeof resumenFin === 'function') mejorCD.detalle += ` [${resumenFin(d.fin)}]`;
+        if(typeof parchearTransaccionCompraVenta === 'function'){
+          const precioCD = d.precio || null;
+          parchearTransaccionCompraVenta(mejorCD.tipo==='venta' ? 'Venta' : 'Compra', potrero, d.categoria, d.dueno || '', d.cantidad, mejorCD.fecha,
+            {fin: d.fin, precioUnitario: precioCD, total: precioCD ? precioCD * d.cantidad : null, contraparte: d.contraparte || ''});
+        }
+      }
+      return;
+    }
     if(d.accion === 'agregar_guia'){
       // 22/9/2026: agregar/editar el Nº de guía DICOSE/SNIG de una
       // compra o venta YA confirmada -- mismo criterio que
@@ -2263,12 +2302,13 @@ function aplicarEventoRemoto(row, potrerosSucios){
   // 3/10/2026: obs/precio/contraparte para que la PC pueda precargar el formulario al
   // editar una entrada que cargó otro dispositivo (los matchers de las correcciones
   // solo miran categoría/cantidad/dueño, así que estos campos de más no los afectan)
-  const origDatosGenerico = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, caravana: d.caravana||null, guia: d.guia||null, obs: d.obs||null, precio: d.precio||null, contraparte: d.contraparte||null};
+  const origDatosGenerico = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, caravana: d.caravana||null, guia: d.guia||null, obs: d.obs||null, precio: d.precio||null, contraparte: d.contraparte||null, fin: d.fin||null};
   let detalleTxt = `${d.cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}`;
   if(d.precio) detalleTxt += ` a USD ${d.precio}/cab`;
   if(d.contraparte) detalleTxt += ` — ${d.contraparte}`;
   if(d.guia) detalleTxt += ` — guía ${d.guia}`;
   if(d.obs) detalleTxt += ` (${d.obs})`;
+  if(d.fin && typeof resumenFin === 'function') detalleTxt += ` [${resumenFin(d.fin)}]`;
   if(d.caravana) detalleTxt += ` — caravana ${d.caravana}`;
   registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt, d.usuario).origDatos = origDatosGenerico;
 
@@ -2278,7 +2318,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
       fecha: row.fecha_cliente || fechaHoy(), potrero, tipo: row.tipo==='venta'?'Venta':'Compra',
       categoria: d.categoria, dueno: d.dueno, cantidad: d.cantidad,
       precioUnitario: d.precio||null, total: d.precio ? d.precio*d.cantidad : null,
-      contraparte: d.contraparte||'', guia: d.guia||null, notas: 'sincronizado'
+      contraparte: d.contraparte||'', guia: d.guia||null, notas: 'sincronizado', fin: d.fin||null
     });
   }
   }finally{
@@ -2304,6 +2344,8 @@ async function sincronizar(mostrarToast){
     await vaciarColaSync();
     await vaciarColaSanidad();
     await vaciarColaStock();
+    // 9/10/2026: altas de catálogos que quedaron sin señal (solo la PC las crea; no agrega ninguna consulta si no hay pendientes)
+    if(typeof vaciarColaMaestros === 'function' && (estado.colaMaestros || []).length) await vaciarColaMaestros(client);
     let query = client.from('eventos_sync').select('*').eq('establecimiento', ESTABLECIMIENTO).order('creado_en', {ascending:true});
     if(estado.ultimaSincronizacion) query = query.gt('creado_en', estado.ultimaSincronizacion);
     const res = await query;
@@ -2391,9 +2433,13 @@ function fechaHoy(){
   const d = new Date();
   return d.toLocaleDateString('es-UY', {day:'2-digit',month:'2-digit',year:'numeric'});
 }
+/* 9/10/2026: la fecha de HOY en hora LOCAL. Antes usaba toISOString() (UTC): en Uruguay (UTC-3) entre las
+   21:00 y la medianoche devolvía la fecha de MAÑANA, y todos los formularios proponían (y dejaban cargar)
+   un día adelantado, distinto del que muestra fechaHoy(). */
 function fechaISOHoy(){
   const d = new Date();
-  return d.toISOString().slice(0,10);
+  const dos = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
 }
 function diasDesde(fechaISO){
   if(!fechaISO) return null;
@@ -3832,11 +3878,144 @@ function mostrarFormularioAgregarInicial(nombre){
   document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
 }
 
+/* ===== 9/10/2026: compras y ventas COMPLETAS, como en las hojas Ingreso compras / Ingreso Ventas del Excel =====
+   La PC es la fuente principal de carga (formulario con kilos, destare, precio, comisión, flete,
+   descuentos y catálogos); la móvil conserva el formulario rápido y lo completa después la PC
+   ("✍ Completar datos"). Los datos viajan dentro del MISMO evento compra/venta, en detalle.fin
+   (campos opcionales: un dispositivo viejo los ignora). El script de Excel los pasa a las hojas
+   Compras / Ventas y a la tabla movimientos_dicose de Supabase. */
+let ES_PC = false;
+const CAT_EXCEL_COMPRA = {
+  'Vacas':'VACA', 'Vacas de invernada':'VINV', 'Vaquillonas 1-2 años':'VAQ1', 'Vaquillonas 2-3 años':'VAQ2',
+  'Vaquillona de invernada':'VAQ2', 'Novillitos 1-2 años':'NOV1a2', 'Novillos 2-3 años':'NOV2a3', 'Novillos +3 años':'N+3',
+  'Toros':'TORO', 'Terneros':'TERNERO', 'Terneras':'TERNERA'
+};
+const CAT_EXCEL_VENTA = {
+  'Vacas':'Vacas', 'Vacas de invernada':'Vacas Inv', 'Vaquillonas 1-2 años':'Vaq 1 a 2', 'Vaquillonas 2-3 años':'Vaq 2 a 3',
+  'Vaquillona de invernada':'Vaq 2 a 3', 'Novillitos 1-2 años':'Novillos 1-2', 'Novillos 2-3 años':'Novillos 2-3',
+  'Novillos +3 años':'Novillos +3', 'Toros':'Toros', 'Terneros':'Terneros/as', 'Terneras':'Terneros/as'
+};
+/* variante: '' (normal) | 'vcut' (vaca de última cría) | 'pieza' (vaca con cría al pie) */
+function catExcelCompra(cat, variante){
+  if(variante === 'pieza') return 'Pieza';
+  if(variante === 'vcut' && cat === 'Vacas') return 'VCUT';
+  return CAT_EXCEL_COMPRA[cat] || cat;
+}
+function catExcelVenta(cat){ return CAT_EXCEL_VENTA[cat] || cat; }
+function numONull(v){
+  if(v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+/* Compra. f = {cantidad, tipoPrecio 'Kg'|'Pieza', kilosBrutos, destare (fracción), precio, pctCom (fracción), flete}
+   Mismas fórmulas que la tabla Compras: Kilos Neto = bruto − destare·bruto; Importe = (Kg ? precio·neto : precio·cantidad);
+   Importe_Com = %Com·Importe; U$S/U y U$S/Kg = (Importe + Importe_Com + Flete) / cantidad | kilos neto. */
+function calcCompra(f){
+  const kb = numONull(f.kilosBrutos), d = numONull(f.destare) || 0, cant = numONull(f.cantidad);
+  const p = numONull(f.precio), pc = numONull(f.pctCom) || 0, fl = numONull(f.flete) || 0;
+  const kilosNeto = kb !== null ? kb - d * kb : null;
+  const promedio = (kilosNeto !== null && cant) ? kilosNeto / cant : null;
+  let importe = null;
+  if(p !== null && cant){
+    if(f.tipoPrecio === 'Kg') importe = kilosNeto !== null ? p * kilosNeto : null;
+    else importe = p * cant;
+  }
+  const importeCom = importe !== null ? pc * importe : null;
+  const costoTotal = importe !== null ? importe + (importeCom || 0) + fl : null;
+  return {kilosNeto, promedio, importe, importeCom, costoTotal,
+    costoCab: (costoTotal !== null && cant) ? costoTotal / cant : null,
+    costoKg: (costoTotal !== null && kilosNeto) ? costoTotal / kilosNeto : null};
+}
+/* Venta. f = {cantidad, precioTipo '1ª'|'2ª', precioKg, kilosPie, kilosRes, imeba, inia, mevir, inac, mgap, sepb, gastos}
+   Igual que Ingreso Ventas: Importe bruto = $/kg × (1ª ? kilos en pie : kilos de la res); Neto = bruto − descuentos;
+   Rendimiento = kilos res / kilos en pie; Peso promedio en pie = kilos en pie / cabezas. */
+function calcVenta(f){
+  const cant = numONull(f.cantidad), pk = numONull(f.precioKg), kpie = numONull(f.kilosPie), kres = numONull(f.kilosRes);
+  const kilos = f.precioTipo === '1ª' ? kpie : kres;
+  const importeBruto = (pk !== null && kilos !== null) ? pk * kilos : null;
+  const descs = ['imeba','inia','mevir','inac','mgap','sepb','gastos'].map(k => numONull(f[k]));
+  const hayDesc = descs.some(x => x !== null);
+  const descuentos = hayDesc ? descs.reduce((s, x) => s + (x || 0), 0) : null;
+  return {kilos, importeBruto, descuentos,
+    neto: importeBruto !== null ? importeBruto - (descuentos || 0) : null,
+    pesoProm: (kpie !== null && cant) ? kpie / cant : null,
+    rendimiento: (kpie && kres !== null) ? kres / kpie : null,
+    brutoCab: (importeBruto !== null && cant) ? importeBruto / cant : null};
+}
+/* Un movimiento "tiene los datos completos" si trae el importe calculado (o es la cría de una Pieza,
+   que se paga junto con la vaca). Los cargados rápido desde el celular no lo tienen. */
+function finCompleto(fin){
+  return !!(fin && (fin.importe != null || (fin.pieza && fin.pieza.rol === 'cria')));
+}
+function fmtNum(n, dec){
+  if(n === null || n === undefined || !Number.isFinite(n)) return '—';
+  return n.toLocaleString('es-UY', {minimumFractionDigits: 0, maximumFractionDigits: dec === undefined ? 2 : dec});
+}
+/* Resumen de una línea para el historial y la lista */
+function resumenFin(fin){
+  if(!fin) return '';
+  if(fin.op === 'venta'){
+    return `${fmtNum(fin.kilos, 1)} kg ${fin.precioTipo || ''} a USD ${fmtNum(fin.precioKg)}/kg · bruto ${fmtNum(fin.importeBruto, 0)} · neto ${fmtNum(fin.neto, 0)}`;
+  }
+  if(fin.pieza && fin.pieza.rol === 'cria') return 'cría al pie de una Pieza';
+  return `${fmtNum(fin.kilosNeto, 1)} kg neto · USD ${fmtNum(fin.precio)}/${fin.tipoPrecio === 'Kg' ? 'kg' : 'pieza'} · importe ${fmtNum(fin.importe, 0)}${fin.importeCom ? ' + comisión ' + fmtNum(fin.importeCom, 0) : ''}${fin.flete ? ' + flete ' + fmtNum(fin.flete, 0) : ''}`;
+}
+
+/* ===== Catálogos compartidos (tabla maestros_dicose de Supabase): compradores, comisionistas y
+   clientes/proveedores. Todas las versiones los LEEN al sincronizar y los guardan en el dispositivo
+   (funcionan sin señal); la PC los AGREGA. Si la tabla todavía no existe, no pasa nada. */
+const MAESTROS_VACIOS = () => ({comprador: [], comisionista: [], contraparte: []});
+function maestrosDe(tipo){
+  return ((estado.maestros || {})[tipo] || []).filter(m => m.activo !== false);
+}
+function maestroExiste(tipo, nombre){
+  const n = String(nombre || '').trim().toLowerCase();
+  return maestrosDe(tipo).some(m => String(m.nombre).trim().toLowerCase() === n);
+}
+function buscarContraparte(nombre){
+  const n = String(nombre || '').trim().toLowerCase();
+  return maestrosDe('contraparte').find(m => String(m.nombre).trim().toLowerCase() === n) || null;
+}
+async function sincronizarMaestros(client){
+  try{
+    const res = await client.from('maestros_dicose').select('tipo,nombre,dicose,tipo_contraparte,activo').order('nombre', {ascending: true});
+    if(res.error || !Array.isArray(res.data)) return;           // tabla todavía no creada o sin señal: se sigue con lo que hay
+    const m = MAESTROS_VACIOS();
+    limpiarTextoRemoto(res.data).forEach(r => {
+      if(m[r.tipo] && r.nombre) m[r.tipo].push({nombre: String(r.nombre), dicose: r.dicose || '', tipo: r.tipo_contraparte || '', activo: r.activo !== false});
+    });
+    // lo que todavía no llegó al servidor (cola) se conserva
+    (estado.colaMaestros || []).forEach(p => {
+      if(m[p.tipo] && !m[p.tipo].some(x => x.nombre.toLowerCase() === p.nombre.toLowerCase())){
+        m[p.tipo].push({nombre: p.nombre, dicose: p.dicose || '', tipo: p.tipo_contraparte || '', activo: true});
+      }
+    });
+    estado.maestros = m;
+    guardarEstado();
+  }catch(e){ console.warn('No se pudieron leer los catálogos', e); }
+}
+async function vaciarColaMaestros(client){
+  const cola = estado.colaMaestros || [];
+  if(!cola.length) return;
+  const restantes = [];
+  for(const p of cola){
+    try{
+      const res = await client.from('maestros_dicose').upsert(
+        {tipo: p.tipo, nombre: p.nombre, dicose: p.dicose || null, tipo_contraparte: p.tipo_contraparte || null, creado_por: p.creado_por || null, activo: true},
+        {onConflict: 'tipo,nombre', ignoreDuplicates: true});
+      if(res.error) restantes.push(p);
+    }catch(e){ restantes.push(p); }
+  }
+  estado.colaMaestros = restantes;
+  guardarEstado();
+}
 /* 8/10/2026: el registro de una compra o venta, compartido por el formulario del panel del
    potrero (Pone Chico, que lo conserva) y por "📑 Movimientos DICOSE" (La Vuelta y María
    Laura, donde el botón del panel se sacó). Devuelve true si registró. */
 function registrarCompraVenta(o){
-  const {potrero, tipoOp, cat, dueno, cant, fechaISO, precio, contraparte, obs} = o;
+  const {potrero, tipoOp, cat, dueno, cant, fechaISO, contraparte, obs} = o;
+  let precio = o.precio;
+  const fin = o.fin || null;                                  // detalle completo (PC): kilos, precios, comisión, descuentos
   if(!potrero || !estado.potreros[potrero]){ toast('Elegí un potrero'); return false; }
   const guiaRaw = o.guiaRaw || '';
   if(guiaRaw && !/^[A-Z]\d{6}$/.test(guiaRaw)){ toast('La guía debe tener 1 letra y 6 dígitos (ej: A592366)'); return false; }
@@ -3857,24 +4036,56 @@ function registrarCompraVenta(o){
   }
   registrarCambioOcupacion(potrero, totalAntes, fecha);
 
+  // con el detalle completo el precio por cabeza sale del importe (compat. con el reporte económico y los celulares viejos)
+  if(fin && fin.importe != null && cant) precio = fin.importe / cant;
   const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
   let detalle = `${tipoOp}: ${tipoOp==='Venta'?'-':'+'}${cant} ${cat}${dueno?' de '+dueno:''}`;
-  if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
+  if(montoTotal!==null) detalle += ` a USD ${+Number(precio).toFixed(2)}/cab (total USD ${montoTotal.toFixed(0)})`;
   if(contraparte) detalle += ` — ${contraparte}`;
   if(guia) detalle += ` — guía ${guia}`;
   if(obs) detalle += ` (${obs})`;
-  registrarHistorial(potrero, tipoOp==='Venta'?'venta':'compra', detalle, {potrero, categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null, _tipoOp: tipoOp, _fechaISO: fechaISO}, undefined, fecha);
+  if(fin) detalle += ` [${resumenFin(fin)}]`;
+  registrarHistorial(potrero, tipoOp==='Venta'?'venta':'compra', detalle, {potrero, categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null, fin, _tipoOp: tipoOp, _fechaISO: fechaISO}, undefined, fecha);
 
   estado.transacciones = estado.transacciones || [];
   estado.transacciones.unshift({
     fecha: fecha, potrero, tipo: tipoOp, categoria: cat, dueno, cantidad: cant,
-    precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte, guia, notas: obs
+    precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte, guia, notas: obs, fin
   });
-  enviarEvento(tipoOp==='Venta'?'venta':'compra', potrero, {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null}, fecha);
+  const detalleEvento = {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null};
+  if(fin) detalleEvento.fin = fin;
+  enviarEvento(tipoOp==='Venta'?'venta':'compra', potrero, detalleEvento, fecha);
 
   guardarEstado(); actualizarTodo(); publicarStockPotreros([potrero]);
   if(typeof renderGuiasLista === 'function' && guiasModalAbierto()) renderGuiasLista();
   toast(`${tipoOp} registrada: ${cant} ${cat}${dueno?' ('+dueno+')':''} en ${potrero}`);
+  return true;
+}
+/* "✍ Completar datos" (PC): agrega el detalle completo (kilos, precios, comisión, descuentos) a una
+   compra/venta YA cargada -- típicamente una que se cargó rápido desde el celular. No toca el stock:
+   mismo criterio que agregarGuiaCompraventa(). Devuelve true si la encontró. */
+function parchearTransaccionCompraVenta(tipoOp, potrero, categoria, dueno, cantidad, fecha, cambios){
+  const t = (estado.transacciones || []).find(x => x.tipo===tipoOp && x.potrero===potrero && x.categoria===categoria
+    && x.cantidad===cantidad && (x.dueno||'')===(dueno||'') && x.fecha===fecha);
+  if(t) Object.assign(t, cambios);
+  return !!t;
+}
+function completarDatosCompraVenta(id, fin, contraparte){
+  const ub = ubicarHistorial(id);
+  if(!ub || ub.entry.eliminado || (ub.entry.tipo!=='compra' && ub.entry.tipo!=='venta')) return false;
+  const h = ub.entry;
+  const datos = h.extra || h.origDatos || (h.extra = {});
+  const cant = datos.cantidad;
+  const precio = (fin.importe != null && cant) ? fin.importe / cant : (datos.precio || null);
+  datos.fin = fin; datos.precio = precio; if(contraparte) datos.contraparte = contraparte;
+  h.detalle = h.detalle + ` [${resumenFin(fin)}]`;
+  parchearTransaccionCompraVenta(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, datos.categoria, datos.dueno, cant, h.fecha,
+    {fin, precioUnitario: precio, total: (precio && cant) ? precio*cant : null, contraparte: contraparte || datos.contraparte || ''});
+  guardarEstado();
+  enviarEvento('correccion', ub.potrero, {tipoOriginal: h.tipo, accion: 'completar_datos', categoria: datos.categoria, cantidad: cant,
+    dueno: datos.dueno, fin, precio, contraparte: contraparte || datos.contraparte || null, fechaOriginal: h.fecha});
+  if(typeof renderGuiasLista === 'function') renderGuiasLista();
+  toast('Datos completos guardados');
   return true;
 }
 function mostrarFormulario(nombre, accion, prefill){
@@ -6339,7 +6550,8 @@ function movimientosConGuia(){
       const guia = d.guia || (m ? m[1] : null);
       const cabezas = Array.isArray(d.items) ? d.items.reduce((s,it)=>s+(Number(it.cantidad)||0),0) : (Number(d.cantidad)||0);
       out.push({id: h.id, potrero: p.nombre, fecha: h.fecha, tipo: h.tipo, guia, cabezas, texto: h.detalle || '',
-        sinGuia: !guia && (h.tipo==='compra' || h.tipo==='venta'), tieneDatos: !!(h.extra || h.origDatos)});
+        sinGuia: !guia && (h.tipo==='compra' || h.tipo==='venta'), tieneDatos: !!(h.extra || h.origDatos),
+        fin: d.fin || null, faltanDatos: (h.tipo==='compra' || h.tipo==='venta') && !finCompleto(d.fin)});
     });
   });
   out.sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||''));
@@ -6351,22 +6563,26 @@ function renderGuiasLista(){
   const tipo = document.getElementById('mg-filtro-tipo').value;
   const texto = document.getElementById('mg-filtro-texto').value.trim().toLowerCase();
   const soloSin = document.getElementById('mg-filtro-sin').checked;
+  const soloFaltan = document.getElementById('mg-filtro-faltan').checked;
   const todos = movimientosConGuia().filter(r=>
     (!tipo || GRUPO_TIPO_GUIA[r.tipo]===tipo) &&
     (!soloSin || r.sinGuia) &&
+    (!soloFaltan || r.faltanDatos) &&
     (!texto || `${r.guia||''} ${r.potrero} ${r.texto}`.toLowerCase().includes(texto)));
   const sinGuia = todos.filter(r=>r.sinGuia).length;
+  const faltan = todos.filter(r=>r.faltanDatos).length;
   const cab = todos.reduce((s,r)=>s+r.cabezas,0);
-  document.getElementById('mg-resumen').textContent = `${todos.length} movimiento${todos.length===1?'':'s'} · ${cab} cabezas${sinGuia ? ` · ${sinGuia} sin guía` : ''}`;
+  document.getElementById('mg-resumen').textContent = `${todos.length} movimiento${todos.length===1?'':'s'} · ${cab} cabezas${sinGuia ? ` · ${sinGuia} sin guía` : ''}${faltan ? ` · ${faltan} sin datos completos` : ''}`;
   cont.innerHTML = !todos.length
     ? '<p style="font-size:13px;color:var(--texto-suave);">No hay movimientos con ese filtro.</p>'
     : todos.map(r=>`
       <div class="potrero-card" data-mg-id="${esc(r.id)}">
         <div class="nombre">${esc(r.fecha)} · ${esc(ETIQUETA_TIPO_GUIA[r.tipo])} · ${esc(r.potrero)}
-          ${r.guia ? `<span style="font-weight:700;"> · Guía ${esc(r.guia)}</span>` : (r.sinGuia ? '<span style="color:var(--rojo-hacienda);font-weight:700;"> · ⚠ sin guía</span>' : '')}</div>
+          ${r.guia ? `<span style="font-weight:700;"> · Guía ${esc(r.guia)}</span>` : (r.sinGuia ? '<span style="color:var(--rojo-hacienda);font-weight:700;"> · ⚠ sin guía</span>' : '')}${r.faltanDatos ? '<span style="color:#b26a00;font-weight:700;"> · ⚠ faltan datos</span>' : ''}</div>
         <div style="font-size:12.5px;color:var(--texto-suave);margin-top:2px;">${esc(r.texto)}</div>
         ${r.tieneDatos ? `<div class="hist-acciones" style="margin-top:4px;">
           ${(r.tipo==='compra' || r.tipo==='venta') ? `<button class="hist-btn" data-mg-editar="${esc(r.id)}" title="Editar (la deshace y abre el formulario precargado)">✏️</button><button class="hist-btn" data-mg-guia="${esc(r.id)}" title="Agregar/editar guía">📄</button>` : ''}
+          ${(ES_PC && r.faltanDatos) ? `<button class="hist-btn" data-mg-completar="${esc(r.id)}" title="Completar datos (kilos, precio, comisión…)">✍</button>` : ''}
           ${r.tipo!=='traslado_entrada' ? `<button class="hist-btn" data-mg-borrar="${esc(r.id)}" title="Borrar">🗑</button>` : ''}
         </div>` : ''}
       </div>`).join('');
@@ -6429,11 +6645,10 @@ function reiniciarFormularioCompraVenta(){
   actualizarRotulosCompraVenta();
 }
 /* Precarga el formulario con una compra/venta ya cargada (editar desde el historial). */
-function precargarCompraVenta(prefill, potrero){
+function precargarCompraVenta(prefill, potrero, paraCompletar){
   const el = id => document.getElementById(id);
   const tieneOpcion = (sel, v)=> Array.from(sel.options).some(o=>o.value===v);
   el('cv-tipo').value = prefill._tipoOp === 'Venta' ? 'Venta' : 'Compra';
-  actualizarRotulosCompraVenta();
   const p = prefill.potrero || potrero;
   if(p && tieneOpcion(el('cv-potrero'), p)) el('cv-potrero').value = p;
   if(prefill.categoria && tieneOpcion(el('cv-cat'), prefill.categoria)) el('cv-cat').value = prefill.categoria;
@@ -6444,6 +6659,7 @@ function precargarCompraVenta(prefill, potrero){
   el('cv-contraparte').value = prefill.contraparte || '';
   el('cv-guia').value = prefill.guia || '';
   el('cv-obs').value = prefill.obs || '';
+  actualizarRotulosCompraVenta();
 }
 /* Abre Movimientos DICOSE en "Compra / venta" ya precargado; false si esta app no lo tiene. */
 function abrirCompraVentaEnGuias(prefill, potrero){
@@ -6476,6 +6692,7 @@ function reiniciarFormularioGuias(){
   document.getElementById('mg-filtro-tipo').value = '';
   document.getElementById('mg-filtro-texto').value = '';
   document.getElementById('mg-filtro-sin').checked = false;
+  document.getElementById('mg-filtro-faltan').checked = false;
   renderGuiasLista();
 }
 if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
@@ -6491,7 +6708,7 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
   document.getElementById('mg-modo').addEventListener('change', (e)=> mostrarModoGuias(e.target.value));
   document.getElementById('cv-tipo').addEventListener('change', actualizarRotulosCompraVenta);
   document.getElementById('cv-guardar').addEventListener('click', ()=>{
-    const ok = registrarCompraVenta({
+    const base = {
       potrero: document.getElementById('cv-potrero').value,
       tipoOp: document.getElementById('cv-tipo').value,
       cat: document.getElementById('cv-cat').value,
@@ -6502,17 +6719,20 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
       contraparte: document.getElementById('cv-contraparte').value.trim(),
       obs: document.getElementById('cv-obs').value.trim(),
       guiaRaw: document.getElementById('cv-guia').value.trim().toUpperCase()
-    });
+    };
+    const ok = registrarCompraVenta(base);
     if(!ok) return;
     document.getElementById('cv-cant').value = '1';
     ['cv-precio','cv-contraparte','cv-guia','cv-obs'].forEach(id=>{ document.getElementById(id).value = ''; });
     renderGuiasLista();
   });
-  ['mg-filtro-tipo','mg-filtro-sin'].forEach(id=> document.getElementById(id).addEventListener('change', renderGuiasLista));
+  ['mg-filtro-tipo','mg-filtro-sin','mg-filtro-faltan'].forEach(id=> document.getElementById(id).addEventListener('change', renderGuiasLista));
   document.getElementById('mg-filtro-texto').addEventListener('input', renderGuiasLista);
   document.getElementById('mg-lista').addEventListener('click', (e)=>{
     const g = e.target.closest('[data-mg-guia]');
     if(g){ agregarGuiaCompraventa(g.dataset.mgGuia); return; }
+    const co = e.target.closest('[data-mg-completar]');
+    if(co){ if(typeof entrarModoCompletarCV === 'function') entrarModoCompletarCV(co.dataset.mgCompletar); return; }
     const ed = e.target.closest('[data-mg-editar]');
     if(ed){ editarHistorial(ed.dataset.mgEditar); return; }
     const b = e.target.closest('[data-mg-borrar]');

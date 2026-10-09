@@ -113,6 +113,9 @@ jobs:
       - name: "Movimientos DICOSE (8/10/2026) -- lista de todo lo que tiene guia + venta entre duenos solo con guia, anular, sincronizado"
         run: node tests/probar_movimientos_dicose.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html la-vuelta-movil-campo/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 
+      - name: "Compras y ventas completas (9/10/2026) -- formulario de la PC con kilos/precio/comision/descuentos, catalogos, Pieza/VCUT, completar datos desde la PC"
+        run: node tests/probar_finanzas_compraventa.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
+
       - name: "Movil simple / \"*-campo\" (para un empleado, 3 establecimientos) -- que se mantiene/excluye, y sincroniza sin casos especiales con su movil completo"
         run: node tests/probar_la_vuelta_simple.js la-vuelta-movil-campo/index.html la-vuelta-movil/index.html maria-laura-movil-campo/index.html maria-laura-movil/index.html pone-chico-movil-campo/index.html pone-chico-movil/index.html
 

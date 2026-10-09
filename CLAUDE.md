@@ -486,6 +486,8 @@ no implícito.
 | `sanidad_ultimos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
 | `sanidad_proximos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
 | `stock_potreros` (16/9/2026) | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL", igual criterio que `eventos_sync`)* |
+| `maestros_dicose` (9/10/2026) | ✅ | ✅ | ❌ | ❌ *(dos políticas para `anon`: SELECT e INSERT, sin UPDATE ni DELETE; catálogos de compradores / comisionistas / clientes y proveedores. La app agrega con `upsert` + `ignoreDuplicates` (ON CONFLICT DO NOTHING). Actualizar o desactivar una entrada lo hace solo la clave privada)* |
+| `movimientos_dicose` (9/10/2026) | ❌ | ❌ | ❌ | ❌ *(`anon` sin ningún permiso: ni SELECT, INSERT ni UPDATE; lleva importes, descuentos y DICOSE de terceros. La lee y la llena solo el script de la PC con la clave privada. La vista `movimientos_dicose_vigentes` es `security_invoker = true`)* |
 
 **`stock_potreros`** (16/9/2026): foto del stock actual por
 `establecimiento+potrero+categoria+dueño` (clave `establecimiento,potrero,
@@ -501,6 +503,24 @@ ahí la política "ALL" en vez del patrón sin `UPDATE` de `productos_catalogo`
 `CONFIG.stockSupabase`**: solo `true` en La Vuelta por ahora; en María
 Laura/Pone Chico el código está pero es un no-op hasta que se confirme el
 funcionamiento real y se les active el flag.
+
+**`maestros_dicose` y `movimientos_dicose`** (9/10/2026, SQL en `scripts/dicose/`, se corren a mano en el SQL
+Editor): la app NO escribe `movimientos_dicose` — las compras, ventas, ventas entre dueños, campo ajeno y traslados
+siguen viajando como eventos de `eventos_sync` (las compras/ventas traen el detalle completo — kilos, destare, precio,
+comisión, flete, descuentos — en `detalle.fin`, campos opcionales); el script de Excel
+(`pasar_traslados_a_excel.py`, en la carpeta Ganaderia\Macros & phyton, fuera de este repo) arma de ahí una fila por
+movimiento y la sube con *upsert* por `event_id` (vigente/anulado, `asentado_excel`). Los catálogos
+(`maestros_dicose`) los lee la PC al abrir Movimientos DICOSE y los agrega la PC (cola `estado.colaMaestros` si no hay
+señal); se siembran desde los Excel con `sembrar_maestros_dicose.py`. Ninguna política permite DELETE; para sacar una
+entrada de las listas se pone `activo = false`.
+**Clave privada (secret / service_role)**: como este repo es público y la clave `anon` está en cada app,
+`movimientos_dicose` no admite `anon` para nada y `maestros_dicose` solo SELECT + INSERT. Los scripts de la PC
+(`dicose_supabase.py`, `sembrar_maestros_dicose.py`) escriben con la clave privada, que se lee de la variable de
+entorno `SUPABASE_SECRET_KEY` o de `C:\Users\<usuario>\.potreros\.env` (una línea `SUPABASE_SECRET_KEY=...`;
+fuera del repo y fuera de OneDrive). **Nunca va al repo, a un log ni a un chat**; los scripts no la imprimen, la
+rechazan si es la publicable y no la mandan a otro destino que Supabase o localhost. Sin clave el script sigue solo
+con el Excel. Ninguna pantalla de las apps lee `movimientos_dicose` (se verifica con `grep`); si alguna lo hiciera,
+a `anon` solo se le puede dar SELECT.
 
 **Auditoría de seguridad (30/9/2026)** — resumen de lo hecho y lo pendiente:
 `eventos_sync` ya no permite UPDATE/DELETE a `anon` (verificado en Supabase:
