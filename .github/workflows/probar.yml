@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+# Solo lectura por defecto; el job que publica pide sus propios permisos.
+permissions:
+  contents: read
+
+# Hora de Uruguay. El runner usa UTC, y un error de zona horaria en las fechas del dia
+# (los formularios proponian la fecha de manana desde las 21:00) no se veia en CI (9/10/2026).
+env:
+  TZ: America/Montevideo
+
 jobs:
   jsdom:
     runs-on: ubuntu-latest
@@ -16,7 +25,19 @@ jobs:
         with:
           node-version: 24
 
-      - name: Template -- los 6 index.html coinciden con lo que generaría el template
+      - name: Todo tests/probar_*.js esta en este workflow (una prueba fuera de la lista nunca corre)
+        run: |
+          faltan=0
+          for f in tests/probar_*.js; do
+            b=$(basename "$f")
+            if ! grep -q "tests/$b" .github/workflows/probar.yml; then
+              echo "FALTA en .github/workflows/probar.yml: $b"
+              faltan=1
+            fi
+          done
+          exit $faltan
+
+      - name: Template -- los 9 index.html coinciden con lo que generaría el template
         run: node template/generar.js --check
 
       - name: Instalar jsdom
@@ -149,3 +170,40 @@ jobs:
         run: node tests/probar_sw_offline.js
       - name: "Actualizacion de la app no recarga con un formulario abierto (8/10/2026)"
         run: node tests/probar_recarga_segura.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
+      - name: "Dias de ocupacion -- un evento atrasado usa la fecha real del movimiento, no hoy (14/9/2026, estaba fuera de la lista)"
+        run: node tests/probar_ocupacion.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
+
+      - name: "Fase 1 de la auditoria (9/10/2026) -- textos escapados, aviso si no se puede guardar, importar backup validado, filtro de borrado de stock"
+        run: node tests/probar_fase1_arreglos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
+
+  # 9/10/2026 (auditoria, hallazgo 23): antes GitHub Pages publicaba desde la rama en paralelo con
+  # las pruebas, y una version con una prueba rota llegaba igual a los celulares (CI fallo 7 de 115
+  # veces). Ahora se publica desde aca, y solo si el job `jsdom` paso.
+  # Requiere Settings > Pages > Source = "GitHub Actions". Con "Deploy from a branch" este job falla
+  # en configure-pages (y la publicacion automatica de GitHub sigue como antes).
+  publicar:
+    needs: jsdom
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

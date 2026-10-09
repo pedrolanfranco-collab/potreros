@@ -54,13 +54,24 @@ The `.gitignore` excludes `probar_*.js`, `parchear_fecha.js`, `node_modules/`,
 `package.json` — that's where such throwaway test scripts are expected to
 live locally, never committed.
 
-**Deploy:** `git add` the changed folder(s), commit, `git push`. GitHub Pages
-serves `main` directly — no build step. Changes are live in roughly 15–40
-seconds; verify with `curl -H "Cache-Control: no-cache" <url>` rather than
-assuming an instant deploy.
+**Deploy:** `git add` the changed folder(s), commit, `git push`. There is no
+build step, but **since 9/10/2026 the push no longer publishes by itself**: the
+`publicar` job of `.github/workflows/probar.yml` deploys to GitHub Pages
+(`actions/deploy-pages`) only after the `jsdom` job passes, so a version with a
+failing test never reaches the phones (before, Pages built from the branch in
+parallel with CI and CI failed 7 of 115 times with the broken version already
+live). This needs *Settings → Pages → Source = "GitHub Actions"*; with
+"Deploy from a branch" the `publicar` job fails at `configure-pages`. Expect
+about 3 minutes (tests) plus ~1 minute (publish); verify with
+`curl -H "Cache-Control: no-cache" <url>` rather than assuming an instant
+deploy. If the tests fail, nothing is published and the previous version stays
+up: fix and push again.
 
-**CI:** `.github/workflows/probar.yml` runs on every push/PR to `main`. First
-step: `node template/generar.js --check` — regenerates all 6 files in memory
+**CI:** `.github/workflows/probar.yml` runs on every push/PR to `main`, with
+`TZ=America/Montevideo` (the runner is UTC, which hid a timezone bug in the day
+dates). Its first step fails if any `tests/probar_*.js` is not listed in the
+workflow (a test outside the list never runs). Then
+`node template/generar.js --check` — regenerates all 9 files in memory
 and fails the build if any committed `index.html` doesn't match (someone
 edited a generated file by hand, or edited the template/configs without
 regenerating), and also fails if any `sw.js`'s `CACHE` doesn't match the
