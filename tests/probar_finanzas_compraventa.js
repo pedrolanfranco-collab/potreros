@@ -392,6 +392,7 @@ async function probarPC(archivoPC, archivoMovil){
       E(W, 'modal-guias').style.display === 'flex' && E(W, 'cv-cant').value === '12' && E(W, 'cv-cant').disabled && E(W, 'cv-origen').value === 'Nebio Domingez'
       && E(W, 'cv-tprecio').value === 'Pieza' && E(W, 'cv-pcompra').value === '300' && E(W, 'cv-guardar').textContent === 'Guardar datos completos',
       ['cv-cant','cv-origen','cv-tprecio','cv-pcompra','cv-rapido'].map(i => i + '=' + (i === 'cv-rapido' ? E(W, i).checked : E(W, i).value) + (E(W, i).disabled ? '(dis)' : '')).join(' ') + ' | ' + E(W, 'cv-guardar').textContent + ' | modal=' + E(W, 'modal-guias').style.display);
+    chequear(`${etiqueta}: ✍ avisa qué hacer y lleva la vista al formulario (que está arriba de la lista)`, /Guardar datos completos/.test(ultimoToast(W)) && E(W, 'modal-guias').querySelector('.modal-box').scrollTop === 0, ultimoToast(W));
     const stP0 = W.__est().potreros[pM].animales[kM] || 0, evC = servidor.filas.eventos_sync.length;
     poner(W, 'cv-tprecio', 'Kg', 'change'); poner(W, 'cv-kbrutos', 2400); poner(W, 'cv-destare', 4); poner(W, 'cv-pcompra', 1.6); poner(W, 'cv-comprador', 'Pedro', 'change'); poner(W, 'cv-flete', 50);
     E(W, 'cv-guardar').click();

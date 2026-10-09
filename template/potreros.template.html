@@ -8761,6 +8761,8 @@ function entrarModoCompletarCV(id){
   document.getElementById('cv-info').textContent = `Completando los datos de: ${ub.entry.detalle}. No cambia el stock.`;
   document.getElementById('cv-guardar').textContent = 'Guardar datos completos';
   document.getElementById('cv-cancelar-completar').style.display = '';
+  subirAlFormularioGuias();
+  toast('Completá kilos, precio y comisión arriba y tocá "Guardar datos completos"');
   return true;
 }
 function salirModoCompletarCV(){
@@ -8829,6 +8831,14 @@ function precargarCompraVenta(prefill, potrero, paraCompletar){
   // @pc:end
   actualizarRotulosCompraVenta();
 }
+/* El formulario está arriba de la pantalla y la lista abajo: al tocar ✍ o ✏️ en la lista la vista sube al formulario
+   (antes parecía que "no pasaba nada"). */
+function subirAlFormularioGuias(){
+  const caja = document.querySelector('#modal-guias .modal-box');
+  if(caja) caja.scrollTop = 0;
+  const sec = document.getElementById('compraventa-seccion');
+  if(sec && typeof sec.scrollIntoView === 'function') sec.scrollIntoView({block: 'start'});
+}
 /* Abre Movimientos DICOSE en "Compra / venta" ya precargado; false si esta app no lo tiene. */
 function abrirCompraVentaEnGuias(prefill, potrero){
   const bg = document.getElementById('btn-guias');
@@ -8836,6 +8846,7 @@ function abrirCompraVentaEnGuias(prefill, potrero){
   bg.click();
   mostrarModoGuias('compraventa');
   precargarCompraVenta(prefill, potrero);
+  subirAlFormularioGuias();
   return true;
 }
 function reiniciarFormularioGuias(){

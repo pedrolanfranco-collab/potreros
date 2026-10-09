@@ -447,7 +447,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v1.91 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v1.92 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -962,7 +962,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.91","versionMovil":"1.92","simpleHabilitado":true,"versionMovilSimple":"1.35","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.92","versionMovil":"1.93","simpleHabilitado":true,"versionMovilSimple":"1.35","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -8171,6 +8171,8 @@ function entrarModoCompletarCV(id){
   document.getElementById('cv-info').textContent = `Completando los datos de: ${ub.entry.detalle}. No cambia el stock.`;
   document.getElementById('cv-guardar').textContent = 'Guardar datos completos';
   document.getElementById('cv-cancelar-completar').style.display = '';
+  subirAlFormularioGuias();
+  toast('Completá kilos, precio y comisión arriba y tocá "Guardar datos completos"');
   return true;
 }
 function salirModoCompletarCV(){
@@ -8232,6 +8234,14 @@ function precargarCompraVenta(prefill, potrero, paraCompletar){
   }
   actualizarRotulosCompraVenta();
 }
+/* El formulario está arriba de la pantalla y la lista abajo: al tocar ✍ o ✏️ en la lista la vista sube al formulario
+   (antes parecía que "no pasaba nada"). */
+function subirAlFormularioGuias(){
+  const caja = document.querySelector('#modal-guias .modal-box');
+  if(caja) caja.scrollTop = 0;
+  const sec = document.getElementById('compraventa-seccion');
+  if(sec && typeof sec.scrollIntoView === 'function') sec.scrollIntoView({block: 'start'});
+}
 /* Abre Movimientos DICOSE en "Compra / venta" ya precargado; false si esta app no lo tiene. */
 function abrirCompraVentaEnGuias(prefill, potrero){
   const bg = document.getElementById('btn-guias');
@@ -8239,6 +8249,7 @@ function abrirCompraVentaEnGuias(prefill, potrero){
   bg.click();
   mostrarModoGuias('compraventa');
   precargarCompraVenta(prefill, potrero);
+  subirAlFormularioGuias();
   return true;
 }
 function reiniciarFormularioGuias(){
