@@ -144,11 +144,22 @@ def _pedir(metodo, url, clave, cuerpo=None, extra=None):
         return e.code, e.read().decode("utf-8", "replace")[:300], ""
 
 
+LEIDO_OK = (200, 206)      # PostgREST contesta 206 (parcial) cuando hay mas filas que las pedidas
+
+
+def _motivo(st, cuerpo):
+    """Texto corto para un error. Del cuerpo solo se usa el de un error HTTP (un mensaje de
+    PostgREST); el de una respuesta exitosa son FILAS reales y nunca se muestran."""
+    if isinstance(st, int) and st >= 400 and isinstance(cuerpo, str):
+        return f"HTTP {st}: {cuerpo[:160]}"
+    return f"HTTP {st}"
+
+
 def contar(base, clave, tabla):
     """Filas de la tabla en el destino (Content-Range), o (None, motivo)."""
     st, cuerpo, rango = _pedir("GET", f"{base}/rest/v1/{tabla}?select=*&limit=1", clave, extra={"Prefer": "count=exact"})
-    if st != 200:
-        return None, f"HTTP {st}: {cuerpo}"
+    if st not in LEIDO_OK:
+        return None, _motivo(st, cuerpo)
     m = re.search(r"/(\d+)$", rango or "")
     return (int(m.group(1)), "") if m else (None, "sin Content-Range")
 
@@ -159,8 +170,8 @@ def ids_destino(base, clave, tabla, columna):
     while True:
         q = urllib.parse.urlencode({"select": columna, "order": columna + ".asc", "limit": 1000, "offset": desde})
         st, cuerpo, _ = _pedir("GET", f"{base}/rest/v1/{tabla}?{q}", clave)
-        if st != 200:
-            raise RuntimeError(f"HTTP {st}: {cuerpo}")
+        if st not in LEIDO_OK:
+            raise RuntimeError(_motivo(st, cuerpo))
         vistos.update(f[columna] for f in cuerpo)
         if len(cuerpo) < 1000:
             return vistos
@@ -212,7 +223,7 @@ def restaurar(carpeta, base, clave, cargar=True, imprimir=print):
                 st, cuerpo, _ = _pedir("POST", f"{base}/rest/v1/{tabla}", clave, filas[i:i + LOTE],
                                        {"Prefer": "return=minimal"})
                 if st not in (200, 201, 204):
-                    fallo = f"HTTP {st} en el lote {i // LOTE + 1}: {cuerpo}"
+                    fallo = f"{_motivo(st, cuerpo)} en el lote {i // LOTE + 1}"
                     break
             if fallo:
                 problemas.append(f"{tabla}: {fallo}")
@@ -234,7 +245,8 @@ def restaurar(carpeta, base, clave, cargar=True, imprimir=print):
                                          f"sobran {len(en_destino - en_backup)})")
                         extra = "  <-- event_id NO coinciden"
                     else:
-                        extra = f"  (los {len(en_backup)} event_id coinciden uno por uno)"
+                        sin_id = sum(1 for f in filas if not f.get("event_id"))
+                        extra = f"  (los {len(en_backup - {None})} event_id coinciden uno por uno" +                                 (f"; {sin_id} eventos viejos no tienen event_id)" if sin_id else ")")
                 except Exception as e:
                     problemas.append(f"{tabla}: no pude comparar los event_id: {e}")
             imprimir(f"  {tabla}: {n} filas {'cargadas y ' if cargar else ''}verificadas{extra}")

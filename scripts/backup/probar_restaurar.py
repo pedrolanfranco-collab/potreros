@@ -71,7 +71,10 @@ class Falso(BaseHTTPRequestHandler):
         if cols != "*":
             trozo = [{c: f.get(c) for c in cols.split(",")} for f in trozo]
         rango = f"{off}-{off + len(trozo) - 1}/{len(filas)}" if trozo else f"*/{len(filas)}"
-        self._responder(200, trozo, {"Content-Range": rango})
+        if tabla == "tabla_rara":                         # una respuesta 2xx inesperada que trae filas reales
+            return self._responder(203, [{"campo": "FILA-REAL-QUE-NO-SE-IMPRIME"}], {"Content-Range": rango})
+        parcial = not (off == 0 and len(trozo) == len(filas))
+        self._responder(206 if parcial else 200, trozo, {"Content-Range": rango})
 
     def do_POST(self):
         tabla, _ = self._tabla()
@@ -193,6 +196,16 @@ chequear("destino con filas: no se mezcla, se pide --con-drop", any("ya tiene 1 
 
 problemas, _ = correr_restaurar(hacer_backup(tempfile.mkdtemp(), {"stock_potreros": [{"clave": "k"}]}, clave="publica"))
 chequear("backup con llave publica: se marca como posiblemente incompleto", any("llave publica" in p for p in problemas), problemas)
+
+# -- 4b) PostgREST contesta 206 (parcial): la verificacion lo acepta; un 2xx raro nunca imprime filas
+destino_tablas.update({t: [] for t in tablas})
+destino_tablas["tabla_rara"] = [{"campo": "x"}]
+carpeta206 = hacer_backup(tempfile.mkdtemp(), tablas)
+problemas, salida = correr_restaurar(carpeta206)
+chequear("206 parcial: la carga se verifica igual (como contesta PostgREST de verdad)", problemas == [], problemas)
+problemas, salida = correr_restaurar(hacer_backup(tempfile.mkdtemp(), {"tabla_rara": [{"campo": "x"}]}))
+chequear("una respuesta 2xx inesperada se informa sin imprimir las filas del cuerpo",
+         problemas and not any("FILA-REAL" in p for p in problemas) and "FILA-REAL" not in salida, problemas)
 
 # -- 5) main de punta a punta --------------------------------------------------------------------
 destino_tablas.update({t: [] for t in tablas})
