@@ -19,7 +19,7 @@ module.exports = {
   "versionPc": "1.98",
   "versionMovil": "1.97",
   "simpleHabilitado": true,
-  "versionMovilSimple": "1.37",
+  "versionMovilSimple": "1.39",
   "duenoLabel": "Dueño",
   "duenoObligatorio": true,
   "textoSinAsignar": "(sin dueño)",

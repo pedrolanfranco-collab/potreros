@@ -460,9 +460,40 @@
   .resumen .stat.stat-especie{display:block;}
   .resumen .stat .num{font-size:16px;line-height:1.15;}
   .resumen .stat .lbl{line-height:1.1;}
+  /* 10/10/2026 (Campo, a pedido de Pedro): mas lista y menos mapa, total del potrero
+     grande, botones y campos para dedos con guantes, historial plegado. */
   @media (max-width:820px){
-    #map{height:60vh;}
+    #map{height:45vh;}
   }
+  .potrero-card{padding:10px 12px;margin-bottom:8px;gap:4px;}
+  .potrero-card .nombre{margin-bottom:0;}
+  .potrero-card .badge-total{font-size:26px;line-height:1;background:transparent;color:#111;padding:0 4px;min-width:0;border-radius:8px;}
+  .potrero-card .badge-total.vacio{background:transparent;color:var(--texto-suave);}
+  .potrero-card .ocupacion-badge{margin-top:0;font-size:12.5px;padding:3px 8px;}
+  .potrero-card .mini-cats{margin-top:2px;font-size:13px;color:var(--texto);}
+  .potrero-card .mini-cats span{background:var(--crema);border:1px solid #bdb48f;border-radius:10px;padding:1px 8px;}
+  #detalle .meta{font-size:13.5px;}
+  #detalle .total-grande{font-size:15px;color:#111;margin:0 0 4px 0;}
+  #detalle .total-grande strong{font-size:28px;font-family:'JetBrains Mono',monospace;margin-right:4px;}
+  .btn-cerrar-detalle{font-size:26px;min-width:44px;min-height:44px;}
+  .acciones{gap:10px;}
+  .acciones .btn{min-height:56px;font-size:16px;}
+  .acciones [data-accion="mover"]{order:1;grid-column:1/-1;}
+  .acciones [data-accion="nacimiento"]{order:2;}
+  .acciones [data-accion="agregar"]{order:3;}
+  .acciones [data-accion="mover-todo"]{order:4;}
+  .acciones [data-accion="muerte"]{order:5;margin-top:10px;}
+  .acciones [data-accion="desaparecido"]{order:6;margin-top:10px;background:#7a5236;}
+  .form-row label{font-size:12.5px;}
+  .form-row select, .form-row input{font-size:16px;padding:12px 10px;min-height:48px;}
+  .form-row input[type=checkbox]{width:24px;height:24px;min-height:0;padding:0;}
+  .form-botones .btn{min-height:52px;font-size:16px;}
+  .historial-det summary{font-family:'Fraunces',serif;font-size:15px;color:var(--verde-monte);padding:12px 0;min-height:44px;cursor:pointer;}
+  .hist-btn{font-size:18px;padding:6px 8px;}
+  /* botón Herramientas más alargado: ocupa todo el ancho que deja el estado de sincronización */
+  #estado-compacto{flex:0 1 auto;max-width:38%;}
+  #estado-compacto div{white-space:normal;}
+  .btn-herramientas{flex:1;font-size:17px;padding:16px 18px;}
 <!-- @simple:end -->
 </style>
 </head>
@@ -4084,8 +4115,15 @@ function seleccionarPotrero(nombre){
   map.fitBounds(item.layer.getBounds(), {padding:[40,40], maxZoom:16});
 }
 
+// @simple:start
+let historialCampoAbierto = false;   // el historial del detalle (Campo) arranca plegado; se acuerda mientras no cambie de potrero
+let historialCampoPotrero = null;
+// @simple:end
 function renderDetalle(nombre){
   document.getElementById('detalle').style.display = 'flex';
+// @simple:start
+  if(historialCampoPotrero !== nombre){ historialCampoAbierto = false; historialCampoPotrero = nombre; }
+// @simple:end
   const det = document.getElementById('detalle-caja');
   const info = POTREROS_GEO.find(p=>p.nombre===nombre);
   const animales = estado.potreros[nombre].animales;
@@ -4110,6 +4148,9 @@ function renderDetalle(nombre){
 
   det.innerHTML = `
     <div class="detalle-titulo"><h2>${esc(nombre)}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
+<!-- @simple:start -->
+    <div class="total-grande"><strong>${total}</strong>animal${total===1?'':'es'}</div>
+<!-- @simple:end -->
     <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong></div>
     <div class="ocupacion-badge ocupacion-${ocup.tipo}" style="margin-bottom:10px;">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
 <!-- @completo:start -->
@@ -4146,7 +4187,12 @@ function renderDetalle(nombre){
     <div id="form-zona"></div>
 
     <div id="historial">
+<!-- @completo:start -->
       <h3>Historial</h3>
+<!-- @completo:end -->
+<!-- @simple:start -->
+      <details class="historial-det"${historialCampoAbierto?' open':''}><summary>Historial (${historialVisible.length})</summary>
+<!-- @simple:end -->
       ${historialVisible.length ? historialVisible.slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||'')).slice(0,15).map(h=>`
         <div class="hist-item ${esc(h.tipo)}${h.eliminado?' eliminado':''}">
           <span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}
@@ -4176,8 +4222,15 @@ function renderDetalle(nombre){
           </span>` : ''}
         </div>
       `).join('') : '<div class="hist-vacio">Todavía no hay movimientos en este potrero.</div>'}
+<!-- @simple:start -->
+      </details>
+<!-- @simple:end -->
     </div>
   `;
+// @simple:start
+  const detHist = det.querySelector('.historial-det');
+  if(detHist) detHist.addEventListener('toggle', ()=>{ historialCampoAbierto = detHist.open; });
+// @simple:end
 
   det.querySelectorAll('[data-accion]').forEach(btn=>{
     btn.addEventListener('click', ()=> mostrarFormulario(nombre, btn.dataset.accion));
@@ -4716,6 +4769,10 @@ function completarDatosCompraVenta(id, fin, contraparte){
 <!-- @completo:end -->
 function mostrarFormulario(nombre, accion, prefill){
   const zona = document.getElementById('form-zona');
+// @simple:start
+  // el formulario se arma justo abajo; en el celular quedaba fuera de pantalla debajo de los botones
+  requestAnimationFrame(()=>{ if(zona && zona.scrollIntoView) zona.scrollIntoView({behavior:'smooth', block:'start'}); });
+// @simple:end
 
   if(accion==='agregar'){
     if(prefill){

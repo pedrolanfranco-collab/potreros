@@ -155,6 +155,9 @@ jobs:
       - name: "PC: caja de Herramientas ordenada por funciones (10/10/2026) -- 4 grupos, 5 sub-menus, sin Exportar MD; movil y Campo sin cambios"
         run: node tests/probar_herramientas_pc.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
+      - name: "Campo: visualizacion (10/10/2026) -- total grande, historial plegado, mapa mas bajo, formulario a la vista; PC y movil sin cambios"
+        run: node tests/probar_campo_visualizacion.js la-vuelta-movil-campo/index.html maria-laura-movil-campo/index.html pone-chico-movil-campo/index.html
+
       - name: "Muertes de terneros en dos grupos, de temporada y marcados (10/10/2026) -- formulario, Stock total, editar/borrar y voz"
         run: node tests/probar_muerte_terneros_grupo.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 

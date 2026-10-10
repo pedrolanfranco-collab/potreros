@@ -161,6 +161,13 @@ theme-color).
   Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
   (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
   no cambian.
+  **Campo (móvil simple), visualización (10/10/2026, a pedido de Pedro)**: todo en bloques `@simple`: mapa a
+  45vh en el celular (más lista), total del potrero grande (26 px en la tarjeta, 28 px en el detalle), botones de
+  acción y campos de formulario de 48–56 px con letra de 16 px, Muerte/Desaparecido al final y separados,
+  historial plegado en un `<details>` (se acuerda abierto mientras no cambie de potrero) y el formulario de una
+  acción se desplaza solo a la vista, y el botón "Herramientas" del pie es más largo (ocupa lo que deja el estado de
+  sincronización, que puede partirse en 2 renglones). La PC y la móvil completa no cambian. Test:
+  `tests/probar_campo_visualizacion.js`.
 - **móvil**: has GPS location + voice input for logging movements
   (`Web Speech API`, no external AI). No PDF/Excel/coefficient editor. Has two
   screens PC doesn't: **"📊 Stock total"** and **"👤 Quién soy"** (per-phone
