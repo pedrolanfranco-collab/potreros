@@ -352,6 +352,14 @@
   #menu-herramientas .btn{width:100%;margin-bottom:12px;font-size:19px;padding:18px 16px;}
   #menu-herramientas .btn-kmz{background:var(--verde-monte);color:#fff;}
   #menu-herramientas .btn-json{background:#fff;color:var(--texto);border:1px solid var(--linea);}
+  /* 10/10/2026: caja de la PC ordenada por funciones (grupos en 2 columnas y
+     sub-menus para exportar/backup/potrero/puntos/reportes). Solo la PC usa estas clases. */
+  #menu-herramientas .hg{margin-bottom:14px;}
+  #menu-herramientas .hg-titulo{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);margin:0 0 6px 2px;}
+  #menu-herramientas .hg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  #menu-herramientas .hg-grid .btn{margin-bottom:0;font-size:15px;padding:12px 10px;}
+  #menu-herramientas .hg-grid .hg-ancho{grid-column:1 / -1;}
+  #menu-herramientas .hsub .btn-secundario{background:#efe7cf;color:var(--texto);}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
 
   input[type=file]{display:none;}
@@ -862,7 +870,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.97","versionMovil":"1.97","simpleHabilitado":true,"versionMovilSimple":"1.37","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.98","versionMovil":"1.97","simpleHabilitado":true,"versionMovilSimple":"1.37","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -3745,7 +3753,18 @@ function cerrarDetalle(){
 document.getElementById('detalle').addEventListener('click', (e)=>{
   if(e.target.id === 'detalle') cerrarDetalle();
 });
+/* Sub-menus de la caja de la PC (10/10/2026). null = vista de grupos. En la
+   móvil no existen estos elementos y no hace nada. */
+function mostrarSubmenuHerramientas(sub){
+  const grupos = document.getElementById('hmenu-grupos');
+  if(!grupos) return;
+  grupos.style.display = sub ? 'none' : '';
+  document.querySelectorAll('#menu-herramientas .hsub').forEach(p=>{
+    p.style.display = (sub && p.getAttribute('data-sub-panel') === sub) ? '' : 'none';
+  });
+}
 document.getElementById('btn-herramientas').addEventListener('click', ()=>{
+  mostrarSubmenuHerramientas(null);
   document.getElementById('modal-herramientas').style.display = 'flex';
 });
 document.getElementById('herramientas-cerrar').addEventListener('click', ()=>{
@@ -3792,7 +3811,11 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
 });
 document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
-  if(e.target.tagName === 'BUTTON') document.getElementById('modal-herramientas').style.display = 'none';
+  if(e.target.tagName !== 'BUTTON') return;
+  // abrir un sub-menu o volver: la caja queda abierta
+  if(e.target.hasAttribute('data-sub')){ mostrarSubmenuHerramientas(e.target.getAttribute('data-sub')); return; }
+  if(e.target.hasAttribute('data-volver')){ mostrarSubmenuHerramientas(null); return; }
+  document.getElementById('modal-herramientas').style.display = 'none';
 });
 
 /* ======================= FORMULARIOS DE ACCIÓN ======================= */

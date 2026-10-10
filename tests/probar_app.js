@@ -207,7 +207,9 @@ async function probar(archivo){
   // Desde 14/9/2026 (reorden de toolbox, pedido de Pedro) "Importar KML/KMZ"
   // se saca de movil -- queda solo en PC.
   if(variante === 'PC'){
-    ['btn-exportar-kmz','btn-exportar-md'].forEach(id => chequear('boton ' + id + ' presente', tiene(id)));
+    chequear('boton btn-exportar-kmz presente', tiene('btn-exportar-kmz'));
+    // 10/10/2026: Pedro sacó "Exportar MD" de la caja de Herramientas
+    chequear('boton btn-exportar-md ausente', !tiene('btn-exportar-md'));
     chequear('boton btn-importar-kml presente', tiene('btn-importar-kml'));
   } else {
     chequear('boton btn-importar-kml ausente en movil', !tiene('btn-importar-kml'));

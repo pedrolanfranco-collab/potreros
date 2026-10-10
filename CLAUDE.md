@@ -154,6 +154,13 @@ theme-color).
 
 - **PC**: has PDF export (jsPDF), Excel export (SheetJS), and a UG-coefficient
   editor modal. No GPS.
+  **Caja "🛠 Herramientas" de la PC (10/10/2026, a pedido de Pedro)**: ordenada por funciones —
+  Consultar / Mapa y potreros / Exportar y respaldo / Este dispositivo, en 2 columnas, 17 botones en vez de
+  26—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
+  abren un sub-menú dentro de la misma caja (`data-sub` / `data-volver`, `mostrarSubmenuHerramientas()`).
+  Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
+  (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
+  no cambian.
 - **móvil**: has GPS location + voice input for logging movements
   (`Web Speech API`, no external AI). No PDF/Excel/coefficient editor. Has two
   screens PC doesn't: **"📊 Stock total"** and **"👤 Quién soy"** (per-phone

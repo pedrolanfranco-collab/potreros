@@ -351,6 +351,14 @@
   #menu-herramientas .btn{width:100%;margin-bottom:12px;font-size:19px;padding:18px 16px;}
   #menu-herramientas .btn-kmz{background:var(--verde-monte);color:#fff;}
   #menu-herramientas .btn-json{background:#fff;color:var(--texto);border:1px solid var(--linea);}
+  /* 10/10/2026: caja de la PC ordenada por funciones (grupos en 2 columnas y
+     sub-menus para exportar/backup/potrero/puntos/reportes). Solo la PC usa estas clases. */
+  #menu-herramientas .hg{margin-bottom:14px;}
+  #menu-herramientas .hg-titulo{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);margin:0 0 6px 2px;}
+  #menu-herramientas .hg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  #menu-herramientas .hg-grid .btn{margin-bottom:0;font-size:15px;padding:12px 10px;}
+  #menu-herramientas .hg-grid .hg-ancho{grid-column:1 / -1;}
+  #menu-herramientas .hsub .btn-secundario{background:#efe7cf;color:var(--texto);}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
 
   input[type=file]{display:none;}
@@ -534,14 +542,6 @@
     <h3>🛠 Herramientas</h3>
     <button class="btn-cerrar-x" id="herramientas-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <div id="menu-herramientas">
-<!-- @pc:start -->
-      <button class="btn btn-kmz" id="btn-exportar-kmz">⬇ Exportar KMZ</button>
-      <button class="btn btn-kmz" id="btn-exportar-pdf">⬇ Exportar PDF</button>
-      <button class="btn btn-kmz" id="btn-exportar-pdf-animales">⬇ PDF: Animales por potrero</button>
-      <button class="btn btn-kmz" id="btn-exportar-pdf-historial">⬇ PDF: Historial por potrero</button>
-      <button class="btn btn-kmz" id="btn-exportar-excel">⬇ Exportar Excel</button>
-      <button class="btn btn-json" id="btn-exportar-md">⬇ Exportar MD</button>
-<!-- @pc:end -->
 <!-- @movil:start -->
 <!-- @completo:start -->
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
@@ -573,26 +573,78 @@
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
 <!-- @movil:end -->
 <!-- @pc:start -->
-      <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
-      <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
-      <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
-      <button class="btn btn-json" id="btn-guias" style="display:none;">📑 Movimientos DICOSE</button>
-      <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
-      <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
-      <button class="btn btn-json" id="btn-pesadas" style="display:none;">⚖️ Pesadas</button>
-      <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
-      <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
-      <button class="btn btn-kmz" id="btn-dibujar-potrero">✏️ Dibujar potrero</button>
-      <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
-      <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
-      <button class="btn btn-json" id="btn-resync-puntos">🔄 Resincronizar mis puntos</button>
-      <button class="btn btn-json" id="btn-infraestructura">🔧 Infraestructura</button>
-      <button class="btn btn-json" id="btn-capin-annoni">🌾 Capín Annoni</button>
-      <button class="btn btn-json" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
-      <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
-      <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
-      <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
-      <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
+      <div id="hmenu-grupos">
+        <div class="hg">
+          <div class="hg-titulo">Consultar</div>
+          <div class="hg-grid">
+            <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
+            <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
+            <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
+            <button class="btn btn-json" id="btn-guias" style="display:none;">📑 Movimientos DICOSE</button>
+            <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
+            <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
+            <button class="btn btn-json" id="btn-pesadas" style="display:none;">⚖️ Pesadas</button>
+            <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
+          </div>
+        </div>
+        <div class="hg">
+          <div class="hg-titulo">Mapa y potreros</div>
+          <div class="hg-grid">
+            <button class="btn btn-json" data-sub="potrero">➕ Agregar potrero ›</button>
+            <button class="btn btn-json" data-sub="puntos">📍 Puntos ›</button>
+            <button class="btn btn-json" data-sub="reportes">📋 Reportes de campo ›</button>
+            <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
+          </div>
+        </div>
+        <div class="hg">
+          <div class="hg-titulo">Exportar y respaldo</div>
+          <div class="hg-grid">
+            <button class="btn btn-json" data-sub="exportar">⬇ Exportar ›</button>
+            <button class="btn btn-json" data-sub="backup">💾 Backup ›</button>
+          </div>
+        </div>
+        <div class="hg">
+          <div class="hg-titulo">Este dispositivo</div>
+          <div class="hg-grid">
+            <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
+            <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
+            <button class="btn btn-json hg-ancho" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
+          </div>
+        </div>
+      </div>
+      <div class="hsub" data-sub-panel="potrero" style="display:none;">
+        <div class="hg-titulo">Agregar potrero</div>
+        <button class="btn btn-kmz" id="btn-importar-kml">⬆ Importar KML/KMZ</button>
+        <button class="btn btn-kmz" id="btn-dibujar-potrero">✏️ Dibujar potrero</button>
+        <button class="btn btn-secundario" data-volver>← Volver</button>
+      </div>
+      <div class="hsub" data-sub-panel="puntos" style="display:none;">
+        <div class="hg-titulo">Puntos</div>
+        <button class="btn btn-json" id="btn-puntos">📍 Aguadas / instalaciones</button>
+        <button class="btn btn-json" id="btn-resync-puntos">🔄 Resincronizar mis puntos</button>
+        <button class="btn btn-secundario" data-volver>← Volver</button>
+      </div>
+      <div class="hsub" data-sub-panel="reportes" style="display:none;">
+        <div class="hg-titulo">Reportes de campo</div>
+        <button class="btn btn-json" id="btn-infraestructura">🔧 Infraestructura</button>
+        <button class="btn btn-json" id="btn-capin-annoni">🌾 Capín Annoni</button>
+        <button class="btn btn-secundario" data-volver>← Volver</button>
+      </div>
+      <div class="hsub" data-sub-panel="exportar" style="display:none;">
+        <div class="hg-titulo">Exportar</div>
+        <button class="btn btn-kmz" id="btn-exportar-kmz">⬇ Exportar KMZ</button>
+        <button class="btn btn-kmz" id="btn-exportar-pdf">⬇ Exportar PDF</button>
+        <button class="btn btn-kmz" id="btn-exportar-pdf-animales">⬇ PDF: Animales por potrero</button>
+        <button class="btn btn-kmz" id="btn-exportar-pdf-historial">⬇ PDF: Historial por potrero</button>
+        <button class="btn btn-kmz" id="btn-exportar-excel">⬇ Exportar Excel</button>
+        <button class="btn btn-secundario" data-volver>← Volver</button>
+      </div>
+      <div class="hsub" data-sub-panel="backup" style="display:none;">
+        <div class="hg-titulo">Backup</div>
+        <button class="btn btn-json" id="btn-exportar-json">⬇ Hacer backup</button>
+        <button class="btn btn-json" id="btn-importar-json">⬆ Importar backup</button>
+        <button class="btn btn-secundario" data-volver>← Volver</button>
+      </div>
 <!-- @pc:end -->
       <input type="file" id="input-json" accept=".json">
       <input type="file" id="input-kml" accept=".kml,.kmz">
@@ -4225,7 +4277,18 @@ function cerrarDetalle(){
 document.getElementById('detalle').addEventListener('click', (e)=>{
   if(e.target.id === 'detalle') cerrarDetalle();
 });
+/* Sub-menus de la caja de la PC (10/10/2026). null = vista de grupos. En la
+   móvil no existen estos elementos y no hace nada. */
+function mostrarSubmenuHerramientas(sub){
+  const grupos = document.getElementById('hmenu-grupos');
+  if(!grupos) return;
+  grupos.style.display = sub ? 'none' : '';
+  document.querySelectorAll('#menu-herramientas .hsub').forEach(p=>{
+    p.style.display = (sub && p.getAttribute('data-sub-panel') === sub) ? '' : 'none';
+  });
+}
 document.getElementById('btn-herramientas').addEventListener('click', ()=>{
+  mostrarSubmenuHerramientas(null);
   document.getElementById('modal-herramientas').style.display = 'flex';
 });
 document.getElementById('herramientas-cerrar').addEventListener('click', ()=>{
@@ -4272,7 +4335,11 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
 });
 document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
-  if(e.target.tagName === 'BUTTON') document.getElementById('modal-herramientas').style.display = 'none';
+  if(e.target.tagName !== 'BUTTON') return;
+  // abrir un sub-menu o volver: la caja queda abierta
+  if(e.target.hasAttribute('data-sub')){ mostrarSubmenuHerramientas(e.target.getAttribute('data-sub')); return; }
+  if(e.target.hasAttribute('data-volver')){ mostrarSubmenuHerramientas(null); return; }
+  document.getElementById('modal-herramientas').style.display = 'none';
 });
 
 /* ======================= FORMULARIOS DE ACCIÓN ======================= */
@@ -5245,17 +5312,8 @@ function construirMD(){
   return md;
 }
 
-document.getElementById('btn-exportar-md').addEventListener('click', ()=>{
-  const md = construirMD();
-  const blob = new Blob([md], {type:'text/markdown'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${ESTABLECIMIENTO}_estado_${new Date().toISOString().slice(0,10)}.md`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('Markdown exportado');
-});
+/* 10/10/2026: el botón "Exportar MD" se sacó de la caja de Herramientas a pedido de
+   Pedro; construirMD() queda porque la usan las pruebas. */
 
 /* ======================= DATOS COMPARTIDOS PARA PDF / EXCEL ======================= */
 function reunirDatosReporte(){

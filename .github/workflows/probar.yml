@@ -152,6 +152,9 @@ jobs:
       - name: "PC: editar y borrar cualquier evento (3/10/2026) -- historial incluso de otros dispositivos, abortos y eventos climaticos, sincronizado"
         run: node tests/probar_editar_borrar_pc.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
+      - name: "PC: caja de Herramientas ordenada por funciones (10/10/2026) -- 4 grupos, 5 sub-menus, sin Exportar MD; movil y Campo sin cambios"
+        run: node tests/probar_herramientas_pc.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
+
       - name: "Muertes de terneros en dos grupos, de temporada y marcados (10/10/2026) -- formulario, Stock total, editar/borrar y voz"
         run: node tests/probar_muerte_terneros_grupo.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
