@@ -572,7 +572,31 @@ que no hubo que tocar código. **Sigue abierto** el resto de la tabla de arriba
 completa con la clave pública). Los datos que llegan de Supabase y de KML/GPX
 se tratan como no confiables: `esc()` al pintar y `limpiarTextoRemoto()` al
 entrar (ver `tests/probar_seguridad_remoto.js`). Backups: `scripts/backup/`
-(el plan de Supabase es gratuito, sin backups automáticos).
+(el plan de Supabase es gratuito, sin backups automáticos; ver la Fase 5 abajo).
+
+**Fase 5 de la auditoría (10/10/2026) — operación y monitoreo:**
+- **Backup** (`scripts/backup/backup_supabase.py`): lee con la clave privada y descubre las tablas
+  desde el OpenAPI de `/rest/v1/` (antes era una lista fija de 9 y `maestros_dicose` y
+  `movimientos_dicose` no estaban). Sigue andando cuando la Fase 4 cierre la lectura anónima. Si el
+  resultado no es OK avisa por ntfy. `restaurar_backup.py` es el simulacro de restauración contra un
+  proyecto de Supabase **de prueba** (se niega a escribir en el real); los pasos están en el README
+  de la carpeta. `probar_backup.py` y `probar_restaurar.py` corren en el CI (`python3`).
+- **Vigilancia** (`vigilar_tareas_sanidad.py`, en `Sanidad\Automatizacion`, fuera del repo): revisa las
+  7 tareas programadas (deshabilitada, sin corridas futuras, último resultado con error, sin correr
+  hace más de lo esperable) y avisa por mail y ntfy; los domingos manda un "todo en orden" corto.
+  El informe semanal de nacimientos había fallado 6 sábados sin que nadie lo supiera.
+- **Keep-alive sin la PC**: `.github/workflows/mantener_activo.yml` hace la consulta diaria desde
+  GitHub; la tarea de la PC queda de segundo respaldo.
+- **Contrato de eventos**: `docs/eventos.md` describe cada `tipo` y su `detalle`. El CI falla si el
+  template emite un tipo que no está ahí (`tests/probar_contrato_eventos.js`, que además valida los
+  eventos reales de compra, venta, traslado, movimiento solo guía y campo ajeno con la app en jsdom).
+  `test_contrato_eventos.py` (en `Ganaderia\Macros & phyton`) pasa esos mismos eventos por las
+  funciones `construir_*` de `pasar_traslados_a_excel.py`.
+- **El PDF "Animales por potrero" de la PC estuvo roto del 12/9 al 10/10**: `e4d8f2f` cambió la forma
+  de `calcularEstadisticasNacimientos()` y el PDF siguió leyendo los campos viejos. Nadie lo notó
+  porque jsdom no carga jsPDF; lo encontró el informe semanal. `tests/probar_pdf_animales.js` lo
+  aprieta con un jsPDF falso. **Lección:** un botón que genera un archivo necesita una prueba que lo
+  apriete, aunque la librería sea externa.
 
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del

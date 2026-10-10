@@ -183,6 +183,15 @@ jobs:
       - name: "Fase 5 de la auditoria (10/10/2026) -- el boton PDF: Animales por potrero (nacimientos por especie) se guarda con y sin conexion"
         run: node tests/probar_pdf_animales.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
+      - name: "Fase 5 de la auditoria (10/10/2026) -- contrato de eventos: docs/eventos.md al dia con el template y los eventos reales cumplen lo que leen los scripts"
+        run: node tests/probar_contrato_eventos.js la-vuelta-pc/index.html maria-laura-pc/index.html
+
+      - name: "Fase 5 de la auditoria (10/10/2026) -- backup de Supabase: tablas descubiertas, clave privada, alerta por ntfy"
+        run: python3 scripts/backup/probar_backup.py
+
+      - name: "Fase 5 de la auditoria (10/10/2026) -- simulacro de restauracion: esquema, carga verificada, se niega a escribir en el proyecto real"
+        run: python3 scripts/backup/probar_restaurar.py
+
   # 9/10/2026 (auditoria, hallazgo 23): antes GitHub Pages publicaba desde la rama en paralelo con
   # las pruebas, y una version con una prueba rota llegaba igual a los celulares (CI fallo 7 de 115
   # veces). Ahora se publica desde aca, y solo si el job `jsdom` paso.
