@@ -5924,11 +5924,16 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', a
   doc.setFontSize(10);
   doc.text(`Animales por potrero — ${rep.fecha}`, 14, 22);
 
-  const nacTxt = nac.fuente==='sin_datos' ? 'N/D' : nac.nacimientosTemporada;
-  const pctTxt = nac.fuente==='sin_datos' ? 'N/D' : (nac.vacas>0 ? nac.pct.toFixed(1)+'%' : '—');
+  /* 10/10/2026: el 12/9 los nacimientos pasaron a calcularse por especie
+     ({bovino, ovino, filasPorCategoria}) y este PDF siguió leyendo los campos viejos
+     (nacimientosTemporada, vacas, pct, filasPorMes): el botón tiraba un error y no
+     bajaba nada. Lo encontró el informe semanal de nacimientos, que lo aprieta solo. */
+  const sinDatos = nac.fuente==='sin_datos';
+  const nacTxt = sinDatos ? 'N/D' : nac.bovino.nacidos;
+  const pctTxt = sinDatos ? 'N/D' : (nac.bovino.madres>0 ? nac.bovino.pct.toFixed(1)+'%' : '—');
   doc.autoTable({
     startY: 28,
-    head: [['Potreros','Hectáreas','Animales','UG totales','Dotación (UG/ha)',`Nacimientos temp. ${nac.anioTemporada}`,'% s/ vacas']],
+    head: [['Potreros','Hectáreas','Animales','UG totales','Dotación (UG/ha)',`Terneros nacidos temp. ${nac.anioTemporada}`,'% s/ vacas']],
     body: [[...rep.resumen, nacTxt, pctTxt]],
     theme: 'grid', headStyles:{fillColor:[92,122,74]}, styles:{fontSize:8}
   });
@@ -5940,11 +5945,11 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', a
     doc.lastAutoTable.finalY += 4;
   }
 
-  if(nac.filasPorMes.length){
+  if(!sinDatos && nac.filasPorCategoria.length){
     doc.autoTable({
       startY: doc.lastAutoTable.finalY + 8,
-      head: [['Año','Ago','Sep','Oct','Nov','Dic','Total']],
-      body: nac.filasPorMes,
+      head: [['Categoría','Ago','Sep','Oct','Nov','Dic','Total']],
+      body: nac.filasPorCategoria,
       theme: 'striped', headStyles:{fillColor:[198,138,59]}, styles:{fontSize:8}
     });
   }
