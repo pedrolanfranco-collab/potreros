@@ -334,6 +334,20 @@ un dispositivo nuevo no calcule distinto que los ya instalados. Test:
 `tests/probar_evento_potrero_desconocido.js`. Pendiente: si un potrero nunca llega a existir en
 un dispositivo, sus eventos esperan para siempre (no debería pasar desde el 13/9).
 
+**Muertes de terneros en dos grupos (10/10/2026, a pedido de Pedro).** "Terneros" es una sola categoría y la
+app no sabe cuándo se marcó un ternero, así que el grupo se **elige al cargar la muerte**: el formulario de
+muerte (y la confirmación de voz en móvil) pide "De temporada (nacido a marcación)" o "Marcado" solo cuando
+la categoría es Terneros, y no deja guardar sin elegir. Viaja como `grupoTernero: 'temporada'|'marcado'` en el
+detalle del evento `muerte` (otras categorías no lo mandan; `grupoTerneroValido()` filtra lo que llega). El
+ajuste inverso de una muerte (`construirAjusteInverso`) lo lleva en `reversar` para que borrar/editar lo
+descuente del grupo correcto. `calcularEstadisticasMuertes()` (dos copias) devuelve `terneros: {temporada,
+marcado, sinClasificar}` sobre la temporada **completa 1/ago–31/jul** (a diferencia del conteo por especie, que
+es solo ago–dic: un marcado muere en cualquier mes); las muertes cargadas antes de esto, y las de
+desaparecidos, figuran "sin clasificar" (en la PC se editan para asignarles el grupo). Esa función ahora
+también descuenta las correcciones `accion:'editar'` (antes solo `'eliminar'`: editar una muerte dejaba la vieja
+contando). La tabla "Ver registro de muertes por categoría" separa "Terneros — de temporada" / "Terneros —
+marcados". Test: `tests/probar_muerte_terneros_grupo.js`.
+
 **Cuidado al escribir un `.select(...)` nuevo contra `eventos_sync`:
 listar explícitamente TODAS las columnas que la función va a leer,
 incluida `potrero`.** Es una columna de la fila (no vive dentro de

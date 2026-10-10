@@ -10,7 +10,7 @@
 // HTML y sin senal Chrome mostraba "sin internet". Ademas la apertura de la
 // app (navegacion a la carpeta) no coincidia con ningun item de la lista, y
 // cada sw.js borraba las caches de las OTRAS apps (comparten origen).
-const CACHE = 'pone-chico-movil-simple-v1.36';
+const CACHE = 'pone-chico-movil-simple-v1.37';
 const PRECACHE_URLS = [".","index.html","manifest.json","icon-48x48.png","icon-72x72.png","icon-96x96.png","icon-144x144.png","icon-192x192.png","icon-512x512.png","https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js","https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js","https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css","https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js","https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"];
 // Prefijo de las caches de ESTA app ("la-vuelta-movil-v", "la-vuelta-movil-simple-v"...).
 // Las 10 apps comparten origen: solo se borran las caches propias de versiones viejas.

@@ -2647,6 +2647,10 @@ function aplicarEventoRemoto(row, potrerosSucios){
   if(d.obs) detalleTxt += ` (${d.obs})`;
   if(d.fin && typeof resumenFin === 'function') detalleTxt += ` [${resumenFin(d.fin)}]`;
   if(d.caravana) detalleTxt += ` — caravana ${d.caravana}`;
+  if(row.tipo==='muerte' && grupoTerneroValido(d.grupoTernero)){
+    origDatosGenerico.grupoTernero = d.grupoTernero;
+    detalleTxt += ` (${textoGrupoTernero(d.grupoTernero)})`;
+  }
 <!-- @pc:start -->
   registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt).origDatos = origDatosGenerico;
 <!-- @pc:end -->
@@ -3109,7 +3113,8 @@ function construirAjusteInverso(h, potreroHost){
     return {tipo:'restar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
   }
   if(h.tipo==='muerte' || h.tipo==='venta'){
-    return {tipo:'sumar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
+    return Object.assign({tipo:'sumar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad},
+      (h.tipo==='muerte' && grupoTerneroValido(e.grupoTernero)) ? {grupoTernero: e.grupoTernero} : {});
   }
   if(h.tipo==='envio_campo_ajeno'){
     // deshacer un envío = un retorno: el potrero recupera, campo ajeno devuelve
@@ -4284,6 +4289,18 @@ function opcionesCategorias(seleccionada){
 // (bovino=Terneros, ovino=Corderos/as, ver calcularEstadisticasNacimientos)
 // y esas dos categorías nunca se usaron en la práctica.
 const CATEGORIAS_CRIA = ['Terneros','Corderos/as'];
+/* 10/10/2026: las muertes de Terneros se dividen en dos grupos, a pedido de Pedro:
+   "de temporada" (del nacimiento a la marcación) y "marcados". La app no sabe
+   cuándo se marcó, así que se elige al cargar la muerte (campo `grupoTernero` del
+   evento 'muerte'). Las muertes anteriores a esto no lo traen: figuran "sin
+   clasificar" (en la PC se pueden editar para asignarles el grupo). */
+function grupoTerneroValido(v){ return (v==='temporada' || v==='marcado') ? v : null; }
+function textoGrupoTernero(g){ return g==='temporada' ? 'de temporada' : g==='marcado' ? 'marcado' : ''; }
+function opcionesGrupoTernero(sel){
+  return `<option value="">Elegí…</option>
+    <option value="temporada" ${sel==='temporada'?'selected':''}>De temporada (nacido a marcación)</option>
+    <option value="marcado" ${sel==='marcado'?'selected':''}>Marcado</option>`;
+}
 function opcionesCategoriasNacimiento(seleccionada){
   return CATEGORIAS_CRIA.map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
 }
@@ -4936,6 +4953,7 @@ function mostrarFormulario(nombre, accion, prefill){
       <div class="form-accion">
         <h3>Registrar muerte en ${esc(nombre)}</h3>
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
+        <div class="form-row" id="f-grupo-fila" style="display:none;"><label>Ternero</label><select id="f-grupo">${opcionesGrupoTernero(prefill?prefill.grupoTernero:undefined)}</select></div>
         <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
         <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
@@ -4946,6 +4964,11 @@ function mostrarFormulario(nombre, accion, prefill){
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
+    const mostrarGrupoTernero = ()=>{
+      document.getElementById('f-grupo-fila').style.display = document.getElementById('f-cat').value==='Terneros' ? '' : 'none';
+    };
+    document.getElementById('f-cat').addEventListener('change', mostrarGrupoTernero);
+    mostrarGrupoTernero();
     document.getElementById('f-confirmar').addEventListener('click', ()=>{
       const cat = document.getElementById('f-cat').value;
       const dueno = document.getElementById('f-dueno').value;
@@ -4953,6 +4976,8 @@ function mostrarFormulario(nombre, accion, prefill){
       const fechaISO = document.getElementById('f-fecha').value;
       const obs = document.getElementById('f-obs').value.trim();
       const caravanaRaw = document.getElementById('f-caravana').value.trim();
+      const grupoTernero = cat==='Terneros' ? grupoTerneroValido(document.getElementById('f-grupo').value) : null;
+      if(cat==='Terneros' && !grupoTernero){ toast('Elegí si el ternero es de temporada o marcado'); return; }
       if(caravanaRaw && !/^\d{8,}$/.test(caravanaRaw)){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
       const caravana = caravanaRaw || null;
       const a = estado.potreros[nombre].animales;
@@ -4966,8 +4991,9 @@ function mostrarFormulario(nombre, accion, prefill){
       a[key] -= cant;
       registrarCambioOcupacion(nombre, totalAntes, fecha);
       const caravanaTxt = caravana ? ` — caravana ${caravana}` : '';
-      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}${caravanaTxt}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana, _fechaISO: fechaISO}, undefined, fecha);
-      enviarEvento('muerte', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana}, fecha);
+      const grupoTxt = grupoTernero ? ` (${textoGrupoTernero(grupoTernero)})` : '';
+      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat}${grupoTxt}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}${caravanaTxt}`, Object.assign({potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana, _fechaISO: fechaISO}, grupoTernero ? {grupoTernero} : {}), undefined, fecha);
+      enviarEvento('muerte', nombre, Object.assign({categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana}, grupoTernero ? {grupoTernero} : {}), fecha);
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
       toast(`Muerte registrada en ${nombre}`);
     });
@@ -5578,6 +5604,18 @@ async function calcularEstadisticasMuertes(){
   // mismo mapeo CATEGORIA_ESPECIE que opcionesCategorias()/Stock total.
   const porMesEspecie = {bovino:{}, ovino:{}, equino:{}};
   const muertesTemporadaEsp = {bovino:0, ovino:0, equino:0};
+  // 10/10/2026: muertes de Terneros en dos grupos. A diferencia del conteo por
+  // especie (solo ago-dic), un ternero marcado puede morir en cualquier mes, asi
+  // que esto cuenta la temporada completa: 1/ago del anio hasta 31/jul siguiente.
+  const terneros = {temporada:0, marcado:0, sinClasificar:0};
+  const acumularTerneros = (fc, delta, categoria, grupo)=>{
+    if(categoria!=='Terneros' || !fc || typeof fc !== 'string') return;
+    const partes = fc.split('/');
+    if(partes.length!==3) return;
+    const m = parseInt(partes[1],10), y = parseInt(partes[2],10);
+    if(!m || !y || (m>=8 ? y : y-1) !== anioTemporada) return;
+    terneros[grupoTerneroValido(grupo) || 'sinClasificar'] += delta;
+  };
   const acumularMes = (fc, delta, especie)=>{
     if(!especie || !porMesEspecie[especie] || !fc || typeof fc !== 'string') return;
     const partes = fc.split('/');
@@ -5592,8 +5630,12 @@ async function calcularEstadisticasMuertes(){
     const d = ev.detalle || {};
     if(ev.tipo==='muerte' || ev.tipo==='muerte_desaparecido'){
       acumularMes(ev.fecha_cliente, d.cantidad||0, CATEGORIA_ESPECIE[d.categoria]);
-    } else if(ev.tipo==='correccion' && d.accion==='eliminar' && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido') && d.reversar){
+      acumularTerneros(ev.fecha_cliente, d.cantidad||0, d.categoria, d.grupoTernero);
+    } else if(ev.tipo==='correccion' && (d.accion==='eliminar' || d.accion==='editar') && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido') && d.reversar){
+      // 10/10/2026: tambien 'editar' (la PC la manda desde el 3/10): reversa igual
+      // que borrar, y la muerte nueva entra aparte; antes la vieja seguia contando.
       acumularMes(d.fechaOriginal || ev.fecha_cliente, -((d.reversar.cantidad)||0), CATEGORIA_ESPECIE[d.reversar.categoria]);
+      acumularTerneros(d.fechaOriginal || ev.fecha_cliente, -((d.reversar.cantidad)||0), d.reversar.categoria, d.reversar.grupoTernero);
     } else if(ev.tipo==='correccion' && d.accion==='reclasificar' && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido')){
       // 19/9/2026: reclasificación sin `reversar` -- no fue una muerte real
       // (ej. un ajuste de conteo cargado como Muerte) pero el stock que
@@ -5602,6 +5644,7 @@ async function calcularEstadisticasMuertes(){
       // Requiere que el evento manual de corrección incluya `categoria` --
       // si no la trae, se descarta en silencio (no hay a qué especie restar).
       acumularMes(d.fechaOriginal || ev.fecha_cliente, -(d.cantidad||0), CATEGORIA_ESPECIE[d.categoria]);
+      acumularTerneros(d.fechaOriginal || ev.fecha_cliente, -(d.cantidad||0), d.categoria, d.grupoTernero);
     }
   });
 
@@ -5615,7 +5658,7 @@ async function calcularEstadisticasMuertes(){
     });
   });
 
-  return {anioTemporada, fuente, filasPorMes,
+  return {anioTemporada, fuente, filasPorMes, terneros,
     bovino: muertesTemporadaEsp.bovino, ovino: muertesTemporadaEsp.ovino, equino: muertesTemporadaEsp.equino};
 }
 
@@ -5640,6 +5683,13 @@ function renderMuertesTemporadaHTML(muertes){
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${muertes.bovino}</strong> Bovinos</p>`;
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${muertes.ovino}</strong> Ovinos</p>`;
   html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${muertes.equino}</strong> Equinos</p>`;
+  const tt = muertes.terneros;
+  if(tt && (tt.temporada || tt.marcado || tt.sinClasificar)){
+    html += `<p style="font-size:13px;margin:0 0 2px;"><strong>Terneros</strong> <span style="color:var(--texto-suave);font-size:12px;">(temporada completa: ago ${muertes.anioTemporada} a jul ${muertes.anioTemporada+1})</span></p>`;
+    html += `<p style="font-size:13px;margin:0 0 2px 12px;"><strong>${tt.temporada}</strong> de temporada (nacido a marcación)</p>`;
+    html += `<p style="font-size:13px;margin:0 0 ${tt.sinClasificar?2:8}px 12px;"><strong>${tt.marcado}</strong> marcados</p>`;
+    if(tt.sinClasificar) html += `<p style="font-size:13px;margin:0 0 8px 12px;color:var(--texto-suave);"><strong>${tt.sinClasificar}</strong> sin clasificar <span style="font-size:12px;">(cargados antes de esta división)</span></p>`;
+  }
   if(muertes.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
   html += tablaMesesHTML(muertes.filasPorMes, 'Especie / Año');
   return html;
@@ -6871,8 +6921,10 @@ function renderTablaMuertesFilas(filtroDueno){
   muertesUltimosEventos.forEach(ev=>{
     const d = ev.detalle || {};
     if(filtroDueno && (d.dueno||'') !== filtroDueno) return;
-    const clave = `${d.categoria||'(sin categoría)'}||${d.dueno||''}`;
-    filas[clave] = filas[clave] || {categoria: d.categoria||'(sin categoría)', dueno: d.dueno||'', cantidad: 0, ultima: null};
+    const grupoT = d.categoria==='Terneros' ? grupoTerneroValido(d.grupoTernero) : null;
+    const catTxt = (d.categoria||'(sin categoría)') + (grupoT ? ` — ${grupoT==='temporada' ? 'de temporada' : 'marcados'}` : '');
+    const clave = `${catTxt}||${d.dueno||''}`;
+    filas[clave] = filas[clave] || {categoria: catTxt, dueno: d.dueno||'', cantidad: 0, ultima: null};
     filas[clave].cantidad += d.cantidad||0;
     if(!filas[clave].ultima || parseFechaDMY(ev.fecha_cliente) > parseFechaDMY(filas[clave].ultima)) filas[clave].ultima = ev.fecha_cliente;
   });
@@ -9759,6 +9811,18 @@ async function calcularEstadisticasMuertes(){
   // mismo mapeo CATEGORIA_ESPECIE que opcionesCategorias()/Stock total.
   const porMesEspecie = {bovino:{}, ovino:{}, equino:{}};
   const muertesTemporadaEsp = {bovino:0, ovino:0, equino:0};
+  // 10/10/2026: muertes de Terneros en dos grupos. A diferencia del conteo por
+  // especie (solo ago-dic), un ternero marcado puede morir en cualquier mes, asi
+  // que esto cuenta la temporada completa: 1/ago del anio hasta 31/jul siguiente.
+  const terneros = {temporada:0, marcado:0, sinClasificar:0};
+  const acumularTerneros = (fc, delta, categoria, grupo)=>{
+    if(categoria!=='Terneros' || !fc || typeof fc !== 'string') return;
+    const partes = fc.split('/');
+    if(partes.length!==3) return;
+    const m = parseInt(partes[1],10), y = parseInt(partes[2],10);
+    if(!m || !y || (m>=8 ? y : y-1) !== anioTemporada) return;
+    terneros[grupoTerneroValido(grupo) || 'sinClasificar'] += delta;
+  };
   const acumularMes = (fc, delta, especie)=>{
     if(!especie || !porMesEspecie[especie] || !fc || typeof fc !== 'string') return;
     const partes = fc.split('/');
@@ -9773,8 +9837,12 @@ async function calcularEstadisticasMuertes(){
     const d = ev.detalle || {};
     if(ev.tipo==='muerte' || ev.tipo==='muerte_desaparecido'){
       acumularMes(ev.fecha_cliente, d.cantidad||0, CATEGORIA_ESPECIE[d.categoria]);
-    } else if(ev.tipo==='correccion' && d.accion==='eliminar' && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido') && d.reversar){
+      acumularTerneros(ev.fecha_cliente, d.cantidad||0, d.categoria, d.grupoTernero);
+    } else if(ev.tipo==='correccion' && (d.accion==='eliminar' || d.accion==='editar') && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido') && d.reversar){
+      // 10/10/2026: tambien 'editar' (la PC la manda desde el 3/10): reversa igual
+      // que borrar, y la muerte nueva entra aparte; antes la vieja seguia contando.
       acumularMes(d.fechaOriginal || ev.fecha_cliente, -((d.reversar.cantidad)||0), CATEGORIA_ESPECIE[d.reversar.categoria]);
+      acumularTerneros(d.fechaOriginal || ev.fecha_cliente, -((d.reversar.cantidad)||0), d.reversar.categoria, d.reversar.grupoTernero);
     } else if(ev.tipo==='correccion' && d.accion==='reclasificar' && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido')){
       // 19/9/2026: reclasificación sin `reversar` -- no fue una muerte real
       // (ej. un ajuste de conteo cargado como Muerte) pero el stock que
@@ -9783,6 +9851,7 @@ async function calcularEstadisticasMuertes(){
       // Requiere que el evento manual de corrección incluya `categoria` --
       // si no la trae, se descarta en silencio (no hay a qué especie restar).
       acumularMes(d.fechaOriginal || ev.fecha_cliente, -(d.cantidad||0), CATEGORIA_ESPECIE[d.categoria]);
+      acumularTerneros(d.fechaOriginal || ev.fecha_cliente, -(d.cantidad||0), d.categoria, d.grupoTernero);
     }
   });
 
@@ -9796,7 +9865,7 @@ async function calcularEstadisticasMuertes(){
     });
   });
 
-  return {anioTemporada, fuente, filasPorMes,
+  return {anioTemporada, fuente, filasPorMes, terneros,
     bovino: muertesTemporadaEsp.bovino, ovino: muertesTemporadaEsp.ovino, equino: muertesTemporadaEsp.equino};
 }
 /* Nacimientos discrimina por especie (ver calcularEstadisticasNacimientos) --
@@ -9854,6 +9923,13 @@ function renderMuertesTemporadaHTML(muertes){
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${muertes.bovino}</strong> Bovinos</p>`;
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${muertes.ovino}</strong> Ovinos</p>`;
   html += `<p style="font-size:13px;margin:0 0 8px;"><strong>${muertes.equino}</strong> Equinos</p>`;
+  const tt = muertes.terneros;
+  if(tt && (tt.temporada || tt.marcado || tt.sinClasificar)){
+    html += `<p style="font-size:13px;margin:0 0 2px;"><strong>Terneros</strong> <span style="color:var(--texto-suave);font-size:12px;">(temporada completa: ago ${muertes.anioTemporada} a jul ${muertes.anioTemporada+1})</span></p>`;
+    html += `<p style="font-size:13px;margin:0 0 2px 12px;"><strong>${tt.temporada}</strong> de temporada (nacido a marcación)</p>`;
+    html += `<p style="font-size:13px;margin:0 0 ${tt.sinClasificar?2:8}px 12px;"><strong>${tt.marcado}</strong> marcados</p>`;
+    if(tt.sinClasificar) html += `<p style="font-size:13px;margin:0 0 8px 12px;color:var(--texto-suave);"><strong>${tt.sinClasificar}</strong> sin clasificar <span style="font-size:12px;">(cargados antes de esta división)</span></p>`;
+  }
   if(muertes.fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
   html += tablaMesesHTML(muertes.filasPorMes, 'Especie / Año');
   return html;
@@ -10130,6 +10206,7 @@ function renderInterpretacionVoz(datos){
         </select>
       </div>
       <div class="form-row"><label>Categoría</label><select id="vz-cat">${opcionesCategorias(datos.categoria)}</select></div>
+      <div class="form-row" id="vz-grupo-fila" style="display:none;"><label>Ternero (solo muerte)</label><select id="vz-grupo">${opcionesGrupoTernero()}</select></div>
       <!-- @duenoVoz:start -->
       <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="vz-dueno">${opcionesDuenos(datos.dueno)}</select></div>
       <!-- @duenoVoz:end -->
@@ -10143,6 +10220,13 @@ function renderInterpretacionVoz(datos){
       </div>
     </div>
   `;
+  const mostrarGrupoVoz = ()=>{
+    const ver = document.getElementById('vz-accion').value==='muerte' && document.getElementById('vz-cat').value==='Terneros';
+    document.getElementById('vz-grupo-fila').style.display = ver ? '' : 'none';
+  };
+  document.getElementById('vz-accion').addEventListener('change', mostrarGrupoVoz);
+  document.getElementById('vz-cat').addEventListener('change', mostrarGrupoVoz);
+  mostrarGrupoVoz();
   document.getElementById('vz-confirmar').addEventListener('click', confirmarAccionVoz);
   document.getElementById('vz-descartar').addEventListener('click', ()=>{ cont.innerHTML=''; });
 }
@@ -10205,11 +10289,13 @@ function confirmarAccionVoz(){
     const a = estado.potreros[objetivo].animales;
     const disponibles = a[key] || 0;
     if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${objetivo}`); return; }
+    const grupoTernero = cat==='Terneros' ? grupoTerneroValido(document.getElementById('vz-grupo').value) : null;
+    if(cat==='Terneros' && !grupoTernero){ toast('Elegí si el ternero es de temporada o marcado'); return; }
     const totalAntes = totalPotrero(objetivo);
     a[key] -= cant;
     registrarCambioOcupacion(objetivo, totalAntes);
-    registrarHistorial(objetivo, 'muerte', `Muerte: -${cant} ${cat}${dueno?' de '+dueno:''} (voz)`, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
-    enviarEvento('muerte', objetivo, {categoria: cat, dueno, cantidad: cant});
+    registrarHistorial(objetivo, 'muerte', `Muerte: -${cant} ${cat}${grupoTernero?' ('+textoGrupoTernero(grupoTernero)+')':''}${dueno?' de '+dueno:''} (voz)`, Object.assign({potrero: objetivo, categoria: cat, cantidad: cant, dueno}, grupoTernero ? {grupoTernero} : {}));
+    enviarEvento('muerte', objetivo, Object.assign({categoria: cat, dueno, cantidad: cant}, grupoTernero ? {grupoTernero} : {}));
     guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo); publicarStockPotreros([objetivo]);
     toast(`Muerte registrada en ${objetivo}`);
   } else if(accion==='compra' || accion==='venta'){
