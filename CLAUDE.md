@@ -623,3 +623,15 @@ the network directly, so there's no risk of serving stale hacienda data. On
 `controllerchange` the page reloads itself, so once a new `sw.js` version
 deploys, an already-installed PWA picks it up without the user manually
 clearing site data.
+
+## Grafo del código (graphify)
+
+`graphify-out/` (ignorado por git) tiene un grafo del repo: scripts, tests y docs
+(no cubre bien el JS inline de `template/potreros.template.html`; para eso, grep).
+Antes de explorar a ciegas, consultarlo — gasta menos tokens que leer archivos:
+
+- `graphify query "<pregunta>"` · `graphify explain "<nodo>"` · `graphify path "A" "B"`
+- `graphify affected "<nodo>"` para ver qué rompe un cambio
+- `graphify god-nodes` para los hubs; `graphify-out/GRAPH_REPORT.md` para el mapa general
+- Después de cambiar código: `graphify update .` (local, ~7 s, sin costo de modelo)
+- Si el reporte dice un commit viejo respecto de `git rev-parse HEAD`, está desactualizado

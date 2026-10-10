@@ -27,3 +27,6 @@ scripts/snig/*.xlsx
 
 # Config local de Claude Code (permisos y rutas de esta PC)
 .claude/
+
+# Grafo de graphify (se regenera con `graphify update .`)
+graphify-out/
