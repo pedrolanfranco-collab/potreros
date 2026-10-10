@@ -166,7 +166,9 @@ theme-color).
   acción y campos de formulario de 48–56 px con letra de 16 px, Muerte/Desaparecido al final y separados,
   historial plegado en un `<details>` (se acuerda abierto mientras no cambie de potrero) y el formulario de una
   acción se desplaza solo a la vista, y el botón "Herramientas" del pie es más largo (ocupa lo que deja el estado de
-  sincronización, que puede partirse en 2 renglones). La PC y la móvil completa no cambian. Test:
+  sincronización, que puede partirse en 2 renglones). Contraste al sol (10/10/2026): `--ocre` pasa a `#8f5f12` (blanco/ocre 3,0 a 5,5:1), grises de ayuda a 6:1,
+  bordes de 2 px, etiquetas del mapa con contorno blanco y un interruptor "☀ Modo sol" en Herramientas
+  (`body.modo-sol`, ~7:1, se acuerda en `<ESTABLECIMIENTO>_modo_sol`). La PC y la móvil completa no cambian. Test:
   `tests/probar_campo_visualizacion.js`.
 - **móvil**: has GPS location + voice input for logging movements
   (`Web Speech API`, no external AI). No PDF/Excel/coefficient editor. Has two

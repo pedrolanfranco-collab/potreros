@@ -494,6 +494,29 @@
   #estado-compacto{flex:0 1 auto;max-width:38%;}
   #estado-compacto div{white-space:normal;}
   .btn-herramientas{flex:1;font-size:17px;padding:16px 18px;}
+  /* 10/10/2026 contraste al sol (Campo): ocre blanco/ocre pasa de 3.0:1 a 5.5:1, los grises de ayuda
+     de 3.1-3.8:1 a 6:1, bordes de 2 px (el sol lava primero los finos) y etiquetas del mapa con contorno. */
+  :root{--ocre:#8f5f12;--texto-suave:#4f4938;--linea:#b9ae88;}
+  [style*="color:#8a8465"]{color:#5a5340 !important;}
+  .potrero-card{border-width:2px;}
+  .form-accion{border-width:2px;}
+  .form-row select, .form-row input{border-width:2px;border-color:#8a8060;}
+  .btn-secundario{border:2px solid #8a8060;}
+  #menu-herramientas .btn-json{border:2px solid #8a8060;}
+  .badge-total.vacio{color:#4f4938;}
+  .label-potrero, .label-potrero *{-webkit-text-stroke:3px #fff;paint-order:stroke fill;}
+  /* Modo sol: interruptor en Herramientas, todo a ~7:1 (texto casi negro, fondos blancos, bordes oscuros) */
+  body.modo-sol{--texto:#000;--texto-suave:#1f1b12;--linea:#4a4433;--ocre:#6e4a0c;--verde-campo:#2b4a1e;--rojo-hacienda:#7d2012;--crema:#fff;--crema-alta:#fff;}
+  body.modo-sol .btn-nacimiento{background:#1f4566;}
+  body.modo-sol .acciones [data-accion="desaparecido"]{background:#4e321a;}
+  body.modo-sol .potrero-card, body.modo-sol .form-accion, body.modo-sol .hist-item{border-color:#1f1b12;background:#fff;}
+  body.modo-sol .ocupacion-ocupado{background:#fff;color:#000;border:2px solid #2b4a1e;}
+  body.modo-sol .ocupacion-descanso, body.modo-sol .ocupacion-sin-datos{background:#fff;color:#000;border:2px solid #4a4433;}
+  body.modo-sol .potrero-card .mini-cats span{background:#fff;border-color:#000;color:#000;}
+  body.modo-sol .potrero-card .badge-total, body.modo-sol .potrero-card .nombre{color:#000;}
+  body.modo-sol [style*="color:#8a8465"]{color:#1f1b12 !important;}
+  body.modo-sol .btn-secundario, body.modo-sol #menu-herramientas .btn-json{border-color:#1f1b12;color:#000;}
+  body.modo-sol .form-row select, body.modo-sol .form-row input{border-color:#1f1b12;}
 <!-- @simple:end -->
 </style>
 </head>
@@ -601,6 +624,9 @@
       <button class="btn btn-json" id="btn-resync-puntos" style="display:none;">🔄 Resincronizar mis puntos</button>
       <button class="btn btn-json" id="btn-infraestructura">🔧 Infraestructura</button>
       <button class="btn btn-json" id="btn-capin-annoni">🌾 Capín Annoni</button>
+<!-- @simple:start -->
+      <button class="btn btn-json" id="btn-modo-sol">☀ Modo sol: NO</button>
+<!-- @simple:end -->
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
 <!-- @movil:end -->
 <!-- @pc:start -->
@@ -2802,7 +2828,16 @@ async function sincronizar(mostrarToast){
 function actualizarEstadoSync(estadoTexto){
   const el = document.getElementById('estado-sync');
   if(!el) return;
-  if(estadoTexto==='sincronizando'){ el.textContent = '🔄 Sincronizando...'; el.style.color = '#8a8465'; return; }
+  if(estadoTexto==='sincronizando'){
+    el.textContent = '🔄 Sincronizando...';
+// @completo:start
+    el.style.color = '#8a8465';
+// @completo:end
+// @simple:start
+    el.style.color = '#5a5340';
+// @simple:end
+    return;
+  }
   const pendientes = (estado.colaSync||[]).length;
   if(pendientes>0){
     el.textContent = `⏳ ${pendientes} movimiento${pendientes===1?'':'s'} sin sincronizar`;
@@ -2812,7 +2847,12 @@ function actualizarEstadoSync(estadoTexto){
     el.style.color = '#3f5a2c';
   } else {
     el.textContent = '⚪ Todavía no sincronizado';
+// @completo:start
     el.style.color = '#8a8465';
+// @completo:end
+// @simple:start
+    el.style.color = '#5a5340';
+// @simple:end
   }
 }
 
@@ -4387,6 +4427,22 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
 });
+// @simple:start
+/* Modo sol (10/10/2026, Campo): lleva los colores a ~7:1 (ver CSS "body.modo-sol"). Se acuerda por dispositivo. */
+const MODO_SOL_KEY = ESTABLECIMIENTO + '_modo_sol';
+function aplicarModoSol(on){
+  document.body.classList.toggle('modo-sol', !!on);
+  const b = document.getElementById('btn-modo-sol');
+  if(b) b.textContent = '☀ Modo sol: ' + (on ? 'SÍ' : 'NO');
+}
+try{ aplicarModoSol(localStorage.getItem(MODO_SOL_KEY) === '1'); }catch(e){}
+document.getElementById('btn-modo-sol').addEventListener('click', ()=>{
+  const on = !document.body.classList.contains('modo-sol');
+  aplicarModoSol(on);
+  try{ localStorage.setItem(MODO_SOL_KEY, on ? '1' : '0'); }catch(e){}
+  toast(on ? 'Modo sol activado' : 'Modo sol desactivado');
+});
+// @simple:end
 document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
   if(e.target.tagName !== 'BUTTON') return;
   // abrir un sub-menu o volver: la caja queda abierta

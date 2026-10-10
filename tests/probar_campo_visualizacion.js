@@ -112,6 +112,29 @@ async function probarCampo(archivo){
   await dormir(80);
   chequear('al abrir una acción el formulario se desplaza a la vista', llamadas > antes, 'llamadas ' + llamadas);
   chequear('el orden: Muerte y Desaparecido van al final (estilos)', /\[data-accion="muerte"\]\{order:5;/.test(estilos(win)) && /\[data-accion="desaparecido"\]\{order:6;/.test(estilos(win)));
+
+  // --- contraste al sol (10/10/2026): colores nuevos + "Modo sol"
+  const css = estilos(win);
+  const contraste = (a, b) => {
+    const lum = (h) => { const v = [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16) / 255)
+      .map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+    const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05);
+  };
+  const ocre = (css.match(/:root\{--ocre:(#[0-9a-f]{6});/i) || [])[1];
+  chequear('el ocre de Campo da al menos 4.5:1 con texto blanco', !!ocre && contraste('#ffffff', ocre) >= 4.5, ocre);
+  const suave = (css.match(/--texto-suave:(#[0-9a-f]{6});--linea/i) || [])[1];
+  chequear('el gris de ayuda da al menos 4.5:1 sobre el beige del pie', !!suave && contraste(suave, '#efe7cf') >= 4.5, suave);
+  chequear('las etiquetas del mapa llevan contorno blanco', /label-potrero[^{]*\{-webkit-text-stroke:3px #fff;/.test(css));
+  const btn = doc.getElementById('btn-modo-sol');
+  chequear('Herramientas tiene el interruptor "Modo sol"', !!btn && /Modo sol: NO/.test(btn.textContent));
+  click(win, btn);
+  chequear('al activarlo el cuerpo lleva la clase y queda guardado', doc.body.classList.contains('modo-sol')
+    && Object.keys(win.localStorage).some(k => /_modo_sol$/.test(k) && win.localStorage.getItem(k) === '1') && /Modo sol: SÍ/.test(btn.textContent));
+  const solOscuro = (css.match(/body\.modo-sol\{--texto:#000;--texto-suave:(#[0-9a-f]{6});/i) || [])[1];
+  chequear('en modo sol el texto de ayuda da al menos 7:1 sobre blanco', !!solOscuro && contraste(solOscuro, '#ffffff') >= 7, solOscuro);
+  click(win, btn);
+  chequear('al desactivarlo vuelve al aspecto normal', !doc.body.classList.contains('modo-sol') && /Modo sol: NO/.test(btn.textContent));
+
 }
 
 async function probarSinCambios(archivo, etiqueta){
@@ -120,6 +143,7 @@ async function probarSinCambios(archivo, etiqueta){
   chequear(etiqueta + ' carga sin errores', errores.length === 0, errores.join(' | '));
   if(errores.length) return;
   const doc = win.document;
+  chequear(etiqueta + ' no tiene "Modo sol"', !doc.getElementById('btn-modo-sol') && !/modo-sol/.test(estilos(win)));
   chequear(etiqueta + ' conserva su mapa y sin reglas de Campo', !/#map\{height:45vh;\}/.test(estilos(win)) && !/total-grande/.test(doc.documentElement.outerHTML.replace(/<style[\s\S]*?<\/style>/g, '')));
   const geo = win.__geo().map(g => g.nombre);
   if(!geo.length) return;
