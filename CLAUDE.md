@@ -504,15 +504,31 @@ no implícito.
 | Tabla | SELECT | INSERT | UPDATE | DELETE |
 |---|---|---|---|---|
 | `eventos_sync` | ✅ | ✅ | ❌ | ❌ *(desde el 30/9/2026: dos políticas, `eventos_sync_select` y `eventos_sync_insert`, solo para `anon`; antes una sola "ALL". Es un registro de solo-agregar: "borrar"/"editar" un movimiento inserta un evento `correccion`, nunca hace DELETE/UPDATE)* |
-| `productos_catalogo` | ✅ | ✅ | ❌ | ✅ |
+| `productos_catalogo` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2 de la auditoría: `anon` solo lee; el catálogo lo escribe `actualizar_sanidad_supabase.py` con la clave privada)* |
 | `sanidad_carga` (La Vuelta) | ✅ | ✅ | ✅ | ✅ *(7/10/2026: solo filas con `importado_en` vacío)* |
 | `sanidad_carga_maria_laura` | ✅ | ✅ | ✅ | ✅ *(7/10/2026)* |
 | `sanidad_carga_pone_chico` | ✅ | ✅ | ✅ | ✅ *(7/10/2026)* |
-| `sanidad_ultimos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
-| `sanidad_proximos` | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL")* |
+| `sanidad_ultimos` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2: `anon` solo lee; la escribe `actualizar_sanidad_supabase.py` con la clave privada)* |
+| `sanidad_proximos` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2: `anon` solo lee; la escribe `actualizar_sanidad_supabase.py` con la clave privada)* |
+| `animales_caravana` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2: `anon` solo lee; antes tenía una política "ALL". La escribe `publicar_animales.py` con la clave privada. Sigue legible con la llave pública hasta la Fase 4)* |
 | `stock_potreros` (16/9/2026) | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL", igual criterio que `eventos_sync`)* |
 | `maestros_dicose` (9/10/2026) | ✅ | ✅ | ❌ | ❌ *(dos políticas para `anon`: SELECT e INSERT, sin UPDATE ni DELETE; catálogos de compradores / comisionistas / clientes y proveedores. La app agrega con `upsert` + `ignoreDuplicates` (ON CONFLICT DO NOTHING). Actualizar o desactivar una entrada lo hace solo la clave privada)* |
 | `movimientos_dicose` (9/10/2026) | ❌ | ❌ | ❌ | ❌ *(`anon` sin ningún permiso: ni SELECT, INSERT ni UPDATE; lleva importes, descuentos y DICOSE de terceros. La lee y la llena solo el script de la PC con la clave privada. La vista `movimientos_dicose_vigentes` es `security_invoker = true`)* |
+
+**Fase 2 de la auditoría (10/10/2026) — carencia protegida.** El catálogo de productos y el padrón de
+caravanas deciden si un animal figura apto para faena, y con la llave pública (que está en cada app y
+en este repo público) cualquiera podía insertarlos o borrarlos. `scripts/seguridad/fase2_carencia.sql`
+(transaccional, guarda las políticas viejas en `auditoria_politicas_antes_fase2`; se deshace con
+`fase2_carencia_deshacer.sql`) dejó a `anon` solo con SELECT en `productos_catalogo`, `animales_caravana`,
+`sanidad_ultimos` y `sanidad_proximos`, le sacó los permisos de tabla de escritura (un intento ahora da
+401 `permission denied`, no un 200 vacío) y fijó `creado_en` de `eventos_sync` con un trigger
+(`eventos_sync_fijar_creado_en`; `service_role` exceptuado). Antes del SQL se cambiaron los scripts de la
+PC que escriben ahí para que usen la clave privada (`SUPABASE_SECRET_KEY` o `~/.potreros/.env`, fuera del
+repo y de OneDrive): `publicar_animales.py` y `actualizar_sanidad_supabase.py`. Verificación:
+`python scripts/seguridad/verificar_fase2.py` (usa filtros que no coinciden con ninguna fila: no escribe
+nada real). Un evento insertado como `anon` sigue entrando y se guarda con la hora del servidor aunque
+pida otra. Quedan abiertas a `anon`, a propósito hasta la Fase 4 (clave del campo), las tablas que las
+apps escriben: `eventos_sync`, `sanidad_carga*`, `stock_potreros`, `maestros_dicose`.
 
 **`stock_potreros`** (16/9/2026): foto del stock actual por
 `establecimiento+potrero+categoria+dueño` (clave `establecimiento,potrero,
