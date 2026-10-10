@@ -19,7 +19,46 @@ from urllib import request, error
 CARPETA = r"C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Sanidad"
 LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "actualizar_sanidad_supabase.log")
 SUPA_URL = "https://skkknfjpwcstefcroqjt.supabase.co"
-SUPA_KEY = "sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK"
+
+# 10/10/2026 (auditoria, Fase 2): la llave publica de las apps YA NO puede escribir en productos_catalogo, sanidad_ultimos y sanidad_proximos
+# -- esos datos deciden si un animal esta en carencia, y con la llave publica (que esta en el repo)
+# cualquiera podia cambiarlos. Para ESCRIBIR hace falta la clave privada de Supabase (secret /
+# service_role), que sale de la variable SUPABASE_SECRET_KEY o del archivo .potreros/.env de la
+# carpeta del usuario (una linea SUPABASE_SECRET_KEY=...), fuera del repo y de OneDrive. Nunca se
+# imprime ni se loguea.
+VARIABLE_CLAVE = "SUPABASE_SECRET_KEY"
+ARCHIVO_ENV = os.environ.get("POTREROS_ENV") or os.path.join(os.path.expanduser("~"), ".potreros", ".env")
+
+
+def _clave_privada():
+    """(clave, problema): la clave privada, o (None, por que no hay). Rechaza la clave publica."""
+    clave = (os.environ.get(VARIABLE_CLAVE) or "").strip().strip('"').strip("'")
+    if not clave and os.path.exists(ARCHIVO_ENV):
+        try:
+            with open(ARCHIVO_ENV, encoding="utf-8-sig") as fh:
+                for linea in fh:
+                    linea = linea.strip()
+                    if linea and not linea.startswith("#") and "=" in linea:
+                        k, v = linea.split("=", 1)
+                        if k.strip().replace("export ", "") == VARIABLE_CLAVE:
+                            clave = v.strip().strip('"').strip("'")
+                            break
+        except OSError as e:
+            return None, "no se pudo leer %s: %s" % (ARCHIVO_ENV, e)
+    if not clave:
+        return None, "no hay clave privada de Supabase: poner %s=... en %s" % (VARIABLE_CLAVE, ARCHIVO_ENV)
+    if clave.startswith("sb_publishable_"):
+        return None, "esa es la clave PUBLICA (la de las apps): hace falta la secret / service_role"
+    if clave.startswith("eyJ"):                      # formato viejo (JWT): el rol va en el payload
+        try:
+            import base64
+            carga = clave.split(".")[1]
+            rol = json.loads(base64.urlsafe_b64decode(carga + "=" * (-len(carga) % 4))).get("role")
+        except Exception:
+            rol = None
+        if rol != "service_role":
+            return None, "esa clave JWT tiene rol '%s', no service_role: hace falta la clave privada" % rol
+    return clave, ""
 
 
 def log(linea):
@@ -169,10 +208,13 @@ def leer_catalogo_productos(ruta):
 
 
 def rest(metodo, tabla, query="", body=None, extra_headers=None):
+    clave, problema = _clave_privada()
+    if not clave:
+        raise RuntimeError(problema)
     url = f"{SUPA_URL}/rest/v1/{tabla}{query}"
     headers = {
-        "apikey": SUPA_KEY,
-        "Authorization": f"Bearer {SUPA_KEY}",
+        "apikey": clave,
+        "Authorization": f"Bearer {clave}",
         "Content-Type": "application/json",
     }
     if extra_headers:
@@ -242,6 +284,10 @@ def reemplazar_catalogo(productos):
 
 if __name__ == "__main__":
     log("--- corrida iniciada ---")
+    _clave, _problema = _clave_privada()
+    if not _clave:
+        log(f"ERROR: {_problema}. No se sube nada.")
+        raise SystemExit(1)
     for nombre_archivo, establecimiento, tabla in ARCHIVOS:
         ruta = f"{CARPETA}\\{nombre_archivo}"
         try:
