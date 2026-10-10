@@ -1,0 +1,44 @@
+# Mantiene activo el proyecto de Supabase (plan gratis: se pausa solo tras 7 dias sin actividad).
+#
+# Hasta el 10/10/2026 esto lo hacia solo la tarea programada "Potreros - Mantener Supabase activo"
+# de la PC de Pedro: con la PC apagada o de viaje mas de una semana, el proyecto se pausaba y las
+# apps quedaban sin sincronizar (auditoria de potreros, hallazgo 31, Fase 5). Este workflow hace la
+# misma consulta minima desde GitHub, sin depender de ninguna PC. La tarea de la PC sigue como
+# segundo respaldo.
+#
+# Usa la llave PUBLICA (la misma que ya esta en cada app y en este repo), asi que no necesita
+# ningun secreto. Si Supabase no contesta 200, el workflow falla y GitHub le avisa por mail al
+# dueño del repo.
+#
+# Ojo: GitHub desactiva los workflows programados de un repo publico tras 60 dias sin ninguna
+# actividad en el repo. Con commits regulares no pasa; si pasara, se reactiva desde la pestaña
+# Actions.
+name: Mantener Supabase activo
+
+on:
+  schedule:
+    - cron: '17 12 * * *'   # todos los dias, 09:17 de Uruguay (UTC-3)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Una lectura minima a eventos_sync
+        env:
+          URL: https://skkknfjpwcstefcroqjt.supabase.co/rest/v1/eventos_sync?select=id&limit=1
+          KEY: sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK
+        run: |
+          for intento in 1 2 3; do
+            codigo=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 \
+              -H "apikey: $KEY" -H "Authorization: Bearer $KEY" "$URL" || echo 000)
+            echo "intento $intento: HTTP $codigo"
+            if [ "$codigo" = "200" ]; then exit 0; fi
+            sleep 20
+          done
+          echo "Supabase no contesto 200: revisar si el proyecto esta pausado (supabase.com > el proyecto > Restore)"
+          exit 1
