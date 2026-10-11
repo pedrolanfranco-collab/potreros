@@ -264,7 +264,10 @@ async function probarArchivo(archivo, tieneDueno){
   // ella (1 solo dueño placeholder).
   const tabDueno = doc.getElementById('stock-tabs').querySelector('[data-tab="3"]');
   const totalHa = parseFloat((doc.getElementById('stock-resumen').textContent.match(/([\d.]+) ha/)||[])[1]);
-  const ugEsperado = 10*1.0 + 4*0.5; // Vacas=1.0, Terneros=0.5 (UG_DEFAULT)
+  // Vacas=1.0, Terneros=0.5 (UG_DEFAULT) -- pero desde el 11/10/2026 los terneros de la temporada no cuentan
+  // como UG de agosto a febrero (se destetan en marzo), así que depende de la fecha en que corre la prueba
+  // (las vacas y los terneros están en potreros distintos, así que no hay vacas con ternero al pie: 1,0)
+  const ugEsperado = 10*1.0 + (win.sinUGPorTemporada('Terneros') ? 0 : 4*0.5);
   const dotEsperada = totalHa>0 ? (ugEsperado/totalHa) : 0;
   if(win.__establecimiento()==='maria_laura'){
     chequear('Por dueño: la pestaña existe (María Laura)', !!tabDueno);

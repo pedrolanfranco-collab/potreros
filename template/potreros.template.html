@@ -1151,6 +1151,7 @@
     <h3>Coeficientes de Unidad Ganadera (UG)</h3>
     <button class="btn-cerrar-x" id="coef-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Valores de referencia habituales en Uruguay (1 UG ≈ 1 vaca de cría). Ajustalos si tu establecimiento usa otros criterios.</p>
+    <p class="modal-info">Las crías no cuentan como UG mientras están al pie: <strong>Terneros y terneras</strong> valen 0 UG de octubre a marzo y su coeficiente de abril a septiembre; <strong>Corderos/as</strong> valen 0 de septiembre a diciembre y su coeficiente desde enero. Una <strong>vaca con ternero al pie</strong> vale 1,2 UG de octubre a marzo (tantas vacas como terneros haya en el potrero) y 1 el resto del año.</p>
     <div id="coef-lista"></div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="coef-guardar">Guardar</button>
@@ -1256,6 +1257,70 @@ const ESPECIES = {
 };
 const ESPECIE_LABEL = {bovino:"Bovinos", ovino:"Ovinos", equino:"Equinos"};
 const UG_DEFAULT = Object.assign({}, ESPECIES.bovino, ESPECIES.ovino, ESPECIES.equino);
+/* 11/10/2026 (a pedido de Pedro): las crías de la temporada no cuentan como Unidad Ganadera mientras
+   están al pie, para que la carga no salga inflada en esa época. Por categoría, los meses con 0 UG:
+   Terneros y Terneras: octubre a marzo (de abril a septiembre valen su coeficiente, 0,5; en septiembre,
+   mes del cambio de categoría en general, es el último); Corderos/as: septiembre a diciembre (desde enero
+   valen su coeficiente, 0,1). Fuera de esos meses cuentan normal. Siguen contando como animales. El
+   coeficiente que editás en "Coeficientes UG" es el que rige cuando ya cuentan. */
+const UG_MESES_SIN = {
+  'Terneros': [10, 11, 12, 1, 2, 3],
+  'Terneras': [10, 11, 12, 1, 2, 3],
+  'Corderos/as': [9, 10, 11, 12]
+};
+function sinUGPorTemporada(cat, fecha){
+  const meses = UG_MESES_SIN[cat];
+  if(!meses) return false;
+  return meses.includes((fecha || new Date()).getMonth() + 1);
+}
+function coefUG(cat, fecha){
+  if(sinUGPorTemporada(cat, fecha)) return 0;
+  return estado.ugCoef[cat] !== undefined ? estado.ugCoef[cat] : (UG_DEFAULT[cat] || 1);
+}
+/* 11/10/2026 (a pedido de Pedro): una vaca con ternero al pie vale 1,2 UG de octubre a marzo (inclusive);
+   sin terneros de la temporada vale su coeficiente normal (1). Cuántas vacas tienen ternero: tantas como
+   Terneros haya en el potrero, hasta el total de Vacas. En esos meses el ternero vale 0 (va en la vaca);
+   de abril a septiembre la vaca vale 1 y el ternero 0,5. El resto de las categorías no cambia. */
+const UG_VACA_CON_TERNERO = 1.2;
+function vacaConTerneroActivo(fecha){
+  const m = (fecha || new Date()).getMonth() + 1;
+  return m >= 10 || m <= 3;
+}
+function vacasConTerneroEnPotrero(nombre, fecha, coefVaca){
+  const nada = {nCon: 0, vacasPos: 0, extraPorVaca: 0, porDueno: {}};
+  if(!vacaConTerneroActivo(fecha)) return nada;
+  let vacasPos = 0, ternerosPos = 0;
+  const porDueno = {};
+  Object.entries(estado.potreros[nombre].animales).forEach(([key, cant])=>{
+    const n = Number(cant || 0);
+    if(n <= 0) return;
+    const {cat, dueno} = partesClave(key);
+    if(cat === 'Vacas'){ vacasPos += n; porDueno[dueno] = (porDueno[dueno] || 0) + n; }
+    else if(cat === 'Terneros'){ ternerosPos += n; }
+  });
+  const nCon = Math.min(vacasPos, ternerosPos);
+  const extraPorVaca = Math.max(0, UG_VACA_CON_TERNERO - (coefVaca !== undefined ? coefVaca : coefUG('Vacas', fecha)));
+  if(!nCon || !extraPorVaca) return nada;
+  return {nCon, vacasPos, extraPorVaca, porDueno};
+}
+/* UG de un potrero repartidas por dueño (el extra de las vacas con ternero se reparte en proporción a las
+   Vacas de cada dueño). soloPositivos: lo que cuentan los reportes por dueño (ignoran saldos negativos). */
+function ugPorDuenoEnPotrero(nombre, soloPositivos, fecha){
+  const out = {};
+  Object.entries(estado.potreros[nombre].animales).forEach(([key, cant])=>{
+    const n = Number(cant || 0);
+    if(soloPositivos && n <= 0) return;
+    const {cat, dueno} = partesClave(key);
+    out[dueno] = (out[dueno] || 0) + n * coefUG(cat, fecha);
+  });
+  const v = vacasConTerneroEnPotrero(nombre, fecha);
+  if(v.nCon){
+    Object.entries(v.porDueno).forEach(([dueno, vacas])=>{
+      out[dueno] = (out[dueno] || 0) + v.nCon * v.extraPorVaca * (vacas / v.vacasPos);
+    });
+  }
+  return out;
+}
 const CATEGORIAS = Object.keys(UG_DEFAULT);
 const CATEGORIA_ESPECIE = {};
 Object.entries(ESPECIES).forEach(([esp,cats])=> Object.keys(cats).forEach(c=> CATEGORIA_ESPECIE[c]=esp));
@@ -1365,10 +1430,9 @@ function resumenPorDueno(){
         const partes = partesClave(key);
         if(partes.dueno===dueno && cant>0){
           categorias[partes.cat] = (categorias[partes.cat]||0) + cant;
-          const coef = estado.ugCoef[partes.cat] !== undefined ? estado.ugCoef[partes.cat] : (UG_DEFAULT[partes.cat]||1);
-          ug += cant*coef;
         }
       });
+      ug += ugPorDuenoEnPotrero(p.nombre, true)[dueno] || 0;
     });
     const total = Object.values(categorias).reduce((s,c)=>s+c,0);
     return {dueno: textoFirma(dueno), categorias, total, ug, dotacion: totalHa>0 ? ug/totalHa : 0};
@@ -1813,6 +1877,7 @@ async function publicarStockPotrero(nombre){
     guardarEstado();
     return false;
   }
+  const conTerneroPub = vacasConTerneroEnPotrero(nombre, undefined, UG_DEFAULT['Vacas']);
   const filas = Object.entries(p.animales)
     .filter(([,cant])=>cant!==0)
     .map(([key,cant])=>{
@@ -1821,7 +1886,8 @@ async function publicarStockPotrero(nombre){
       return {
         establecimiento: ESTABLECIMIENTO, potrero: nombre, clave: key,
         categoria: cat, dueno: dueno || '', cantidad: cant,
-        especie, ug: especie ? cant * (UG_DEFAULT[cat]||0) : null,
+        especie, ug: especie ? cant * (sinUGPorTemporada(cat) ? 0 : (UG_DEFAULT[cat]||0))
+          + ((cat === 'Vacas' && cant > 0 && conTerneroPub.nCon) ? conTerneroPub.nCon * conTerneroPub.extraPorVaca * (cant / conTerneroPub.vacasPos) : 0) : null,
         actualizado_en: new Date().toISOString(), dispositivo: idDispositivo()
       };
     });
@@ -2881,14 +2947,7 @@ function totalPotrero(nombre){
   return Object.values(a).reduce((s,n)=>s+Number(n||0),0);
 }
 function totalUG(nombre){
-  const a = estado.potreros[nombre].animales;
-  let ug = 0;
-  Object.entries(a).forEach(([key,cant])=>{
-    const {cat} = partesClave(key);
-    const coef = estado.ugCoef[cat] !== undefined ? estado.ugCoef[cat] : (UG_DEFAULT[cat] || 1);
-    ug += Number(cant||0) * coef;
-  });
-  return ug;
+  return Object.values(ugPorDuenoEnPotrero(nombre, false)).reduce((s, x)=> s + x, 0);
 }
 function areaHa(nombre){
   const info = POTREROS_GEO.find(p=>p.nombre===nombre);
@@ -5366,10 +5425,9 @@ function construirMD(){
         const partes = partesClave(key);
         if(partes.dueno===d && c>0){
           cant += c;
-          const coef = estado.ugCoef[partes.cat] !== undefined ? estado.ugCoef[partes.cat] : (UG_DEFAULT[partes.cat]||1);
-          ug += c*coef;
         }
       });
+      ug += ugPorDuenoEnPotrero(p.nombre, true)[d] || 0;
     });
     md += `| ${d} | ${cant} | ${ug.toFixed(1)} |\n`;
   });
@@ -5476,10 +5534,9 @@ function reunirDatosReporte(){
         const partes = partesClave(key);
         if(partes.dueno===d && c>0){
           cant += c;
-          const coef = estado.ugCoef[partes.cat] !== undefined ? estado.ugCoef[partes.cat] : (UG_DEFAULT[partes.cat]||1);
-          ug += c*coef;
         }
       });
+      ug += ugPorDuenoEnPotrero(p.nombre, true)[d] || 0;
     });
     return [textoFirma(d), cant, ug.toFixed(1)];
   }).filter(row=>row[1]>0);

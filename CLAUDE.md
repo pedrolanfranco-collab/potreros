@@ -364,6 +364,18 @@ también descuenta las correcciones `accion:'editar'` (antes solo `'eliminar'`: 
 contando). La tabla "Ver registro de muertes por categoría" separa "Terneros — de temporada" / "Terneros —
 marcados". Test: `tests/probar_muerte_terneros_grupo.js`.
 
+**UG de las crías y de las vacas con ternero (11/10/2026, a pedido de Pedro).** Mientras están al pie las crías
+no cuentan como Unidad Ganadera (siguen contando como animales), para que la carga no salga inflada: **Terneros y
+Terneras 0 UG de octubre a marzo** y su coeficiente (0,5) de abril a septiembre; **Corderos/as 0 UG de septiembre a
+diciembre** y su coeficiente (0,1) desde enero (`UG_MESES_SIN`, `sinUGPorTemporada()`, `coefUG()`). Una **vaca con
+ternero al pie vale 1,2 UG de octubre a marzo** (inclusive) y 1 el resto del año: tantas vacas como Terneros haya en
+el potrero, hasta el total de Vacas (`vacasConTerneroEnPotrero()`; el extra se reparte por dueño según sus Vacas en
+`ugPorDuenoEnPotrero()`). `totalUG()`, los 3 reportes por dueño (Por dueño, MD, Excel/PDF) y la columna `ug` de
+`stock_potreros` pasan por ahí. El coeficiente de "Coeficientes UG" rige cuando cuentan. Límite conocido: no
+distingue crías de la temporada de destetados del año anterior que siguen en "Terneros" hasta recategorizarse
+(septiembre): de abril a septiembre ya valen 0,5, así que no hay hueco. Test: `tests/probar_ug_temporada.js`
+(`probar_stock_total.js` ya no asume fecha).
+
 **Consumos (11/10/2026, a pedido de Pedro).** Ovinos (y eventualmente un vacuno) que se faenan para el consumo
 de carne del establecimiento: sección "🥩 Consumos" en "Lluvias y otros eventos" (PC y móvil completa; Campo no
 la tiene). Es un evento `consumo` (`potrero`, `{categoria, dueno, cantidad, obs?}`) que resta del stock del potrero
