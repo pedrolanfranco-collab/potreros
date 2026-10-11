@@ -201,6 +201,9 @@ jobs:
       - name: "Fase 5 de la auditoria (10/10/2026) -- contrato de eventos: docs/eventos.md al dia con el template y los eventos reales cumplen lo que leen los scripts"
         run: node tests/probar_contrato_eventos.js la-vuelta-pc/index.html maria-laura-pc/index.html
 
+      - name: "Fase 3 de la auditoria (11/10/2026) -- cola unica que guarda primero: el evento se guarda antes de mandarlo y llega en orden (flag colaOrdenada; los archivos sin el flag se saltean)"
+        run: node tests/probar_cola_ordenada.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
       - name: "Fase 5 de la auditoria (10/10/2026) -- backup de Supabase: tablas descubiertas, clave privada, alerta por ntfy"
         run: python3 scripts/backup/probar_backup.py
 

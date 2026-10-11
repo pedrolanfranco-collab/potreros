@@ -139,6 +139,7 @@ async function probarArchivo(archivo){
   chequear('KML: se importaron los 2 puntos', puntos.length === 2, JSON.stringify(puntos));
   chequear('KML: quedaron con el tipo/subtipo elegido en los selectores', puntos.every(p=>p.tipo==='agua' && p.subtipo==='Bebedero'));
   chequear('KML: el nombre del placemark se preservó', puntos.some(p=>p.nombre==='Bebedero Norte') && puntos.some(p=>p.nombre==='Bebedero Sur'));
+  await new Promise(r=>setTimeout(r,20)); // Fase 3 (cola ordenada): el 2do sale cuando Supabase confirmo el 1ro
   chequear('KML: se mandaron 2 eventos punto_creado', servidor.filas.filter(e=>e.tipo==='punto_creado').length === 2, JSON.stringify(servidor.filas));
 
   // --- B: reimportar el mismo archivo no duplica (dedupe por proximidad) ---

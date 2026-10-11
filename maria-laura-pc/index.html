@@ -1611,13 +1611,17 @@ function enviarEvento(tipo, potrero, detalle, fecha, opciones){
   const eventId = (opciones && opciones.eventId) || crypto.randomUUID();
   const evento = { event_id: eventId, tipo, potrero, detalle, fecha_cliente: fecha || fechaHoy() };
   if(opciones && opciones.establecimiento && opciones.establecimiento !== ESTABLECIMIENTO) evento.establecimiento = opciones.establecimiento;
+  if(CONFIG.colaOrdenada){
+    // Fase 3 de la auditoría (11/10/2026): el evento va a la cola y se guarda en el equipo ANTES de
+    // mandarlo (si Android cierra la app durante el envío, no se pierde) y sale por vaciarColaSync(),
+    // detrás de lo que ya estaba esperando. Devuelve true cuando Supabase confirmó ESTE evento.
+    estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync();
+    return vaciarColaSync().then(()=> !(estado.colaSync||[]).some(e => e.event_id === eventId));
+  }
   return pushEventoRemoto(evento);
 }
-async function pushEventoRemoto(evento){
-  const client = clienteSupabase();
-  if(!client || !navigator.onLine){
-    estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync(); return false;
-  }
+/* Un insert en eventos_sync. No toca la cola: devuelve {ok} o {ok:false, error}. */
+async function insertarEventoRemoto(client, evento){
   try{
     const { error } = await client.from('eventos_sync').insert({
       event_id: evento.event_id, establecimiento: evento.establecimiento || ESTABLECIMIENTO, dispositivo: idDispositivo(),
@@ -1628,13 +1632,58 @@ async function pushEventoRemoto(evento){
     // UNIQUE en esa columna significa que el evento ya está guardado, no
     // que falló. Sin esto, el reintento crea una fila duplicada y el
     // movimiento se aplica dos veces en los demás dispositivos.
-    if(error && error.code !== '23505'){ estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync(); return false; }
-    return true;
+    if(error && error.code !== '23505') return { ok: false, error };
+    return { ok: true };
   }catch(e){
-    estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync(); return false;
+    return { ok: false, error: e };
   }
 }
-async function vaciarColaSync(){
+/* Camino viejo (sin CONFIG.colaOrdenada): manda directo aunque haya pendientes y encola solo si falla. */
+async function pushEventoRemoto(evento){
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine){
+    estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync(); return false;
+  }
+  const r = await insertarEventoRemoto(client, evento);
+  if(!r.ok){ estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync(); return false; }
+  return true;
+}
+/* Fase 3 de la auditoría (11/10/2026), CONFIG.colaOrdenada. Una sola vuelta a la vez: quien llama
+   mientras tanto recibe la misma promesa y deja pedida otra vuelta (_otraVueltaCola), así nunca se queda
+   con una vuelta que ya había terminado sin ver su evento. Manda siempre el PRIMERO y lo saca recién
+   cuando Supabase confirma (OK o 23505), buscándolo por event_id en el `estado` de ese momento
+   (refrescarSiOtraPaginaGuardo puede haberlo reemplazado a mitad del envío). Si falla, queda primero y
+   la vuelta termina: lo de atrás espera, así un borrado nunca llega antes que el movimiento que borra.
+   La cola nunca se vacía por adelantado (antes, un guardado durante el envío grababa la cola vacía). */
+let _vueltaColaSync = null, _otraVueltaCola = false;
+function vaciarColaSync(){
+  if(!CONFIG.colaOrdenada) return vaciarColaSyncSinOrden();
+  if(_vueltaColaSync){ _otraVueltaCola = true; return _vueltaColaSync; }
+  _vueltaColaSync = (async ()=>{
+    try{
+      do{
+        _otraVueltaCola = false;
+        // el await siempre cede el turno (aunque no haya señal), así el finally corre después de que
+        // _vueltaColaSync quedó asignada; el primer insert igual sale en el acto
+        await vaciarColaSyncUnaVuelta();
+      }while(_otraVueltaCola);
+    }catch(e){ console.warn('Error al vaciar la cola de sincronización', e); }
+    finally{ _vueltaColaSync = null; actualizarEstadoSync(); }
+  })();
+  return _vueltaColaSync;
+}
+async function vaciarColaSyncUnaVuelta(){
+  const client = clienteSupabase();
+  while(client && navigator.onLine && (estado.colaSync||[]).length){
+    const evento = estado.colaSync[0];
+    if(!evento.event_id){ evento.event_id = crypto.randomUUID(); guardarEstado(); } // encolado por una versión anterior al 12/9
+    const r = await insertarEventoRemoto(client, evento);
+    if(!r.ok) return;
+    estado.colaSync = (estado.colaSync||[]).filter(e => e.event_id !== evento.event_id);
+    guardarEstado();
+  }
+}
+async function vaciarColaSyncSinOrden(){
   if(!estado.colaSync || !estado.colaSync.length) return;
   const client = clienteSupabase();
   if(!client || !navigator.onLine) return;

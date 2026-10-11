@@ -33,6 +33,10 @@ Lo que no está en la fila y conviene saber:
   Nunca se hace UPDATE ni DELETE de `eventos_sync` (la llave pública no puede).
 - El orden de aplicación es `creado_en` ascendente. El cursor de cada dispositivo es el último
   `creado_en` visto.
+- Con `CONFIG.colaOrdenada` (Fase 3, 11/10/2026; hoy solo Pone Chico) cada equipo manda sus
+  eventos **de a uno y en el orden en que los cargó**: todo evento entra primero a
+  `estado.colaSync` (guardado en el equipo) y sale de ahí recién cuando el servidor confirma. Sin
+  el flag, un evento con señal se manda directo aunque haya otros esperando en la cola (hallazgo 1).
 - Hoy la lectura **no pagina**: PostgREST corta en 1000 filas. Está en la Fase 3 de la auditoría.
 - Una versión vieja de la app **descarta** los tipos que no conoce y el cursor avanza igual
   (hallazgo 8 de la auditoría, Fase 3): un tipo nuevo no se reaplica nunca en esos equipos.

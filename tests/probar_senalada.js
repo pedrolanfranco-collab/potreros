@@ -162,6 +162,7 @@ async function probarArchivo(archivo){
   chequear('no duplica un evento de señalada con el mismo id', win.__est().senaladas.length === cantesDeRepetir);
 
   // --- sin señal se encola, y se vacía al reconectar ---
+  await new Promise(r=>setTimeout(r,30)); // Fase 3 (cola ordenada): lo que se esta mandando sigue en la cola hasta que Supabase confirma
   Object.defineProperty(win.navigator, 'onLine', { value: false, configurable: true });
   const colaAntes = (win.__est().colaSync||[]).length;
   doc.getElementById('sn-machos').value = '3';
