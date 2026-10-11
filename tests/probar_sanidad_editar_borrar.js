@@ -88,7 +88,7 @@ function crearServidor(){
           in(col, vals){ q._filtros.push(r => vals.includes(r[col])); return q; },
           not(){ return q; },
           limit(){ return q; },
-          order(col, o){ q._orden = { col, asc: !o || o.ascending !== false }; return q; },
+          order(col, o){ if(!q._orden) q._orden = { col, asc: !o || o.ascending !== false }; return q; }, range(){ return q; }, /* Fase 3: el primer orden manda (el desempate por id se ignora) y .range() devuelve todo */
           then(res){
             registro.llamadas.push({ tabla: nombre, modo: q._modo });
             const filas = tablas[nombre];

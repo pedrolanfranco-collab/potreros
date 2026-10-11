@@ -62,7 +62,7 @@ function crearServidor(eventosSemilla, latenciaMs){
           _filtros: [],
           select(){ return q; }, eq(col,val){ return q; }, // sin filtrar por establecimiento -- no importa para esta prueba
           gt(col,val){ q._filtros.push(r=>r[col]>val); return q; },
-          order(){ return q; },
+          order(){ return q; }, range(){ return q; }, /* Fase 3: la app pagina con .range() (aca hay pocas filas, devuelve todo) */
           then(res){
             return new Promise(resolve=>{
               setTimeout(()=>{

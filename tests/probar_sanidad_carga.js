@@ -71,7 +71,7 @@ function crearServidor(){
           },
           select(){ return q; }, eq(col,val){ q._filtros.push(r=>r[col]===val); return q; },
           gt(col,val){ q._filtros.push(r=>r[col]>val); return q; },
-          gte(col,val){ q._filtros.push(r=>r[col]>=val); return q; }, order(){ return q; }, limit(){ return q; },
+          gte(col,val){ q._filtros.push(r=>r[col]>=val); return q; }, order(){ return q; }, range(){ return q; }, limit(){ return q; }, /* Fase 3: la app pagina con .range() (aca hay pocas filas, devuelve todo) */
           in(col,vals){ q._filtros.push(r=>vals.includes(r[col])); return q; },
           then(res){ const data = (filas[tabla]||[]).filter(r=>q._filtros.every(f=>f(r))); return Promise.resolve(res({data, error:null})); }
         };

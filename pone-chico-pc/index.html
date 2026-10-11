@@ -463,7 +463,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.05 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.06 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1052,7 +1052,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.05","versionMovil":"2.04","simpleHabilitado":true,"versionMovilSimple":"1.47","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.06","versionMovil":"2.05","simpleHabilitado":true,"versionMovilSimple":"1.48","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1668,6 +1668,26 @@ function vueltaDeCola(nombre, unaVuelta){
     finally{ v.promesa = null; actualizarEstadoSync(); }
   })();
   return v.promesa;
+}
+/* Fase 3, paso 3 (11/10/2026): PostgREST corta cada respuesta en 1000 filas SIN avisar (contesta 200
+   con las primeras 1000) y La Vuelta llega a 1000 eventos hacia enero de 2027. traerTodo(armar) pide de a
+   1000 con .range() hasta que vuelve un lote incompleto. `armar` devuelve la consulta YA ordenada; acá se
+   le agrega `id` como desempate (en producción hay eventos con el mismo creado_en hasta el microsegundo, y
+   sin un orden total una fila en el borde de una página se perdería o se repetiría). Si una página falla
+   devuelve ese error y nada de lo anterior: el que llama no aplica la mitad. `alLote(n)` avisa cuántas
+   filas lleva. Sin CONFIG.colaOrdenada hace una sola consulta, como antes. */
+const TAM_PAGINA = 1000;
+async function traerTodo(armar, alLote){
+  if(!CONFIG.colaOrdenada) return await armar();
+  const data = [];
+  for(let desde = 0; ; desde += TAM_PAGINA){
+    const res = await armar().order('id', {ascending:true}).range(desde, desde + TAM_PAGINA - 1);
+    if(res.error) return res;
+    const lote = res.data || [];
+    data.push(...lote);
+    if(alLote) alLote(data.length);
+    if(lote.length < TAM_PAGINA) return { data, error: null, status: res.status };
+  }
 }
 /* Fase 3, paso 2 (11/10/2026): qué falló la última vez en cada cola ('sync', 'sanidad') y en la lectura
    ('lectura'), en estado.fallos. Transitorio (sin respuesta: sin red, timeout, fetch cortado; 5xx, 408,
@@ -2751,9 +2771,12 @@ async function sincronizar(mostrarToast){
     await vaciarColaStock();
     // 9/10/2026: altas de catálogos que quedaron sin señal (solo la PC las crea; no agrega ninguna consulta si no hay pendientes)
     if(typeof vaciarColaMaestros === 'function' && (estado.colaMaestros || []).length) await vaciarColaMaestros(client);
-    let query = client.from('eventos_sync').select('*').eq('establecimiento', ESTABLECIMIENTO).order('creado_en', {ascending:true});
-    if(estado.ultimaSincronizacion) query = query.gt('creado_en', estado.ultimaSincronizacion);
-    const res = await query;
+    const desdeCursor = estado.ultimaSincronizacion;
+    const res = await traerTodo(()=>{
+      let query = client.from('eventos_sync').select('*').eq('establecimiento', ESTABLECIMIENTO).order('creado_en', {ascending:true});
+      if(desdeCursor) query = query.gt('creado_en', desdeCursor);
+      return query;
+    }, esPrimeraSync ? (n => actualizarEstadoSync('sincronizando', n)) : null);
     const error = res.error;
     if(error){
       console.warn('Error al sincronizar eventos_sync:', error.message || error);
@@ -2878,13 +2901,14 @@ function textoEstadoSyncOrdenada(){
   if(f.lectura && navigator.onLine) return { texto: `⚠ Falló el último intento ${horaCorta(f.lectura.fecha)}`, color: '#8f5f12', negrita: true };
   return null;
 }
-function actualizarEstadoSync(estadoTexto){
+function actualizarEstadoSync(estadoTexto, cantidad){
   if(CONFIG.colaOrdenada) renderAvisoTrabado();
   const el = document.getElementById('estado-sync');
   if(!el) return;
   el.style.fontWeight = '';
   if(estadoTexto==='sincronizando'){
-    el.textContent = '🔄 Sincronizando...';
+    // la primera sincronización de un equipo nuevo puede traer miles de eventos (Fase 3, paso 3)
+    el.textContent = (typeof cantidad === 'number') ? `🔄 Poniéndose al día… ${cantidad} eventos` : '🔄 Sincronizando...';
     el.style.color = '#8a8465';
     return;
   }
@@ -5385,10 +5409,10 @@ async function calcularEstadisticasNacimientos(){
       // saldo que nunca se había movido de 0. Bug real que hizo que La
       // Vuelta mostrara 71 Terneros en vez de 69 -- verificado de punta a
       // punta contra Supabase real antes y después del fix.
-      const res = await client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
+      const res = await traerTodo(()=> client.from('eventos_sync').select('potrero,fecha_cliente,detalle,tipo,creado_en')
         .eq('establecimiento', ESTABLECIMIENTO)
         .in('tipo', ['nacimiento','correccion','muerte','consumo','ingreso','compra','venta','desaparecido','encontrado','movimiento','movimiento_multi','movimiento_todo','aborto','aborto_editado','aborto_eliminado','senalada','senalada_editada','senalada_eliminada'])
-        .order('creado_en', {ascending:true});
+        .order('creado_en', {ascending:true}));
       if(!res.error){
         eventos = limpiarTextoRemoto(res.data||[]);
         localStorage.setItem(cacheKey, JSON.stringify(eventos));
@@ -5547,8 +5571,9 @@ async function calcularEstadisticasMuertes(){
     try{
       // 19/9/2026: 'muerte_desaparecido' (tercera resolución de un caso
       // Desaparecido) cuenta acá también, igual que 'muerte' directa.
-      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo')
-        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido','correccion']);
+      const res = await traerTodo(()=> client.from('eventos_sync').select('fecha_cliente,detalle,tipo')
+        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido','correccion'])
+        .order('creado_en', {ascending:true}));
       if(!res.error){
         eventos = limpiarTextoRemoto(res.data||[]);
         localStorage.setItem(cacheKey, JSON.stringify(eventos));
@@ -6885,8 +6910,9 @@ async function cargarTablaMuertes(filtroDueno, forzarRed){
     return;
   }
   cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Cargando…</p>';
-  const res = await client.from('eventos_sync').select('detalle,fecha_cliente,tipo')
-    .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido']);
+  const res = await traerTodo(()=> client.from('eventos_sync').select('detalle,fecha_cliente,tipo')
+    .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido'])
+    .order('creado_en', {ascending:true}));
   if(res.error){
     if(muertesUltimosEventos){ renderTablaMuertesFilas(filtroDueno); return; }
     cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">No se pudo traer el registro.</p>';
@@ -6939,7 +6965,7 @@ async function cargarSanidad(){
   if(client && navigator.onLine){
     try{
       const desde = sumarDiasISO(fechaISOHoy(), -260);
-      const res = await client.from(TABLA_SANIDAD).select('*').gte('fecha', desde).order('fecha', {ascending:false});
+      const res = await traerTodo(()=> client.from(TABLA_SANIDAD).select('*').gte('fecha', desde).order('fecha', {ascending:false}));
       if(!res.error){
         datos = limpiarTextoRemoto(res.data||[]);
         localStorage.setItem(cacheKey, JSON.stringify(datos));
@@ -9407,8 +9433,9 @@ async function leerConsumos(){
   const client = clienteSupabase();
   if(client && navigator.onLine){
     try{
-      const res = await client.from('eventos_sync').select('fecha_cliente,detalle,tipo,potrero,creado_en,event_id')
-        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['consumo','correccion']);
+      const res = await traerTodo(()=> client.from('eventos_sync').select('fecha_cliente,detalle,tipo,potrero,creado_en,event_id')
+        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['consumo','correccion'])
+        .order('creado_en', {ascending:true}));
       if(!res.error){
         eventos = limpiarTextoRemoto(res.data||[]);
         try{ localStorage.setItem(cacheKey, JSON.stringify(eventos)); }catch(e){}

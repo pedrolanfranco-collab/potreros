@@ -34,7 +34,7 @@ function crearServidor(){
         return Promise.resolve({ error: null });
       },
       select(){ return q; }, eq(col, val){ q._filtros.push(r => r[col] === val); return q; },
-      gt(col, val){ q._filtros.push(r => r[col] > val); return q; }, order(){ return q; },
+      gt(col, val){ q._filtros.push(r => r[col] > val); return q; }, order(){ return q; }, range(){ return q; }, /* Fase 3: la app pagina con .range() (aca hay pocas filas, devuelve todo) */
       not(col, op, val){
         const lista = String(val).replace(/^\(|\)$/g,'').split(',').filter(Boolean).map(s=>s.replace(/^"|"$/g,''));
         q._filtros.push(r=> !lista.includes(r[col]));

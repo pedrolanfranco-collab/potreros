@@ -260,6 +260,15 @@ sincronización, así se destraba solo si se arregla en Supabase. Sanidad usa la
 primaria de las 3 tablas `sanidad_carga*` (verificado en el esquema el 11/10/2026; antes un reintento
 tras una respuesta perdida trababa esa cola para siempre). "✅" solo sin nada pendiente (movimientos,
 Sanidad, catálogos) y con la última lectura OK. Test: `tests/probar_errores_cola.js`.
+**Paso 3, paginación (mismo flag, 11/10/2026):** PostgREST corta cada respuesta en 1000 filas sin avisar
+(La Vuelta llega hacia enero de 2027). `traerTodo(armar, alLote)` pide lotes de 1000 con `.range()`
+agregando `.order('id')` como desempate (en producción hay 2 eventos de La Vuelta con el mismo
+`creado_en` hasta el microsegundo); si una página falla devuelve el error y el que llama no aplica nada.
+Lo usan `sincronizar()` (la primera vez muestra "🔄 Poniéndose al día… N eventos"), las dos copias de
+`calcularEstadisticasNacimientos`/`Muertes`, el registro de muertes, Sanidad y `leerConsumos()`. Las
+consultas de muertes y consumos ahora llevan `.order('creado_en')` (sin orden no se puede paginar). **Los
+Supabase falsos de las pruebas necesitan `range()`** y, si ordenan por una sola columna, quedarse con el
+primer `.order()`. Test: `tests/probar_paginacion.js`.
 
 **Idempotencia (12/9/2026, auditoría de 3 IAs verificada contra el código):**
 cada evento lleva un `event_id` propio (`crypto.randomUUID()` — **no**

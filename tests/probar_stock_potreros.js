@@ -84,7 +84,7 @@ function crearServidor(){
         q.select = ()=>q;
         q.eq = (col,val)=>{ q._filtros.push(r=>r[col]===val); return q; };
         q.gt = (col,val)=>{ q._filtros.push(r=>r[col]>val); return q; };
-        q.order = ()=>q; q.limit = ()=>q;
+        q.order = ()=>q; q.limit = ()=>q; q.range = ()=>q; /* Fase 3: la app pagina con .range() (aca hay pocas filas, devuelve todo) */
         q.in = (col,vals)=>{ q._filtros.push(r=>vals.includes(r[col])); return q; };
         q.not = (col, op, val)=>{
           const lista = String(val).replace(/^\(|\)$/g,'').split(',').filter(Boolean).map(s=>s.replace(/^"|"$/g,''));

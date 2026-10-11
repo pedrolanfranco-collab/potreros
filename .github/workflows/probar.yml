@@ -207,6 +207,9 @@ jobs:
       - name: "Fase 3 de la auditoria (11/10/2026) -- errores visibles: movimientos y cargas de Sanidad trabadas con cartel, falla pasajera con aviso, Sanidad con cola ordenada (flag colaOrdenada; sin el flag, todo como antes)"
         run: node tests/probar_errores_cola.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 
+      - name: "Fase 3 de la auditoria (11/10/2026) -- paginacion: PostgREST corta en 1000 filas; un equipo nuevo trae 2.500 eventos, empate de creado_en en el borde, pagina que falla, muertes > 1000 (flag colaOrdenada)"
+        run: node tests/probar_paginacion.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
       - name: "Fase 5 de la auditoria (10/10/2026) -- backup de Supabase: tablas descubiertas, clave privada, alerta por ntfy"
         run: python3 scripts/backup/probar_backup.py
 

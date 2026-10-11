@@ -25,7 +25,7 @@ function crearServidor(){
     const q = { _filtros: [],
       insert(obj){ filas.push(obj); return Promise.resolve({ error: null }); },
       select(){ return q; }, eq(col, val){ q._filtros.push(r => r[col] === val); return q; },
-      gt(col, val){ q._filtros.push(r => r[col] > val); return q; }, order(){ return q; },
+      gt(col, val){ q._filtros.push(r => r[col] > val); return q; }, order(){ return q; }, range(){ return q; }, /* Fase 3: la app pagina con .range() (aca hay pocas filas, devuelve todo) */
       then(res){ const data = filas.filter(r => q._filtros.every(f => f(r))); return Promise.resolve(res({ data, error: null })); }
     };
     return q;

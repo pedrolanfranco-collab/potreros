@@ -93,7 +93,7 @@ function crearServidor(catalogo, cargas, opts){
           select(cols){ q._cols = cols||''; return q; }, eq(col,val){ q._filtros.push(r=>r[col]===val); return q; },
           gt(col,val){ q._filtros.push(r=>r[col]>val); return q; },
           gte(col,val){ q._filtros.push(r=>r[col]>=val); return q; },
-          order(){ return q; }, limit(){ return q; },
+          order(){ return q; }, range(){ return q; }, limit(){ return q; }, /* Fase 3: la app pagina con .range() (aca hay pocas filas, devuelve todo) */
           in(col,vals){ q._filtros.push(r=>vals.includes(r[col])); return q; },
           then(res){
             if(tabla==='productos_catalogo' && sinDiasResidual && q._cols.includes('dias_residual')){
