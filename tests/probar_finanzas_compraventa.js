@@ -20,6 +20,22 @@ function chequear(nombre, cond, detalle){
   if(!cond) fallas++;
 }
 const dormir = ms => new Promise(r => setTimeout(r, ms));
+// Espera a que se cumpla la condición (prueba cada 10 ms, hasta maxMs). No falla sola: si se vence el plazo,
+// el chequear() de después lo marca. Reemplaza las esperas fijas, que en el runner de GitHub a veces no alcanzaban.
+async function esperarHasta(cond, maxMs = 2000){
+  const fin = Date.now() + maxMs;
+  while(Date.now() < fin){
+    try { if(cond()) return true; } catch(e){}
+    await dormir(10);
+  }
+  try { return !!cond(); } catch(e){ return false; }
+}
+// sincronizar() vuelve sin hacer nada si ya hay otra en curso: primero se espera a que termine esa
+async function sincronizarYa(win){
+  await esperarHasta(() => !win.__sincronizando());
+  await win.sincronizar();
+}
+const hayNuevo = (servidor, desde, tipo, n = 1) => servidor.filas.eventos_sync.slice(desde).filter(r => r.tipo === tipo).length >= n;
 const cerca = (a, b, tol) => a !== null && a !== undefined && Math.abs(a - b) <= (tol || 0.005);
 
 function limites(){
@@ -143,6 +159,7 @@ async function levantar(archivo, servidor){
       window.__establecimiento = function(){ return ESTABLECIMIENTO; };
       window.__potrerosGeo = function(){ return POTREROS_GEO; };
       window.__config = function(){ return CONFIG; };
+      window.__sincronizando = function(){ return sincronizando; };
     `);
   } catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await dormir(60);
@@ -215,7 +232,7 @@ async function probarPC(archivoPC, archivoMovil){
 
   // ---- 2) los catálogos llegan al sincronizar y alimentan las listas ----
   E(W, 'btn-guias').click();                       // al abrir Movimientos DICOSE (PC) se traen los catálogos al día
-  await dormir(100);
+  await esperarHasta(() => W.maestrosDe('comprador').length === 7 && W.maestrosDe('comisionista').length === 3 && W.maestrosDe('contraparte').length === 3);
   chequear(`${etiqueta}: la PC bajó los catálogos de Supabase (7 compradores, 3 comisionistas, 3 contrapartes)`,
     W.maestrosDe('comprador').length === 7 && W.maestrosDe('comisionista').length === 3 && W.maestrosDe('contraparte').length === 3,
     JSON.stringify(Object.fromEntries(Object.entries(W.__est().maestros).map(([k, x]) => [k, x.length]))));
@@ -239,7 +256,7 @@ async function probarPC(archivoPC, archivoMovil){
   chequear(`${etiqueta}: la vista previa calcula como el Excel (neto 3.800, costo total 9.790)`,
     /3\.800/.test(E(W, 'cv-resumen-compra').textContent) && /9\.790/.test(E(W, 'cv-resumen-compra').textContent), E(W, 'cv-resumen-compra').textContent);
   E(W, 'cv-guardar').click();
-  await dormir(60);
+  await esperarHasta(() => hayNuevo(servidor, evAntes, 'compra'));
   chequear(`${etiqueta}: la compra suma 10 vacas al potrero`, aW[kA('Vacas')] === 10 && W.totalPotrero(potrero) === totalAntes + 10, String(aW[kA('Vacas')]));
   const evCompra = servidor.filas.eventos_sync.slice(evAntes).find(r => r.tipo === 'compra');
   const fin = evCompra && evCompra.detalle.fin;
@@ -266,8 +283,9 @@ async function probarPC(archivoPC, archivoMovil){
   poner(W, 'cv-cant', 2); poner(W, 'cv-tprecio', 'Pieza', 'change'); poner(W, 'cv-origen', 'Nebio Domingez', 'change'); poner(W, 'cv-kbrutos', 662); poner(W, 'cv-pcompra', 450);
   chequear(`${etiqueta}: el rótulo del precio cambia a "por pieza"`, /pieza/i.test(E(W, 'cv-label-pcompra').textContent));
   poner(W, 'cv-variante', 'vcut', 'change');
+  const evVc = servidor.filas.eventos_sync.length;
   E(W, 'cv-guardar').click();
-  await dormir(60);
+  await esperarHasta(() => hayNuevo(servidor, evVc, 'compra'));
   const evVcut = servidor.filas.eventos_sync.filter(r => r.tipo === 'compra').pop();
   chequear(`${etiqueta}: por pieza el importe es precio × cabezas (900) y la vaca de última cría lleva el código VCUT`,
     cerca(evVcut.detalle.fin.importe, 900) && evVcut.detalle.fin.catExcel === 'VCUT' && evVcut.detalle.fin.variante === 'vcut' && evVcut.detalle.categoria === 'Vacas', JSON.stringify(evVcut.detalle.fin));
@@ -278,7 +296,7 @@ async function probarPC(archivoPC, archivoMovil){
   poner(W, 'cv-variante', 'pieza', 'change'); poner(W, 'cv-guia', 'p200002');
   const evP = servidor.filas.eventos_sync.length;
   E(W, 'cv-guardar').click();
-  await dormir(80);
+  await esperarHasta(() => hayNuevo(servidor, evP, 'compra', 2));
   const evsPieza = servidor.filas.eventos_sync.slice(evP).filter(r => r.tipo === 'compra');
   chequear(`${etiqueta}: Pieza suma 3 vacas Y 3 terneros al stock`, aW[kA('Vacas')] === vacas0 + 3 && (aW[kT] || 0) === tern0 + 3, `${aW[kA('Vacas')]} / ${aW[kT]}`);
   chequear(`${etiqueta}: …como DOS eventos vinculados (misma guía y mismo pieza.id): la vaca con el detalle y la cría sin importe`,
@@ -300,7 +318,7 @@ async function probarPC(archivoPC, archivoMovil){
   chequear(`${etiqueta}: la vista previa de la venta muestra bruto, descuentos, neto y rendimiento`, /19\.298|19\.297/.test(E(W, 'cv-resumen-venta').textContent) && /52,9|52,8|52,9/.test(E(W, 'cv-resumen-venta').textContent), E(W, 'cv-resumen-venta').textContent);
   const evV = servidor.filas.eventos_sync.length;
   E(W, 'cv-guardar').click();
-  await dormir(60);
+  await esperarHasta(() => hayNuevo(servidor, evV, 'venta'));
   const evVenta = servidor.filas.eventos_sync.slice(evV).find(r => r.tipo === 'venta');
   const fv = evVenta && evVenta.detalle.fin;
   chequear(`${etiqueta}: la venta resta 20 vacas de invernada`, aW[kVI] === 10, String(aW[kVI]));
@@ -317,13 +335,13 @@ async function probarPC(archivoPC, archivoMovil){
   poner(W, 'cv-comisionista', '__nuevo__', 'change');
   chequear(`${etiqueta}: "➕ Agregar nuevo…" abre el alta (comisionista: solo pide el nombre)`, E(W, 'cv-nuevo').style.display === 'block' && E(W, 'cv-nuevo-tcontra-fila').style.display === 'none');
   poner(W, 'cv-nuevo-nombre', 'Caio Nuevo'); E(W, 'cv-nuevo-ok').click();
-  await dormir(60);
+  await esperarHasta(() => servidor.filas.maestros_dicose.some(r => r.tipo === 'comisionista' && r.nombre === 'Caio Nuevo') && (W.__est().colaMaestros || []).length === 0);
   chequear(`${etiqueta}: el nuevo comisionista queda elegido en la lista`, E(W, 'cv-comisionista').value === 'Caio Nuevo' && E(W, 'cv-nuevo').style.display === 'none');
   chequear(`${etiqueta}: …y se guardó en Supabase (maestros_dicose)`, servidor.filas.maestros_dicose.some(r => r.tipo === 'comisionista' && r.nombre === 'Caio Nuevo') && (W.__est().colaMaestros || []).length === 0);
   poner(W, 'cv-origen', '__nuevo__', 'change');
   chequear(`${etiqueta}: el alta de una contraparte pide tipo y DICOSE`, E(W, 'cv-nuevo-tcontra-fila').style.display !== 'none' && E(W, 'cv-nuevo-dicose-fila').style.display !== 'none');
   poner(W, 'cv-nuevo-nombre', 'Productor Nuevo SA'); poner(W, 'cv-nuevo-tcontra', 'Productor', 'change'); poner(W, 'cv-nuevo-dicose', 'FF0999999'); E(W, 'cv-nuevo-ok').click();
-  await dormir(60);
+  await esperarHasta(() => servidor.filas.maestros_dicose.some(r => r.nombre === 'Productor Nuevo SA'));
   const rc = servidor.filas.maestros_dicose.find(r => r.nombre === 'Productor Nuevo SA');
   chequear(`${etiqueta}: la contraparte nueva se sube con su tipo y DICOSE y aparece elegida con su DICOSE`,
     !!rc && rc.tipo === 'contraparte' && rc.tipo_contraparte === 'Productor' && rc.dicose === 'FF0999999' && E(W, 'cv-origen').value === 'Productor Nuevo SA' && /FF0999999/.test(E(W, 'cv-origen-dicose').textContent));
@@ -332,14 +350,14 @@ async function probarPC(archivoPC, archivoMovil){
   E(W, 'cv-nuevo-cancelar').click();
   chequear(`${etiqueta}: cancelar el alta deja la lista como estaba`, E(W, 'cv-nuevo').style.display === 'none' && E(W, 'cv-comprador').value === '');
   E(W2, 'btn-guias').click();
-  await dormir(100);
+  await esperarHasta(() => W2.maestroExiste('comisionista', 'Caio Nuevo') && W2.maestroExiste('contraparte', 'Productor Nuevo SA'));
   chequear(`${etiqueta}: otra PC ve los catálogos nuevos al abrir Movimientos DICOSE`, W2.maestroExiste('comisionista', 'Caio Nuevo') && W2.maestroExiste('contraparte', 'Productor Nuevo SA'));
   // sin señal: el alta queda en la cola y se sube al volver
   W.navigator.onLine = false;
   abrirCV(W, 'Compra'); poner(W, 'cv-comprador', '__nuevo__', 'change'); poner(W, 'cv-nuevo-nombre', 'Comprador Offline'); E(W, 'cv-nuevo-ok').click();
   chequear(`${etiqueta}: sin señal el comprador nuevo se usa igual y queda en cola`, W.maestroExiste('comprador', 'Comprador Offline') && (W.__est().colaMaestros || []).length === 1 && !servidor.filas.maestros_dicose.some(r => r.nombre === 'Comprador Offline'));
   W.navigator.onLine = true;
-  await W.sincronizar();
+  await sincronizarYa(W);
   chequear(`${etiqueta}: al volver la señal se sube y la cola queda vacía`, servidor.filas.maestros_dicose.some(r => r.nombre === 'Comprador Offline') && (W.__est().colaMaestros || []).length === 0);
   // tabla todavía no creada: la app sigue andando con lo que tiene
   servidor.tablaCaida = true;
@@ -359,8 +377,9 @@ async function probarPC(archivoPC, archivoMovil){
     && E(W, 'cv-destare').value === '5' && E(W, 'cv-pcompra').value === '2.5' && E(W, 'cv-comisionista').value === 'Fabian Braga' && E(W, 'cv-pcom').value === '2'
     && E(W, 'cv-flete').value === '100' && E(W, 'cv-pago').value === 'Pendiente' && E(W, 'cv-km').value === '120' && E(W, 'cv-guia').value === 'K100001',
     ['cv-origen', 'cv-comprador', 'cv-kbrutos', 'cv-destare', 'cv-pcompra', 'cv-comisionista', 'cv-pcom', 'cv-flete', 'cv-pago', 'cv-km', 'cv-guia'].map(i => E(W, i).value).join('|'));
+  const evEd = servidor.filas.eventos_sync.length;
   E(W, 'cv-guardar').click();
-  await dormir(60);
+  await esperarHasta(() => servidor.filas.eventos_sync.slice(evEd).some(r => r.tipo === 'compra' && r.detalle.guia === 'K100001'));
   chequear(`${etiqueta}: guardar sin cambios deja el mismo stock y el mismo importe`, aW[kA('Vacas')] === vacas0 + 3 && W.__est().potreros[potrero].historial.find(h => h.tipo === 'compra' && !h.eliminado && h.extra && h.extra.guia === 'K100001').extra.fin.importe === 9500);
 
   // ---- 10) carga rápida desde el celular -> "Completar datos" en la PC ----
@@ -372,14 +391,15 @@ async function probarPC(archivoPC, archivoMovil){
     poner(M, 'cv-tipo', 'Compra', 'change'); poner(M, 'cv-potrero', pM, 'change'); poner(M, 'cv-cat', 'Terneros', 'change'); poner(M, 'cv-dueno', dueno, 'change');
     poner(M, 'cv-cant', 12); poner(M, 'cv-fecha', M.fechaISOHoy(), 'change'); poner(M, 'cv-precio', 300); poner(M, 'cv-contraparte', 'Nebio Domingez'); poner(M, 'cv-guia', 'r400004');
     const stM0 = M.__est().potreros[pM].animales[kM] || 0;
+    const evM0 = servidor.filas.eventos_sync.length;
     E(M, 'cv-guardar').click();
-    await dormir(60);
+    await esperarHasta(() => servidor.filas.eventos_sync.slice(evM0).some(r => r.tipo === 'compra' && r.detalle.guia === 'R400004'));
     const evM = servidor.filas.eventos_sync.filter(r => r.tipo === 'compra').pop();
     chequear(`${etiqueta}: la carga rápida del celular sigue siendo la de siempre (sin detalle completo)`, evM.detalle.guia === 'R400004' && cerca(evM.detalle.precio, 300) && evM.detalle.fin === undefined && (M.__est().potreros[pM].animales[kM] || 0) === stM0 + 12);
-    await W.sincronizar();
+    await sincronizarYa(W);
     const fila = W.movimientosConGuia().find(r => r.guia === 'R400004');
     chequear(`${etiqueta}: en la PC esa compra figura "faltan datos" y tiene el botón ✍`, !!fila && fila.faltanDatos === true);
-    await M.sincronizar();                                    // el celular ya trae todo lo anterior (p. ej. los 3 terneros de la Pieza)
+    await sincronizarYa(M);                                    // el celular ya trae todo lo anterior (p. ej. los 3 terneros de la Pieza)
     const stM1 = M.__est().potreros[pM].animales[kM] || 0;
     E(W, 'btn-guias').click();
     const btnCompletar = E(W, 'mg-lista').querySelector(`[data-mg-id="${fila.id}"] [data-mg-completar]`);
@@ -396,7 +416,7 @@ async function probarPC(archivoPC, archivoMovil){
     const stP0 = W.__est().potreros[pM].animales[kM] || 0, evC = servidor.filas.eventos_sync.length;
     poner(W, 'cv-tprecio', 'Kg', 'change'); poner(W, 'cv-kbrutos', 2400); poner(W, 'cv-destare', 4); poner(W, 'cv-pcompra', 1.6); poner(W, 'cv-comprador', 'Pedro', 'change'); poner(W, 'cv-flete', 50);
     E(W, 'cv-guardar').click();
-    await dormir(60);
+    await esperarHasta(() => hayNuevo(servidor, evC, 'correccion'));
     const evCorr = servidor.filas.eventos_sync.slice(evC).find(r => r.tipo === 'correccion');
     chequear(`${etiqueta}: completar emite una corrección 'completar_datos' (no una compra nueva) con el detalle`,
       servidor.filas.eventos_sync.slice(evC).filter(r => r.tipo === 'compra').length === 0 && !!evCorr && evCorr.detalle.accion === 'completar_datos' && evCorr.detalle.tipoOriginal === 'compra'
@@ -405,12 +425,12 @@ async function probarPC(archivoPC, archivoMovil){
     chequear(`${etiqueta}: la lista ya no marca esa compra como "faltan datos"`, !W.movimientosConGuia().find(r => r.guia === 'R400004').faltanDatos);
     chequear(`${etiqueta}: la transacción de la PC se actualizó con el importe real`, cerca((W.__est().transacciones || []).find(t => t.guia === 'R400004').total, 3686.4, 0.01));
     chequear(`${etiqueta}: el formulario vuelve al modo normal`, !E(W, 'cv-cant').disabled && E(W, 'cv-guardar').textContent === 'Registrar');
-    await M.sincronizar();
+    await sincronizarYa(M);
     const hM = M.__est().potreros[pM].historial.find(h => h.tipo === 'compra' && h.extra && h.extra.guia === 'R400004');
     chequear(`${etiqueta}: el celular recibe el detalle completo (su propio renglón se completa) sin cambiar el stock`,
       !!hM.extra.fin && cerca(hM.extra.fin.importe, 3686.4, 0.01) && (M.__est().potreros[pM].animales[kM] || 0) === stM1 && /2\.304/.test(hM.detalle), hM.detalle + " | stock " + (M.__est().potreros[pM].animales[kM] || 0) + " vs " + stM1);
     chequear(`${etiqueta}: …y su transacción también`, cerca((M.__est().transacciones || []).find(t => t.guia === 'R400004').total, 3686.4, 0.01));
-    await W2.sincronizar();
+    await sincronizarYa(W2);
     const h2 = W2.__est().potreros[pM].historial.find(h => h.tipo === 'compra' && h.origDatos && h.origDatos.guia === 'R400004');
     chequear(`${etiqueta}: otra PC también queda con el detalle completo`, !!h2 && !!h2.origDatos.fin && cerca(h2.origDatos.fin.importe, 3686.4, 0.01));
   }
@@ -441,7 +461,7 @@ async function probarPC(archivoPC, archivoMovil){
     // línea 1: neto 7.600 -> 12.160 + 243,2 + flete 218,18 = 12.621,38; línea 2: neto 5.700 -> 11.400 + 228 + flete 81,82 = 11.709,82; total 24.331,20
     chequear(etiqueta + ': la vista previa suma las dos categorías (55 cabezas, costo total 24.331)', /55 cabezas/.test(res) && /24\.331/.test(res), res);
     E(W, 'cv-guardar').click();
-    await dormir(80);
+    await esperarHasta(() => nuevos('compra').length >= 2);
     const cs = nuevos('compra');
     chequear(etiqueta + ': registra DOS compras con la misma guía, una por categoría', cs.length === 2 && cs.every(r => r.detalle.guia === 'M500005') && cs[0].detalle.categoria === 'Terneros' && cs[1].detalle.categoria === 'Vacas' && cs[0].detalle.cantidad === 40 && cs[1].detalle.cantidad === 15, JSON.stringify(cs.map(r => r.detalle.categoria + r.detalle.cantidad)));
     chequear(etiqueta + ': cada una trae sus kilos e importe (importe 12.160 y 11.400, VCUT en la segunda)', cs.length === 2 && cerca(cs[0].detalle.fin.importe, 12160) && cerca(cs[1].detalle.fin.importe, 11400) && cs[1].detalle.fin.catExcel === 'VCUT' && cs[0].detalle.fin.catExcel === 'TERNERO');
@@ -464,7 +484,7 @@ async function probarPC(archivoPC, archivoMovil){
     chequear(etiqueta + ': si una categoría pide más de lo que hay, avisa y no vende ninguna', /Solo hay/.test(ultimoToast(W)) && servidor.filas.eventos_sync.slice(evV).filter(r => r.tipo === 'venta').length === 0 && (aW[kA('Terneros')] || 0) === aT0 + 40, ultimoToast(W));
     ponerV('.cvl-cant', 5);
     E(W, 'cv-guardar').click();
-    await dormir(80);
+    await esperarHasta(() => hayNuevo(servidor, evV, 'venta', 2));
     const vs = servidor.filas.eventos_sync.slice(evV).filter(r => r.tipo === 'venta');
     chequear(etiqueta + ': registra DOS ventas con la misma guía y el destino', vs.length === 2 && vs.every(r => r.detalle.guia === 'N600006' && r.detalle.contraparte === 'Frigorifico Canelones'));
     // bruto 1: 1,9 x 4.500 = 8.550; bruto 2: 4,5 x 1.200 = 5.400; IMEBA 100 en proporción: 61,29 + 38,71
@@ -491,7 +511,7 @@ async function probarPC(archivoPC, archivoMovil){
     chequear(etiqueta + ': con precio por pieza el rótulo avisa que los kilos son opcionales', /opcional/.test(E(W, 'cv-label-kbrutos').textContent), E(W, 'cv-label-kbrutos').textContent);
     chequear(etiqueta + ': …y la vista previa calcula el importe sin kilos (8 x 450 = 3.600)', /3\.600/.test(E(W, 'cv-resumen-compra').textContent), E(W, 'cv-resumen-compra').textContent);
     E(W, 'cv-guardar').click();
-    await dormir(80);
+    await esperarHasta(() => nuevos().length >= 1);
     const p1 = nuevos();
     chequear(etiqueta + ': registra la compra sin kilos: importe 3.600, kilos vacíos y el stock sube 8', p1.length === 1 && p1[0].detalle.fin.kilosBrutos === null && p1[0].detalle.fin.kilosNeto === null && cerca(p1[0].detalle.fin.importe, 3600) && p1[0].detalle.fin.tipoPrecio === 'Pieza' && (aW[kA('Terneros')] || 0) === aT0 + 8, JSON.stringify(p1[0] && p1[0].detalle.fin));
     chequear(etiqueta + ': el historial no muestra "— kg neto"', !/— kg/.test(W.__est().potreros[potrero].historial[0].detalle) && /3\.600/.test(W.__est().potreros[potrero].historial[0].detalle), W.__est().potreros[potrero].historial[0].detalle);
@@ -507,7 +527,7 @@ async function probarPC(archivoPC, archivoMovil){
     ponerP('.cvl-cat', 'Vacas', 'change'); ponerP('.cvl-cant', 3); ponerP('.cvl-tp', 'Pieza', 'change'); ponerP('.cvl-pr', 500);
     chequear(etiqueta + ': en la línea extra el rótulo también avisa que los kilos son opcionales', /opcional/.test(lp.querySelector('.cvl-lbl-kb').textContent), lp.querySelector('.cvl-lbl-kb').textContent);
     E(W, 'cv-guardar').click();
-    await dormir(80);
+    await esperarHasta(() => hayNuevo(servidor, ev1, 'compra', 2));
     const p2 = servidor.filas.eventos_sync.slice(ev1).filter(r => r.tipo === 'compra');
     chequear(etiqueta + ': registra las dos (una por kg con kilos, otra por pieza sin kilos)', p2.length === 2 && cerca(p2[0].detalle.fin.importe, 2000 * 0.95 * 1.7, 0.01) && p2[1].detalle.fin.kilosBrutos === null && cerca(p2[1].detalle.fin.importe, 1500), JSON.stringify(p2.map(r => r.detalle.fin && r.detalle.fin.importe)));
   }
