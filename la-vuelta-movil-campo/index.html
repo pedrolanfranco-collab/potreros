@@ -1310,7 +1310,7 @@ function enviarEvento(tipo, potrero, detalle, fecha, opciones){
 /* Un insert en eventos_sync. No toca la cola: devuelve {ok} o {ok:false, error}. */
 async function insertarEventoRemoto(client, evento){
   try{
-    const { error } = await client.from('eventos_sync').insert({
+    const { error, status } = await client.from('eventos_sync').insert({
       event_id: evento.event_id, establecimiento: evento.establecimiento || ESTABLECIMIENTO, dispositivo: idDispositivo(),
       tipo: evento.tipo, potrero: evento.potrero, detalle: evento.detalle, fecha_cliente: evento.fecha_cliente
     });
@@ -1319,7 +1319,7 @@ async function insertarEventoRemoto(client, evento){
     // UNIQUE en esa columna significa que el evento ya está guardado, no
     // que falló. Sin esto, el reintento crea una fila duplicada y el
     // movimiento se aplica dos veces en los demás dispositivos.
-    if(error && error.code !== '23505') return { ok: false, error };
+    if(error && error.code !== '23505') return { ok: false, error, status };
     return { ok: true };
   }catch(e){
     return { ok: false, error: e };
@@ -1335,29 +1335,60 @@ async function pushEventoRemoto(evento){
   if(!r.ok){ estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync(); return false; }
   return true;
 }
-/* Fase 3 de la auditoría (11/10/2026), CONFIG.colaOrdenada. Una sola vuelta a la vez: quien llama
-   mientras tanto recibe la misma promesa y deja pedida otra vuelta (_otraVueltaCola), así nunca se queda
-   con una vuelta que ya había terminado sin ver su evento. Manda siempre el PRIMERO y lo saca recién
-   cuando Supabase confirma (OK o 23505), buscándolo por event_id en el `estado` de ese momento
-   (refrescarSiOtraPaginaGuardo puede haberlo reemplazado a mitad del envío). Si falla, queda primero y
-   la vuelta termina: lo de atrás espera, así un borrado nunca llega antes que el movimiento que borra.
-   La cola nunca se vacía por adelantado (antes, un guardado durante el envío grababa la cola vacía). */
-let _vueltaColaSync = null, _otraVueltaCola = false;
-function vaciarColaSync(){
-  if(!CONFIG.colaOrdenada) return vaciarColaSyncSinOrden();
-  if(_vueltaColaSync){ _otraVueltaCola = true; return _vueltaColaSync; }
-  _vueltaColaSync = (async ()=>{
+/* Fase 3 de la auditoría (11/10/2026), CONFIG.colaOrdenada. Una sola vuelta a la vez por cola: quien
+   llama mientras tanto recibe la misma promesa y deja pedida otra vuelta (`otra`), así nunca se queda con
+   una vuelta que ya había terminado sin ver lo suyo. Cada vuelta manda siempre el PRIMERO y lo saca recién
+   cuando Supabase confirma; si falla, queda primero y la vuelta termina: lo de atrás espera. */
+const _vueltasCola = {};
+function vueltaDeCola(nombre, unaVuelta){
+  const v = _vueltasCola[nombre] || (_vueltasCola[nombre] = { promesa: null, otra: false });
+  if(v.promesa){ v.otra = true; return v.promesa; }
+  v.promesa = (async ()=>{
     try{
       do{
-        _otraVueltaCola = false;
+        v.otra = false;
         // el await siempre cede el turno (aunque no haya señal), así el finally corre después de que
-        // _vueltaColaSync quedó asignada; el primer insert igual sale en el acto
-        await vaciarColaSyncUnaVuelta();
-      }while(_otraVueltaCola);
-    }catch(e){ console.warn('Error al vaciar la cola de sincronización', e); }
-    finally{ _vueltaColaSync = null; actualizarEstadoSync(); }
+        // v.promesa quedó asignada; el primer envío igual sale en el acto
+        await unaVuelta();
+      }while(v.otra);
+    }catch(e){ console.warn('Error al vaciar la cola ' + nombre, e); }
+    finally{ v.promesa = null; actualizarEstadoSync(); }
   })();
-  return _vueltaColaSync;
+  return v.promesa;
+}
+/* Fase 3, paso 2 (11/10/2026): qué falló la última vez en cada cola ('sync', 'sanidad') y en la lectura
+   ('lectura'), en estado.fallos. Transitorio (sin respuesta: sin red, timeout, fetch cortado; 5xx, 408,
+   429): se reintenta solo y el indicador muestra "⚠ … falló el último intento hh:mm". Permanente (22P02
+   formato, 42703 columna, 42501 permiso, PGRST…, cualquier otro 4xx): reintentar no lo arregla, sale el
+   cartel rojo "⛔ … trabados" (renderAvisoTrabado). Se sigue reintentando en cada sincronización, así
+   se destraba solo si se arregla del lado de Supabase. */
+function errorEsTransitorio(status){
+  if(!status) return true;
+  return status >= 500 || status === 408 || status === 429;
+}
+function registrarFalloCola(cola, error, status){
+  estado.fallos = estado.fallos || {};
+  const previo = estado.fallos[cola];
+  estado.fallos[cola] = {
+    codigo: String((error && error.code) || status || 'sin respuesta').slice(0, 40),
+    mensaje: String((error && (error.message || error)) || '').slice(0, 300),
+    status: status || 0,
+    fecha: new Date().toISOString(),
+    permanente: !errorEsTransitorio(status),
+    intentos: ((previo && previo.intentos) || 0) + 1
+  };
+  guardarEstado();
+}
+function limpiarFalloCola(cola){
+  if(estado.fallos && estado.fallos[cola]){ delete estado.fallos[cola]; guardarEstado(); }
+}
+/* Movimientos: lo de la vuelta genérica, sacando por event_id en el `estado` de ese momento
+   (refrescarSiOtraPaginaGuardo puede haberlo reemplazado a mitad del envío). Un borrado nunca llega
+   antes que el movimiento que borra, y la cola nunca se vacía por adelantado (antes, un guardado
+   durante el envío grababa la cola vacía). */
+function vaciarColaSync(){
+  if(!CONFIG.colaOrdenada) return vaciarColaSyncSinOrden();
+  return vueltaDeCola('sync', vaciarColaSyncUnaVuelta);
 }
 async function vaciarColaSyncUnaVuelta(){
   const client = clienteSupabase();
@@ -1365,8 +1396,9 @@ async function vaciarColaSyncUnaVuelta(){
     const evento = estado.colaSync[0];
     if(!evento.event_id){ evento.event_id = crypto.randomUUID(); guardarEstado(); } // encolado por una versión anterior al 12/9
     const r = await insertarEventoRemoto(client, evento);
-    if(!r.ok) return;
+    if(!r.ok){ registrarFalloCola('sync', r.error, r.status); return; }
     estado.colaSync = (estado.colaSync||[]).filter(e => e.event_id !== evento.event_id);
+    limpiarFalloCola('sync');
     guardarEstado();
   }
 }
@@ -1391,6 +1423,14 @@ async function vaciarColaSyncSinOrden(){
 const TABLA_SANIDAD = CONFIG.tablaSanidad;
 async function guardarSanidadCarga(registro){
   const client = clienteSupabase();
+  if(CONFIG.colaOrdenada){
+    // Fase 3 (11/10/2026): como los movimientos, primero a la cola y guardado en el equipo, después el envío
+    estado.colaSanidad = estado.colaSanidad || [];
+    estado.colaSanidad.push(registro);
+    guardarEstado(); actualizarEstadoSync();
+    await vaciarColaSanidad();
+    return !(estado.colaSanidad||[]).some(x => x === registro || (registro.id && x.id === registro.id));
+  }
   if(!client || !navigator.onLine){
     estado.colaSanidad = estado.colaSanidad || [];
     estado.colaSanidad.push(registro);
@@ -1413,7 +1453,33 @@ async function guardarSanidadCarga(registro){
     return false;
   }
 }
-async function vaciarColaSanidad(){
+/* Un insert en la tabla de Sanidad. El `id` lo arma el equipo y es la clave primaria de las 3 tablas
+   (verificado en el esquema el 11/10/2026): un 23505 quiere decir que el registro ya había llegado. */
+async function insertarSanidadRemoto(client, registro){
+  try{
+    const { error, status } = await client.from(TABLA_SANIDAD).insert(registro);
+    if(error && error.code !== '23505') return { ok: false, error, status };
+    return { ok: true };
+  }catch(e){
+    return { ok: false, error: e };
+  }
+}
+function vaciarColaSanidad(){
+  if(!CONFIG.colaOrdenada) return vaciarColaSanidadSinOrden();
+  return vueltaDeCola('sanidad', vaciarColaSanidadUnaVuelta);
+}
+async function vaciarColaSanidadUnaVuelta(){
+  const client = clienteSupabase();
+  while(client && navigator.onLine && (estado.colaSanidad||[]).length){
+    const registro = estado.colaSanidad[0];
+    const r = await insertarSanidadRemoto(client, registro);
+    if(!r.ok){ registrarFalloCola('sanidad', r.error, r.status); return; }
+    estado.colaSanidad = (estado.colaSanidad||[]).filter(x => x !== registro && !(registro.id && x.id === registro.id));
+    limpiarFalloCola('sanidad');
+    guardarEstado();
+  }
+}
+async function vaciarColaSanidadSinOrden(){
   if(!estado.colaSanidad || !estado.colaSanidad.length) return;
   const client = clienteSupabase();
   if(!client || !navigator.onLine) return;
@@ -2375,8 +2441,13 @@ async function sincronizar(mostrarToast){
     if(estado.ultimaSincronizacion) query = query.gt('creado_en', estado.ultimaSincronizacion);
     const res = await query;
     const error = res.error;
-    if(error){ console.warn('Error al sincronizar eventos_sync:', error.message || error); return; }
+    if(error){
+      console.warn('Error al sincronizar eventos_sync:', error.message || error);
+      if(CONFIG.colaOrdenada) registrarFalloCola('lectura', error, res.status);
+      return;
+    }
     if(!res.data){ return; }
+    if(CONFIG.colaOrdenada) limpiarFalloCola('lectura');
     const data = limpiarTextoRemoto(res.data);
     let cambios = 0;
     const miId = idDispositivo();
@@ -2390,21 +2461,126 @@ async function sincronizar(mostrarToast){
       if(mostrarToast) toast(`Sincronizado: ${cambios} movimiento${cambios===1?'':'s'} de otro dispositivo`);
     }
     await publicarStockPotreros(esPrimeraSync ? Object.keys(estado.potreros) : [...potrerosSucios]);
-  }catch(e){ console.warn('Error al sincronizar', e); }finally{
+  }catch(e){
+    console.warn('Error al sincronizar', e);
+    if(CONFIG.colaOrdenada) registrarFalloCola('lectura', e, 0);
+  }finally{
     sincronizando = false;
     actualizarEstadoSync();
   }
 }
+/* Fase 3, paso 2 (11/10/2026, visual aprobado por Pedro): con CONFIG.colaOrdenada el indicador cuenta
+   también Sanidad y catálogos, distingue "sin señal" (⏳) de "falló el último intento" (⚠, ocre) y de
+   "trabado" (⛔, rojo, con el cartel de renderAvisoTrabado arriba de Herramientas). "✅" solo si no queda
+   nada pendiente y la última lectura anduvo. */
+const ESTE_EQUIPO = 'este celular';
+function plural(n, uno, varios){ return n + ' ' + (n === 1 ? uno : varios); }
+function contarTrabados(){
+  const f = estado.fallos || {};
+  return {
+    sync: (f.sync && f.sync.permanente) ? (estado.colaSync||[]).length : 0,
+    sanidad: (f.sanidad && f.sanidad.permanente) ? (estado.colaSanidad||[]).length : 0
+  };
+}
+function textoTrabados(t){
+  if(t.sync && t.sanidad) return plural(t.sync, 'movimiento', 'movimientos') + ' y ' + plural(t.sanidad, 'carga', 'cargas') + ' de Sanidad trabados';
+  if(t.sync) return plural(t.sync, 'movimiento trabado', 'movimientos trabados');
+  return plural(t.sanidad, 'carga de Sanidad trabada', 'cargas de Sanidad trabadas');
+}
+function horaCorta(iso){
+  const d = new Date(iso);
+  return isNaN(d) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function renderAvisoTrabado(){
+  let el = document.getElementById('aviso-trabado');
+  const t = contarTrabados();
+  if(!t.sync && !t.sanidad){ if(el) el.remove(); return; }
+  const footer = document.getElementById('footer-tools');
+  if(!footer || !footer.parentNode) return;
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'aviso-trabado';
+    el.setAttribute('role', 'alert');
+    el.style.cssText = 'margin:0 10px 8px;background:#a1402e;color:#fff;border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.35;box-shadow:0 2px 8px rgba(0,0,0,.25);';
+    el.addEventListener('click', (e)=>{
+      const b = e.target.closest('button[data-accion]');
+      if(!b) return;
+      if(b.dataset.accion === 'reintentar') reintentarColas();
+      else if(b.dataset.accion === 'descargar') descargarCopiaColas();
+    });
+    footer.parentNode.insertBefore(el, footer);
+  }
+  const f = estado.fallos || {};
+  const codigos = [...new Set([t.sync && f.sync.codigo, t.sanidad && f.sanidad.codigo].filter(Boolean))];
+  el.innerHTML = '<div style="font-weight:700;font-size:16px;">⛔ ' + esc(textoTrabados(t)) + '</div>' +
+    '<div style="margin-top:2px;">Supabase los rechaza (código ' + esc(codigos.join(', ')) + '). Están guardados en ' + ESTE_EQUIPO + ', no se pierden.</div>' +
+    '<div style="display:flex;gap:8px;margin-top:8px;">' +
+      '<button type="button" data-accion="reintentar" style="flex:1;min-height:44px;border:0;border-radius:8px;background:#fff;color:#a1402e;font-weight:700;font-size:15px;cursor:pointer;">↻ Reintentar</button>' +
+      '<button type="button" data-accion="descargar" style="flex:1;min-height:44px;border:2px solid #fff;border-radius:8px;background:transparent;color:#fff;font-weight:700;font-size:15px;cursor:pointer;">⬇ Descargar copia</button>' +
+    '</div>';
+}
+async function reintentarColas(){
+  if(!navigator.onLine){ toast('Sin conexión — se reintenta solo cuando vuelva la señal'); return; }
+  toast('Reintentando…');
+  await vaciarColaSync();
+  await vaciarColaSanidad();
+  const t = contarTrabados();
+  toast((t.sync || t.sanidad) ? 'Sigue trabado: Supabase lo vuelve a rechazar' : 'Listo, se mandó todo');
+  actualizarEstadoSync();
+}
+function descargarCopiaColas(){
+  const copia = {
+    establecimiento: ESTABLECIMIENTO, dispositivo: idDispositivo(), generado: new Date().toISOString(),
+    colaSync: estado.colaSync || [], colaSanidad: estado.colaSanidad || [], colaMaestros: estado.colaMaestros || [],
+    fallos: estado.fallos || {}
+  };
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const blob = new Blob([JSON.stringify(copia, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${ESTABLECIMIENTO}_cola_${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 1000);
+  toast('Copia descargada');
+}
+function textoEstadoSyncOrdenada(){
+  const nSync = (estado.colaSync||[]).length, nSan = (estado.colaSanidad||[]).length, nMae = (estado.colaMaestros||[]).length;
+  const f = estado.fallos || {};
+  const t = contarTrabados();
+  if(t.sync || t.sanidad) return { texto: '⛔ ' + textoTrabados(t), color: '#a1402e', negrita: true };
+  // la falla que cuenta es la de una cola que todavía tiene algo (otra pestaña pudo haberla vaciado)
+  const fallosVivos = [nSync && f.sync, nSan && f.sanidad, f.lectura].filter(Boolean);
+  const ultimoFallo = fallosVivos.sort((a, b)=> String(b.fecha).localeCompare(String(a.fecha)))[0];
+  const total = nSync + nSan + nMae;
+  if(total > 0){
+    if(ultimoFallo && navigator.onLine) return { texto: `⚠ ${total} sin sincronizar · falló el último intento ${horaCorta(ultimoFallo.fecha)}`, color: '#8f5f12', negrita: true };
+    const partes = [];
+    if(nSync) partes.push(plural(nSync, 'movimiento', 'movimientos'));
+    if(nSan) partes.push(plural(nSan, 'carga', 'cargas') + ' de Sanidad');
+    if(nMae) partes.push(nMae + ' de catálogos');
+    return { texto: '⏳ ' + partes.join(' y ') + ' sin sincronizar', color: '#a1402e' };
+  }
+  if(f.lectura && navigator.onLine) return { texto: `⚠ Falló el último intento ${horaCorta(f.lectura.fecha)}`, color: '#8f5f12', negrita: true };
+  return null;
+}
 function actualizarEstadoSync(estadoTexto){
+  if(CONFIG.colaOrdenada) renderAvisoTrabado();
   const el = document.getElementById('estado-sync');
   if(!el) return;
+  el.style.fontWeight = '';
   if(estadoTexto==='sincronizando'){
     el.textContent = '🔄 Sincronizando...';
     el.style.color = '#5a5340';
     return;
   }
+  const ordenada = CONFIG.colaOrdenada ? textoEstadoSyncOrdenada() : null;
   const pendientes = (estado.colaSync||[]).length;
-  if(pendientes>0){
+  if(ordenada){
+    el.textContent = ordenada.texto;
+    el.style.color = ordenada.color;
+    if(ordenada.negrita) el.style.fontWeight = '700';
+  } else if(pendientes>0){
     el.textContent = `⏳ ${pendientes} movimiento${pendientes===1?'':'s'} sin sincronizar`;
     el.style.color = '#a1402e';
   } else if(estado.ultimaSincronizacion){
