@@ -313,6 +313,7 @@
   .hist-item.movimiento{border-left-color:var(--ocre);}
   .hist-item.nacimiento{border-left-color:#3f6b8f;}
   .hist-item.muerte{border-left-color:var(--rojo-hacienda);}
+  .hist-item.consumo{border-left-color:var(--tierra);}
   .hist-item.compra{border-left-color:#1f7a5c;}
   .hist-item.venta{border-left-color:#8a6d1f;}
   .hist-item .fecha{color:var(--texto-suave);font-family:'JetBrains Mono',monospace;font-size:10.5px;}
@@ -322,6 +323,12 @@
   .hist-btn{border:none;background:none;cursor:pointer;font-size:12px;padding:0 2px;line-height:1;opacity:0.65;}
   .hist-btn:hover{opacity:1;}
   .hist-vacio{font-size:12px;color:var(--texto-suave);font-style:italic;}
+  /* el historial del potrero va plegado detrás de un botón (todas las apps) */
+  .historial-det summary{list-style:none;cursor:pointer;display:block;text-align:center;background:#e7e0c9;color:var(--texto);border:1px solid var(--linea);border-radius:6px;padding:12px 10px;min-height:44px;font-weight:600;font-size:14px;}
+  .historial-det summary::-webkit-details-marker{display:none;}
+  .historial-det summary::before{content:'▶ ';}
+  .historial-det[open] summary::before{content:'▼ ';}
+  .historial-det[open] summary{margin-bottom:8px;}
 
   /* ---------- FOOTER / EXPORT ---------- */
   #footer-tools{
@@ -488,7 +495,7 @@
   .form-row select, .form-row input{font-size:16px;padding:12px 10px;min-height:48px;}
   .form-row input[type=checkbox]{width:24px;height:24px;min-height:0;padding:0;}
   .form-botones .btn{min-height:52px;font-size:16px;}
-  .historial-det summary{font-family:'Fraunces',serif;font-size:15px;color:var(--verde-monte);padding:12px 0;min-height:44px;cursor:pointer;}
+  .historial-det summary{font-size:16px;min-height:52px;}
   .hist-btn{font-size:18px;padding:6px 8px;}
   /* botón Herramientas más alargado: ocupa todo el ancho que deja el estado de sincronización */
   #estado-compacto{flex:0 1 auto;max-width:38%;}
@@ -525,7 +532,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v1.40</div>
+        <div class="sub">v1.41</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -726,7 +733,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.98","versionMovil":"1.97","simpleHabilitado":true,"versionMovilSimple":"1.40","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"1.99","versionMovil":"1.98","simpleHabilitado":true,"versionMovilSimple":"1.41","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -2186,7 +2193,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
 
   if(row.tipo==='ingreso' || row.tipo==='nacimiento' || row.tipo==='compra'){
     a[key] = (a[key]||0) + d.cantidad;
-  } else if(row.tipo==='muerte' || row.tipo==='venta'){
+  } else if(row.tipo==='muerte' || row.tipo==='venta' || row.tipo==='consumo'){
     a[key] = Math.max(0, (a[key]||0) - d.cantidad);
   } else {
     return;
@@ -2663,7 +2670,7 @@ function construirAjusteInverso(h, potreroHost){
   if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
     return {tipo:'restar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
   }
-  if(h.tipo==='muerte' || h.tipo==='venta'){
+  if(h.tipo==='muerte' || h.tipo==='venta' || h.tipo==='consumo'){
     return Object.assign({tipo:'sumar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad},
       (h.tipo==='muerte' && grupoTerneroValido(e.grupoTernero)) ? {grupoTernero: e.grupoTernero} : {});
   }
@@ -2798,7 +2805,7 @@ function refrescarTrasCambioHistorial(potrero){
   if(guiasModalAbierto() && typeof renderGuiasLista === 'function') renderGuiasLista();
   else renderDetalle(potrero);
 }
-const ACCION_POR_TIPO_HIST = {ingreso:'agregar', nacimiento:'nacimiento', muerte:'muerte', compra:'compraventa', venta:'compraventa', desaparecido:'desaparecido'};
+const ACCION_POR_TIPO_HIST = {ingreso:'agregar', nacimiento:'nacimiento', muerte:'muerte', consumo:'consumo', compra:'compraventa', venta:'compraventa', desaparecido:'desaparecido'};
 function editarHistorial(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
@@ -2825,6 +2832,11 @@ function editarHistorial(id){
   enviarEvento('correccion', ub.potrero, Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste, fechaOriginal: h.fecha}, datosCorreccionDeCaso(h, datos)));
   guardarEstado(); actualizarTodo();
   publicarStockPotreros([ub.potrero, ajuste && ajuste.potrero, ajuste && ajuste.origen, ajuste && ajuste.destino]);
+  if(h.tipo==='consumo' && typeof abrirConsumos === 'function'){
+    abrirConsumos(Object.assign({}, h.extra, {_fechaISO: h.extra && h.extra._fechaISO}));
+    toast('Corregí los datos y confirmá para volver a cargarlo');
+    return;
+  }
   if((h.tipo==='compra' || h.tipo==='venta') && typeof abrirCompraVentaEnGuias === 'function' && abrirCompraVentaEnGuias(h.extra, ub.potrero)){
     toast('Corregí los datos y confirmá para volver a cargarlo');
     return;
@@ -3447,11 +3459,11 @@ function seleccionarPotrero(nombre){
   map.fitBounds(item.layer.getBounds(), {padding:[40,40], maxZoom:16});
 }
 
-let historialCampoAbierto = false;   // el historial del detalle (Campo) arranca plegado; se acuerda mientras no cambie de potrero
-let historialCampoPotrero = null;
+let historialAbierto = false;   // el historial del detalle arranca plegado (todas las apps); se acuerda mientras no cambie de potrero
+let historialPotrero = null;
 function renderDetalle(nombre){
   document.getElementById('detalle').style.display = 'flex';
-  if(historialCampoPotrero !== nombre){ historialCampoAbierto = false; historialCampoPotrero = nombre; }
+  if(historialPotrero !== nombre){ historialAbierto = false; historialPotrero = nombre; }
   const det = document.getElementById('detalle-caja');
   const info = POTREROS_GEO.find(p=>p.nombre===nombre);
   const animales = estado.potreros[nombre].animales;
@@ -3502,7 +3514,7 @@ function renderDetalle(nombre){
     <div id="form-zona"></div>
 
     <div id="historial">
-      <details class="historial-det"${historialCampoAbierto?' open':''}><summary>Historial (${historialVisible.length})</summary>
+      <details class="historial-det"${historialAbierto?' open':''}><summary>Historial (${historialVisible.length})</summary>
       ${historialVisible.length ? historialVisible.slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||'')).slice(0,15).map(h=>`
         <div class="hist-item ${esc(h.tipo)}${h.eliminado?' eliminado':''}">
           <span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}
@@ -3518,7 +3530,7 @@ function renderDetalle(nombre){
     </div>
   `;
   const detHist = det.querySelector('.historial-det');
-  if(detHist) detHist.addEventListener('toggle', ()=>{ historialCampoAbierto = detHist.open; });
+  if(detHist) detHist.addEventListener('toggle', ()=>{ historialAbierto = detHist.open; });
 
   det.querySelectorAll('[data-accion]').forEach(btn=>{
     btn.addEventListener('click', ()=> mostrarFormulario(nombre, btn.dataset.accion));

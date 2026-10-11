@@ -364,6 +364,18 @@ también descuenta las correcciones `accion:'editar'` (antes solo `'eliminar'`: 
 contando). La tabla "Ver registro de muertes por categoría" separa "Terneros — de temporada" / "Terneros —
 marcados". Test: `tests/probar_muerte_terneros_grupo.js`.
 
+**Consumos (11/10/2026, a pedido de Pedro).** Ovinos (y eventualmente un vacuno) que se faenan para el consumo
+de carne del establecimiento: sección "🥩 Consumos" en "Lluvias y otros eventos" (PC y móvil completa; Campo no
+la tiene). Es un evento `consumo` (`potrero`, `{categoria, dueno, cantidad, obs?}`) que resta del stock del potrero
+como una muerte (`aplicarEventoRemoto`, `construirAjusteInverso`: `{tipo:'sumar'}`) pero **no cuenta como muerte**.
+El resumen es por **ejercicio 1/jul–30/jun** (`leerConsumos()` + `resumirConsumos()`, igual que las muertes: consulta
+`eventos_sync` `consumo` + `correccion`, con cache offline; una corrección `eliminar`/`editar` anula el consumo que
+más se le parece). Se corrige/borra desde el historial del potrero (✏️ reabre el modal con el formulario precargado,
+`abrirConsumos()`). Test: `tests/probar_consumos.js`.
+**Historial plegado (11/10/2026):** en todas las apps el historial del potrero va dentro de un `<details
+class="historial-det">` con un botón "Historial (N)"; se acuerda abierto mientras no cambie de potrero
+(`historialAbierto`/`historialPotrero`).
+
 **Cuidado al escribir un `.select(...)` nuevo contra `eventos_sync`:
 listar explícitamente TODAS las columnas que la función va a leer,
 incluida `potrero`.** Es una columna de la fila (no vive dentro de

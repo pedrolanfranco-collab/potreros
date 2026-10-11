@@ -1,7 +1,6 @@
 /*
  * Prueba ad-hoc: visualización de la app Campo (10/10/2026, a pedido de Pedro).
- * Solo en Campo: el detalle del potrero muestra el total grande, el historial
- * viene plegado (y se acuerda abierto mientras no cambie de potrero), el mapa
+ * Solo en Campo: el detalle del potrero muestra el total grande, el mapa
  * ocupa menos pantalla en el celular y el formulario de una acción se
  * desplaza solo a la vista. La PC y la móvil completa NO cambian.
  *
@@ -137,7 +136,7 @@ async function probarCampo(archivo){
 
 }
 
-async function probarSinCambios(archivo, etiqueta){
+async function probarSinCambios(archivo, etiqueta){  // PC y móvil completa: sin las reglas propias de Campo, pero con el historial plegado
   if(!fs.existsSync(archivo)){ chequear('existe ' + archivo, false, 'no se encontró'); return; }
   const { win, errores } = await levantar(archivo);
   chequear(etiqueta + ' carga sin errores', errores.length === 0, errores.join(' | '));
@@ -148,7 +147,12 @@ async function probarSinCambios(archivo, etiqueta){
   const geo = win.__geo().map(g => g.nombre);
   if(!geo.length) return;
   win.seleccionarPotrero(geo[0]);
-  chequear(etiqueta + ' conserva el historial de siempre (sin desplegable)', !doc.querySelector('.historial-det') && !!doc.querySelector('#historial h3'));
+  // 11/10/2026: el historial plegado con botón vale para TODAS las apps (Pedro lo pidió)
+  const dh = doc.querySelector('.historial-det');
+  chequear(etiqueta + ' tiene el historial plegado detrás de un botón', !!dh && !dh.open && /^Historial \(\d+\)$/.test(dh.querySelector('summary').textContent.trim()));
+  dh.open = true; dh.dispatchEvent(new win.Event('toggle')); win.renderDetalle(geo[0]);
+  chequear(etiqueta + ' se acuerda abierto al redibujar el mismo potrero', doc.querySelector('.historial-det').open === true);
+  if(geo.length > 1){ win.seleccionarPotrero(geo[1]); chequear(etiqueta + ' vuelve plegado al cambiar de potrero', doc.querySelector('.historial-det').open === false); }
 }
 
 (async () => {

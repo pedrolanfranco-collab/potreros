@@ -47,6 +47,7 @@ Stock de un potrero (la app los aplica sumando o restando en `potreros[potrero].
 | `ingreso` | destino | `{categoria, dueno, cantidad}` | suma. Carga inicial y "agregar animales" |
 | `nacimiento` | potrero | `{categoria, dueno, cantidad, obs?}` | suma y cuenta como nacido de la temporada |
 | `muerte` | potrero | `{categoria, dueno, cantidad, obs?, caravana?, grupoTernero?}` | resta y cuenta como muerte (`grupoTernero`, solo en Terneros: `temporada` o `marcado`) |
+| `consumo` | potrero | `{categoria, dueno, cantidad, obs?}` | resta; animales faenados para consumo del establecimiento (ovinos y eventualmente un vacuno). NO cuenta como muerte; tiene su propio resumen por ejercicio 1/jul–30/jun |
 | `movimiento` | origen | `{categoria, dueno, cantidad, destino}` | resta en el origen, suma en `destino`. Lo genera el comando de voz |
 | `movimiento_multi` | origen | `{destino, items:[{categoria, categoriaDestino, dueno, duenoDestino?, cantidad}], obs?}` | varias categorías al mismo destino; con `destino` = el propio potrero es una recategorización o un cambio de dueño |
 | `movimiento_todo` | origen | `{destino, items:[{categoria, dueno, cantidad}]}` | vacía el potrero hacia `destino` |
@@ -128,7 +129,7 @@ Un `correccion` anula, edita o completa un evento anterior. El evento original *
 - Con id propio y estable: `trasladoId` (traslados), `movId` (`movimiento_guia`), `casoId`
   (desaparecidos, muertes de un caso) y, desde la app, `historialId`.
 - **Por parecido** (potrero + categoría + dueño + cantidad + fecha original), tomando el más
-  reciente anterior a la corrección que no esté anulado: `compra`, `venta`, `muerte`,
+  reciente anterior a la corrección que no esté anulado: `compra`, `venta`, `muerte`, `consumo`,
   `movimiento*`, `envio/retorno_campo_ajeno`, `agregar_guia`, `agregar_caravana` y
   `completar_datos`. Dos compras iguales el mismo día se pueden confundir (hallazgo 7, Fase 3
   la pasa a id).
