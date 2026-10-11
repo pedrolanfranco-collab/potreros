@@ -65,7 +65,7 @@ function crearServidor(eventosSemilla){
           _filtros: [], _orden: null,
           select(){ return q; }, eq(col,val){ q._filtros.push(r=>r[col]===val); return q; },
           in(col,vals){ q._filtros.push(r=>vals.includes(r[col])); return q; },
-          order(col,opts){ q._orden = {col, asc: !opts || opts.ascending!==false}; return q; },
+          order(col,opts){ if(!q._orden) q._orden = {col, asc: !opts || opts.ascending!==false}; return q; }, range(){ return q; }, /* Fase 3: el primer orden manda (el desempate por id se ignora) y .range() devuelve todo */
           then(res){
             let data = (filas[tabla]||[]).filter(r=>q._filtros.every(f=>f(r)));
             if(q._orden) data = data.slice().sort((a,b)=>{

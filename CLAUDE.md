@@ -239,16 +239,17 @@ and replays them (`sincronizar()`), so replay order and offline queuing
 doesn't auto-pause after 7 days of inactivity — that ping isn't per-app, one
 covers the whole shared project.
 
-**Cola ordenada (Fase 3 de la auditoría, paso 1, 11/10/2026; flag `CONFIG.colaOrdenada`, hoy solo
-Pone Chico).** Con el flag, `enviarEvento()` pone el evento en `estado.colaSync` y lo guarda en el
+**Cola ordenada (Fase 3 de la auditoría, paso 1, 11/10/2026; flag `CONFIG.colaOrdenada`, prendido
+en los 3 establecimientos desde el 11/10/2026: Pone Chico primero y, el mismo día, María Laura y La
+Vuelta a pedido de Pedro).** Con el flag, `enviarEvento()` pone el evento en `estado.colaSync` y lo guarda en el
 equipo ANTES de mandarlo, y `vaciarColaSync()` manda de a uno, siempre el primero, sacándolo por
 `event_id` recién cuando Supabase confirma (OK o 23505). Una sola vuelta a la vez por cola
 (`vueltaDeCola()`; quien llama durante una vuelta deja pedida otra). Arregla los hallazgos 1 (un
 borrado llegaba antes que su movimiento) y 2 (un evento se perdía si Android cerraba la app durante
 el envío). Sin el flag sigue el camino viejo (`pushEventoRemoto`, `vaciarColaSyncSinOrden`). Ojo en
 pruebas nuevas: un evento que se está mandando sigue en la cola, y el segundo de una ráfaga sale
-cuando el primero fue confirmado. Test: `tests/probar_cola_ordenada.js`. Despliegue: Pone Chico →
-María Laura → La Vuelta; cuando las tres anden, se borra el camino viejo.
+cuando el primero fue confirmado. Test: `tests/probar_cola_ordenada.js`. Cuando se confirme que
+anda en los equipos, se borra el camino viejo (y con él el flag).
 **Paso 2, errores visibles (mismo flag, 11/10/2026, visual aprobado por Pedro):** cada falla queda en
 `estado.fallos.{sync,sanidad,lectura}` (`registrarFalloCola()`, con código, mensaje, status, fecha,
 intentos). Sin respuesta, 5xx, 408 o 429 = pasajera: el indicador dice "⚠ N sin sincronizar · falló el
