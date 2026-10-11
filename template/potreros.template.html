@@ -328,6 +328,7 @@
   .historial-det summary::before{content:'▶ ';}
   .historial-det[open] summary::before{content:'▼ ';}
   .historial-det[open] summary{margin-bottom:8px;}
+  .historial-det-lista{margin:8px 0 12px;}
 
   /* ---------- FOOTER / EXPORT ---------- */
   #footer-tools{
@@ -800,7 +801,9 @@
       </div>
     </div>
     <!-- @sanidadExcel:start -->
-    <div id="sanidad-mis-cargas"></div>
+    <details class="historial-det historial-det-lista"><summary>Mis cargas recientes</summary>
+      <div id="sanidad-mis-cargas"></div>
+    </details>
     <!-- @sanidadExcel:end -->
     <div id="sanidad-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="sanidad-cerrar">Cerrar</button></div>
@@ -831,7 +834,9 @@
     <div id="lluvias-lista" style="display:none;margin-top:8px;"></div>
 <!-- @completo:end -->
 <!-- @simple:start -->
-    <div id="lluvias-lista"></div>
+    <details class="historial-det historial-det-lista"><summary>Historial de lluvias</summary>
+      <div id="lluvias-lista"></div>
+    </details>
 <!-- @simple:end -->
 <!-- @completo:start -->
     <h4 style="margin:16px 0 6px;font-size:13px;">❄️ Otros eventos (helada, granizo...)</h4>
@@ -852,7 +857,9 @@
       <button class="btn btn-secundario" id="ev-cancelar-edicion" style="display:none;">Cancelar edición</button>
 <!-- @pc:end -->
     </div>
-    <div id="eventos-clima-lista"></div>
+    <details class="historial-det historial-det-lista"><summary>Historial de eventos</summary>
+      <div id="eventos-clima-lista"></div>
+    </details>
     <h4 style="margin:16px 0 6px;font-size:13px;">🐄 Abortos</h4>
     <div class="form-row"><label>Motivo</label>
       <select id="ab-motivo">
@@ -869,7 +876,9 @@
       <button class="btn btn-secundario" id="ab-cancelar-edicion" style="display:none;">Cancelar edición</button>
 <!-- @pc:end -->
     </div>
-    <div id="abortos-lista"></div>
+    <details class="historial-det historial-det-lista"><summary>Historial de abortos</summary>
+      <div id="abortos-lista"></div>
+    </details>
     <h4 style="margin:16px 0 6px;font-size:13px;">🐑 Señalada</h4>
     <div class="form-row"><label>Machos</label><input type="number" id="sn-machos" min="0" value="0"></div>
     <div class="form-row"><label>Hembras</label><input type="number" id="sn-hembras" min="0" value="0"></div>
@@ -879,7 +888,9 @@
       <button class="btn btn-agregar" id="sn-guardar">Registrar señalada</button>
       <button class="btn btn-secundario" id="sn-cancelar-edicion" style="display:none;">Cancelar edición</button>
     </div>
-    <div id="senaladas-lista"></div>
+    <details class="historial-det historial-det-lista"><summary>Historial de señaladas</summary>
+      <div id="senaladas-lista"></div>
+    </details>
     <h4 style="margin:16px 0 6px;font-size:13px;">🥩 Consumos (faena para el establecimiento)</h4>
     <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Animales que se faenan para consumo de carne: se restan del stock del potrero. Para corregir uno, usá el historial del potrero.</p>
     <div class="form-row"><label>Potrero</label><select id="co-potrero"></select></div>
@@ -1061,7 +1072,9 @@
       <div class="form-botones" style="margin-bottom:12px;">
         <button class="btn btn-agregar" id="ca-guardar">Registrar</button>
       </div>
-      <div id="campo-ajeno-lista"></div>
+      <details class="historial-det historial-det-lista"><summary>Historial de campo ajeno</summary>
+        <div id="campo-ajeno-lista"></div>
+      </details>
     </div>
     <div id="traslado-seccion" style="display:none;">
       <h4 style="margin:16px 0 6px;font-size:13px;">🚚 Traslado a otro campo</h4>
@@ -1077,9 +1090,11 @@
       <div class="form-botones" style="margin-bottom:12px;">
         <button class="btn btn-agregar" id="tr-guardar">Registrar traslado</button>
       </div>
-      <div id="traslado-lista"></div>
+      <details class="historial-det historial-det-lista"><summary>Historial de traslados</summary>
+        <div id="traslado-lista"></div>
+      </details>
     </div>
-    <h4 style="margin:16px 0 6px;font-size:13px;">Lista de movimientos con guía</h4>
+    <details class="historial-det historial-det-lista" id="mg-historial"><summary>Historial de movimientos con guía</summary>
     <div class="form-row"><label>Tipo</label>
       <select id="mg-filtro-tipo">
         <option value="">Todos</option>
@@ -1095,6 +1110,7 @@
     <div class="form-row"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="mg-filtro-faltan"> Solo las que faltan completar (kilos, precio…)</label></div>
     <div id="mg-resumen" style="font-size:12.5px;color:var(--texto-suave);margin:6px 0;"></div>
     <div id="mg-lista"></div>
+    </details>
     <div class="form-botones"><button class="btn btn-secundario" id="guias-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -7957,10 +7973,12 @@ function pesadasFichaHTML(a){
     + `<td style="padding:2px 6px;">${esc(fmtGdp(x.g))}</td>`
     + `<td style="padding:2px 6px;color:#5a6572;">${esc(x.a || '')}</td></tr>`).join('');
   return `<div class="modal-info" style="margin-top:10px;"><b>⚖️ Pesadas</b> (${todas.length})<br>${resumen}</div>
+    <details class="historial-det historial-det-lista"><summary>Historial de pesadas (${todas.length})</summary>
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
       <tr style="color:#5a6572;"><td style="padding:2px 6px;">Fecha</td><td style="padding:2px 6px;">Peso</td><td style="padding:2px 6px;">Ganancia</td><td style="padding:2px 6px;">Sesión</td></tr>
       ${filas}
-    </table>`;
+    </table>
+    </details>`;
 }
 
 function fichaCaravanaHTML(a){
@@ -9963,8 +9981,8 @@ async function renderConsumosResumen(){
   html += `<table class="tabla-animales"><thead><tr><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead><tbody>${cats.map(([c,n])=>`<tr><td>${esc(c)}</td><td class="num">${n}</td></tr>`).join('')}</tbody></table>`;
   html += `<table class="tabla-animales"><thead><tr>${MESES_EJERCICIO.map(m=>`<th style="text-align:right;">${m}</th>`).join('')}</tr></thead><tbody><tr>${r.porMes.map(n=>`<td class="num">${n||'·'}</td>`).join('')}</tr></tbody></table>`;
   const recientes = r.filas.slice().sort((a,b)=> parseFechaDMY(b.fecha) - parseFechaDMY(a.fecha)).slice(0, 15);
-  html += `<table class="tabla-animales"><thead><tr><th>Fecha</th><th>Potrero</th><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead><tbody>${recientes.map(f=>
-    `<tr><td>${esc(f.fecha)}</td><td>${esc(f.potrero||'')}</td><td>${esc(f.categoria||'')}${f.dueno ? ' ('+esc(textoFirma(f.dueno))+')' : ''}${f.obs ? '<br><span style="color:var(--texto-suave);font-size:11px;">'+esc(f.obs)+'</span>' : ''}</td><td class="num">${f.cantidad}</td></tr>`).join('')}</tbody></table>`;
+  html += `<details class="historial-det historial-det-lista"><summary>Historial de consumos (${r.filas.length})</summary><table class="tabla-animales"><thead><tr><th>Fecha</th><th>Potrero</th><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead><tbody>${recientes.map(f=>
+    `<tr><td>${esc(f.fecha)}</td><td>${esc(f.potrero||'')}</td><td>${esc(f.categoria||'')}${f.dueno ? ' ('+esc(textoFirma(f.dueno))+')' : ''}${f.obs ? '<br><span style="color:var(--texto-suave);font-size:11px;">'+esc(f.obs)+'</span>' : ''}</td><td class="num">${f.cantidad}</td></tr>`).join('')}</tbody></table></details>`;
   cont.innerHTML = html;
 }
 <!-- @completo:end -->

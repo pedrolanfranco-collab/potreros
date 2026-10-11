@@ -329,6 +329,7 @@
   .historial-det summary::before{content:'▶ ';}
   .historial-det[open] summary::before{content:'▼ ';}
   .historial-det[open] summary{margin-bottom:8px;}
+  .historial-det-lista{margin:8px 0 12px;}
 
   /* ---------- FOOTER / EXPORT ---------- */
   #footer-tools{
@@ -532,7 +533,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v1.44</div>
+        <div class="sub">v1.45</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -665,7 +666,9 @@
       <button class="btn btn-agregar" id="ll-guardar">Cargar lluvia</button>
     </div>
     <div id="lluvias-resumen"></div>
-    <div id="lluvias-lista"></div>
+    <details class="historial-det historial-det-lista"><summary>Historial de lluvias</summary>
+      <div id="lluvias-lista"></div>
+    </details>
     <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -733,7 +736,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.02","versionMovil":"2.01","simpleHabilitado":true,"versionMovilSimple":"1.44","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.03","versionMovil":"2.02","simpleHabilitado":true,"versionMovilSimple":"1.45","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -5367,10 +5370,12 @@ function pesadasFichaHTML(a){
     + `<td style="padding:2px 6px;">${esc(fmtGdp(x.g))}</td>`
     + `<td style="padding:2px 6px;color:#5a6572;">${esc(x.a || '')}</td></tr>`).join('');
   return `<div class="modal-info" style="margin-top:10px;"><b>⚖️ Pesadas</b> (${todas.length})<br>${resumen}</div>
+    <details class="historial-det historial-det-lista"><summary>Historial de pesadas (${todas.length})</summary>
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
       <tr style="color:#5a6572;"><td style="padding:2px 6px;">Fecha</td><td style="padding:2px 6px;">Peso</td><td style="padding:2px 6px;">Ganancia</td><td style="padding:2px 6px;">Sesión</td></tr>
       ${filas}
-    </table>`;
+    </table>
+    </details>`;
 }
 
 function fichaCaravanaHTML(a){

@@ -386,7 +386,10 @@ más se le parece). Se corrige/borra desde el historial del potrero (✏️ reab
 `abrirConsumos()`). Test: `tests/probar_consumos.js`.
 **Historial plegado (11/10/2026):** en todas las apps el historial del potrero va dentro de un `<details
 class="historial-det">` con un botón "Historial (N)"; se acuerda abierto mientras no cambie de potrero
-(`historialAbierto`/`historialPotrero`).
+(`historialAbierto`/`historialPotrero`). **Todos los historiales/listas de registros** (lluvias, eventos, abortos,
+señaladas, consumos, campo ajeno, traslados, movimientos con guía, "Mis cargas recientes" de Sanidad y las pesadas de
+la ficha de caravana) también van plegados detrás de un botón, en todas las ventanas: clase `historial-det` /
+`historial-det-lista`. Test: `tests/probar_historiales_ocultos.js`.
 
 **Cuidado al escribir un `.select(...)` nuevo contra `eventos_sync`:
 listar explícitamente TODAS las columnas que la función va a leer,

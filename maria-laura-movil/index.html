@@ -329,6 +329,7 @@
   .historial-det summary::before{content:'▶ ';}
   .historial-det[open] summary::before{content:'▼ ';}
   .historial-det[open] summary{margin-bottom:8px;}
+  .historial-det-lista{margin:8px 0 12px;}
 
   /* ---------- FOOTER / EXPORT ---------- */
   #footer-tools{
@@ -462,7 +463,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.31</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.32</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -647,7 +648,9 @@
     <div class="form-botones" style="margin-bottom:12px;">
       <button class="btn btn-agregar" id="ev-guardar">Registrar evento</button>
     </div>
-    <div id="eventos-clima-lista"></div>
+    <details class="historial-det historial-det-lista"><summary>Historial de eventos</summary>
+      <div id="eventos-clima-lista"></div>
+    </details>
     <h4 style="margin:16px 0 6px;font-size:13px;">🐄 Abortos</h4>
     <div class="form-row"><label>Motivo</label>
       <select id="ab-motivo">
@@ -661,7 +664,9 @@
     <div class="form-botones" style="margin-bottom:12px;">
       <button class="btn btn-agregar" id="ab-guardar">Registrar aborto</button>
     </div>
-    <div id="abortos-lista"></div>
+    <details class="historial-det historial-det-lista"><summary>Historial de abortos</summary>
+      <div id="abortos-lista"></div>
+    </details>
     <h4 style="margin:16px 0 6px;font-size:13px;">🐑 Señalada</h4>
     <div class="form-row"><label>Machos</label><input type="number" id="sn-machos" min="0" value="0"></div>
     <div class="form-row"><label>Hembras</label><input type="number" id="sn-hembras" min="0" value="0"></div>
@@ -671,7 +676,9 @@
       <button class="btn btn-agregar" id="sn-guardar">Registrar señalada</button>
       <button class="btn btn-secundario" id="sn-cancelar-edicion" style="display:none;">Cancelar edición</button>
     </div>
-    <div id="senaladas-lista"></div>
+    <details class="historial-det historial-det-lista"><summary>Historial de señaladas</summary>
+      <div id="senaladas-lista"></div>
+    </details>
     <h4 style="margin:16px 0 6px;font-size:13px;">🥩 Consumos (faena para el establecimiento)</h4>
     <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Animales que se faenan para consumo de carne: se restan del stock del potrero. Para corregir uno, usá el historial del potrero.</p>
     <div class="form-row"><label>Potrero</label><select id="co-potrero"></select></div>
@@ -773,7 +780,9 @@
       <div class="form-botones" style="margin-bottom:12px;">
         <button class="btn btn-agregar" id="ca-guardar">Registrar</button>
       </div>
-      <div id="campo-ajeno-lista"></div>
+      <details class="historial-det historial-det-lista"><summary>Historial de campo ajeno</summary>
+        <div id="campo-ajeno-lista"></div>
+      </details>
     </div>
     <div id="traslado-seccion" style="display:none;">
       <h4 style="margin:16px 0 6px;font-size:13px;">🚚 Traslado a otro campo</h4>
@@ -789,9 +798,11 @@
       <div class="form-botones" style="margin-bottom:12px;">
         <button class="btn btn-agregar" id="tr-guardar">Registrar traslado</button>
       </div>
-      <div id="traslado-lista"></div>
+      <details class="historial-det historial-det-lista"><summary>Historial de traslados</summary>
+        <div id="traslado-lista"></div>
+      </details>
     </div>
-    <h4 style="margin:16px 0 6px;font-size:13px;">Lista de movimientos con guía</h4>
+    <details class="historial-det historial-det-lista" id="mg-historial"><summary>Historial de movimientos con guía</summary>
     <div class="form-row"><label>Tipo</label>
       <select id="mg-filtro-tipo">
         <option value="">Todos</option>
@@ -807,6 +818,7 @@
     <div class="form-row"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="mg-filtro-faltan"> Solo las que faltan completar (kilos, precio…)</label></div>
     <div id="mg-resumen" style="font-size:12.5px;color:var(--texto-suave);margin:6px 0;"></div>
     <div id="mg-lista"></div>
+    </details>
     <div class="form-botones"><button class="btn btn-secundario" id="guias-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -889,7 +901,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.33","versionMovil":"3.31","simpleHabilitado":true,"versionMovilSimple":"1.44","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.34","versionMovil":"3.32","simpleHabilitado":true,"versionMovilSimple":"1.45","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -5976,10 +5988,12 @@ function pesadasFichaHTML(a){
     + `<td style="padding:2px 6px;">${esc(fmtGdp(x.g))}</td>`
     + `<td style="padding:2px 6px;color:#5a6572;">${esc(x.a || '')}</td></tr>`).join('');
   return `<div class="modal-info" style="margin-top:10px;"><b>⚖️ Pesadas</b> (${todas.length})<br>${resumen}</div>
+    <details class="historial-det historial-det-lista"><summary>Historial de pesadas (${todas.length})</summary>
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
       <tr style="color:#5a6572;"><td style="padding:2px 6px;">Fecha</td><td style="padding:2px 6px;">Peso</td><td style="padding:2px 6px;">Ganancia</td><td style="padding:2px 6px;">Sesión</td></tr>
       ${filas}
-    </table>`;
+    </table>
+    </details>`;
 }
 
 function fichaCaravanaHTML(a){
@@ -7338,8 +7352,8 @@ async function renderConsumosResumen(){
   html += `<table class="tabla-animales"><thead><tr><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead><tbody>${cats.map(([c,n])=>`<tr><td>${esc(c)}</td><td class="num">${n}</td></tr>`).join('')}</tbody></table>`;
   html += `<table class="tabla-animales"><thead><tr>${MESES_EJERCICIO.map(m=>`<th style="text-align:right;">${m}</th>`).join('')}</tr></thead><tbody><tr>${r.porMes.map(n=>`<td class="num">${n||'·'}</td>`).join('')}</tr></tbody></table>`;
   const recientes = r.filas.slice().sort((a,b)=> parseFechaDMY(b.fecha) - parseFechaDMY(a.fecha)).slice(0, 15);
-  html += `<table class="tabla-animales"><thead><tr><th>Fecha</th><th>Potrero</th><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead><tbody>${recientes.map(f=>
-    `<tr><td>${esc(f.fecha)}</td><td>${esc(f.potrero||'')}</td><td>${esc(f.categoria||'')}${f.dueno ? ' ('+esc(textoFirma(f.dueno))+')' : ''}${f.obs ? '<br><span style="color:var(--texto-suave);font-size:11px;">'+esc(f.obs)+'</span>' : ''}</td><td class="num">${f.cantidad}</td></tr>`).join('')}</tbody></table>`;
+  html += `<details class="historial-det historial-det-lista"><summary>Historial de consumos (${r.filas.length})</summary><table class="tabla-animales"><thead><tr><th>Fecha</th><th>Potrero</th><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead><tbody>${recientes.map(f=>
+    `<tr><td>${esc(f.fecha)}</td><td>${esc(f.potrero||'')}</td><td>${esc(f.categoria||'')}${f.dueno ? ' ('+esc(textoFirma(f.dueno))+')' : ''}${f.obs ? '<br><span style="color:var(--texto-suave);font-size:11px;">'+esc(f.obs)+'</span>' : ''}</td><td class="num">${f.cantidad}</td></tr>`).join('')}</tbody></table></details>`;
   cont.innerHTML = html;
 }
 
