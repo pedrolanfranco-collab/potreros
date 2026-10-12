@@ -105,6 +105,7 @@ const MODALES = [
   ['modal-coef', 'coef-cerrar-x', 'coef-cerrar'],
   ['modal-puntos', 'puntos-cerrar-x', 'puntos-cerrar'],
   ['modal-dibujar-potrero', 'dp-cerrar-x', 'dp-cancelar'],
+  ['modal-verificar-stock', 'vs-cerrar-x', 'vs-cerrar'],
 ];
 
 async function probarArchivo(archivo){

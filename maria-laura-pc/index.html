@@ -368,6 +368,28 @@
   #menu-herramientas .hg-grid .btn{margin-bottom:0;font-size:15px;padding:12px 10px;}
   #menu-herramientas .hg-grid .hg-ancho{grid-column:1 / -1;}
   #menu-herramientas .hsub .btn-secundario{background:#efe7cf;color:var(--texto);}
+  /* 12/10/2026: ventana "🔍 Verificar stock" (Fase 3, paso 5). Solo la PC. */
+  #modal-verificar-stock .modal-box{max-width:680px;}
+  .vs-tarjetas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px;}
+  .vs-card{background:#fff;border:1px solid var(--linea);border-radius:8px;padding:10px 12px;}
+  .vs-card .vs-lbl{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);}
+  .vs-card .vs-num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;line-height:1.2;margin:2px 0;}
+  .vs-card .vs-sub{font-size:12px;color:var(--texto-suave);}
+  .vs-card.vs-aviso{border-color:var(--ocre);background:#fbf1de;}
+  .vs-card.vs-aviso .vs-num{color:var(--ocre);}
+  .vs-card.vs-ok{border-color:var(--verde-campo);background:#eef4e6;}
+  .vs-card.vs-ok .vs-num{color:var(--verde-campo);}
+  .vs-tabla-caja{max-height:42vh;overflow:auto;border:1px solid var(--linea);border-radius:8px;background:#fff;}
+  #vs-tabla{width:100%;border-collapse:collapse;font-size:13px;}
+  #vs-tabla thead th{position:sticky;top:0;background:var(--crema-alta);text-align:right;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);padding:6px 8px;border-bottom:1px solid var(--linea);}
+  #vs-tabla thead th:first-child{text-align:left;}
+  #vs-tabla tr.vs-pot th{text-align:left;background:#efe7cf;font-size:12.5px;padding:6px 8px;}
+  #vs-tabla td{padding:5px 8px;border-bottom:1px solid #eee6cd;}
+  #vs-tabla td.num{text-align:right;font-family:'JetBrains Mono',monospace;}
+  #vs-tabla .vs-neg{color:var(--rojo-hacienda);font-weight:700;}
+  #vs-tabla .vs-vacio{color:var(--texto-suave);font-style:italic;}
+  .vs-tag{font-weight:600;font-size:11px;color:var(--ocre);margin-left:6px;}
+  #vs-notas p{font-size:12px;color:var(--texto-suave);margin:4px 0;line-height:1.4;}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
 
   input[type=file]{display:none;}
@@ -463,7 +485,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.36 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.37 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -529,6 +551,7 @@
             <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
             <button class="btn btn-json" id="btn-pesadas" style="display:none;">⚖️ Pesadas</button>
             <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
+            <button class="btn btn-json" id="btn-verificar-stock">🔍 Verificar stock</button>
           </div>
         </div>
         <div class="hg">
@@ -1003,6 +1026,32 @@
     </div>
   </div>
 </div>
+<div id="modal-verificar-stock" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🔍 Verificar stock</h3>
+    <button class="btn-cerrar-x" id="vs-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info" id="vs-subtitulo"></p>
+    <div id="vs-mensaje" class="modal-info" role="status"></div>
+    <div id="vs-cuerpo" style="display:none;">
+      <div class="vs-tarjetas">
+        <div class="vs-card" id="vs-card-pc"><div class="vs-lbl">Esta PC</div><div class="vs-num"></div><div class="vs-sub">cabezas</div></div>
+        <div class="vs-card" id="vs-card-reg"><div class="vs-lbl">Registro</div><div class="vs-num"></div><div class="vs-sub">cabezas</div></div>
+        <div class="vs-card" id="vs-card-dif"><div class="vs-lbl">Potreros distintos</div><div class="vs-num"></div><div class="vs-sub"></div></div>
+      </div>
+      <div class="vs-tabla-caja" id="vs-tabla-caja">
+        <table id="vs-tabla">
+          <thead><tr><th>Categoría (firma)</th><th>Esta PC</th><th>Registro</th><th>Diferencia</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="vs-notas"></div>
+    </div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="vs-csv" style="display:none;">⬇ Descargar detalle (CSV)</button>
+      <button class="btn btn-secundario" id="vs-cerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
 <div id="modal-puntos" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>Aguadas, instalaciones y caminos</h3>
@@ -1052,9 +1101,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.36","versionMovil":"3.34","simpleHabilitado":true,"versionMovilSimple":"1.47","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.37","versionMovil":"3.34","simpleHabilitado":true,"versionMovilSimple":"1.47","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
+/* Fase 3, paso 5 (12/10/2026, "Verificar stock", solo PC): los potreros TAL COMO VIENEN EN EL ARCHIVO. POTREROS_GEO es este
+   mismo arreglo y objetos, y más abajo se le suman los potreros creados a mano (POTREROS_NUEVOS_KEY) y se le pisan los
+   límites importados (LIMITES_KEY): la reconstrucción en memoria arranca de esta copia, como un equipo recién instalado. */
+const POTREROS_GEO_ORIGINAL = JSON.parse(JSON.stringify(CONFIG.potrerosGeo));
 
 /* Categorías por especie con coeficiente de Unidad Ganadera (UG) por defecto.
    Referencia estándar usada en Uruguay (INIA / Plan Agropecuario, base 1 UG = vaca de cría de ~400-450kg).
@@ -1442,6 +1495,11 @@ const NOMBRES_VIEJOS_POTRERO = CONFIG.nombresViejosPotrero;
    zona muerta temporal. Antes el error se tragaba en el try/catch y el guardado inicial no ocurría. */
 let _ultimoGuardado = null; // lo último que ESTA página escribió o leyó de STORAGE_KEY
 let _noGuardado = false, _avisoNoGuardadoCerrado = false;
+/* Fase 3, paso 5 ("Verificar stock", solo PC): true SOLO mientras reconstruirStockDesdeRegistro() corre (síncrona, de punta a
+   punta, sin ningún await). Con esto guardarEstado(), dibujarPotrero(), crearMarcadorPunto/Reporte() y lo que
+   aplicarEventoRemoto() escribe fuera de `estado` (localStorage, mapa) no hacen nada. Va acá, antes de la primera
+   llamada a guardarEstado() de abajo. */
+let _reconstruyendo = false;
 let estado = cargarEstado();
 if(migrarClavesSinFirma(estado.potreros)) guardarEstado();
 
@@ -1543,6 +1601,7 @@ function mostrarAvisoNoGuardado(mostrar){
   }catch(e){}
 }
 function guardarEstado(){
+  if(_reconstruyendo) return;
   try{
     const json = JSON.stringify(estado);
     localStorage.setItem(STORAGE_KEY, json);
@@ -1602,7 +1661,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-3.36';
+const VERSION_APP = 'pc-3.37';
 /* `opciones` (opcional): {eventId} para fijar el id del evento, y {establecimiento}
    para escribirlo en el stream de OTRO establecimiento (traslados entre campos; la
    cola guarda el establecimiento destino junto con el evento). */
@@ -2179,6 +2238,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     const idx = (estado.puntos||[]).findIndex(p=>p.id===d.id);
     if(idx===-1) return;
     estado.puntos.splice(idx,1);
+    if(_reconstruyendo) return; // Verificar stock: el marcador del mapa es el de verdad, no se toca
     if(puntosLayers[d.id]){ map.removeLayer(puntosLayers[d.id]); delete puntosLayers[d.id]; }
     guardarEstado();
     return;
@@ -2204,6 +2264,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     if(r && !r.resuelto){
       r.resuelto = true;
       r.fechaResuelto = d.fecha || fechaHoy();
+      if(_reconstruyendo) return;
       if(reportesLayers[d.id]){ map.removeLayer(reportesLayers[d.id]); delete reportesLayers[d.id]; }
       guardarEstado();
     }
@@ -2214,6 +2275,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     const idx = (estado.reportes||[]).findIndex(r=>r.id===d.id);
     if(idx===-1) return;
     estado.reportes.splice(idx,1);
+    if(_reconstruyendo) return;
     if(reportesLayers[d.id]){ map.removeLayer(reportesLayers[d.id]); delete reportesLayers[d.id]; }
     guardarEstado();
     return;
@@ -2231,6 +2293,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     if(!nombrePotreroValido(potrero) || !coordsValidas(d.coords)) return; // nombre o límite inválido: no se crea
     const p = {nombre: potrero, coords: d.coords.map(c=>[c[0], c[1]]), area: Number.isFinite(d.area) ? d.area : null};
     POTREROS_GEO.push(p);
+    if(!_reconstruyendo) // Verificar stock: no se escribe en el equipo
     try{
       const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
       if(!nuevosGuardados.some(x=>x.nombre===potrero)){
@@ -2249,6 +2312,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     if(!p || !coordsValidas(d.coords)) return;
     p.coords = d.coords.map(c=>[c[0], c[1]]); p.area = Number.isFinite(d.area) ? d.area : null;
     AREA_CALCULADA[potrero] = calcAreaHa(p.coords);
+    if(_reconstruyendo) return; // Verificar stock: ni localStorage ni el polígono del mapa
     try{
       const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
       limitesGuardados[potrero] = {coords: p.coords, area: p.area};
@@ -2264,6 +2328,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     if(!p || !original) return;
     p.coords = original.coords; p.area = original.area;
     AREA_CALCULADA[potrero] = calcAreaHa(p.coords);
+    if(_reconstruyendo) return;
     try{
       const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
       delete limitesGuardados[potrero];
@@ -2278,6 +2343,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     const idx = potrero ? POTREROS_GEO.findIndex(x=>x.nombre===potrero) : -1;
     if(idx===-1) return;
     POTREROS_GEO.splice(idx,1);
+    if(!_reconstruyendo) // Verificar stock: no se escribe en el equipo
     try{
       const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
       localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevosGuardados.filter(x=>x.nombre!==potrero)));
@@ -2286,6 +2352,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     }catch(e){}
     delete estado.potreros[potrero];
     delete AREA_CALCULADA[potrero];
+    if(_reconstruyendo) return;
     const entry = poligonos[potrero];
     if(entry){ map.removeLayer(entry.layer); map.removeLayer(entry.label); delete poligonos[potrero]; }
     if(potrerosSucios) potrerosSucios.add(potrero); // publicarStockPotrero limpia solo cuando el potrero ya no existe
@@ -2884,6 +2951,219 @@ async function sincronizar(mostrarToast){
     actualizarEstadoSync();
   }
 }
+/* ======================= VERIFICAR STOCK (solo PC) =======================
+   Fase 3 de la auditoría, paso 5 (12/10/2026). "🔍 Verificar stock" (Herramientas › Consultar) lee TODO el registro
+   (eventos_sync) del establecimiento, rearma el stock en memoria como lo haría un equipo recién instalado y lo compara
+   con el stock de esta PC. SOLO COMPARA: no cambia nada en la PC ni en Supabase.
+   La reconstrucción (reconstruirStockDesdeRegistro) es SÍNCRONA de punta a punta: cambia `estado` y POTREROS_GEO por
+   copias nuevas, aplica los eventos con aplicarEventoRemoto() y restaura en un finally, sin ningún await en el medio, así
+   que ninguna sincronización, guardado ni acción del usuario puede meterse mientras lo de verdad está cambiado. Mientras
+   dura, _reconstruyendo hace que lo que aplicarEventoRemoto() escribe fuera de `estado` (guardarEstado, localStorage,
+   capas del mapa) no haga nada. */
+function fotoStock(est){
+  const nonulos = (animales) => {
+    const out = {};
+    Object.entries(animales || {}).forEach(([k, c])=>{ const n = Number(c || 0); if(n !== 0) out[k] = n; });
+    return out;
+  };
+  const potreros = {};
+  Object.keys(est.potreros || {}).forEach(nombre=>{ potreros[nombre] = nonulos(est.potreros[nombre].animales); });
+  return { potreros, campoAjeno: nonulos(est.campoAjeno && est.campoAjeno.animales), tieneCampoAjeno: !!est.campoAjeno };
+}
+function reconstruirStockDesdeRegistro(filas){
+  const estadoReal = estado;
+  const potrerosReales = POTREROS_GEO.slice(); // mismos objetos: la reconstrucción trabaja con copias, nunca los toca
+  const areaReal = Object.assign({}, AREA_CALCULADA);
+  const resultado = { eventos: filas.length, deCola: 0, desconocidos: 0, pendientes: 0, foto: null };
+  _reconstruyendo = true;
+  try{
+    POTREROS_GEO.length = 0;
+    POTREROS_GEO.push(...JSON.parse(JSON.stringify(POTREROS_GEO_ORIGINAL)));
+    estado = estadoInicial();
+    // lo mismo que hace una instalación nueva al cargar (línea de `let estado = cargarEstado()`): la carga inicial de La Vuelta
+    // trae claves viejas sin firma ("Vacas") que se migran a "Vacas||"; sin esto todo ese stock saldría como diferencia
+    migrarClavesSinFirma(estado.potreros);
+    const sucios = new Set();
+    filas.forEach(row=> aplicarEventoRemoto(row, sucios));
+    // Lo que esta PC cargó y todavía no subió (en la cola) también cuenta: no es una diferencia. Se saltea lo que ya
+    // llegó al registro (un evento que se está mandando sigue en la cola hasta que Supabase confirma) y lo que es del
+    // stream de otro establecimiento (traslados).
+    const enRegistro = new Set(filas.map(f => f.event_id).filter(Boolean));
+    (estadoReal.colaSync || []).forEach(ev=>{
+      if(!ev || (ev.establecimiento && ev.establecimiento !== ESTABLECIMIENTO)) return;
+      if(ev.event_id && enRegistro.has(ev.event_id)) return;
+      aplicarEventoRemoto({
+        event_id: ev.event_id, establecimiento: ESTABLECIMIENTO, dispositivo: 'verificar-stock', tipo: ev.tipo, potrero: ev.potrero,
+        detalle: JSON.parse(JSON.stringify(ev.detalle || {})), fecha_cliente: ev.fecha_cliente, creado_en: new Date().toISOString()
+      }, sucios);
+      resultado.deCola++;
+    });
+    resultado.desconocidos = (estado.eventosDesconocidos || []).length;
+    resultado.pendientes = Object.values(estado.pendientesPotrero || {}).reduce((s, l)=> s + l.length, 0);
+    resultado.foto = fotoStock(estado);
+  }finally{
+    estado = estadoReal;
+    POTREROS_GEO.length = 0;
+    POTREROS_GEO.push(...potrerosReales);
+    Object.keys(AREA_CALCULADA).forEach(k=> delete AREA_CALCULADA[k]);
+    Object.assign(AREA_CALCULADA, areaReal);
+    _reconstruyendo = false;
+  }
+  return resultado;
+}
+/* local − registro, por potrero y por categoría||firma. Devuelve solo lo distinto. */
+function compararStock(local, reg){
+  const collator = new Intl.Collator('es', {numeric: true});
+  const nombres = [...new Set([...Object.keys(local.potreros), ...Object.keys(reg.potreros)])].sort(collator.compare);
+  const filasDe = (a, b)=>{
+    const claves = [...new Set([...Object.keys(a), ...Object.keys(b)])];
+    return claves.map(clave=>{
+      const {cat, dueno} = partesClave(clave);
+      const pc = a[clave] || 0, rg = b[clave] || 0;
+      return {clave, cat, dueno, pc, reg: rg, dif: pc - rg};
+    }).filter(f => f.dif !== 0).sort((x, y)=> collator.compare(x.cat, y.cat) || collator.compare(x.dueno, y.dueno));
+  };
+  const suma = (o)=> Object.values(o).reduce((s, n)=> s + n, 0);
+  const potreros = [];
+  nombres.forEach(nombre=>{
+    const enPc = Object.prototype.hasOwnProperty.call(local.potreros, nombre);
+    const enReg = Object.prototype.hasOwnProperty.call(reg.potreros, nombre);
+    const filas = filasDe(local.potreros[nombre] || {}, reg.potreros[nombre] || {});
+    const lado = enPc && enReg ? null : (enPc ? 'pc' : 'registro');
+    if(filas.length || lado) potreros.push({nombre, lado, filas});
+  });
+  return {
+    totalPc: Object.values(local.potreros).reduce((s, a)=> s + suma(a), 0),
+    totalReg: Object.values(reg.potreros).reduce((s, a)=> s + suma(a), 0),
+    nPotreros: nombres.length, potreros,
+    campoAjeno: { hay: local.tieneCampoAjeno || reg.tieneCampoAjeno || Object.keys(local.campoAjeno).length > 0 || Object.keys(reg.campoAjeno).length > 0,
+      filas: filasDe(local.campoAjeno, reg.campoAjeno) }
+  };
+}
+const MENOS = '−';
+function textoCantidadVs(n){ return n < 0 ? MENOS + Math.abs(n) : String(n); }
+function textoDifVs(n){ return n > 0 ? '+' + n : MENOS + Math.abs(n); }
+function celdaNumVs(n, conSigno){
+  return '<td class="num' + (n < 0 ? ' vs-neg' : '') + '">' + esc(conSigno ? textoDifVs(n) : textoCantidadVs(n)) + '</td>';
+}
+function filaVs(f){
+  const firma = textoFirma(f.dueno);
+  const firmaTxt = firma.charAt(0) === '(' ? firma : '(' + firma + ')'; // "(sin firma)" ya viene entre paréntesis
+  return '<tr class="vs-fila"><td>' + esc(f.cat) + ' ' + esc(firmaTxt) + '</td>' + celdaNumVs(f.pc) + celdaNumVs(f.reg) + celdaNumVs(f.dif, true) + '</tr>';
+}
+let _ultimaVerificacion = null;
+let _fichaVerificar = 0; // se cambia en cada apertura/cierre: una lectura que termina tarde no pinta una ventana que ya no es la suya
+function mensajeVs(texto){
+  const m = document.getElementById('vs-mensaje');
+  m.textContent = texto || '';
+  document.getElementById('vs-cuerpo').style.display = 'none';
+  document.getElementById('vs-csv').style.display = 'none';
+}
+function pintarVerificacion(cmp, meta){
+  _ultimaVerificacion = cmp;
+  document.getElementById('vs-mensaje').textContent = '';
+  document.getElementById('vs-subtitulo').textContent = CONFIG.nombre + ' · rearmado desde ' + plural(meta.eventos, 'evento', 'eventos') + ', como un equipo recién instalado';
+  const nDist = cmp.potreros.length;
+  const nCampo = cmp.campoAjeno.filas.length;
+  const todoOk = nDist === 0 && nCampo === 0;
+  document.querySelector('#vs-card-pc .vs-num').textContent = textoCantidadVs(cmp.totalPc);
+  document.querySelector('#vs-card-reg .vs-num').textContent = textoCantidadVs(cmp.totalReg);
+  const cd = document.getElementById('vs-card-dif');
+  cd.querySelector('.vs-num').textContent = nDist + ' de ' + cmp.nPotreros;
+  cd.querySelector('.vs-sub').textContent = todoOk ? 'Todo coincide' : (nDist ? 'no coinciden con el registro' : 'Campo ajeno distinto');
+  cd.classList.toggle('vs-ok', todoOk);
+  cd.classList.toggle('vs-aviso', !todoOk);
+  let html = '';
+  cmp.potreros.forEach(p=>{
+    const tag = p.lado ? ' <span class="vs-tag">' + (p.lado === 'pc' ? 'solo en esta PC' : 'solo en el registro') + '</span>' : '';
+    html += '<tr class="vs-pot"><th colspan="4">' + esc(p.nombre) + tag + '</th></tr>';
+    if(p.filas.length) html += p.filas.map(filaVs).join('');
+    else html += '<tr class="vs-fila-vacia"><td colspan="4" class="vs-vacio">sin animales</td></tr>';
+  });
+  if(nCampo){
+    html += '<tr class="vs-pot"><th colspan="4">Campo ajeno</th></tr>' + cmp.campoAjeno.filas.map(filaVs).join('');
+  }
+  document.querySelector('#vs-tabla tbody').innerHTML = html;
+  document.getElementById('vs-tabla-caja').style.display = html ? '' : 'none';
+  const notas = [];
+  if(meta.deCola) notas.push('Se tuvieron en cuenta ' + plural(meta.deCola, 'movimiento', 'movimientos') + ' de esta PC sin subir.');
+  if(cmp.campoAjeno.hay) notas.push(nCampo ? 'Campo ajeno: ' + plural(nCampo, 'categoría distinta', 'categorías distintas') + ' (ver la tabla).' : 'Campo ajeno coincide.');
+  const iguales = cmp.nPotreros - nDist;
+  if(nDist && iguales > 0) notas.push(iguales === 1 ? 'El otro potrero coincide.' : 'Los otros ' + iguales + ' potreros coinciden.');
+  if(meta.desconocidos) notas.push(plural(meta.desconocidos, 'evento del registro es', 'eventos del registro son') + ' de un tipo que esta versión no conoce: no se pudo' + (meta.desconocidos === 1 ? '' : 'ieron') + ' contar. Actualizá la app.');
+  if(meta.pendientes) notas.push(plural(meta.pendientes, 'evento apunta', 'eventos apuntan') + ' a un potrero que el registro no crea: no se ' + (meta.pendientes === 1 ? 'pudo' : 'pudieron') + ' contar.');
+  notas.push('Solo compara: no cambia nada en esta PC ni en Supabase.');
+  document.getElementById('vs-notas').innerHTML = notas.map(n => '<p>' + esc(n) + '</p>').join('');
+  document.getElementById('vs-cuerpo').style.display = '';
+  document.getElementById('vs-csv').style.display = nDist || nCampo ? '' : 'none';
+}
+function huellaLocalVs(){
+  return JSON.stringify([estado.ultimaSincronizacion, (estado.colaSync || []).map(e => e && e.event_id)]);
+}
+async function abrirVerificarStock(){
+  const ficha = ++_fichaVerificar;
+  document.getElementById('modal-verificar-stock').style.display = 'flex';
+  document.getElementById('vs-subtitulo').textContent = CONFIG.nombre;
+  _ultimaVerificacion = null;
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine){ mensajeVs('Necesita conexión para leer el registro.'); return; }
+  // Lo más simple: si hay una sincronización en curso no se arranca (aplicaría eventos mientras se lee el registro)
+  if(sincronizando){ mensajeVs('Hay una sincronización en curso. Probá de nuevo en un momento.'); return; }
+  const huella = huellaLocalVs();
+  mensajeVs('Leyendo el registro…');
+  try{
+    const res = await traerTodo(()=> client.from('eventos_sync').select('*').eq('establecimiento', ESTABLECIMIENTO).order('creado_en', {ascending: true}),
+      n => { if(ficha === _fichaVerificar) document.getElementById('vs-mensaje').textContent = 'Leyendo el registro… ' + plural(n, 'evento', 'eventos'); });
+    if(ficha !== _fichaVerificar) return;
+    if(res.error || !res.data){
+      const e = res.error || {};
+      mensajeVs('No se pudo leer el registro (' + String(e.message || e.code || 'sin respuesta').slice(0, 120) + '). Probá de nuevo con señal.');
+      return;
+    }
+    // Si mientras se leía entró una sincronización o un movimiento, local y registro ya no son de la misma hora
+    if(sincronizando || huellaLocalVs() !== huella){
+      mensajeVs('Hubo cambios en esta PC mientras se leía el registro (una sincronización o un movimiento nuevo). Cerrá esta ventana y volvé a verificar.');
+      return;
+    }
+    const rec = reconstruirStockDesdeRegistro(res.data);
+    pintarVerificacion(compararStock(fotoStock(estado), rec.foto), rec);
+  }catch(e){
+    console.warn('Verificar stock', e);
+    if(ficha === _fichaVerificar) mensajeVs('No se pudo rearmar el stock desde el registro: ' + String((e && e.message) || e).slice(0, 120));
+  }
+}
+function celdaCsvVs(v){
+  if(typeof v === 'number') return String(v);
+  let s = String(v == null ? '' : v);
+  if(/^[=+\-@\t\r]/.test(s)) s = "'" + s; // que una planilla no lo tome por fórmula
+  return /[;"\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function csvVerificarStock(cmp){
+  const filas = [['potrero', 'categoria', 'firma', 'esta_pc', 'registro', 'diferencia']];
+  cmp.potreros.forEach(p=>{
+    if(!p.filas.length) filas.push([p.nombre, '(sin animales)', '', 0, 0, 0]);
+    p.filas.forEach(f => filas.push([p.nombre, f.cat, textoFirma(f.dueno), f.pc, f.reg, f.dif]));
+  });
+  cmp.campoAjeno.filas.forEach(f => filas.push(['(campo ajeno)', f.cat, textoFirma(f.dueno), f.pc, f.reg, f.dif]));
+  return '﻿' + filas.map(r => r.map(celdaCsvVs).join(';')).join('\r\n') + '\r\n';
+}
+document.getElementById('btn-verificar-stock').addEventListener('click', abrirVerificarStock);
+document.getElementById('vs-cerrar').addEventListener('click', ()=>{
+  _fichaVerificar++;
+  document.getElementById('modal-verificar-stock').style.display = 'none';
+});
+document.getElementById('vs-cerrar-x').addEventListener('click', ()=> document.getElementById('vs-cerrar').click());
+document.getElementById('vs-csv').addEventListener('click', ()=>{
+  if(!_ultimaVerificacion) return;
+  const blob = new Blob([csvVerificarStock(_ultimaVerificacion)], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${ESTABLECIMIENTO}_verificar_stock_${sellotiempoArchivo()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 1000);
+  toast('Detalle descargado');
+});
 /* Fase 3, paso 2 (11/10/2026, visual aprobado por Pedro): con CONFIG.colaOrdenada el indicador cuenta
    también Sanidad y catálogos, distingue "sin señal" (⏳) de "falló el último intento" (⚠, ocre) y de
    "trabado" (⛔, rojo, con el cartel de renderAvisoTrabado arriba de Herramientas). "✅" solo si no queda
@@ -3800,6 +4080,7 @@ function actualizarEtiquetasMapa(){
    Separado en función aparte para poder reusarlo cuando "Importar KML/KMZ"
    da de alta un potrero que no existía (ver más abajo, importarLimitesKML). */
 function dibujarPotrero(p){
+  if(_reconstruyendo) return; // Verificar stock: el mapa no se toca
   const latlngs = p.coords; // ya en [lat,lon]
   const poly = L.polygon(latlngs, {
     color:'#5c7a4a',
@@ -3869,6 +4150,7 @@ function iconoPunto(tipo){
 }
 
 function crearMarcadorPunto(punto){
+  if(_reconstruyendo) return;
   const marker = L.marker([punto.lat, punto.lon], {icon: iconoPunto(punto.tipo)}).addTo(map);
   marker.bindPopup(`<strong>${esc(punto.nombre || punto.subtipo)}</strong><br>${esc(punto.subtipo)}`);
   puntosLayers[punto.id] = marker;
@@ -3932,6 +4214,7 @@ function iconoReporte(reporte){
 }
 
 function crearMarcadorReporte(reporte){
+  if(_reconstruyendo) return;
   const marker = L.marker([reporte.lat, reporte.lon], {icon: iconoReporte(reporte)}).addTo(map);
   marker.bindPopup(`<strong>${esc(reporte.subtipo)}</strong><br>${esc(reporte.fecha)}${reporte.obs?('<br>'+esc(reporte.obs)):''}`);
   reportesLayers[reporte.id] = marker;

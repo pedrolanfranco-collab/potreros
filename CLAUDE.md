@@ -156,7 +156,7 @@ theme-color).
   editor modal. No GPS.
   **Caja "🛠 Herramientas" de la PC (10/10/2026, a pedido de Pedro)**: ordenada por funciones —
   Consultar / Mapa y potreros / Exportar y respaldo / Este dispositivo, en 2 columnas, 17 botones en vez de
-  26—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
+  26 (18 desde el 12/10/2026, con "🔍 Verificar stock" en Consultar)—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
   abren un sub-menú dentro de la misma caja (`data-sub` / `data-volver`, `mostrarSubmenuHerramientas()`).
   Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
   (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
@@ -285,6 +285,24 @@ aplica en la primera sincronización de una versión que ya lo conozca (hallazgo
 agrega en tres lugares:** `docs/eventos.md`, esos conjuntos y el código que lo aplica. Tests:
 `tests/probar_correccion_por_id.js`, `tests/probar_eventos_desconocidos.js`. Los scripts de la PC
 (`pasar_traslados_a_excel.py`) también ubican por `eventIdOriginal`.
+**Paso 5, Verificar stock (solo PC, 12/10/2026, sin flag):** "🔍 Verificar stock" (Herramientas › Consultar,
+`#modal-verificar-stock`) lee TODO `eventos_sync` del establecimiento (`traerTodo`, sin cursor y sin descartar los
+eventos de esta PC), rearma el stock en memoria como un equipo recién instalado y lo compara con el local
+(por potrero y `categoría||firma`, más campo ajeno); lista solo las diferencias, los potreros que existen solo en
+la PC o solo en el registro, y baja un CSV (`<ESTABLECIMIENTO>_verificar_stock_<fecha>.csv`, separador `;`). Los
+movimientos de `estado.colaSync` se aplican también (no figuran como diferencia; si ya están en el registro por
+`event_id`, no se cuentan dos veces; los del stream de otro campo se saltean). **Solo compara: no corrige nada.**
+Aislamiento: `reconstruirStockDesdeRegistro()` es **síncrona de punta a punta** (sin `await`, así ninguna sync ni
+guardado se mete en el medio): cambia `estado` por `estadoInicial()` + `migrarClavesSinFirma()` (sin esto la carga
+inicial de La Vuelta, con claves sin `||`, salía toda como diferencia) y vacía/rellena `POTREROS_GEO` con
+`POTREROS_GEO_ORIGINAL` (copia tomada antes de los overlays de localStorage), aplica los eventos con
+`aplicarEventoRemoto()` y restaura todo en un `finally`. Mientras corre, `_reconstruyendo = true` hace no-op
+`guardarEstado()`, `dibujarPotrero()`, `crearMarcadorPunto/Reporte()` y lo que `aplicarEventoRemoto()` escribe
+fuera de `estado` (localStorage de `POTREROS_NUEVOS_KEY`/`LIMITES_KEY`, capas del mapa): **cualquier rama nueva de
+`aplicarEventoRemoto()` que toque localStorage, el mapa o `guardarEstado()` necesita su guarda
+`if(_reconstruyendo)` dentro de un bloque `@pc`.** Si hay una sincronización en curso no arranca, y si entró una
+sync o un movimiento mientras leía, pide volver a verificar. Test: `tests/probar_verificar_stock.js` (estado,
+localStorage, `POTREROS_GEO` y llamadas a Leaflet idénticos antes y después, mutando cada guarda se pone en rojo).
 
 **Idempotencia (12/9/2026, auditoría de 3 IAs verificada contra el código):**
 cada evento lleva un `event_id` propio (`crypto.randomUUID()` — **no**

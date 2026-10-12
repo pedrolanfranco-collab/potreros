@@ -85,7 +85,7 @@ const SUBMENUS = {
   exportar: ['btn-exportar-kmz', 'btn-exportar-pdf', 'btn-exportar-pdf-animales', 'btn-exportar-pdf-historial', 'btn-exportar-excel'],
   backup:   ['btn-exportar-json', 'btn-importar-json']
 };
-const DIRECTOS = ['btn-stock', 'btn-sanidad', 'btn-lluvias', 'btn-desaparecidos', 'btn-alertas',
+const DIRECTOS = ['btn-stock', 'btn-sanidad', 'btn-lluvias', 'btn-desaparecidos', 'btn-alertas', 'btn-verificar-stock',
   'btn-coeficientes', 'btn-sincronizar', 'btn-usuario', 'btn-restablecer'];
 
 async function probarPc(archivo){
@@ -102,7 +102,7 @@ async function probarPc(archivo){
   chequear('hay 4 grupos con título', menu.querySelectorAll('#hmenu-grupos .hg').length === 4 && menu.querySelectorAll('.hg-titulo').length >= 4);
   chequear('"Exportar MD" ya no existe', !doc.getElementById('btn-exportar-md'));
 
-  // botones a la vista (los 17 menos los ocultos por configuración)
+  // botones a la vista (los 18 menos los ocultos por configuración)
   const enVista = Array.from(menu.querySelectorAll('button')).filter(b => visible(b));
   const grupos = enVista.filter(b => b.hasAttribute('data-sub'));
   chequear('5 botones de grupo en la vista principal', grupos.length === 5, grupos.length);
