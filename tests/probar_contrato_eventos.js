@@ -270,9 +270,9 @@ const CONTRATO = {
   retorno_campo_ajeno: { items: ['array', ITEM], guia: 'string?', obs: 'string?' }
 };
 const CORRECCIONES = {
-  eliminar: { tipoOriginal: 'string', fechaOriginal: 'fecha', reversar: ['object', { tipo: 'string' }] },
-  agregar_guia: { tipoOriginal: 'string', categoria: 'string', cantidad: 'number', dueno: 'string', guia: 'string?', fechaOriginal: 'fecha' },
-  completar_datos: { tipoOriginal: 'string', categoria: 'string', cantidad: 'number', dueno: 'string', fin: 'object', precio: 'number?', contraparte: 'string?', fechaOriginal: 'fecha' },
+  eliminar: { tipoOriginal: 'string', fechaOriginal: 'fecha', reversar: ['object', { tipo: 'string' }], eventIdOriginal: 'uuid?' },
+  agregar_guia: { tipoOriginal: 'string', categoria: 'string', cantidad: 'number', dueno: 'string', guia: 'string?', fechaOriginal: 'fecha', eventIdOriginal: 'uuid?' },
+  completar_datos: { tipoOriginal: 'string', categoria: 'string', cantidad: 'number', dueno: 'string', fin: 'object', precio: 'number?', contraparte: 'string?', fechaOriginal: 'fecha', eventIdOriginal: 'uuid?' },
   anular_traslado: { tipoOriginal: 'string', trasladoId: 'uuid', guia: 'string?', fechaOriginal: 'fecha' }
 };
 
@@ -312,6 +312,8 @@ function filaOk(f){
   if(typeof f.potrero !== 'string' || !f.potrero) p.push('potrero vacío');
   if(!f.detalle || typeof f.detalle !== 'object') p.push('detalle no es objeto');
   if(!REGEX_FECHA.test(f.fecha_cliente || '')) p.push('fecha_cliente ' + f.fecha_cliente);
+  // Fase 3, paso 4b: todo evento de la app lleva la variante y la versión que lo escribió (solo diagnóstico)
+  if(f.detalle && typeof f.detalle === 'object' && !/^(pc|movil|campo)-\d+\.\d+$/.test(f.detalle.v || '')) p.push('detalle.v ' + f.detalle.v);
   return p;
 }
 
@@ -377,6 +379,7 @@ async function probarFlujos(archivoLV, archivoML, salida){
     chequear('agregar_guia: cumple el contrato (tipoOriginal, categoria, cantidad, dueno, guia, fechaOriginal)', p.length === 0, p.join('; '));
     chequear('agregar_guia: la guía queda en mayúscula', cGuia.detalle.guia === 'C222222', cGuia.detalle.guia);
     chequear('agregar_guia: los datos de ubicación coinciden con la venta', cGuia.detalle.categoria === 'Vacas' && cGuia.detalle.cantidad === 2 && cGuia.detalle.dueno === SILVIA);
+    chequear('agregar_guia: lleva eventIdOriginal = el event_id de la venta', !!fVenta && cGuia.detalle.eventIdOriginal === fVenta.event_id, cGuia.detalle.eventIdOriginal);
   }
 
   n = ev().length;
@@ -387,6 +390,7 @@ async function probarFlujos(archivoLV, archivoML, salida){
   if(cComp){
     const p = problemas(cComp.detalle, CORRECCIONES.completar_datos);
     chequear('completar_datos: cumple el contrato', cComp.detalle.accion === 'completar_datos' && p.length === 0, p.join('; '));
+    chequear('completar_datos: lleva eventIdOriginal = el event_id de la compra', !!fCompra && cComp.detalle.eventIdOriginal === fCompra.event_id, cComp.detalle.eventIdOriginal);
   } else chequear('completar_datos: escribe una corrección', false);
 
   // ---- eliminar la venta (corrección con reversar 'sumar')
@@ -399,6 +403,7 @@ async function probarFlujos(archivoLV, archivoML, salida){
   if(cElim){
     const p = problemas(cElim.detalle, CORRECCIONES.eliminar);
     chequear('eliminar: cumple el contrato', p.length === 0, p.join('; '));
+    chequear('eliminar: lleva eventIdOriginal = el event_id de la venta', !!fVenta && cElim.detalle.eventIdOriginal === fVenta.event_id, cElim.detalle.eventIdOriginal);
     const r = cElim.detalle.reversar;
     chequear('eliminar venta: reversar lleva potrero, categoria, dueno y cantidad (lo que usa pasar_traslados_a_excel)',
       r.potrero === origen && r.categoria === 'Vacas' && r.dueno === SILVIA && r.cantidad === 2, JSON.stringify(r));

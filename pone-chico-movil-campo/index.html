@@ -533,7 +533,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v1.48</div>
+        <div class="sub">v1.49</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -736,7 +736,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.06","versionMovil":"2.05","simpleHabilitado":true,"versionMovilSimple":"1.48","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.07","versionMovil":"2.06","simpleHabilitado":true,"versionMovilSimple":"1.49","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1283,6 +1283,10 @@ function uuidDerivado(base, sufijo){
   const hex = w.map(n=>n.toString(16).padStart(8,'0')).join('');
   return `${hex.slice(0,8)}-${hex.slice(8,12)}-4${hex.slice(13,16)}-${'89ab'[parseInt(hex[16],16)&3]}${hex.slice(17,20)}-${hex.slice(20,32)}`;
 }
+/* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
+   lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
+   ninguna pantalla lo muestra y ningún lector lo necesita. */
+const VERSION_APP = 'campo-1.49';
 /* `opciones` (opcional): {eventId} para fijar el id del evento, y {establecimiento}
    para escribirlo en el stream de OTRO establecimiento (traslados entre campos; la
    cola guarda el establecimiento destino junto con el evento). */
@@ -1293,7 +1297,8 @@ function enviarEvento(tipo, potrero, detalle, fecha, opciones){
   // hizo fallar TODOS los inserts con "invalid input syntax for type uuid"
   // (22P02) el mismo dia que se agrego la columna -- ver memoria apps-potreros.
   const eventId = (opciones && opciones.eventId) || crypto.randomUUID();
-  const detalleConUsuario = Object.assign({}, detalle, { usuario: usuarioActual() });
+  const detalleConVersion = Object.assign({}, detalle, { v: VERSION_APP }); // copia: no se toca el objeto de quien llama
+  const detalleConUsuario = Object.assign({}, detalleConVersion, { usuario: usuarioActual() });
   const evento = { event_id: eventId, tipo, potrero, detalle: detalleConUsuario, fecha_cliente: fecha || fechaHoy() };
   if(opciones && opciones.establecimiento && opciones.establecimiento !== ESTABLECIMIENTO) evento.establecimiento = opciones.establecimiento;
   if(CONFIG.colaOrdenada){
@@ -1662,12 +1667,62 @@ function aplicarPendientesDePotreroLocal(nombre){
   aplicarPendientesDePotrero(nombre, sucios);
   if(sucios.size) publicarStockPotreros([...sucios]);
 }
+/* Fase 3, paso 4, parte B (11/10/2026, hallazgo 8): una versión vieja de la app descartaba en silencio los tipos de
+   evento que no conocía, y el cursor avanzaba igual: un tipo nuevo no se reaplicaba nunca en esos equipos. Ahora un
+   evento de un tipo (o una corrección con una acción) que esta versión no conoce se GUARDA en
+   estado.eventosDesconocidos -- sin estacionarlo por potrero ni descartarlo -- y se aplica solo en la sincronización
+   siguiente a la que esta app ya lo conozca (aplicarDesconocidosYaConocidos). Estos dos conjuntos son los tipos y
+   acciones que aplicarEventoRemoto() sabe aplicar; tests/probar_eventos_desconocidos.js los compara con
+   docs/eventos.md. Una corrección sin `accion` (muy vieja) sigue el camino de siempre. */
+const TIPOS_EVENTO_CONOCIDOS = new Set([
+  'ingreso', 'nacimiento', 'muerte', 'consumo', 'movimiento', 'movimiento_multi', 'movimiento_todo', 'compra', 'venta',
+  'desaparecido', 'encontrado', 'perdida', 'muerte_desaparecido',
+  'envio_campo_ajeno', 'retorno_campo_ajeno', 'traslado_salida', 'traslado_entrada', 'movimiento_guia',
+  'lluvia', 'lluvia_editada', 'lluvia_eliminada', 'evento_clima', 'evento_clima_editado', 'evento_clima_eliminado',
+  'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
+  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'proximo_confirmado',
+  'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
+  'correccion'
+]);
+const ACCIONES_CORRECCION_CONOCIDAS = new Set([
+  'eliminar', 'editar', 'anular_traslado', 'reclasificar', 'agregar_caravana', 'completar_datos', 'agregar_guia'
+]);
+const TOPE_EVENTOS_DESCONOCIDOS = 500;
+function eventoEsDesconocido(row){
+  if(!row || !TIPOS_EVENTO_CONOCIDOS.has(row.tipo)) return true;
+  if(row.tipo === 'correccion'){
+    const accion = row.detalle && row.detalle.accion;
+    return typeof accion === 'string' && !ACCIONES_CORRECCION_CONOCIDAS.has(accion);
+  }
+  return false;
+}
+function guardarEventoDesconocido(row){
+  estado.eventosDesconocidos = estado.eventosDesconocidos || [];
+  const lista = estado.eventosDesconocidos;
+  if(row.event_id && lista.some(r=> r.event_id === row.event_id)) return;
+  if(lista.length >= TOPE_EVENTOS_DESCONOCIDOS) return;
+  lista.push(row);
+  console.warn(`Evento "${row.tipo}${row.tipo==='correccion' && row.detalle ? '/' + row.detalle.accion : ''}" desconocido para esta versión (${VERSION_APP}): guardado hasta que se actualice la app`);
+}
+/* Aplica, en orden de creado_en, los eventos guardados cuyo tipo/acción esta versión ya conoce (los otros siguen en la
+   lista). Devuelve cuántos aplicó. Se llama al empezar a aplicar lo que trae sincronizar(). */
+function aplicarDesconocidosYaConocidos(potrerosSucios){
+  const lista = estado.eventosDesconocidos || [];
+  if(!lista.length) return 0;
+  const aplicables = lista.filter(r=> !eventoEsDesconocido(r));
+  if(!aplicables.length) return 0;
+  aplicables.sort((a, b)=> String(a.creado_en || '').localeCompare(String(b.creado_en || '')));
+  estado.eventosDesconocidos = lista.filter(r=> eventoEsDesconocido(r));
+  aplicables.forEach(r=> aplicarEventoRemoto(r, potrerosSucios));
+  return aplicables.length;
+}
 function aplicarEventoRemoto(row, potrerosSucios){
   const eventIdPrevio = _eventIdRemoto;
   _aplicandoRemoto = true;
   try{
   row = limpiarTextoRemoto(row);
   _eventIdRemoto = (row && typeof row.event_id === 'string' && row.event_id) ? row.event_id : null;
+  if(eventoEsDesconocido(row)){ guardarEventoDesconocido(row); return; }
   const d = row.detalle || {};
   if(typeof d !== 'object' || !detalleNumericoValido(d)) return; // evento con números que no son números: se descarta
   // 10/9/2026: eventos viejos en Supabase todavía dicen "Cerro" (nombre
@@ -2493,6 +2548,8 @@ async function sincronizar(mostrarToast){
     const data = limpiarTextoRemoto(res.data);
     let cambios = 0;
     const miId = idDispositivo();
+    // lo que una versión anterior guardó como desconocido y esta ya sabe aplicar, antes de lo nuevo (viene en orden de creado_en)
+    cambios += aplicarDesconocidosYaConocidos(potrerosSucios);
     data.forEach(row=>{
       if(row.dispositivo !== miId){ aplicarEventoRemoto(row, potrerosSucios); cambios++; }
       estado.ultimaSincronizacion = row.creado_en;

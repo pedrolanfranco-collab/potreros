@@ -119,7 +119,8 @@ function generar(templateText, config, variant) {
   // versionMovilSimple, así la app muestra su propio número de versión.
   const placeholderVersion = esPc ? '__VERSION_PC__' : '__VERSION_MOVIL__';
   const valorVersion = esPc ? config.versionPc : esSimple ? config.versionMovilSimple : config.versionMovil;
-  texto = texto.replace(placeholderVersion, valorVersion);
+  // en todas las apariciones (el encabezado y la constante VERSION_APP del script), no solo la primera
+  texto = texto.split(placeholderVersion).join(valorVersion);
 
   texto = texto.replace('<!DOCTYPE html>\n', `<!DOCTYPE html>\n${CABECERA_GENERADO}`);
 

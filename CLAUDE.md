@@ -270,6 +270,21 @@ Lo usan `sincronizar()` (la primera vez muestra "🔄 Poniéndose al día… N e
 consultas de muertes y consumos ahora llevan `.order('creado_en')` (sin orden no se puede paginar). **Los
 Supabase falsos de las pruebas necesitan `range()`** y, si ordenan por una sola columna, quedarse con el
 primer `.order()`. Test: `tests/probar_paginacion.js`.
+**Paso 4, corrección por id y versión en cada evento (11/10/2026, sin flag):** (a) cada renglón de historial
+guarda `eventId` (el `event_id` de SU evento; las dos puntas de un movimiento comparten el mismo; lo mismo
+`estado.transacciones` y la lista de campo ajeno) y las correcciones `eliminar`/`editar`/`agregar_guia`/
+`agregar_caravana`/`completar_datos` llevan `eventIdOriginal`. El receptor busca ese id en TODOS los potreros
+(`renglonesPorEventId()`); si hay renglones con ese id, aunque ya estén eliminados, actúa sobre ésos y NO cae al
+parecido (que podía tachar otra venta idéntica del mismo día: hallazgo 7). Sin id, o sin renglones con ese id
+(cargados antes de esta versión), el parecido de siempre. Al agregar un sitio nuevo que cree un renglón de
+historial + `enviarEvento`, generar el `eventId` con `crypto.randomUUID()`, ponerlo en el renglón y pasarlo en
+`enviarEvento(..., {eventId})`. (b) cada evento lleva `detalle.v` = `pc-`/`movil-`/`campo-` + versión
+(`VERSION_APP`, solo diagnóstico), y un `tipo` (o `accion` de `correccion`) fuera de `TIPOS_EVENTO_CONOCIDOS` /
+`ACCIONES_CORRECCION_CONOCIDAS` se guarda en `estado.eventosDesconocidos` (tope 500) en vez de descartarse, y se
+aplica en la primera sincronización de una versión que ya lo conozca (hallazgo 8). **Un tipo de evento nuevo se
+agrega en tres lugares:** `docs/eventos.md`, esos conjuntos y el código que lo aplica. Tests:
+`tests/probar_correccion_por_id.js`, `tests/probar_eventos_desconocidos.js`. Los scripts de la PC
+(`pasar_traslados_a_excel.py`) también ubican por `eventIdOriginal`.
 
 **Idempotencia (12/9/2026, auditoría de 3 IAs verificada contra el código):**
 cada evento lleva un `event_id` propio (`crypto.randomUUID()` — **no**

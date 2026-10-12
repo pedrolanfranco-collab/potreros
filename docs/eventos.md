@@ -23,7 +23,7 @@ Tabla `eventos_sync` (Supabase, proyecto `skkknfjpwcstefcroqjt`):
 | `dispositivo` | text | la app | id de este equipo (no es el nombre de la persona) |
 | `tipo` | text | la app | ver la tabla de tipos |
 | `potrero` | text | la app | nombre del potrero. Para eventos del establecimiento entero (lluvias, puntos, reportes) lleva el nombre del establecimiento |
-| `detalle` | jsonb | la app | ver cada tipo. En las apps móviles lleva además `usuario` (texto libre, "quién soy") |
+| `detalle` | jsonb | la app | ver cada tipo. En las apps móviles lleva además `usuario` (texto libre, "quién soy"). Desde el paso 4 de la Fase 3 (11/10/2026) todas las apps agregan `v`: la variante y la versión que escribió el evento (`pc-3.67`, `movil-3.66`, `campo-1.47`), solo para diagnosticar; ningún lector la necesita y no forma parte del contrato de cada tipo |
 | `fecha_cliente` | text `dd/mm/aaaa` | la app | fecha **del hecho** (puede ser anterior a hoy). Nunca tiene hora |
 | `creado_en` | timestamptz | **servidor** | orden de aplicación y cursor de sincronización. Un trigger lo fuerza a `now()` aunque el cliente mande otro valor (Fase 2, 10/10/2026) |
 
@@ -41,8 +41,13 @@ Lo que no está en la fila y conviene saber:
   paso 3, 11/10/2026; los 3 establecimientos) la app pagina con `traerTodo()`: lotes de 1000 con
   `.range()`, en orden `creado_en` + `id` (hay eventos con el mismo `creado_en` hasta el
   microsegundo).
-- Una versión vieja de la app **descarta** los tipos que no conoce y el cursor avanza igual
-  (hallazgo 8 de la auditoría, Fase 3): un tipo nuevo no se reaplica nunca en esos equipos.
+- Una versión de la app anterior al paso 4 de la Fase 3 **descarta** los tipos que no conoce y el cursor
+  avanza igual (hallazgo 8 de la auditoría): un tipo nuevo no se reaplica nunca en esos equipos. Desde ese
+  paso, un `tipo` (o una `accion` de `correccion`) que la versión no conoce se guarda en
+  `estado.eventosDesconocidos` (tope 500) y se aplica en la sincronización siguiente a la que la app ya
+  lo conozca. **Un tipo o una acción nueva se agrega entonces en tres lugares**: la tabla de abajo,
+  `TIPOS_EVENTO_CONOCIDOS` / `ACCIONES_CORRECCION_CONOCIDAS` del template y el código que lo aplica;
+  `tests/probar_eventos_desconocidos.js` compara el primero con el segundo.
 
 ## Tipos
 
