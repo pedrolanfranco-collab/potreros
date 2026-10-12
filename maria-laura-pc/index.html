@@ -1929,6 +1929,11 @@ async function vaciarColaStock(){
    dispositivos ven las intervenciones de los distintos usuarios); el nombre
    de quien lo cargó va dentro del detalle ("... — Fulano"). */
 let _aplicandoRemoto = false;
+/* Fase 3, paso 4 (11/10/2026): el event_id del evento remoto que se está aplicando. registrarHistorial() lo
+   guarda en cada renglón como `eventId`, así una corrección posterior ubica ESE evento por su id y no por
+   parecido (dos ventas idénticas el mismo día se confundían, hallazgo 7). Se restaura al salir porque
+   aplicarPendientesDePotrero() vuelve a llamar a aplicarEventoRemoto() desde adentro. */
+let _eventIdRemoto = null;
 
 /* 7/10/2026: un evento que menciona un potrero que ESTE dispositivo todavía no
    conoce (típico: alguien importó/dibujó un potrero nuevo y cargó algo hacia él
@@ -1974,9 +1979,11 @@ function aplicarPendientesDePotreroLocal(nombre){
   if(sucios.size) publicarStockPotreros([...sucios]);
 }
 function aplicarEventoRemoto(row, potrerosSucios){
+  const eventIdPrevio = _eventIdRemoto;
   _aplicandoRemoto = true;
   try{
   row = limpiarTextoRemoto(row);
+  _eventIdRemoto = (row && typeof row.event_id === 'string' && row.event_id) ? row.event_id : null;
   const d = row.detalle || {};
   if(typeof d !== 'object' || !detalleNumericoValido(d)) return; // evento con números que no son números: se descarta
   // 10/9/2026: eventos viejos en Supabase todavía dicen "Cerro" (nombre
@@ -2270,7 +2277,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     registrarHistorial(potrero, row.tipo, detalleCA, undefined, undefined, fechaEvt).origDatos = origDatosCA;
     estado.campoAjeno.historial = estado.campoAjeno.historial || [];
     if(!estado.campoAjeno.historial.some(m=>m.id===row.event_id)){
-      estado.campoAjeno.historial.unshift({id: row.event_id, fecha: fechaEvt, tipo: row.tipo==='envio_campo_ajeno'?'envio':'retorno', items, potrero, guia: d.guia||null, obs: d.obs||null, usuario: d.usuario||null});
+      estado.campoAjeno.historial.unshift({id: row.event_id, fecha: fechaEvt, tipo: row.tipo==='envio_campo_ajeno'?'envio':'retorno', items, potrero, guia: d.guia||null, obs: d.obs||null, usuario: d.usuario||null, eventId: row.event_id || null});
     }
     return;
   }
@@ -2328,6 +2335,12 @@ function aplicarEventoRemoto(row, potrerosSucios){
     const rDesc = d.reversar || {};
     const potreroDesconocido = [rDesc.potrero, rDesc.origen, rDesc.destino].find(n=> n && !estado.potreros[n]);
     if(potreroDesconocido && debeEstacionar(row)){ estacionarEvento(potreroDesconocido, row); return; }
+    // Fase 3, paso 4: si la corrección trae el event_id del original, los renglones se ubican por id en TODOS
+    // los potreros (las dos puntas de un movimiento comparten id) y NO por parecido. Si hay alguno -- aunque ya
+    // esté eliminado -- manda el id: no se cae al parecido, que podría tachar OTRO renglón idéntico. Sin id (evento
+    // viejo) o sin renglones con ese id (cargados antes de esta versión) sigue el parecido de siempre.
+    const idOriginal = (typeof d.eventIdOriginal === 'string' && d.eventIdOriginal) ? d.eventIdOriginal : null;
+    const porId = renglonesPorEventId(idOriginal);
     if(d.accion === 'anular_traslado'){
       // 7/10/2026: el establecimiento de ORIGEN borró una salida (🗑) y avisa acá
       // (es el único que puede anular, ver borrarHistorial). Se ubica la entrada
@@ -2382,7 +2395,8 @@ function aplicarEventoRemoto(row, potrerosSucios){
       const fechaObjetivo = parseFechaDMY(d.fechaOriginal || fechaEvt);
       const hist = (estado.potreros[potrero]||{}).historial || [];
       let mejor = null, mejorDist = Infinity;
-      hist.forEach(h=>{
+      if(porId.length) mejor = porId.find(h=>!h.eliminado) || null;
+      else hist.forEach(h=>{
         if(h.eliminado || h.tipo!==d.tipoOriginal) return;
         if(d.tipoOriginal==='muerte_desaparecido'){
           if(h.casoId!==d.casoId) return;
@@ -2409,7 +2423,8 @@ function aplicarEventoRemoto(row, potrerosSucios){
       // criterio de búsqueda que 'agregar_guia' (las compras/ventas no tienen id estable entre dispositivos).
       const fechaObjetivoCD = parseFechaDMY(d.fechaOriginal || fechaEvt);
       let mejorCD = null, mejorDistCD = Infinity;
-      ((estado.potreros[potrero]||{}).historial || []).forEach(h=>{
+      if(porId.length) mejorCD = porId.find(h=>!h.eliminado) || null;
+      else ((estado.potreros[potrero]||{}).historial || []).forEach(h=>{
         if(h.eliminado || h.tipo!==d.tipoOriginal) return;
         const od = h.extra || h.origDatos;
         if(!od || od.categoria!==d.categoria || od.cantidad!==d.cantidad || (od.dueno||null)!==(d.dueno||null)) return;
@@ -2423,7 +2438,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
         if(typeof parchearTransaccionCompraVenta === 'function'){
           const precioCD = d.precio || null;
           parchearTransaccionCompraVenta(mejorCD.tipo==='venta' ? 'Venta' : 'Compra', potrero, d.categoria, d.dueno || '', d.cantidad, mejorCD.fecha,
-            {fin: d.fin, precioUnitario: precioCD, total: precioCD ? precioCD * d.cantidad : null, contraparte: d.contraparte || ''});
+            {fin: d.fin, precioUnitario: precioCD, total: precioCD ? precioCD * d.cantidad : null, contraparte: d.contraparte || ''}, idOriginal, porId.length > 0);
         }
       }
       return;
@@ -2436,7 +2451,8 @@ function aplicarEventoRemoto(row, potrerosSucios){
       const fechaObjetivoGuia = parseFechaDMY(d.fechaOriginal || fechaEvt);
       const histGuia = (estado.potreros[potrero]||{}).historial || [];
       let mejorGuia = null, mejorDistGuia = Infinity;
-      histGuia.forEach(h=>{
+      if(porId.length) mejorGuia = porId.find(h=>!h.eliminado) || null;
+      else histGuia.forEach(h=>{
         if(h.eliminado || h.tipo!==d.tipoOriginal) return;
         const od = h.extra || h.origDatos;
         if(!od || od.categoria!==d.categoria || od.cantidad!==d.cantidad || (od.dueno||null)!==(d.dueno||null)) return;
@@ -2485,7 +2501,11 @@ function aplicarEventoRemoto(row, potrerosSucios){
       h.eliminado = true;
       h.detalle += (d.accion==='eliminar' ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)');
     };
-    if(r.tipo==='restar' || r.tipo==='sumar'){
+    if(porId.length){
+      // ubicado por event_id: se tachan los renglones vigentes de ESE evento (una o las dos puntas)
+      porId.forEach(h=>{ if(!h.eliminado) tachar(h); });
+      marcado = true;
+    } else if(r.tipo==='restar' || r.tipo==='sumar'){
       const potreroOriginal = r.potrero || potrero;
       const h = buscarMejor(potreroOriginal, od =>
         od.categoria===r.categoria && od.cantidad===r.cantidad && (od.dueno||null)===(r.dueno||null));
@@ -2548,10 +2568,10 @@ function aplicarEventoRemoto(row, potrerosSucios){
       if(mejorCaso){ tachar(mejorCaso); marcado = true; }
     }
     if(d.tipoOriginal==='compra' || d.tipoOriginal==='venta'){
-      quitarTransaccion(d.tipoOriginal==='venta' ? 'Venta' : 'Compra', r.potrero || potrero, r.categoria, r.dueno, r.cantidad, d.fechaOriginal || fechaEvt);
+      quitarTransaccion(d.tipoOriginal==='venta' ? 'Venta' : 'Compra', r.potrero || potrero, r.categoria, r.dueno, r.cantidad, d.fechaOriginal || fechaEvt, idOriginal, porId.length > 0);
     }
     if(d.tipoOriginal==='envio_campo_ajeno' || d.tipoOriginal==='retorno_campo_ajeno'){
-      quitarMovimientoCampoAjeno(d.tipoOriginal==='envio_campo_ajeno' ? 'envio' : 'retorno', r.potrero || potrero, r.items, d.fechaOriginal || fechaEvt);
+      quitarMovimientoCampoAjeno(d.tipoOriginal==='envio_campo_ajeno' ? 'envio' : 'retorno', r.potrero || potrero, r.items, d.fechaOriginal || fechaEvt, idOriginal, porId.length > 0);
     }
     aplicarAjusteReversion(d.reversar, fechaEvt);
     if(potrerosSucios && r){ [r.potrero, r.origen, r.destino].forEach(n=>{ if(n) potrerosSucios.add(n); }); }
@@ -2743,11 +2763,12 @@ function aplicarEventoRemoto(row, potrerosSucios){
       fecha: row.fecha_cliente || fechaHoy(), potrero, tipo: row.tipo==='venta'?'Venta':'Compra',
       categoria: d.categoria, dueno: d.dueno, cantidad: d.cantidad,
       precioUnitario: d.precio||null, total: d.precio ? d.precio*d.cantidad : null,
-      contraparte: d.contraparte||'', guia: d.guia||null, notas: 'sincronizado', fin: d.fin||null
+      contraparte: d.contraparte||'', guia: d.guia||null, notas: 'sincronizado', fin: d.fin||null, eventId: row.event_id || null
     });
   }
   }finally{
     _aplicandoRemoto = false;
+    _eventIdRemoto = eventIdPrevio;
   }
 }
 let sincronizando = false;
@@ -3112,6 +3133,7 @@ function generarIdHistorial(){
 }
 function registrarHistorial(nombre, tipo, detalle, extra, grupoId, fecha){
   const entry = {fecha: fecha || fechaHoy(), tipo, detalle, id: generarIdHistorial()};
+  if(_aplicandoRemoto && _eventIdRemoto) entry.eventId = _eventIdRemoto;
   if(extra) entry.extra = extra;
   if(grupoId) entry.grupoId = grupoId;
   estado.potreros[nombre].historial.unshift(entry);
@@ -3222,14 +3244,36 @@ function datosHistorial(h, potreroHost){
   if(h.origDatos) return Object.assign({potrero: potreroHost}, h.origDatos);
   return null;
 }
+/* Fase 3, paso 4 (11/10/2026): todos los renglones de historial (en TODOS los potreros) que vienen del evento
+   `eventId`. Un movimiento entre dos potreros deja dos, con el mismo id. */
+function renglonesPorEventId(eventId){
+  const lista = [];
+  if(!eventId || typeof eventId !== 'string') return lista;
+  Object.keys(estado.potreros).forEach(nombre=>{
+    ((estado.potreros[nombre] || {}).historial || []).forEach(h=>{ if(h.eventId === eventId) lista.push(h); });
+  });
+  return lista;
+}
+/* La corrección lleva el event_id del renglón que corrige, solo si el renglón lo tiene (los de antes de esta
+   versión se siguen ubicando por parecido). */
+function conIdOriginal(h){
+  return h && h.eventId ? {eventIdOriginal: h.eventId} : {};
+}
 /* Cada compra/venta deja, además de la entrada de historial y el stock, un
    registro en estado.transacciones (es lo que cuenta el reporte económico de la
    PC). 6/10/2026: borrar o editar la entrada también saca ese registro -- antes
    el reporte seguía contando una venta que ya no existía, y al editar quedaba
    duplicada. Se busca por tipo+potrero+categoría+dueño+cantidad+fecha y se saca
    UNA (una entrada = una transacción). Devuelve la sacada, o null. */
-function quitarTransaccion(tipoOp, potrero, categoria, dueno, cantidad, fecha){
+function quitarTransaccion(tipoOp, potrero, categoria, dueno, cantidad, fecha, eventId, soloPorId){
   const lista = estado.transacciones || [];
+  // Fase 3, paso 4: con el event_id del original se saca ESA transacción. `soloPorId` (el receptor ya ubicó los
+  // renglones por id) evita caer al parecido cuando ya no está: sacaría la de otra venta idéntica.
+  if(eventId){
+    const j = lista.findIndex(t=> t.eventId === eventId);
+    if(j !== -1) return lista.splice(j, 1)[0];
+    if(soloPorId) return null;
+  }
   const i = lista.findIndex(t=> t.tipo===tipoOp && t.potrero===potrero && t.categoria===categoria
     && t.cantidad===cantidad && (t.dueno||'')===(dueno||'') && t.fecha===fecha);
   return i === -1 ? null : lista.splice(i, 1)[0];
@@ -3245,8 +3289,14 @@ function canonJSON(x){
    envío/retorno desde el historial de un potrero corregía el stock pero dejaba
    el renglón en esa lista (6/10/2026). Se busca por tipo ('envio'|'retorno') +
    potrero + fecha + items y se saca UNO. */
-function quitarMovimientoCampoAjeno(tipoLista, potrero, items, fecha){
+function quitarMovimientoCampoAjeno(tipoLista, potrero, items, fecha, eventId, soloPorId){
   const lista = (estado.campoAjeno && estado.campoAjeno.historial) || [];
+  // por event_id (Fase 3, paso 4); los renglones remotos de antes de esa versión solo traen `id` = event_id
+  if(eventId){
+    const j = lista.findIndex(m=> m.eventId === eventId || m.id === eventId);
+    if(j !== -1) return lista.splice(j, 1)[0];
+    if(soloPorId) return null;
+  }
   const itemsStr = canonJSON(items || []);
   const i = lista.findIndex(m=> m.tipo===tipoLista && m.potrero===potrero && m.fecha===fecha && canonJSON(m.items||[])===itemsStr);
   return i === -1 ? null : lista.splice(i, 1)[0];
@@ -3359,6 +3409,12 @@ function marcarEliminadoPorGrupo(grupoId, idExcluir, sufijo){
    criterio que buscarMejor() del lado receptor de una corrección. */
 function tacharOtraPuntaSincronizada(h, potreroHost, sufijo){
   if(h.extra || !h.origDatos) return;
+  // Fase 3, paso 4: las dos puntas comparten el event_id; si hay otro renglón con el mismo id se tacha ése y nada más
+  const mismos = h.eventId ? renglonesPorEventId(h.eventId).filter(x=>x.id!==h.id) : [];
+  if(mismos.length){
+    mismos.forEach(x=>{ if(!x.eliminado){ x.eliminado = true; x.detalle = x.detalle + sufijo; } });
+    return;
+  }
   const od = JSON.stringify(h.origDatos);
   const fecha = parseFechaDMY(h.fecha);
   [h.origDatos.potrero, h.origDatos.destino].forEach(nombre=>{
@@ -3395,18 +3451,18 @@ function borrarHistorial(id){
   aplicarAjusteReversion(ajuste);
   if(h.tipo==='compra' || h.tipo==='venta'){
     const dt = datosHistorial(h, ub.potrero);
-    quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, dt.categoria, dt.dueno, dt.cantidad, h.fecha);
+    quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, dt.categoria, dt.dueno, dt.cantidad, h.fecha, h.eventId);
   }
   if(h.tipo==='envio_campo_ajeno' || h.tipo==='retorno_campo_ajeno'){
     const dt = datosHistorial(h, ub.potrero);
-    quitarMovimientoCampoAjeno(h.tipo==='envio_campo_ajeno' ? 'envio' : 'retorno', ub.potrero, dt.items, h.fecha);
+    quitarMovimientoCampoAjeno(h.tipo==='envio_campo_ajeno' ? 'envio' : 'retorno', ub.potrero, dt.items, h.fecha, h.eventId);
   }
   h.eliminado = true;
   h.detalle = h.detalle + ' — ELIMINADO';
   if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id);
   tacharOtraPuntaSincronizada(h, ub.potrero, ' — ELIMINADO');
   const idCorreccion = crypto.randomUUID();
-  enviarEvento('correccion', ub.potrero, Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste, fechaOriginal: h.fecha}, datosCorreccionDeCaso(h, datosHistorial(h, ub.potrero))), undefined, {eventId: idCorreccion});
+  enviarEvento('correccion', ub.potrero, Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion:'eliminar', reversar: ajuste, fechaOriginal: h.fecha}, conIdOriginal(h), datosCorreccionDeCaso(h, datosHistorial(h, ub.potrero))), undefined, {eventId: idCorreccion});
   if(h.tipo==='traslado_salida') enviarAnulacionTraslado(h, datosHistorial(h, ub.potrero), idCorreccion);
   guardarEstado(); actualizarTodo(); refrescarTrasCambioHistorial(ub.potrero);
   publicarStockPotreros([ub.potrero, ajuste && ajuste.potrero, ajuste && ajuste.origen, ajuste && ajuste.destino]);
@@ -3540,15 +3596,15 @@ function editarHistorial(id){
   const ajuste = construirAjusteInverso(h, ub.potrero);
   aplicarAjusteReversion(ajuste);
   const transaccionQuitada = (h.tipo==='compra' || h.tipo==='venta')
-    ? quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, datos.categoria, datos.dueno, datos.cantidad, h.fecha) : null;
+    ? quitarTransaccion(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, datos.categoria, datos.dueno, datos.cantidad, h.fecha, h.eventId) : null;
   if(h.tipo==='envio_campo_ajeno' || h.tipo==='retorno_campo_ajeno'){
-    quitarMovimientoCampoAjeno(h.tipo==='envio_campo_ajeno' ? 'envio' : 'retorno', ub.potrero, datos.items, h.fecha);
+    quitarMovimientoCampoAjeno(h.tipo==='envio_campo_ajeno' ? 'envio' : 'retorno', ub.potrero, datos.items, h.fecha, h.eventId);
   }
   h.eliminado = true;
   h.detalle = h.detalle + ' — EDITADO (ver movimiento nuevo)';
   if(h.grupoId) marcarEliminadoPorGrupo(h.grupoId, h.id, ' — EDITADO (ver movimiento nuevo)');
   tacharOtraPuntaSincronizada(h, ub.potrero, ' — EDITADO (ver movimiento nuevo)');
-  enviarEvento('correccion', ub.potrero, Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste, fechaOriginal: h.fecha}, datosCorreccionDeCaso(h, datos)));
+  enviarEvento('correccion', ub.potrero, Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion:'editar', reversar: ajuste, fechaOriginal: h.fecha}, conIdOriginal(h), datosCorreccionDeCaso(h, datos)));
   guardarEstado(); actualizarTodo();
   publicarStockPotreros([ub.potrero, ajuste && ajuste.potrero, ajuste && ajuste.origen, ajuste && ajuste.destino]);
   abrirFormularioEdicion(h, datos, ub.potrero, transaccionQuitada);
@@ -3582,7 +3638,7 @@ function agregarCaravanaMuerte(id){
     : nuevaTxt ? h.detalle.replace(/( \(no vuelven\)|$)/, `${nuevaTxt}$1`) : h.detalle;
   guardarEstado();
   enviarEvento('correccion', ub.potrero, {tipoOriginal: h.tipo, accion:'agregar_caravana', casoId: h.casoId,
-    categoria: datos.categoria, cantidad: datos.cantidad, dueno: datos.dueno, caravana, fechaOriginal: h.fecha});
+    categoria: datos.categoria, cantidad: datos.cantidad, dueno: datos.dueno, caravana, fechaOriginal: h.fecha, ...conIdOriginal(h)});
   renderDetalle(ub.potrero);
   toast(caravana ? 'Caravana guardada' : 'Caravana borrada');
 }
@@ -3607,7 +3663,7 @@ function agregarGuiaCompraventa(id){
   h.detalle = viejaTxt ? h.detalle.replace(viejaTxt, nuevaTxt) : (nuevaTxt ? h.detalle + nuevaTxt : h.detalle);
   guardarEstado();
   enviarEvento('correccion', ub.potrero, {tipoOriginal: h.tipo, accion:'agregar_guia',
-    categoria: datos.categoria, cantidad: datos.cantidad, dueno: datos.dueno, guia, fechaOriginal: h.fecha});
+    categoria: datos.categoria, cantidad: datos.cantidad, dueno: datos.dueno, guia, fechaOriginal: h.fecha, ...conIdOriginal(h)});
   refrescarTrasCambioHistorial(ub.potrero);
   toast(guia ? 'Guía guardada' : 'Guía borrada');
 }
@@ -4426,8 +4482,9 @@ function mostrarFormularioAgregarInicial(nombre){
       const key = claveAnimal(f.cat, f.dueno);
       a[key] = (a[key]||0) + f.cant;
       registrarCambioOcupacion(nombre, totalAntes, fecha);
-      registrarHistorial(nombre, 'ingreso', `+${f.cant} ${f.cat}${f.dueno?' de '+f.dueno:''} (ingreso)`, {potrero: nombre, categoria: f.cat, dueno: f.dueno, cantidad: f.cant}, undefined, fecha);
-      enviarEvento('ingreso', nombre, {categoria: f.cat, dueno: f.dueno, cantidad: f.cant}, fecha);
+      const eventId = crypto.randomUUID();
+      registrarHistorial(nombre, 'ingreso', `+${f.cant} ${f.cat}${f.dueno?' de '+f.dueno:''} (ingreso)`, {potrero: nombre, categoria: f.cat, dueno: f.dueno, cantidad: f.cant}, undefined, fecha).eventId = eventId;
+      enviarEvento('ingreso', nombre, {categoria: f.cat, dueno: f.dueno, cantidad: f.cant}, fecha, {eventId});
     });
     guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
     toast(`Se agregaron: ${filas.map(f=>`${f.cant} ${f.cat}`).join(', ')}`);
@@ -4619,16 +4676,17 @@ function registrarCompraVenta(o){
   if(guia) detalle += ` — guía ${guia}`;
   if(obs) detalle += ` (${obs})`;
   if(fin) detalle += ` [${resumenFin(fin)}]`;
-  registrarHistorial(potrero, tipoOp==='Venta'?'venta':'compra', detalle, {potrero, categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null, fin, _tipoOp: tipoOp, _fechaISO: fechaISO}, undefined, fecha);
+  const eventId = crypto.randomUUID();
+  registrarHistorial(potrero, tipoOp==='Venta'?'venta':'compra', detalle, {potrero, categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null, fin, _tipoOp: tipoOp, _fechaISO: fechaISO}, undefined, fecha).eventId = eventId;
 
   estado.transacciones = estado.transacciones || [];
   estado.transacciones.unshift({
     fecha: fecha, potrero, tipo: tipoOp, categoria: cat, dueno, cantidad: cant,
-    precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte, guia, notas: obs, fin
+    precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte, guia, notas: obs, fin, eventId
   });
   const detalleEvento = {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null, contraparte: contraparte||null, guia, obs: obs||null};
   if(fin) detalleEvento.fin = fin;
-  enviarEvento(tipoOp==='Venta'?'venta':'compra', potrero, detalleEvento, fecha);
+  enviarEvento(tipoOp==='Venta'?'venta':'compra', potrero, detalleEvento, fecha, {eventId});
 
   guardarEstado(); actualizarTodo(); publicarStockPotreros([potrero]);
   if(typeof renderGuiasLista === 'function' && guiasModalAbierto()) renderGuiasLista();
@@ -4638,8 +4696,9 @@ function registrarCompraVenta(o){
 /* "✍ Completar datos" (PC): agrega el detalle completo (kilos, precios, comisión, descuentos) a una
    compra/venta YA cargada -- típicamente una que se cargó rápido desde el celular. No toca el stock:
    mismo criterio que agregarGuiaCompraventa(). Devuelve true si la encontró. */
-function parchearTransaccionCompraVenta(tipoOp, potrero, categoria, dueno, cantidad, fecha, cambios){
-  const t = (estado.transacciones || []).find(x => x.tipo===tipoOp && x.potrero===potrero && x.categoria===categoria
+function parchearTransaccionCompraVenta(tipoOp, potrero, categoria, dueno, cantidad, fecha, cambios, eventId, soloPorId){
+  let t = eventId ? (estado.transacciones || []).find(x => x.eventId === eventId) : null;
+  if(!t && !(eventId && soloPorId)) t = (estado.transacciones || []).find(x => x.tipo===tipoOp && x.potrero===potrero && x.categoria===categoria
     && x.cantidad===cantidad && (x.dueno||'')===(dueno||'') && x.fecha===fecha);
   if(t) Object.assign(t, cambios);
   return !!t;
@@ -4654,10 +4713,10 @@ function completarDatosCompraVenta(id, fin, contraparte){
   datos.fin = fin; datos.precio = precio; if(contraparte) datos.contraparte = contraparte;
   h.detalle = h.detalle + ` [${resumenFin(fin)}]`;
   parchearTransaccionCompraVenta(h.tipo==='venta' ? 'Venta' : 'Compra', ub.potrero, datos.categoria, datos.dueno, cant, h.fecha,
-    {fin, precioUnitario: precio, total: (precio && cant) ? precio*cant : null, contraparte: contraparte || datos.contraparte || ''});
+    {fin, precioUnitario: precio, total: (precio && cant) ? precio*cant : null, contraparte: contraparte || datos.contraparte || ''}, h.eventId);
   guardarEstado();
   enviarEvento('correccion', ub.potrero, {tipoOriginal: h.tipo, accion: 'completar_datos', categoria: datos.categoria, cantidad: cant,
-    dueno: datos.dueno, fin, precio, contraparte: contraparte || datos.contraparte || null, fechaOriginal: h.fecha});
+    dueno: datos.dueno, fin, precio, contraparte: contraparte || datos.contraparte || null, fechaOriginal: h.fecha, ...conIdOriginal(h)});
   if(typeof renderGuiasLista === 'function') renderGuiasLista();
   toast('Datos completos guardados');
   return true;
@@ -4701,8 +4760,9 @@ function mostrarFormulario(nombre, accion, prefill){
         const key = claveAnimal(cat, dueno);
         a[key] = (a[key]||0) + cant;
         registrarCambioOcupacion(nombre, totalAntes, fecha);
-        registrarHistorial(nombre, 'ingreso', `+${cant} ${cat}${dueno?' de '+dueno:''} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
-        enviarEvento('ingreso', nombre, {categoria: cat, dueno, cantidad: cant}, fecha);
+        const eventId = crypto.randomUUID();
+        registrarHistorial(nombre, 'ingreso', `+${cant} ${cat}${dueno?' de '+dueno:''} (ingreso)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha).eventId = eventId;
+        enviarEvento('ingreso', nombre, {categoria: cat, dueno, cantidad: cant}, fecha, {eventId});
         guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
         toast(`Se agregaron ${cant} ${cat}${dueno?' ('+dueno+')':''} a ${nombre}`);
       });
@@ -4802,13 +4862,14 @@ function mostrarFormulario(nombre, accion, prefill){
       const grupoIdMov = generarIdHistorial();
       const extraMov = {potrero: nombre, destino, items, obs: obs||null};
       const sufObs = obs ? ` (${obs})` : '';
+      const eventId = crypto.randomUUID();
       if(destino===nombre){
-        registrarHistorial(nombre, 'movimiento_multi', `Recategorización: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha);
+        registrarHistorial(nombre, 'movimiento_multi', `Recategorización: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
       }else{
-        registrarHistorial(nombre, 'movimiento_multi', `→ ${destino}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha);
-        registrarHistorial(destino, 'movimiento_multi', `← ${nombre}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha);
+        registrarHistorial(nombre, 'movimiento_multi', `→ ${destino}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
+        registrarHistorial(destino, 'movimiento_multi', `← ${nombre}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
       }
-      enviarEvento('movimiento_multi', nombre, {destino, items, obs: obs||null}, fecha);
+      enviarEvento('movimiento_multi', nombre, {destino, items, obs: obs||null}, fecha, {eventId});
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre, destino]);
       toast(destino===nombre ? `Se recategorizaron: ${detalleTxt.join(', ')}` : `Se movieron a ${destino}: ${detalleTxt.join(', ')}`);
     });
@@ -4859,9 +4920,10 @@ function mostrarFormulario(nombre, accion, prefill){
       const detalleMov = movidos.join(', ');
       const grupoIdMov = generarIdHistorial();
       const extraMov = {potrero: nombre, destino, items};
-      registrarHistorial(nombre, 'movimiento_todo', `Potrero vaciado → ${destino}: ${detalleMov}`, extraMov, grupoIdMov, fecha);
-      registrarHistorial(destino, 'movimiento_todo', `Ingreso de potrero completo ← ${nombre}: ${detalleMov}`, extraMov, grupoIdMov, fecha);
-      enviarEvento('movimiento_todo', nombre, {destino, items}, fecha);
+      const eventId = crypto.randomUUID();
+      registrarHistorial(nombre, 'movimiento_todo', `Potrero vaciado → ${destino}: ${detalleMov}`, extraMov, grupoIdMov, fecha).eventId = eventId;
+      registrarHistorial(destino, 'movimiento_todo', `Ingreso de potrero completo ← ${nombre}: ${detalleMov}`, extraMov, grupoIdMov, fecha).eventId = eventId;
+      enviarEvento('movimiento_todo', nombre, {destino, items}, fecha, {eventId});
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre, destino]);
       toast(`Se movió todo el rodeo de ${nombre} a ${destino}`);
     });
@@ -4938,8 +5000,9 @@ function mostrarFormulario(nombre, accion, prefill){
       const key = claveAnimal(cat, dueno);
       a[key] = (a[key]||0) + cant;
       registrarCambioOcupacion(nombre, totalAntes, fecha);
-      registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
-      enviarEvento('nacimiento', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha);
+      const eventId = crypto.randomUUID();
+      registrarHistorial(nombre, 'nacimiento', `Nacimiento: +${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha).eventId = eventId;
+      enviarEvento('nacimiento', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha, {eventId});
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
       toast(`Nacimiento registrado en ${nombre}`);
     });
@@ -4990,8 +5053,9 @@ function mostrarFormulario(nombre, accion, prefill){
       registrarCambioOcupacion(nombre, totalAntes, fecha);
       const caravanaTxt = caravana ? ` — caravana ${caravana}` : '';
       const grupoTxt = grupoTernero ? ` (${textoGrupoTernero(grupoTernero)})` : '';
-      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat}${grupoTxt}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}${caravanaTxt}`, Object.assign({potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana, _fechaISO: fechaISO}, grupoTernero ? {grupoTernero} : {}), undefined, fecha);
-      enviarEvento('muerte', nombre, Object.assign({categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana}, grupoTernero ? {grupoTernero} : {}), fecha);
+      const eventId = crypto.randomUUID();
+      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat}${grupoTxt}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}${caravanaTxt}`, Object.assign({potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana, _fechaISO: fechaISO}, grupoTernero ? {grupoTernero} : {}), undefined, fecha).eventId = eventId;
+      enviarEvento('muerte', nombre, Object.assign({categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana}, grupoTernero ? {grupoTernero} : {}), fecha, {eventId});
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
       toast(`Muerte registrada en ${nombre}`);
     });
@@ -5029,8 +5093,10 @@ function mostrarFormulario(nombre, accion, prefill){
       const totalAntes = totalPotrero(nombre);
       a[key] -= cant;
       registrarCambioOcupacion(nombre, totalAntes, fecha);
+      const eventId = crypto.randomUUID();
       const entry = registrarHistorial(nombre, 'desaparecido', `Desaparecido: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''} (buscando)`, {potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
-      enviarEvento('desaparecido', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null, casoId: entry.id}, fecha);
+      entry.eventId = eventId;
+      enviarEvento('desaparecido', nombre, {categoria: cat, dueno, cantidad: cant, obs: obs||null, casoId: entry.id}, fecha, {eventId});
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
       toast(`Desaparición registrada en ${nombre} — resolvela en 🛠 Herramientas › ❓ Desaparecidos`);
     });
@@ -6775,7 +6841,8 @@ function renderDesaparecidosLista(){
       const fecha = fechaHoy();
       const entry = registrarHistorial(caso.potreroOrigen, 'perdida', `Pérdida confirmada: ${caso.pendiente} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''} (no vuelven)`, {potrero: caso.potreroOrigen, categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, _fechaISO: fechaISOHoy()}, undefined, fecha);
       entry.casoId = caso.casoId;
-      enviarEvento('perdida', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, casoId: caso.casoId}, fecha);
+      entry.eventId = crypto.randomUUID();
+      enviarEvento('perdida', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: caso.pendiente, casoId: caso.casoId}, fecha, {eventId: entry.eventId});
       guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
       if(seleccionActual) renderDetalle(seleccionActual);
       toast('Caso cerrado como pérdida');
@@ -6823,7 +6890,8 @@ function abrirFormularioMuerteDesaparecido(caso){
       {potrero: caso.potreroOrigen, categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, caravana, _fechaISO: fechaISOHoy()},
       undefined, fecha);
     entry.casoId = caso.casoId;
-    enviarEvento('muerte_desaparecido', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, caravana, casoId: caso.casoId}, fecha);
+    entry.eventId = crypto.randomUUID();
+    enviarEvento('muerte_desaparecido', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, caravana, casoId: caso.casoId}, fecha, {eventId: entry.eventId});
     guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
     if(seleccionActual) renderDetalle(seleccionActual);
     toast(cant<caso.pendiente ? `Se confirmó la muerte de ${cant}, sigue el caso abierto por ${caso.pendiente-cant}` : 'Caso cerrado como muerte');
@@ -6857,7 +6925,8 @@ function abrirFormularioEncontrado(caso){
     registrarCambioOcupacion(destino, totalAntes, fecha);
     const entry = registrarHistorial(destino, 'encontrado', `Encontrado: +${cant} ${caso.categoria}${caso.dueno?' de '+caso.dueno:''} (de la desaparición del ${caso.fecha} en ${caso.potreroOrigen})`, {potrero: destino, categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, _fechaISO: fechaISO}, undefined, fecha);
     entry.casoId = caso.casoId;
-    enviarEvento('encontrado', destino, {categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, casoId: caso.casoId}, fecha);
+    entry.eventId = crypto.randomUUID();
+    enviarEvento('encontrado', destino, {categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, casoId: caso.casoId}, fecha, {eventId: entry.eventId});
     guardarEstado(); actualizarTodo(); renderDesaparecidosLista(); publicarStockPotreros([destino]);
     if(seleccionActual) renderDetalle(seleccionActual);
     toast(`Se sumaron ${cant} ${caso.categoria} a ${destino}`);
@@ -8320,16 +8389,17 @@ if(document.getElementById('ca-tipo')){
     }
 
     const id = generarIdHistorial();
+    const eventId = crypto.randomUUID();
     const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
-    estado.campoAjeno.historial.unshift({id, fecha, tipo, items, potrero, guia, obs: obs||null, usuario: usuario||null});
+    estado.campoAjeno.historial.unshift({id, fecha, tipo, items, potrero, guia, obs: obs||null, usuario: usuario||null, eventId});
     const itemsTxt = items.map(it=>`${it.cantidad} ${it.categoria}${it.dueno?' de '+it.dueno:''}`).join(', ');
     const sufGuia = guia ? ` — guía ${guia}` : '';
     const detalleHist = tipo==='envio'
       ? `Envío a campo ajeno: ${itemsTxt}${sufGuia}${obs?' ('+obs+')':''}`
       : `Retorno de campo ajeno: ${itemsTxt}${sufGuia}${obs?' ('+obs+')':''}`;
-    registrarHistorial(potrero, tipo==='envio'?'envio_campo_ajeno':'retorno_campo_ajeno', detalleHist, {potrero, items, guia, obs: obs||null}, undefined, fecha);
+    registrarHistorial(potrero, tipo==='envio'?'envio_campo_ajeno':'retorno_campo_ajeno', detalleHist, {potrero, items, guia, obs: obs||null}, undefined, fecha).eventId = eventId;
     guardarEstado();
-    enviarEvento(tipo==='envio'?'envio_campo_ajeno':'retorno_campo_ajeno', potrero, {items, guia, obs: obs||null}, fecha);
+    enviarEvento(tipo==='envio'?'envio_campo_ajeno':'retorno_campo_ajeno', potrero, {items, guia, obs: obs||null}, fecha, {eventId});
     actualizarTodo();
     publicarStockPotreros([potrero]);
     renderCampoAjenoLista();
@@ -8455,7 +8525,7 @@ if(document.getElementById('tr-guardar')){
     registrarCambioOcupacion(origen, totalAntes, fecha);
     const itemsTxt = itemsOrigen.map(it=>`${it.cantidad} ${it.categoria}${it.dueno?' de '+it.dueno:''}`).join(', ');
     registrarHistorial(origen, 'traslado_salida', `Traslado a ${t.destinoNombre} (${destinoPotrero}): ${itemsTxt} — guía ${guia}${obs?' ('+obs+')':''}`,
-      {potrero: origen, items: itemsOrigen, guia, obs: obs||null, trasladoId, destino, itemsDestino}, undefined, fecha);
+      {potrero: origen, items: itemsOrigen, guia, obs: obs||null, trasladoId, destino, itemsDestino}, undefined, fecha).eventId = idSalida;
     guardarEstado();
     enviarEvento('traslado_salida', origen, {items: itemsOrigen, guia, obs: obs||null, trasladoId, destino}, fecha, {eventId: idSalida});
     enviarEvento('traslado_entrada', destinoPotrero, {items: itemsDestino, guia, obs: obs||null, trasladoId,
@@ -9193,12 +9263,13 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
     }
     const fecha = fechaISOaDisplay(fechaISO);
     const movId = crypto.randomUUID();
+    const eventId = crypto.randomUUID();
     moverTitularidad(potrero, items, desde, hacia);
     const itemsTxt = items.map(it=>`${it.cantidad} ${it.categoria}`).join(', ');
     registrarHistorial(potrero, 'movimiento_guia', `Venta entre dueños: ${textoFirma(desde)} → ${textoFirma(hacia)}: ${itemsTxt} — guía ${guia}${obs?' ('+obs+')':''}`,
-      {potrero, items, desde, hacia, guia, obs: obs||null, movId}, undefined, fecha);
+      {potrero, items, desde, hacia, guia, obs: obs||null, movId}, undefined, fecha).eventId = eventId;
     guardarEstado();
-    enviarEvento('movimiento_guia', potrero, {items, desde, hacia, guia, obs: obs||null, movId}, fecha);
+    enviarEvento('movimiento_guia', potrero, {items, desde, hacia, guia, obs: obs||null, movId}, fecha, {eventId});
     actualizarTodo();
     publicarStockPotreros([potrero]);
     document.getElementById('mg-guia').value = '';
@@ -9415,9 +9486,10 @@ document.getElementById('co-guardar').addEventListener('click', async ()=>{
   const totalAntes = totalPotrero(potrero);
   a[key] -= cant;
   registrarCambioOcupacion(potrero, totalAntes, fecha);
+  const eventId = crypto.randomUUID();
   registrarHistorial(potrero, 'consumo', `Consumo: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}`,
-    {potrero, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha);
-  const envio = enviarEvento('consumo', potrero, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha);
+    {potrero, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha).eventId = eventId;
+  const envio = enviarEvento('consumo', potrero, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha, {eventId});
   guardarEstado(); actualizarTodo(); publicarStockPotreros([potrero]);
   document.getElementById('co-cant').value = '1';
   document.getElementById('co-obs').value = '';
@@ -9705,9 +9777,10 @@ function confirmarAccionVoz(){
     registrarCambioOcupacion(origen, totalAntesOrigen);
     registrarCambioOcupacion(destino, totalAntesDestino);
     const extraMov = {potrero: origen, destino, categoria: cat, categoriaDestino: cat, cantidad: cant, dueno};
-    registrarHistorial(origen, 'movimiento', `-${cant} ${cat}${dueno?' de '+dueno:''} → ${destino} (voz)`, extraMov);
-    registrarHistorial(destino, 'movimiento', `+${cant} ${cat}${dueno?' de '+dueno:''} ← ${origen} (voz)`, extraMov);
-    enviarEvento('movimiento', origen, {categoria: cat, dueno, cantidad: cant, destino});
+    const eventId = crypto.randomUUID();
+    registrarHistorial(origen, 'movimiento', `-${cant} ${cat}${dueno?' de '+dueno:''} → ${destino} (voz)`, extraMov).eventId = eventId;
+    registrarHistorial(destino, 'movimiento', `+${cant} ${cat}${dueno?' de '+dueno:''} ← ${origen} (voz)`, extraMov).eventId = eventId;
+    enviarEvento('movimiento', origen, {categoria: cat, dueno, cantidad: cant, destino}, undefined, {eventId});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(destino); publicarStockPotreros([origen, destino]);
     toast(`Movidos ${cant} ${cat}${dueno?' ('+dueno+')':''} de ${origen} a ${destino}`);
   } else if(accion==='agregar' || accion==='nacimiento'){
@@ -9721,8 +9794,9 @@ function confirmarAccionVoz(){
     const totalAntes = totalPotrero(objetivo);
     a[key] = (a[key]||0) + cant;
     registrarCambioOcupacion(objetivo, totalAntes);
-    registrarHistorial(objetivo, accion==='nacimiento'?'nacimiento':'ingreso', `${accion==='nacimiento'?'Nacimiento':'Ingreso'}: +${cant} ${cat}${dueno?' de '+dueno:''} (voz)`, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
-    enviarEvento(accion==='nacimiento'?'nacimiento':'ingreso', objetivo, {categoria: cat, dueno, cantidad: cant});
+    const eventId = crypto.randomUUID();
+    registrarHistorial(objetivo, accion==='nacimiento'?'nacimiento':'ingreso', `${accion==='nacimiento'?'Nacimiento':'Ingreso'}: +${cant} ${cat}${dueno?' de '+dueno:''} (voz)`, {potrero: objetivo, categoria: cat, cantidad: cant, dueno}).eventId = eventId;
+    enviarEvento(accion==='nacimiento'?'nacimiento':'ingreso', objetivo, {categoria: cat, dueno, cantidad: cant}, undefined, {eventId});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo); publicarStockPotreros([objetivo]);
     toast(`Registrado en ${objetivo}: +${cant} ${cat}${dueno?' ('+dueno+')':''}`);
   } else if(accion==='muerte'){
@@ -9736,8 +9810,9 @@ function confirmarAccionVoz(){
     const totalAntes = totalPotrero(objetivo);
     a[key] -= cant;
     registrarCambioOcupacion(objetivo, totalAntes);
-    registrarHistorial(objetivo, 'muerte', `Muerte: -${cant} ${cat}${grupoTernero?' ('+textoGrupoTernero(grupoTernero)+')':''}${dueno?' de '+dueno:''} (voz)`, Object.assign({potrero: objetivo, categoria: cat, cantidad: cant, dueno}, grupoTernero ? {grupoTernero} : {}));
-    enviarEvento('muerte', objetivo, Object.assign({categoria: cat, dueno, cantidad: cant}, grupoTernero ? {grupoTernero} : {}));
+    const eventId = crypto.randomUUID();
+    registrarHistorial(objetivo, 'muerte', `Muerte: -${cant} ${cat}${grupoTernero?' ('+textoGrupoTernero(grupoTernero)+')':''}${dueno?' de '+dueno:''} (voz)`, Object.assign({potrero: objetivo, categoria: cat, cantidad: cant, dueno}, grupoTernero ? {grupoTernero} : {})).eventId = eventId;
+    enviarEvento('muerte', objetivo, Object.assign({categoria: cat, dueno, cantidad: cant}, grupoTernero ? {grupoTernero} : {}), undefined, {eventId});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo); publicarStockPotreros([objetivo]);
     toast(`Muerte registrada en ${objetivo}`);
   } else if(accion==='compra' || accion==='venta'){
@@ -9756,10 +9831,11 @@ function confirmarAccionVoz(){
     const montoTotal = (!isNaN(precio) && precio>0) ? precio*cant : null;
     let detalle = `${accion==='venta'?'Venta':'Compra'}: ${accion==='venta'?'-':'+'}${cant} ${cat}${dueno?' de '+dueno:''} (voz)`;
     if(montoTotal!==null) detalle += ` a USD ${precio}/cab (total USD ${montoTotal.toFixed(0)})`;
-    registrarHistorial(objetivo, accion==='venta'?'venta':'compra', detalle, {potrero: objetivo, categoria: cat, cantidad: cant, dueno});
+    const eventId = crypto.randomUUID();
+    registrarHistorial(objetivo, accion==='venta'?'venta':'compra', detalle, {potrero: objetivo, categoria: cat, cantidad: cant, dueno}).eventId = eventId;
     estado.transacciones = estado.transacciones || [];
-    estado.transacciones.unshift({fecha:fechaHoy(), potrero:objetivo, tipo: accion==='venta'?'Venta':'Compra', categoria:cat, dueno, cantidad:cant, precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte:'', notas:'voz'});
-    enviarEvento(accion==='venta'?'venta':'compra', objetivo, {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null});
+    estado.transacciones.unshift({fecha:fechaHoy(), potrero:objetivo, tipo: accion==='venta'?'Venta':'Compra', categoria:cat, dueno, cantidad:cant, precioUnitario: isNaN(precio)?null:precio, total: montoTotal, contraparte:'', notas:'voz', eventId});
+    enviarEvento(accion==='venta'?'venta':'compra', objetivo, {categoria: cat, dueno, cantidad: cant, precio: montoTotal!==null?precio:null}, undefined, {eventId});
     guardarEstado(); actualizarTodo(); seleccionarPotrero(objetivo); publicarStockPotreros([objetivo]);
     toast(`${accion==='venta'?'Venta':'Compra'} registrada en ${objetivo}`);
   }

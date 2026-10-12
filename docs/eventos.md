@@ -120,26 +120,37 @@ Un `correccion` anula, edita o completa un evento anterior. El evento original *
 
 | `accion` | Campos | Qué hace |
 |---|---|---|
-| `eliminar` | `{tipoOriginal, historialId, fechaOriginal, reversar, casoId?, cantidad?}` | deshace el efecto de `reversar` |
+| `eliminar` | `{tipoOriginal, historialId, fechaOriginal, reversar, eventIdOriginal?, casoId?, cantidad?}` | deshace el efecto de `reversar` |
 | `editar` | igual que `eliminar` | deshace `reversar` y el evento corregido llega como un evento nuevo aparte |
-| `agregar_guia` | `{tipoOriginal, categoria, cantidad, dueno, guia, fechaOriginal}` | pone o borra la guía de una compra/venta |
-| `agregar_caravana` | `{tipoOriginal, casoId, categoria, cantidad, dueno, caravana, fechaOriginal}` | pone la caravana de una muerte |
-| `completar_datos` | `{tipoOriginal, categoria, cantidad, dueno, fin, precio, contraparte, fechaOriginal}` | agrega el detalle financiero a una compra/venta cargada rápido |
+| `agregar_guia` | `{tipoOriginal, categoria, cantidad, dueno, guia, fechaOriginal, eventIdOriginal?}` | pone o borra la guía de una compra/venta |
+| `agregar_caravana` | `{tipoOriginal, casoId, categoria, cantidad, dueno, caravana, fechaOriginal, eventIdOriginal?}` | pone la caravana de una muerte |
+| `completar_datos` | `{tipoOriginal, categoria, cantidad, dueno, fin, precio, contraparte, fechaOriginal, eventIdOriginal?}` | agrega el detalle financiero a una compra/venta cargada rápido |
 | `anular_traslado` | `{tipoOriginal:'traslado_entrada', trasladoId, guia, fechaOriginal}` | **stream del destino**: anula la entrada de un traslado cuando se borra su salida |
 
 `reversar` es un ajuste que la app sabe aplicar al revés. Sus `tipo` son: `sumar`, `restar`,
 `mover`, `mover_todo`, `mover_multi`, `traslado_salida_ajuste` (lleva `trasladoId`),
 `movimiento_guia_ajuste` (lleva `movId`), `envio_campo_ajeno_ajuste`, `retorno_campo_ajeno_ajuste`.
 
-**Cómo se ubica el original.** Hoy depende del tipo:
+**Cómo se ubica el original.**
 
-- Con id propio y estable: `trasladoId` (traslados), `movId` (`movimiento_guia`), `casoId`
-  (desaparecidos, muertes de un caso) y, desde la app, `historialId`.
-- **Por parecido** (potrero + categoría + dueño + cantidad + fecha original), tomando el más
-  reciente anterior a la corrección que no esté anulado: `compra`, `venta`, `muerte`, `consumo`,
-  `movimiento*`, `envio/retorno_campo_ajeno`, `agregar_guia`, `agregar_caravana` y
-  `completar_datos`. Dos compras iguales el mismo día se pueden confundir (hallazgo 7, Fase 3
-  la pasa a id).
+1. **Por `eventIdOriginal`** (Fase 3, paso 4, 11/10/2026): es el `event_id` del evento que se
+   corrige. Cada renglón de historial de la app guarda el `event_id` de su evento (`eventId`; las dos
+   puntas de un movimiento entre potreros comparten el mismo) y la corrección lo lleva en
+   `eventIdOriginal` (`eliminar`, `editar`, `agregar_guia`, `agregar_caravana`, `completar_datos`).
+   Quien recibe la corrección busca ese id en todos los potreros: si hay renglones con ese id (aunque
+   ya estén anulados) actúa sobre ésos y **no** busca por parecido. Es lo que evita que dos ventas
+   iguales del mismo día se confundan (hallazgo 7). Los scripts de la PC hacen lo mismo con
+   `event_id` de las filas de `eventos_sync`.
+2. **Por parecido**, solo como respaldo para los eventos de antes de esta versión (la corrección no
+   trae `eventIdOriginal`, o ningún renglón tiene ese id): potrero + categoría + dueño + cantidad +
+   fecha original, tomando el más cercano a la fecha original que no esté anulado. Cubre `compra`,
+   `venta`, `muerte`, `consumo`, `movimiento*`, `envio/retorno_campo_ajeno`, `agregar_guia`,
+   `agregar_caravana` y `completar_datos`.
+3. Además, id propio y estable de algunos tipos, que se sigue usando: `trasladoId` (traslados),
+   `movId` (`movimiento_guia`), `casoId` (desaparecidos, muertes de un caso) y, desde la app,
+   `historialId`.
+
+`eventIdOriginal` es opcional: una corrección sin él es válida y se ubica por parecido.
 
 ## Quién lee estos eventos
 
