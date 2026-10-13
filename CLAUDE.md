@@ -598,6 +598,20 @@ intervalo, sospechosa, potrero del bastón, categoría, sesión).
 - La consulta del lote pagina de a 1000 (PostgREST corta sin avisar). Test:
   `tests/probar_pesadas.js`.
 
+### Rodeo y nota en la ficha de caravana (13/10/2026, a pedido de Pedro)
+
+La ficha de "🔎 Buscar caravana" muestra **Rodeo** y **Nota**, justo debajo del
+Potrero, cada uno con la fecha de la lectura de la que sale entre paréntesis.
+Los publica la PC (`animales.py` / `publicar_animales.py`, carpeta del lector
+XRS2) en `animales_caravana` como `rodeo`, `rodeo_fecha`, `nota`, `nota_fecha`:
+el valor de la **última lectura que lo trae** (una lectura sin rodeo no borra el
+anterior). No son datos fijos del animal: el rodeo es un lote de trabajo y
+cambia, y la nota mezcla etiquetas de sesión con observaciones sueltas. La app
+solo lee; `buscarCaravana()` pide `select('*')`, así que la ficha los toma sola
+apenas existan las columnas (`supabase_rodeo_nota.sql`, que corre Pedro **antes**
+de publicar: sin las columnas la PC publica sin esos campos y la ficha queda
+como estaba). Sin dato la fila no aparece. Test: `tests/probar_ficha_rodeo_nota.js`.
+
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
 RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este

@@ -143,6 +143,9 @@ jobs:
       - name: "Buscar caravana (solo La Vuelta) -- padron animales_caravana, estados de carencia, caravana en el tratamiento"
         run: node tests/probar_caravana.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-movil/index.html pone-chico-movil/index.html
 
+      - name: "Ficha de caravana -- rodeo y nota de la ultima lectura, con su fecha; sin dato o sin las columnas no muestra nada; texto de afuera escapado"
+        run: node tests/probar_ficha_rodeo_nota.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-movil/index.html
+
       - name: "Pesadas (solo La Vuelta) -- historial en la ficha, resumen por lote de la sesion del baston, proporcion contra el stock"
         run: node tests/probar_pesadas.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-movil/index.html pone-chico-movil/index.html
 
