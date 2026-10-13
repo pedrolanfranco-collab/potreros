@@ -390,6 +390,15 @@
   #vs-tabla .vs-vacio{color:var(--texto-suave);font-style:italic;}
   .vs-tag{font-weight:600;font-size:11px;color:var(--ocre);margin-left:6px;}
   #vs-notas p{font-size:12px;color:var(--texto-suave);margin:4px 0;line-height:1.4;}
+  /* 13/10/2026: ventana "⚠ Datos faltantes" (lecturas del bastón sin categoría). Solo la PC. */
+  #modal-faltantes .modal-box{max-width:680px;}
+  #df-tabla{width:100%;border-collapse:collapse;font-size:13px;}
+  #df-tabla thead th{position:sticky;top:0;background:var(--crema-alta);text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);padding:6px 8px;border-bottom:1px solid var(--linea);}
+  #df-tabla td{padding:5px 8px;vertical-align:top;}
+  #df-tabla td.df-car{font-family:'JetBrains Mono',monospace;}
+  #df-tabla tr.df-det td{padding-top:0;border-bottom:1px solid #eee6cd;font-size:12px;color:var(--texto-suave);}
+  #df-tabla tr.df-det td.df-ojo{color:var(--ocre);font-weight:600;}
+  #df-notas p{font-size:12px;color:var(--texto-suave);margin:4px 0;line-height:1.4;}
 <!-- @pc:end -->
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
 
@@ -675,6 +684,7 @@
             <button class="btn btn-json" id="btn-pesadas" style="display:none;">⚖️ Pesadas</button>
             <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
             <button class="btn btn-json" id="btn-verificar-stock">🔍 Verificar stock</button>
+            <button class="btn btn-json" id="btn-faltantes" style="display:none;">⚠ Datos faltantes</button>
           </div>
         </div>
         <div class="hg">
@@ -1226,6 +1236,25 @@
     <div class="form-botones">
       <button class="btn btn-agregar" id="vs-csv" style="display:none;">⬇ Descargar detalle (CSV)</button>
       <button class="btn btn-secundario" id="vs-cerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div id="modal-faltantes" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3 id="df-titulo">⚠ Datos faltantes</h3>
+    <button class="btn-cerrar-x" id="df-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Lecturas del bastón que llegaron sin categoría, de los últimos 60 días, y qué pasó con su tratamiento en Sanidad.</p>
+    <div id="df-mensaje" class="modal-info" role="status"></div>
+    <div class="vs-tabla-caja" id="df-tabla-caja" style="display:none;">
+      <table id="df-tabla">
+        <thead><tr><th>Caravana</th><th>Sesión</th><th>Fecha</th><th>Falta</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="df-notas"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="df-csv" style="display:none;">⬇ Descargar CSV</button>
+      <button class="btn btn-secundario" id="df-cerrar">Cerrar</button>
     </div>
   </div>
 </div>
@@ -3467,6 +3496,123 @@ document.getElementById('vs-csv').addEventListener('click', ()=>{
   setTimeout(()=> URL.revokeObjectURL(url), 1000);
   toast('Detalle descargado');
 });
+
+/* 13/10/2026 (a pedido de Pedro): "⚠ Datos faltantes". Una lectura del bastón SIN categoría ya no
+   tranca su tratamiento: la PC (sanidad_puente.py, carpeta del lector XRS2) lo manda a Sanidad con la
+   categoría de la ficha del animal, o como "Sin categoría" si la ficha tampoco la tiene, y publica en
+   animales_caravana.faltantes la lista de esas lecturas con lo que pasó (publicar_animales.py:
+   [{f, a, p, k, falta, san, c, m}]; san = 'ficha' | 'sin' | 'no' | ''). La app solo lee. Gateado por
+   CONFIG.datosFaltantes (La Vuelta: es el único campo cuyo bastón pasa solo a Sanidad). Sin la columna
+   (antes del ALTER TABLE) la consulta falla y la ventana lo dice; el botón queda sin número. */
+const DIAS_FALTANTES = 60;
+let _ultimosFaltantes = null;
+function nombreSesionCorto(a){
+  return String(a || '').replace(/^XRS2_\d+_/, '').replace(/_\d{4}-\d{2}-\d{2}$/, '') || '—';
+}
+function textoSanidadFaltante(x){
+  const prod = x.p ? x.p + ' → ' : '';
+  if(x.san === 'ficha') return {ojo: false, txt: prod + 'pasó a Sanidad como ' + x.c + ' (de la ficha)'};
+  if(x.san === 'sin') return {ojo: true, txt: prod + 'pasó a Sanidad como "' + x.c + '": corregila en Sanidad o en la Planilla'};
+  if(x.san === 'no') return {ojo: true, txt: prod + (x.m || 'no pasó a Sanidad')};
+  return {ojo: false, txt: x.k ? 'pesada ' + fmtKg(x.k) + ', sin tratamiento' : 'lectura sin tratamiento'};
+}
+async function cargarFaltantes(){
+  const client = clienteSupabase();
+  if(!client) return {error: 'sin conexión'};
+  const filas = [];
+  try{
+    for(let desde = 0; ; desde += 1000){
+      const res = await client.from(TABLA_CARAVANAS).select('id8,ide,faltantes')
+        .eq('establecimiento', ESTABLECIMIENTO).not('faltantes', 'is', null).order('id8')
+        .range(desde, desde + 999);
+      if(res.error) return {error: res.error.message || 'error de consulta'};
+      const lote = limpiarTextoRemoto(res.data || []);
+      filas.push(...lote);
+      if(lote.length < 1000) break;
+    }
+  }catch(e){
+    return {error: 'sin señal'};
+  }
+  const desdeISO = new Date(Date.now() - DIAS_FALTANTES * 86400000).toISOString().slice(0, 10);
+  const lista = [];
+  filas.forEach(an => (Array.isArray(an.faltantes) ? an.faltantes : []).forEach(x=>{
+    if(!x || typeof x !== 'object' || !x.f || String(x.f) < desdeISO) return;
+    lista.push(Object.assign({id8: an.id8, ide: an.ide || ''}, x));
+  }));
+  lista.sort((a, b) => String(b.f).localeCompare(String(a.f)) || String(a.a).localeCompare(String(b.a))
+    || String(a.id8).localeCompare(String(b.id8)));
+  return {lista};
+}
+function rotuloFaltantes(n){
+  const b = document.getElementById('btn-faltantes');
+  if(b) b.textContent = '⚠ Datos faltantes' + (n ? ' (' + n + ')' : '');
+}
+function pintarFaltantes(lista){
+  _ultimosFaltantes = lista;
+  rotuloFaltantes(lista.length);
+  document.getElementById('df-titulo').textContent = '⚠ Datos faltantes (' + lista.length + ')';
+  const msg = document.getElementById('df-mensaje');
+  const caja = document.getElementById('df-tabla-caja');
+  document.getElementById('df-csv').style.display = lista.length ? '' : 'none';
+  if(!lista.length){
+    msg.textContent = 'No hay lecturas sin categoría en los últimos ' + DIAS_FALTANTES + ' días.';
+    caja.style.display = 'none';
+    document.getElementById('df-notas').innerHTML = '';
+    return;
+  }
+  msg.textContent = '';
+  document.querySelector('#df-tabla tbody').innerHTML = lista.map(x=>{
+    const s = textoSanidadFaltante(x);
+    return '<tr><td class="df-car">' + esc(x.id8) + '</td><td>' + esc(nombreSesionCorto(x.a)) + '</td><td>'
+      + esc(fechaISOaDisplay(String(x.f)).slice(0, 5)) + '</td><td>' + (x.falta === 'categoria' ? 'categoría' : esc(x.falta || '')) + '</td></tr>'
+      + '<tr class="df-det"><td></td><td colspan="3"' + (s.ojo ? ' class="df-ojo"' : '') + '>' + esc(s.txt) + '</td></tr>';
+  }).join('');
+  caja.style.display = '';
+  document.getElementById('df-notas').innerHTML = '<p>' + esc('Para que una lectura salga de la lista hay que esperar ' + DIAS_FALTANTES
+    + ' días. Si la categoría de un animal está mal en su ficha, se corrige en correcciones.csv de la PC.') + '</p>';
+}
+async function abrirFaltantes(){
+  document.getElementById('modal-faltantes').style.display = 'flex';
+  document.getElementById('df-tabla-caja').style.display = 'none';
+  document.getElementById('df-csv').style.display = 'none';
+  document.getElementById('df-notas').innerHTML = '';
+  document.getElementById('df-mensaje').textContent = 'Cargando…';
+  const r = await cargarFaltantes();
+  if(r.error){
+    document.getElementById('df-mensaje').textContent = 'No se pudo consultar (' + String(r.error).slice(0, 120) + '). Necesitás señal para ver la lista.';
+    return;
+  }
+  pintarFaltantes(r.lista);
+}
+function csvFaltantes(lista){
+  const filas = [['caravana', 'eid', 'sesion', 'fecha', 'falta', 'producto', 'peso', 'sanidad', 'categoria_enviada', 'detalle']];
+  lista.forEach(x => filas.push([x.id8, x.ide, x.a || '', x.f, x.falta || '', x.p || '', x.k == null ? '' : x.k,
+    ({ficha: 'paso con la ficha', sin: 'paso sin categoria', no: 'no paso'})[x.san] || '', x.c || '', x.m || '']));
+  return '﻿' + filas.map(r => r.map(celdaCsvVs).join(';')).join('\r\n') + '\r\n';
+}
+if(CONFIG.datosFaltantes && CONFIG.caravanasHabilitado){
+  document.getElementById('btn-faltantes').style.display = '';
+  document.getElementById('btn-faltantes').addEventListener('click', abrirFaltantes);
+  document.getElementById('df-cerrar').addEventListener('click', ()=> document.getElementById('modal-faltantes').style.display = 'none');
+  document.getElementById('df-cerrar-x').addEventListener('click', ()=> document.getElementById('df-cerrar').click());
+  document.getElementById('df-csv').addEventListener('click', ()=>{
+    if(!_ultimosFaltantes) return;
+    const blob = new Blob([csvFaltantes(_ultimosFaltantes)], {type: 'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${ESTABLECIMIENTO}_datos_faltantes_${sellotiempoArchivo()}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 1000);
+    toast('Lista descargada');
+  });
+  // El número en el botón, sin abrir la ventana: un rato después de arrancar, en silencio.
+  setTimeout(async ()=>{
+    if(!navigator.onLine) return;
+    const r = await cargarFaltantes();
+    if(!r.error) rotuloFaltantes(r.lista.length);
+  }, 4000);
+}
 // @pc:end
 /* Fase 3, paso 2 (11/10/2026, visual aprobado por Pedro): con CONFIG.colaOrdenada el indicador cuenta
    también Sanidad y catálogos, distingue "sin señal" (⏳) de "falló el último intento" (⚠, ocre) y de

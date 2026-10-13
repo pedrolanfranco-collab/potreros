@@ -612,6 +612,16 @@ apenas existan las columnas (`supabase_rodeo_nota.sql`, que corre Pedro **antes*
 de publicar: sin las columnas la PC publica sin esos campos y la ficha queda
 como estaba). Sin dato la fila no aparece. Test: `tests/probar_ficha_rodeo_nota.js`.
 
+### Datos faltantes (13/10/2026, a pedido de Pedro, solo PC de La Vuelta, `CONFIG.datosFaltantes`)
+
+Una lectura del bastón **sin categoría** ya no tranca su tratamiento: `sanidad_puente.py` (carpeta del
+lector XRS2) lo manda a Sanidad con la categoría de la **ficha** del animal (o "Sin categoría" si la ficha
+tampoco la sabe; una de ficha sin confirmar, como Vaquillona, sigue sin pasar). Rige desde el 13/10/2026
+(lo anterior ya se avisó para cargarlo a mano). `publicar_animales.py` publica en
+`animales_caravana.faltantes` (jsonb, `supabase_faltantes.sql`, **correrlo antes**) la lista de esas
+lecturas con lo que pasó, y la PC la muestra en Herramientas › Consultar › "⚠ Datos faltantes (N)"
+(últimos 60 días, CSV). La app solo lee. Test: `tests/probar_datos_faltantes.js`.
+
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
 RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este
