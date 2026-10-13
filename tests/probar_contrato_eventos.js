@@ -273,7 +273,9 @@ const CORRECCIONES = {
   eliminar: { tipoOriginal: 'string', fechaOriginal: 'fecha', reversar: ['object', { tipo: 'string' }], eventIdOriginal: 'uuid?' },
   agregar_guia: { tipoOriginal: 'string', categoria: 'string', cantidad: 'number', dueno: 'string', guia: 'string?', fechaOriginal: 'fecha', eventIdOriginal: 'uuid?' },
   completar_datos: { tipoOriginal: 'string', categoria: 'string', cantidad: 'number', dueno: 'string', fin: 'object', precio: 'number?', contraparte: 'string?', fechaOriginal: 'fecha', eventIdOriginal: 'uuid?' },
-  anular_traslado: { tipoOriginal: 'string', trasladoId: 'uuid', guia: 'string?', fechaOriginal: 'fecha' }
+  // origenEstablecimiento (Fase 4, 13/10/2026): el id del campo que anula; la politica del cierre lo exige para
+  // dejar pasar este evento, que se escribe en el stream del OTRO campo
+  anular_traslado: { tipoOriginal: 'string', trasladoId: 'uuid', guia: 'string?', fechaOriginal: 'fecha', origenEstablecimiento: 'string' }
 };
 
 function validarTipo(v, esperado){
@@ -474,6 +476,8 @@ async function probarFlujos(archivoLV, archivoML, salida){
     const p = problemas(cML.detalle, CORRECCIONES.anular_traslado);
     chequear('anular_traslado: cumple el contrato', p.length === 0, p.join('; '));
     chequear('anular_traslado: lleva el mismo trasladoId que la salida', !fSal || cML.detalle.trasladoId === fSal.detalle.trasladoId);
+    chequear('anular_traslado: origenEstablecimiento es el id del campo de origen (la politica del cierre, Fase 4, lo mira)',
+      cML.detalle.origenEstablecimiento === 'la_vuelta', JSON.stringify(cML.detalle));
   }
 
   n = ev().length;

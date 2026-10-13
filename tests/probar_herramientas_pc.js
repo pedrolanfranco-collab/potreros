@@ -86,7 +86,7 @@ const SUBMENUS = {
   backup:   ['btn-exportar-json', 'btn-importar-json']
 };
 const DIRECTOS = ['btn-stock', 'btn-sanidad', 'btn-lluvias', 'btn-desaparecidos', 'btn-alertas', 'btn-verificar-stock',
-  'btn-coeficientes', 'btn-sincronizar', 'btn-usuario', 'btn-restablecer'];
+  'btn-coeficientes', 'btn-sincronizar', 'btn-usuario', 'btn-clave-campo', 'btn-restablecer'];
 
 async function probarPc(archivo){
   console.log('\n=== ' + archivo + ' ===');

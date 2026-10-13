@@ -341,6 +341,13 @@
   }
   #estado-compacto{flex:1;min-width:0;font-size:11px;line-height:1.5;}
   #estado-compacto div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* Fase 4, release 1 (clave del campo): aviso debajo del estado de sincronización, y la ventana de la clave */
+  #estado-compacto #aviso-clave{white-space:normal;margin-top:2px;font-weight:700;line-height:1.3;cursor:pointer;}
+  #estado-compacto #aviso-clave.falta{color:#8f5f12;}
+  #estado-compacto #aviso-clave.invalida{color:#a1402e;}
+  #clave-input{height:44px;min-height:44px;font-size:16px;}
+  #clave-error{display:none;color:#a1402e;font-size:13.5px;font-weight:600;line-height:1.35;margin:0 0 8px;}
+  #clave-cargada{display:none;font-size:13px;font-weight:600;line-height:1.35;margin:0 0 10px;}
   .btn-herramientas{
     font-family:'Inter',sans-serif;font-weight:700;font-size:15px;
     background:var(--verde-monte);color:#fff;border:none;border-radius:8px;
@@ -660,6 +667,7 @@
       <button class="btn btn-json" id="btn-modo-sol">☀ Modo sol: NO</button>
 <!-- @simple:end -->
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
+      <button class="btn btn-json" id="btn-clave-campo">🔑 Clave del campo</button>
 <!-- @movil:end -->
 <!-- @pc:start -->
       <div id="hmenu-grupos">
@@ -698,6 +706,7 @@
           <div class="hg-grid">
             <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
             <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
+            <button class="btn btn-json" id="btn-clave-campo">🔑 Clave del campo</button>
             <button class="btn btn-json hg-ancho" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
           </div>
         </div>
@@ -1150,6 +1159,22 @@
       <button class="btn btn-agregar" id="usuario-guardar">Guardar</button>
       <button class="btn btn-secundario" id="usuario-cancelar">Cancelar</button>
     </div>
+  </div>
+</div>
+<div id="modal-clave-campo" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🔑 Clave del campo</h3>
+    <button class="btn-cerrar-x" id="clave-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info" id="clave-subtitulo"></p>
+    <p id="clave-texto" style="font-size:14px;line-height:1.4;margin:0 0 10px;"></p>
+    <p id="clave-cargada"></p>
+    <div class="form-row"><label for="clave-input">Clave</label><input type="text" id="clave-input" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Escribí la clave"></div>
+    <div id="clave-error" role="alert"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="clave-guardar">Guardar</button>
+      <button class="btn btn-secundario" id="clave-mas-tarde">Más tarde</button>
+    </div>
+    <p class="modal-info" style="margin:10px 0 0;">Sin la clave la app sigue andando por ahora. Más adelante va a hacer falta para sincronizar.</p>
   </div>
 </div>
 <div id="modal-caravana" class="modal-overlay" style="display:none;">
@@ -1814,13 +1839,88 @@ function idDispositivo(){
   }
   return id;
 }
+/* ======================= CLAVE DEL CAMPO (Fase 4, Release 1 -- modo suave) =======================
+   La llave pública de Supabase está dentro de cada app y el repo es público: sola, deja a cualquiera escribir
+   y leer. Cada establecimiento tiene una CLAVE (la misma para su PC, su móvil y Campo) que se guarda en este
+   equipo y viaja en el encabezado `x-clave-campo` de cada pedido a Supabase. En este release las políticas
+   siguen abiertas: la clave todavía no corta nada; se carga, se comprueba (RPC verificar_clave) y el servidor
+   anota qué equipos ya la mandan (private.equipos_vistos, ver scripts/seguridad/). En el Release 2 las
+   políticas la van a exigir.
+   Se guarda en `clave_campo_<ESTABLECIMIENTO>`, FUERA de STORAGE_KEY: no sale en el Backup JSON ni en
+   "Descargar copia" y "Restablecer datos de fábrica" no la borra. Formato: letras sin tildes ni ñ y números,
+   sin espacios, de 8 a 64 caracteres (se guarda en minúsculas y sin espacios en los extremos; el servidor
+   hace lo mismo). Todo lo que usa el cliente tolera uno sin `.rpc` (los falsos de las pruebas). */
+const CLAVE_CAMPO_KEY = 'clave_campo_' + ESTABLECIMIENTO;
+const CLAVE_CAMPO_RE = /^[a-z0-9]{8,64}$/;
+function normalizarClaveCampo(txt){ return String(txt == null ? '' : txt).trim().toLowerCase(); }
+function claveCampoGuardada(){
+  try{
+    const c = normalizarClaveCampo(localStorage.getItem(CLAVE_CAMPO_KEY));
+    return CLAVE_CAMPO_RE.test(c) ? c : '';
+  }catch(e){ return ''; }
+}
+let _claveGuardadaMala = false;        // el servidor contestó que la clave guardada no es la de este campo
+let _claveVerificadaApertura = false;  // ya hubo una respuesta definitiva (sí / no) en esta apertura de la app
+let _claveVerificando = false;
+/* 'ok' | 'mala' | 'sin_respuesta'. Sin señal, sin cliente, un cliente sin rpc, un error de red o de la función
+   (todavía no publicada, por ejemplo) NUNCA cuentan como clave mala: son 'sin_respuesta'. */
+async function comprobarClaveEnServidor(clave){
+  const client = clienteSupabase();
+  if(!client || typeof client.rpc !== 'function' || !navigator.onLine) return 'sin_respuesta';
+  try{
+    const r = await client.rpc('verificar_clave', { est: ESTABLECIMIENTO, clave });
+    if(!r || r.error) return 'sin_respuesta';
+    if(r.data === true) return 'ok';
+    if(r.data === false) return 'mala';
+    return 'sin_respuesta';
+  }catch(e){ return 'sin_respuesta'; }
+}
+/* La clave guardada se verifica UNA vez por apertura, en línea (se llama desde sincronizar()); si no hubo una
+   respuesta definitiva se vuelve a intentar en la sincronización siguiente. Un error de red no cambia el estado. */
+async function verificarClaveGuardada(){
+  const clave = claveCampoGuardada();
+  if(!clave || _claveVerificadaApertura || _claveVerificando) return;
+  _claveVerificando = true;
+  try{
+    const r = await comprobarClaveEnServidor(clave);
+    if(r === 'sin_respuesta' || claveCampoGuardada() !== clave) return;
+    _claveVerificadaApertura = true;
+    _claveGuardadaMala = (r === 'mala');
+  }finally{
+    _claveVerificando = false;
+    actualizarAvisoClave();
+  }
+}
+/* Aviso en el pie, debajo del estado de sincronización. Con la clave bien cargada no se muestra nada. */
+function actualizarAvisoClave(){
+  const cont = document.getElementById('estado-compacto');
+  if(!cont) return;
+  let el = document.getElementById('aviso-clave');
+  let texto = '', clase = '';
+  if(!claveCampoGuardada()){ texto = '🔑 Falta la clave del campo · tocá para cargarla'; clase = 'falta'; }
+  else if(_claveGuardadaMala){ texto = '🔑 La clave guardada ya no sirve · tocá para cambiarla'; clase = 'invalida'; }
+  if(!texto){ if(el) el.remove(); return; }
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'aviso-clave';
+    el.setAttribute('role', 'button');
+    el.tabIndex = 0;
+    el.addEventListener('click', ()=>{ if(typeof abrirModalClaveCampo === 'function') abrirModalClaveCampo(); });
+    cont.appendChild(el);
+  }
+  el.className = clase;
+  el.textContent = texto;
+}
 let supabaseClient = null;
 function clienteSupabase(){
   if(!supabaseClient && window.supabase && window.supabase.createClient){
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const global = {
       // 8/10/2026: con señal mala el fetch quedaba colgado para siempre y la sincronización no terminaba nunca
-      global: {fetch: (u, o) => fetch(u, (o && o.signal) || typeof AbortSignal === 'undefined' || !AbortSignal.timeout ? o : Object.assign({}, o, {signal: AbortSignal.timeout(25000)}))}
-    });
+      fetch: (u, o) => fetch(u, (o && o.signal) || typeof AbortSignal === 'undefined' || !AbortSignal.timeout ? o : Object.assign({}, o, {signal: AbortSignal.timeout(25000)}))
+    };
+    const claveCampo = claveCampoGuardada();
+    if(claveCampo) global.headers = { 'x-clave-campo': claveCampo };
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global });
   }
   return supabaseClient;
 }
@@ -3202,6 +3302,7 @@ async function sincronizar(mostrarToast){
   if(sincronizando) return; // ya hay una sincronizacion en curso -- evita aplicar los mismos eventos dos veces
   sincronizando = true;
   actualizarEstadoSync('sincronizando');
+  verificarClaveGuardada(); // Fase 4: una vez por apertura, no espera ni frena la sincronización
   try{
     // Antes de que el forEach de abajo pise ultimaSincronizacion -- si es
     // null, esta es la primera sincronización de este dispositivo (recién
@@ -3516,8 +3617,12 @@ function renderAvisoTrabado(){
   }
   const f = estado.fallos || {};
   const codigos = [...new Set([t.sync && f.sync.codigo, t.sanidad && f.sanidad.codigo].filter(Boolean))];
+  // Fase 4: un rechazo de permisos (42501, 401, 403) es, casi seguro, la clave del campo (falta o cambió)
+  const porPermisos = [t.sync && f.sync, t.sanidad && f.sanidad].filter(Boolean)
+    .some(x => x.codigo === '42501' || x.status === 401 || x.status === 403);
   el.innerHTML = '<div style="font-weight:700;font-size:16px;">⛔ ' + esc(textoTrabados(t)) + '</div>' +
     '<div style="margin-top:2px;">Supabase los rechaza (código ' + esc(codigos.join(', ')) + '). Están guardados en ' + ESTE_EQUIPO + ', no se pierden.</div>' +
+    (porPermisos ? '<div style="margin-top:4px;font-weight:700;">Puede ser la clave: revisá la clave del campo 🔑 (Herramientas › Clave del campo).</div>' : '') +
     '<div style="display:flex;gap:8px;margin-top:8px;">' +
       '<button type="button" data-accion="reintentar" style="flex:1;min-height:44px;border:0;border-radius:8px;background:#fff;color:#a1402e;font-weight:700;font-size:15px;cursor:pointer;">↻ Reintentar</button>' +
       '<button type="button" data-accion="descargar" style="flex:1;min-height:44px;border:2px solid #fff;border-radius:8px;background:transparent;color:#fff;font-weight:700;font-size:15px;cursor:pointer;">⬇ Descargar copia</button>' +
@@ -3569,6 +3674,7 @@ function textoEstadoSyncOrdenada(){
   return null;
 }
 function actualizarEstadoSync(estadoTexto, cantidad){
+  actualizarAvisoClave();
   if(CONFIG.colaOrdenada) renderAvisoTrabado();
   const el = document.getElementById('estado-sync');
   if(!el) return;
@@ -4108,7 +4214,9 @@ function enviarAnulacionTraslado(h, datos, idCorr){
   const dest = datos && datos.destino;
   if(!dest || !dest.establecimiento || !dest.potrero) return;
   enviarEvento('correccion', dest.potrero,
-    {accion:'anular_traslado', tipoOriginal:'traslado_entrada', trasladoId: datos.trasladoId || null, guia: datos.guia || null, fechaOriginal: h.fecha},
+    {accion:'anular_traslado', tipoOriginal:'traslado_entrada', trasladoId: datos.trasladoId || null, guia: datos.guia || null, fechaOriginal: h.fecha,
+     // Fase 4: este evento se escribe en el stream del DESTINO; la política del cierre lo deja pasar con la clave del origen
+     origenEstablecimiento: ESTABLECIMIENTO},
     undefined, {establecimiento: dest.establecimiento, eventId: uuidDerivado(idCorr, 'anular')});
 }
 function borrarHistorial(id){
@@ -5198,6 +5306,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['lluvias-cerrar-x', 'lluvias-cerrar'],
   ['stock-cerrar-x', 'stock-cerrar'],
   ['usuario-cerrar-x', 'usuario-guardar'],
+  ['clave-cerrar-x', 'clave-mas-tarde'],
   ['coef-cerrar-x', 'coef-cerrar'],
   ['puntos-cerrar-x', 'puntos-cerrar'],
   ['reporte-cerrar-x', 'reporte-cerrar'],
@@ -11609,6 +11718,108 @@ if(!usuarioActual()){
   document.getElementById('usuario-nombre-input').value = '';
   document.getElementById('modal-usuario').style.display = 'flex';
 }
+/* ======================= CLAVE DEL CAMPO (ventana, Fase 4 release 1) ======================= */
+function mostrarErrorClave(texto){
+  const e = document.getElementById('clave-error');
+  e.textContent = texto || '';
+  e.style.display = texto ? 'block' : 'none';
+}
+function abrirModalClaveCampo(){
+  const modal = document.getElementById('modal-clave-campo');
+  if(!modal) return;
+  const guardada = claveCampoGuardada();
+  document.getElementById('clave-subtitulo').textContent = CONFIG.nombre + ' · se pide una sola vez en este equipo';
+  document.getElementById('clave-texto').textContent = 'Escribí la clave de ' + CONFIG.nombre + '. Si no la tenés, pedísela a Pedro.';
+  const cargada = document.getElementById('clave-cargada');
+  if(guardada){
+    cargada.textContent = _claveGuardadaMala
+      ? '🔑 La clave guardada en este equipo ya no sirve. Escribí la nueva.'
+      : '✅ Este equipo ya tiene la clave cargada. Si cambió, escribí la nueva.';
+    cargada.style.color = _claveGuardadaMala ? '#a1402e' : '#3f5a2c';
+    cargada.style.display = 'block';
+  }else{
+    cargada.style.display = 'none';
+  }
+  document.getElementById('clave-input').value = guardada;
+  mostrarErrorClave('');
+  modal.style.display = 'flex';
+  try{ document.getElementById('clave-input').focus(); }catch(e){}
+}
+let _guardandoClave = false;
+async function guardarClaveCampoDesdeVentana(){
+  if(_guardandoClave) return;
+  const boton = document.getElementById('clave-guardar');
+  const clave = normalizarClaveCampo(document.getElementById('clave-input').value);
+  mostrarErrorClave('');
+  if(!clave){ mostrarErrorClave('Escribí la clave del campo.'); return; }
+  if(!CLAVE_CAMPO_RE.test(clave)){
+    mostrarErrorClave('La clave tiene solo letras (sin tildes ni ñ) y números, sin espacios, y al menos 8 caracteres.');
+    return;
+  }
+  _guardandoClave = true; boton.disabled = true;
+  try{
+    const r = await comprobarClaveEnServidor(clave);
+    if(r === 'sin_respuesta'){
+      mostrarErrorClave('No se pudo comprobar la clave ahora (sin conexión). Probá de nuevo cuando tengas señal.');
+      return;
+    }
+    if(r === 'mala'){
+      mostrarErrorClave('Esa no es la clave de ' + CONFIG.nombre + '. Revisala y probá de nuevo.');
+      return;
+    }
+    try{ localStorage.setItem(CLAVE_CAMPO_KEY, clave); }
+    catch(e){ mostrarErrorClave('No se pudo guardar la clave en este equipo (memoria llena o navegador bloqueado).'); return; }
+    supabaseClient = null; // el cliente nuevo manda la clave en cada pedido
+    _claveGuardadaMala = false; _claveVerificadaApertura = true;
+    document.getElementById('modal-clave-campo').style.display = 'none';
+    actualizarAvisoClave();
+    toast('Clave guardada');
+    sincronizar(false);
+  }finally{
+    _guardandoClave = false; boton.disabled = false;
+  }
+}
+document.getElementById('clave-guardar').addEventListener('click', guardarClaveCampoDesdeVentana);
+document.getElementById('clave-mas-tarde').addEventListener('click', ()=>{
+  document.getElementById('modal-clave-campo').style.display = 'none';
+});
+document.getElementById('clave-input').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') guardarClaveCampoDesdeVentana(); });
+document.addEventListener('keydown', (e)=>{
+  const m = document.getElementById('modal-clave-campo');
+  if(e.key === 'Escape' && m && m.style.display !== 'none') document.getElementById('clave-mas-tarde').click();
+});
+document.getElementById('btn-clave-campo').addEventListener('click', abrirModalClaveCampo);
+// Otra página de este mismo campo (la móvil completa y Campo comparten almacenamiento) guardó o cambió la clave
+window.addEventListener('storage', (e)=>{
+  if(e.key !== CLAVE_CAMPO_KEY) return;
+  supabaseClient = null; _claveGuardadaMala = false; _claveVerificadaApertura = false;
+  actualizarAvisoClave();
+});
+/* Se abre sola, UNA vez por apertura de la app, si no hay clave guardada: un rato después de arrancar (con el mapa
+   y la primera sincronización ya hechos) y recién cuando no haya otra ventana abierta (por ejemplo "¿Quién sos?").
+   "Más tarde" la cierra hasta la próxima apertura. No se abre sola con automatización (navigator.webdriver) ni sin
+   un cliente de Supabase que pueda comprobar la clave. */
+const CLAVE_ABRIR_MS = 3500, CLAVE_REINTENTO_MS = 2500;
+let _claveAbiertaSola = false;
+function hayOtraVentanaAbierta(){
+  return Array.from(document.querySelectorAll('.modal-overlay'))
+    .some(m => m.id !== 'modal-clave-campo' && getComputedStyle(m).display !== 'none');
+}
+function programarAperturaClaveCampo(intento){
+  if(_claveAbiertaSola || claveCampoGuardada() || navigator.webdriver) return;
+  setTimeout(()=>{
+    if(_claveAbiertaSola || claveCampoGuardada()) return;
+    const client = clienteSupabase();
+    if(!client || typeof client.rpc !== 'function') return;
+    if(sincronizando || hayOtraVentanaAbierta()){
+      if(intento < 40) programarAperturaClaveCampo(intento + 1);
+      return;
+    }
+    _claveAbiertaSola = true;
+    abrirModalClaveCampo();
+  }, intento ? CLAVE_REINTENTO_MS : CLAVE_ABRIR_MS);
+}
+programarAperturaClaveCampo(0);
 /* ======================= INICIO ======================= */
 actualizarTodo();
 actualizarEstadoSync();

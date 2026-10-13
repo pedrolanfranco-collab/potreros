@@ -106,6 +106,7 @@ const MODALES = [
   ['modal-puntos', 'puntos-cerrar-x', 'puntos-cerrar'],
   ['modal-dibujar-potrero', 'dp-cerrar-x', 'dp-cancelar'],
   ['modal-verificar-stock', 'vs-cerrar-x', 'vs-cerrar'],
+  ['modal-clave-campo', 'clave-cerrar-x', 'clave-mas-tarde'],
 ];
 
 async function probarArchivo(archivo){
