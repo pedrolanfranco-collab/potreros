@@ -130,7 +130,7 @@ Un `correccion` anula, edita o completa un evento anterior. El evento original *
 | `agregar_guia` | `{tipoOriginal, categoria, cantidad, dueno, guia, fechaOriginal, eventIdOriginal?}` | pone o borra la guía de una compra/venta |
 | `agregar_caravana` | `{tipoOriginal, casoId, categoria, cantidad, dueno, caravana, fechaOriginal, eventIdOriginal?}` | pone la caravana de una muerte |
 | `completar_datos` | `{tipoOriginal, categoria, cantidad, dueno, fin, precio, contraparte, fechaOriginal, eventIdOriginal?}` | agrega el detalle financiero a una compra/venta cargada rápido |
-| `anular_traslado` | `{tipoOriginal:'traslado_entrada', trasladoId, guia, fechaOriginal}` | **stream del destino**: anula la entrada de un traslado cuando se borra su salida |
+| `anular_traslado` | `{tipoOriginal:'traslado_entrada', trasladoId, guia, fechaOriginal, origenEstablecimiento}` | **stream del destino**: anula la entrada de un traslado cuando se borra su salida. `origenEstablecimiento` (desde la Fase 4, 13/10/2026) es el id del campo que anula (`la_vuelta`, `maria_laura`, `pone_chico`; el mismo que `ESTABLECIMIENTO` en la app de origen): la política del cierre deja pasar este evento si el pedido trae la clave de ese campo. Los eventos anteriores no lo traen |
 
 `reversar` es un ajuste que la app sabe aplicar al revés. Sus `tipo` son: `sumar`, `restar`,
 `mover`, `mover_todo`, `mover_multi`, `traslado_salida_ajuste` (lleva `trasladoId`),
@@ -156,6 +156,30 @@ Un `correccion` anula, edita o completa un evento anterior. El evento original *
    `historialId`.
 
 `eventIdOriginal` es opcional: una corrección sin él es válida y se ubica por parecido.
+
+## Clave del campo y eventos que cruzan de stream
+
+Desde la Fase 4 (release 1, 13/10/2026) cada app manda en el encabezado HTTP `x-clave-campo` la clave de
+su establecimiento (la que cargó la persona en la ventana "🔑 Clave del campo"; se guarda en
+`localStorage['clave_campo_<establecimiento>']`, fuera del estado, y no sale en ningún backup). La clave
+**no viaja dentro del `detalle`** ni de ninguna columna: solo en el encabezado, y el servidor la compara
+contra un hash (`public.establecimientos_con_clave()`). En el release 1 las políticas siguen abiertas y el
+servidor solo anota qué equipos ya la mandan (`private.equipos_vistos`); desde el cierre (release 2,
+`scripts/seguridad/fase4_cierre.sql`) cada tabla exige la clave del campo al que pertenece la fila.
+
+Con la clave de un campo se lee y se escribe en el stream de ese campo (`establecimiento` de la fila).
+**Hay exactamente dos eventos que una app escribe en el stream de OTRO campo** (traslado entre campos), y
+para esos la política mira un campo del `detalle`, que por eso es parte del contrato y no puede faltar ni
+cambiar de significado:
+
+| Evento | Se escribe en | La política lo deja pasar si la clave es la de | Campo que mira |
+|---|---|---|---|
+| `traslado_entrada` | stream del destino | el campo de origen | `detalle.origen.establecimiento` (id del campo, no el nombre para mostrar) |
+| `correccion` con `accion = 'anular_traslado'` | stream del destino | el campo de origen | `detalle.origenEstablecimiento` |
+
+Cualquier otro evento tiene que llevar la clave del campo de su propio `establecimiento`. Un evento nuevo
+que se escriba en el stream de otro campo necesita su propia excepción en la política **antes** de
+publicarse.
 
 ## Quién lee estos eventos
 

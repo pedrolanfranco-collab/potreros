@@ -156,7 +156,7 @@ theme-color).
   editor modal. No GPS.
   **Caja "🛠 Herramientas" de la PC (10/10/2026, a pedido de Pedro)**: ordenada por funciones —
   Consultar / Mapa y potreros / Exportar y respaldo / Este dispositivo, en 2 columnas, 17 botones en vez de
-  26 (18 desde el 12/10/2026, con "🔍 Verificar stock" en Consultar)—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
+  26 (18 desde el 12/10/2026, con "🔍 Verificar stock" en Consultar; 19 desde el 13/10/2026, con "🔑 Clave del campo" en Este dispositivo)—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
   abren un sub-menú dentro de la misma caja (`data-sub` / `data-volver`, `mostrarSubmenuHerramientas()`).
   Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
   (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
@@ -705,6 +705,44 @@ entrar (ver `tests/probar_seguridad_remoto.js`). Backups: `scripts/backup/`
   porque jsdom no carga jsPDF; lo encontró el informe semanal. `tests/probar_pdf_animales.js` lo
   aprieta con un jsPDF falso. **Lección:** un botón que genera un archivo necesita una prueba que lo
   apriete, aunque la librería sea externa.
+
+**Fase 4, Release 1 (modo suave) (13/10/2026) — clave del campo.** Hallazgos 12, 15 y 18: la llave pública
+(`anon`) está en cada app y en este repo público, así que cualquiera puede insertar eventos falsos en
+`eventos_sync` y leer el padrón y los datos comerciales. Cada establecimiento tiene **una clave** (la misma
+para su PC, su móvil y Campo; la elige y la carga Pedro, nunca pasa por un chat ni por el repo) que la app manda
+en el encabezado `x-clave-campo` de cada pedido a Supabase. **Este release no corta nada**: las políticas
+siguen abiertas.
+- *En Supabase* (`scripts/seguridad/fase4_clave_campo.sql`, con su `_deshacer.sql`; transaccional e idempotente;
+  lo corre Pedro a mano): esquema `private` (no expuesto a la API) con `claves_campo(establecimiento, sal, hash)` y
+  `equipos_vistos`; `public.establecimientos_con_clave()` (lee el encabezado y devuelve los campos cuya clave
+  coincide; pensada para las políticas como `(select …)`, una vez por consulta); RPC `verificar_clave(est, clave)`
+  (una clave mala demora 0,5 s); `private.cargar_clave(est, clave)` (solo Pedro); y un trigger AFTER INSERT en
+  `eventos_sync` que anota cada equipo (`dispositivo`, `detalle.v`, `detalle.usuario`, `con_clave`) sin poder romper
+  un insert. Los espejos entre campos (`traslado_entrada`, `anular_traslado`) no se anotan: llevan el id del equipo
+  de origen con el `establecimiento` de destino. `verificar_fase4.py` comprueba desde afuera; con `--cierre`
+  comprueba el release 2.
+- *En la app* (template, las 9 variantes; `tests/probar_clave_campo.js`): la clave vive en
+  `localStorage['clave_campo_<ESTABLECIMIENTO>']`, fuera de `STORAGE_KEY` (no sale en el Backup JSON ni en "Descargar
+  copia", y "Restablecer datos de fábrica" no la borra). Formato: letras sin tildes ni ñ y números, 8 a 64, en minúsculas
+  y sin espacios en los extremos. `clienteSupabase()` agrega `global.headers['x-clave-campo']` y se recrea al guardarla.
+  La ventana "🔑 Clave del campo" (`#modal-clave-campo`) se abre sola una vez por apertura si no hay clave (con un
+  retardo, sin otra ventana abierta, y **nunca** con `navigator.webdriver` ni sin un cliente con `.rpc`); "Guardar"
+  llama a `verificar_clave` y **un fallo de verificación (red, función inexistente) nunca se trata como clave
+  inválida**: no guarda y avisa que no pudo comprobar. Aviso en el pie (`#aviso-clave`): "Falta la clave del campo"
+  (ocre) o "La clave guardada ya no sirve" (rojo; se verifica una vez por apertura). El cartel de "movimientos
+  trabados" agrega "revisá la clave del campo" ante 42501 / 401 / 403. `enviarAnulacionTraslado()` ahora lleva
+  `origenEstablecimiento` en el detalle (ver `docs/eventos.md`, sección "Clave del campo y eventos que cruzan de
+  stream"). Botón "🔑 Clave del campo" en Herramientas (PC: grupo "Este dispositivo").
+- *Orden obligatorio*: **el SQL antes que el código desplegado** (una app nueva que llama a `verificar_clave` antes de
+  que exista la función solo muestra "no se pudo comprobar", pero no hay forma de cargar la clave); después cargar las
+  3 claves, correr `verificar_fase4.py`, publicar, y que cada equipo la cargue una vez.
+- *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, escritos y revisados, **no corridos**): las políticas
+  pasan a exigir `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los
+  equipos activos con `con_clave = true` y los scripts de la PC que usan la llave pública
+  (`pasar_traslados_a_excel.py`, `sanidad_puente.py`, `bajar_sanidad_de_potreros.py`,
+  `regenerar_stock_potreros_excel.py`, `vigilar_tareas_sanidad.py`) ya usen `SUPABASE_SECRET_KEY`**; el informe de
+  nacimientos (Playwright) necesita la clave en su `localStorage`. Pasos exactos en `scripts/seguridad/README.md`.
+  Cuando se corra, actualizar la tabla de arriba ("RLS real por tabla").
 
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del

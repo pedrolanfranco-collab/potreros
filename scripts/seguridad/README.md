@@ -7,6 +7,7 @@ hacer cualquiera**. Cada fase tiene su SQL, su vuelta atrás y una verificación
 | Fase | Qué cierra | Archivos |
 |---|---|---|
 | 2 | Escritura anónima en `productos_catalogo`, `animales_caravana`, `sanidad_ultimos`, `sanidad_proximos`; `creado_en` de `eventos_sync` lo fija el servidor | `fase2_carencia.sql`, `fase2_carencia_deshacer.sql`, `verificar_fase2.py` |
+| 4 | Clave del campo: eventos falsos con la llave pública y lectura del padrón y los datos comerciales (en dos releases, ver abajo) | `fase4_clave_campo.sql`, `fase4_clave_campo_deshacer.sql`, `fase4_cierre.sql`, `fase4_cierre_deshacer.sql`, `verificar_fase4.py` |
 
 ## Cómo se corre una fase
 
@@ -39,3 +40,97 @@ order by 1;
 
 Las reglas por tabla (`pg_policies`) y los permisos de tabla se combinan: para escribir hacen
 falta **los dos**.
+
+## Fase 4: la clave del campo (13/10/2026)
+
+Hasta ahora cualquiera con la llave pública (`anon`, que está dentro de cada app y en este repo
+público) podía escribir eventos falsos en `eventos_sync` y leer el padrón y los datos comerciales.
+La Fase 4 le pone una **clave por establecimiento**: la app la manda en el encabezado
+`x-clave-campo` de cada pedido y, al final, las políticas solo contestan a quien la trae.
+
+Va en **dos releases**, y el segundo solo se corre cuando el primero ya está en todos los equipos:
+
+| Release | Qué hace | Archivos |
+|---|---|---|
+| 1, "modo suave" | Deja lista la comprobación de claves y la lista de equipos vistos. **No corta nada**: las políticas siguen abiertas | `fase4_clave_campo.sql`, `fase4_clave_campo_deshacer.sql`, `verificar_fase4.py` |
+| 2, el cierre | Las políticas pasan a exigir la clave del campo | `fase4_cierre.sql`, `fase4_cierre_deshacer.sql`, `verificar_fase4.py --cierre` |
+
+### Release 1: pasos exactos (en este orden, **el SQL antes que publicar la app**)
+
+1. **Elegir las 3 claves** (una por campo: La Vuelta, María Laura, Pone Chico). De 8 a 64
+   caracteres, **solo letras sin tildes ni ñ y números, sin espacios**; conviene que tengan 12 o
+   más y que sean distintas entre sí y de cualquier otra contraseña. Se escriben en minúsculas (la
+   app y el servidor pasan todo a minúsculas). Nunca van por el chat ni al repo.
+2. **SQL Editor de Supabase → pegar `fase4_clave_campo.sql` → Run.** Es una transacción: si falla,
+   no queda nada aplicado. Al final muestra cuántos equipos históricos anotó y las 4 funciones.
+3. **Cargar las 3 claves**, una consulta por campo, con las claves reales:
+
+   ```sql
+   select private.cargar_clave('la_vuelta',   '<la clave de La Vuelta>');
+   select private.cargar_clave('maria_laura', '<la clave de María Laura>');
+   select private.cargar_clave('pone_chico',  '<la clave de Pone Chico>');
+   ```
+
+   (poner la clave real entre las comillas, sin los `<>`). Contesta `Clave de la_vuelta cargada.` Después,
+   **borrar esas consultas del historial del editor** (el SQL Editor guarda las consultas que
+   corrés y ahí quedaría la clave en texto). En la base solo queda la sal y el hash.
+4. **`python scripts/seguridad/verificar_fase4.py`**: tiene que decir `Todo OK` (la función existe,
+   rechaza una clave inventada y las tablas siguen legibles). Para que además pruebe las claves
+   reales, ponerlas en `C:\Users\<usuario>\.potreros\.env` (el mismo archivo de la clave privada,
+   fuera del repo y de OneDrive), una línea por campo:
+   `CLAVE_CAMPO_LA_VUELTA=...`, `CLAVE_CAMPO_MARIA_LAURA=...`, `CLAVE_CAMPO_PONE_CHICO=...`. El
+   script no imprime nunca las claves.
+5. **Recién ahora se publica la app** (push a `main`; espera al CI). La primera vez que se abre
+   cada equipo, la ventana "🔑 Clave del campo" se abre sola: se escribe la clave y listo (queda
+   guardada en ese equipo; la comparten la PC, la móvil y Campo del mismo campo si están en el
+   mismo navegador). "Más tarde" la cierra hasta la próxima apertura, y el aviso del pie sigue
+   ahí. Se puede ver o cambiar desde Herramientas → "🔑 Clave del campo".
+
+Mientras no se cierre, un equipo sin clave anda igual.
+
+### Cómo se sabe cuándo cerrar
+
+Cada evento que llega anota el equipo que lo mandó en `private.equipos_vistos` (campo, equipo,
+quién es, versión de la app y si ya mandó la clave). La lista arranca con los equipos que ya
+habían escrito alguna vez (todos con `con_clave = false`) y se va completando:
+
+```sql
+-- todos los equipos, los que faltan primero
+select establecimiento, usuario, dispositivo, version, con_clave, ultima
+from private.equipos_vistos
+order by establecimiento, con_clave, ultima desc;
+
+-- los que escribieron en los últimos 30 días y todavía NO mandan la clave
+select establecimiento, usuario, dispositivo, version, ultima
+from private.equipos_vistos
+where not con_clave and ultima > now() - interval '30 days'
+order by establecimiento, ultima desc;
+```
+
+Un equipo que se reinició ("Restablecer datos de fábrica") o que ya no se usa queda con una
+`ultima` vieja y no cuenta. Un equipo con la app vieja sin la clave sigue figurando
+`con_clave = false` hasta que la actualice y la cargue. La versión (`v`) aparece desde la
+Fase 3, paso 4 (11/10/2026).
+
+### Release 2, el cierre: cuándo correrlo
+
+**No correr `fase4_cierre.sql` hasta que se cumplan las dos cosas:**
+
+1. la segunda consulta de arriba devuelve **0 filas** (todos los equipos activos ya mandan la clave);
+2. **los scripts de la PC que usan la llave pública ya usan la clave privada**
+   (`SUPABASE_SECRET_KEY`): `pasar_traslados_a_excel.py`, `sanidad_puente.py`,
+   `bajar_sanidad_de_potreros.py`, `regenerar_stock_potreros_excel.py` y `vigilar_tareas_sanidad.py`.
+   El informe de nacimientos (`enviar_informe_nacimientos.py`, abre la app con Playwright) necesita
+   además la clave del campo en el `localStorage` de su navegador (`clave_campo_la_vuelta`).
+   El keep-alive de GitHub sigue andando: contesta 200 con lista vacía.
+
+Después: correr el SQL (guarda las políticas de antes en `auditoria_politicas_antes_fase4`),
+`python scripts/seguridad/verificar_fase4.py --cierre` (sin clave todo cerrado, con la clave anda),
+y probar a mano un movimiento y un traslado La Vuelta → María Laura. Para volver atrás:
+`fase4_cierre_deshacer.sql`.
+
+Qué queda abierto aun con la clave, a propósito: quien tiene la clave de un campo puede escribir en
+su stream (la clave es una sola por campo, compartida con el empleado de Campo), y quien tiene la de
+La Vuelta puede escribir el espejo de un traslado en el stream de María Laura (es lo que permite el
+traslado entre campos). Si se filtra una clave, se cambia con `private.cargar_clave` y cada equipo
+pide la nueva.
