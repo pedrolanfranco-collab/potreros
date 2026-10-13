@@ -8103,6 +8103,13 @@ function fichaCaravanaHTML(a){
     ['Generación', a.gen],
     [CONFIG.duenoLabel, a.propietario],
     ['Potrero', a.potrero],
+    /* 13/10/2026: rodeo y nota que el bastón anotó en la ULTIMA lectura que los
+       trae, con la fecha de esa lectura (el rodeo es un lote de trabajo y cambia;
+       la nota mezcla etiquetas de sesión con observaciones). Los publica la PC en
+       animales_caravana (rodeo, rodeo_fecha, nota, nota_fecha). Sin dato o sin
+       las columnas todavía, la fila no aparece. */
+    ['Rodeo', a.rodeo ? `${a.rodeo}${a.rodeo_fecha ? ` (${a.rodeo_fecha})` : ''}` : null],
+    ['Nota', a.nota ? `${a.nota}${a.nota_fecha ? ` (${a.nota_fecha})` : ''}` : null],
     ['Último peso', a.ultimo_peso ? `${a.ultimo_peso} kg (${a.peso_fecha||'sin fecha'})` : null],
     ['Última lectura', a.ultima_lectura],
     ['Próximo tratamiento', a.proximo_tratamiento],
