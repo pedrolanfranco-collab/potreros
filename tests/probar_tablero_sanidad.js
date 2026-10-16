@@ -103,8 +103,9 @@ const resp = url => {
   chequear('total UG = 65', /<b>65<\/b><span>UG/.test(st));
   chequear('3 potreros... con hacienda son 2 (el de cantidad 0 no cuenta)', /<b>2<\/b><span>potreros con hacienda/.test(st));
   chequear('totales por especie', txt.includes('Vacunos 80') && txt.includes('Ovinos 100'));
-  chequear('generación total: ' + (ANIO-2) + ' · 2, ' + (ANIO-1) + ' · 1, ' + (ANIO-3) + ' · 1 (sin el vendido)',
-    new RegExp((ANIO-2) + ' · 2').test(txt) && new RegExp((ANIO-1) + ' · 1').test(txt) && new RegExp((ANIO-3) + ' · 1').test(txt) && !/ · 5/.test(txt.slice(txt.indexOf('Generación'))));
+  const gl = n => (ANIO - n) + ' \\(gen ' + ((ANIO - n) % 10) + '\\) · ';
+  chequear('generación total con año y dígito: ' + (ANIO-2) + ' (gen ' + ((ANIO-2)%10) + ') · 2, ' + (ANIO-1) + ' · 1, ' + (ANIO-3) + ' · 1 (sin el vendido)',
+    new RegExp(gl(2) + '2').test(txt) && new RegExp(gl(1) + '1').test(txt) && new RegExp(gl(3) + '1').test(txt) && !/ · 5/.test(txt.slice(txt.indexOf('Generación'))), txt.slice(txt.indexOf('Generación'), txt.indexOf('Generación') + 160));
   chequear('generación del potrero 12 se une pese al espacio en el nombre', /Potrero 12[\s\S]*?Generación \(con caravana\)/.test(st));
   chequear('el potrero que no figura en el stock queda aparte', st.includes('sin potrero del stock') && st.indexOf('FORCER') === -1 && st.includes(String(ANIO-3)));
   chequear('nota de cobertura (3 de 180)', txt.includes('4 de 180') || txt.includes('3 de 180'), txt.slice(txt.indexOf('Cuenta')));

@@ -632,13 +632,22 @@ Lee con `fetch` `sanidad_proximos` y `sanidad_ultimos` (las publica la PC con `a
 sus pestañas de Sanidad salen vacías).
 **Pestaña Stock (16/10/2026):** lee `stock_potreros` (animales, UG, categorías y dueño/firma por potrero, con totales arriba;
 los filtra por `cantidad` ≠ 0) y, para la **generación**, `animales_caravana` (`potrero`, `gen`, `estado_vida`; solo los ACTIVO). `gen` es
-el **último dígito del año de nacimiento** (5 = 2025): se muestra como el año más reciente no futuro con ese dígito. **Solo cuenta animales con
+el **último dígito del año de nacimiento** (5 = 2025): se muestra como el año más reciente no futuro con ese dígito, junto con el dígito ("2025 (gen 5)"; a pedido de Pedro, que descarta animales de más de 10 años). **Solo cuenta animales con
 caravana** (no es todo el stock) y el potrero sale del bastón, no del stock; si no coincide con ninguno del stock queda en un bloque aparte.
 Si el padrón no se puede leer, el stock se ve igual sin generación. Las dos consultas se paginan de a 1000.
 Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;
 el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
 publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
 `tests/probar_tablero_sanidad.js`.
+
+**Cómo se trabajó y qué recordar (16/10/2026):**
+- Cada cambio al tablero fue por **PR y merge a `main` cuando el CI está en verde**, a pedido de Pedro; una vez mergeado, la rama de
+  trabajo se reinicia desde `main` (`git checkout -B <rama> origin/main`) antes del siguiente cambio.
+- **Desde el entorno de Claude en la nube no se puede abrir `github.io`** (el proxy contesta 403): el deploy se confirma mirando el
+  run de Actions en `main` (`jsdom` y `publicar` en success), no con `curl` a la URL. La vista real la prueba Pedro en el teléfono.
+- **Cambiar el ícono no actualiza un acceso directo ya instalado** en la pantalla de inicio: hay que borrarlo y volver a agregarlo.
+- Las capturas de la presentación se sacan con Playwright (Chromium ya instalado) y `fetch` interceptado con datos de ejemplo; no
+  hay forma de verlas con datos reales hasta que Pedro abre la página.
 
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
