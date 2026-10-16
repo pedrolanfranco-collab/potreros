@@ -50,10 +50,10 @@ const STOCK = [
 const ANIO = new Date().getFullYear();
 const dig = a => String(a % 10);
 const CARAV = [
-  { potrero: '12', gen: dig(ANIO - 2), estado_vida: 'ACTIVO' }, { potrero: '12', gen: dig(ANIO - 2), estado_vida: 'ACTIVO' },
-  { potrero: '12 ', gen: dig(ANIO - 1), estado_vida: null },
-  { potrero: '12', gen: dig(ANIO - 1), estado_vida: 'VENDIDO' },          // no cuenta
-  { potrero: 'FORCER', gen: dig(ANIO - 3), estado_vida: 'ACTIVO' }         // potrero que no está en el stock
+  { potrero: '12', gen: dig(ANIO - 2), categoria: 'Vaca', estado_vida: 'ACTIVO' }, { potrero: '12', gen: dig(ANIO - 2), categoria: 'Vaca', estado_vida: 'ACTIVO' },
+  { potrero: '12 ', gen: dig(ANIO - 1), categoria: 'Vaca', estado_vida: null },
+  { potrero: '12', gen: dig(ANIO - 1), categoria: 'Vaca', estado_vida: 'VENDIDO' },          // no cuenta
+  { potrero: 'FORCER', gen: dig(ANIO - 3), categoria: 'Novillo 2-3', estado_vida: 'ACTIVO' }         // potrero que no está en el stock
 ];
 // cargas (sanidad_carga): la primera coincide con la 1ª fila de Últimos; la 3ª es de otro potrero y no debe cruzar
 const CARGAS = [
@@ -109,6 +109,15 @@ const resp = url => {
   chequear('no cruza con una carga de otro potrero', !ult.includes('(gen 8)'));
   chequear('una fila sin carga no muestra generación', (ult.match(/Generación/g) || []).length === 1);
   chequear('Próximos muestra el gen si la fila lo trae', prox.includes(anioDe(4) + ' (gen 4)') && (prox.match(/Generación/g) || []).length === 1);
+
+  console.log('Próximos: generaciones de la caravana por categoría');
+  const nGC = (prox.match(/Generaciones con caravana/g) || []).length;
+  const tarjeta = cat => { const i = prox.indexOf('<strong>' + cat); return prox.slice(i, prox.indexOf('</div></div>', prox.indexOf('class="gen"', i)) + 12); };
+  chequear('pide la categoría al padrón', a.llamadas.some(l => l.url.includes('animales_caravana') && l.url.includes('categoria')));
+  chequear('Vacas muestra las generaciones de la caravana "Vaca" (sin la vendida)', tarjeta('Vacas').includes(anioDe((ANIO - 2) % 10) + ' (gen ' + ((ANIO - 2) % 10) + ') · <b>2</b>') && tarjeta('Vacas').includes(anioDe((ANIO - 1) % 10) + ' (gen ' + ((ANIO - 1) % 10) + ') · <b>1</b>'), tarjeta('Vacas').slice(-300));
+  chequear('Novillos coincide con "Novillo 2-3"', tarjeta('Novillos').includes(anioDe((ANIO - 3) % 10) + ' (gen ' + ((ANIO - 3) % 10) + ') · <b>1</b>'));
+  chequear('Terneros (sin caravanas) no muestra el bloque', nGC === 2, 'bloques: ' + nGC);
+  chequear('catBase une singular, plural y edades', a.win.catBase('Novillo 2-3') === a.win.catBase('Novillos') && a.win.catBase('Vacas') === a.win.catBase('Vaca') && a.win.catBase('Vaquillona 1-2') === a.win.catBase('Vaquillonas') && a.win.catBase('Vacas') !== a.win.catBase('Novillos'));
 
   console.log('Si falla la lectura de la carga, Últimos igual se ve');
   const e0 = await abrir(url => url.includes('sanidad_carga') ? 'caido' : resp(url));

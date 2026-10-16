@@ -639,7 +639,10 @@ Si el padrón no se puede leer, el stock se ve igual sin generación. Las dos co
 **no traen `gen`**. En **Últimos** se cruza con la carga (`sanidad_carga` en La Vuelta, `sanidad_carga_maria_laura`/`_pone_chico` en los otros; solo filas con
 `gen`) por fecha + categoría + potrero + cantidad, y se muestra "Generación 2025 (gen 5)" (puede haber más de una si coinciden varias cargas). Es una
 aproximación: solo aparece donde alguien cargó el campo `gen` (opcional) y los cuatro datos coinciden. **Próximos no tiene forma de cruzar** (no trae
-potrero ni fecha de carga): muestra `gen` solo si la tabla algún día lo publica. Si la lectura de la carga falla, Últimos sale igual sin generación.
+potrero ni fecha de carga): muestra `gen` solo si la tabla algún día lo publica, y **además un bloque "Generaciones con caravana"**: las generaciones de los
+animales con caravana activos de esa categoría (`animales_caravana.categoria`/`gen`), con su cantidad. Es lo que hay en la categoría, **no** la generación a la que se le
+aplicó el tratamiento. Las categorías se comparan con `catBase()` (sin tildes ni mayúsculas, sin edades "2-3" y en singular: "Novillos" = "Novillo 2-3"); si los
+nombres del padrón difieren más que eso, la tarjeta sale sin bloque. Si la lectura de la carga falla, Últimos sale igual sin generación.
 Para tenerlo en las dos pestañas de verdad, la PC tendría que publicar `gen` (columna nueva en las dos tablas + `actualizar_sanidad_supabase.py`, que vive en OneDrive).
 Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;
 el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
