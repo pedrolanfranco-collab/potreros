@@ -632,7 +632,7 @@ Lee con `fetch` `sanidad_proximos` y `sanidad_ultimos` (las publica la PC con `a
 sus pestañas de Sanidad salen vacías).
 **Pestaña Stock (16/10/2026):** lee `stock_potreros` (animales, UG, categorías y dueño/firma por potrero, con totales arriba;
 los filtra por `cantidad` ≠ 0) y, para la **generación**, `animales_caravana` (`potrero`, `gen`, `estado_vida`; solo los ACTIVO). `gen` es
-el **último dígito del año de nacimiento** (5 = 2025): se muestra como el año más reciente no futuro con ese dígito. **Solo cuenta animales con
+el **último dígito del año de nacimiento** (5 = 2025): se muestra como el año más reciente no futuro con ese dígito, junto con el dígito ("2025 (gen 5)"; a pedido de Pedro, que descarta animales de más de 10 años). **Solo cuenta animales con
 caravana** (no es todo el stock) y el potrero sale del bastón, no del stock; si no coincide con ninguno del stock queda en un bloque aparte.
 Si el padrón no se puede leer, el stock se ve igual sin generación. Las dos consultas se paginan de a 1000.
 Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;

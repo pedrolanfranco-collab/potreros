@@ -241,7 +241,7 @@ function nat(a, b){ return String(a).localeCompare(String(b), 'es', { numeric: t
 function fmtN(n){ return Number(n).toLocaleString('es-UY', { maximumFractionDigits: 1 }); }
 function chipsGen(m){
   const ks = Object.keys(m).sort((a, b) => (a === 's/d') - (b === 's/d') || b.localeCompare(a));
-  return ks.length ? '<div class="gen">' + ks.map(k => '<span>' + esc(k) + ' · <b>' + esc(m[k]) + '</b></span>').join('') + '</div>' : '';
+  return ks.length ? '<div class="gen">' + ks.map(k => '<span>' + esc(/^\d{4}$/.test(k) ? k + ' (gen ' + k.slice(-1) + ')' : k) + ' · <b>' + esc(m[k]) + '</b></span>').join('') + '</div>' : '';
 }
 function pintarStock(){
   const filtro = normPot(($('buscar') || {}).value);
