@@ -151,11 +151,11 @@ async function pedir(tabla, estab, orden){
   return filas;
 }
 /* PostgREST corta en 1000 filas sin avisar: se pide de a lotes con offset. */
-async function pedirTodo(tabla, estab, select, orden){
+async function pedirTodo(tabla, estab, select, orden, extra){
   const filas = [];
   for(let desde = 0; desde < 20000; desde += 1000){
-    const url = SUPABASE_URL + '/rest/v1/' + tabla + '?select=' + select + '&establecimiento=eq.' + encodeURIComponent(estab) +
-                '&order=' + orden + '&limit=1000&offset=' + desde;
+    const url = SUPABASE_URL + '/rest/v1/' + tabla + '?select=' + select + (estab ? '&establecimiento=eq.' + encodeURIComponent(estab) : '') +
+                (extra || '') + '&order=' + orden + '&limit=1000&offset=' + desde;
     const r = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY }, cache: 'no-store' });
     if(!r.ok) throw new Error(tabla + ': HTTP ' + r.status);
     const lote = await r.json();
@@ -173,6 +173,57 @@ function leerCache(estab){
 function guardarCache(estab){ try{ localStorage.setItem(CLAVE_LS + '_' + estab, JSON.stringify(datos)); }catch(e){} }
 
 /* ---------- pintado ---------- */
+/* Generación de un tratamiento. La PC no publica `gen` en sanidad_proximos/sanidad_ultimos: para Últimos se busca
+   la carga (sanidad_carga*) con la misma fecha, categoría, potrero y cantidad; si alguna vez la tabla trae `gen`, se usa directo. */
+const TABLA_CARGA = { la_vuelta: { t: 'sanidad_carga', conEstab: true }, maria_laura: { t: 'sanidad_carga_maria_laura', conEstab: false },
+                      pone_chico: { t: 'sanidad_carga_pone_chico', conEstab: false } };
+const normTxt = x => String(x == null ? '' : x).trim().toLowerCase();
+const claveCarga = (f, c, p, n) => String(f || '').slice(0, 10) + '|' + normTxt(c) + '|' + normTxt(p) + '|' + (Number(n) || 0);
+function etiquetaGen(g){
+  const t = String(g == null ? '' : g).trim();
+  if(!t) return '';
+  return /^\d$/.test(t) ? anioGen(t) + ' (gen ' + t + ')' : 'gen ' + t;
+}
+function etqsGen(lista){
+  const v = [...new Set((lista || []).map(etiquetaGen).filter(Boolean))];
+  return v.length ? '<span class="etq verde">Generación ' + v.map(esc).join(' · ') + '</span>' : '';
+}
+function genDe(f){ return f.gen != null && f.gen !== '' ? [f.gen] : (f._gen || []); }
+/* agrega f._gen a cada fila de Últimos con las cargas que coinciden */
+function cruzarGen(ult, cargas){
+  const m = {};
+  for(const c of cargas){
+    if(c.gen == null || c.gen === '') continue;
+    const k = claveCarga(c.fecha, c.categoria, c.potrero, c.cantidad);
+    (m[k] = m[k] || []).push(c.gen);
+  }
+  for(const f of ult){ const g = m[claveCarga(f.fecha, f.categoria, f.potrero, f.cantidad)]; if(g) f._gen = [...new Set(g)]; }
+}
+/* Categoría "base" para poder comparar las del tratamiento ("Novillos", "Vacas") con las de la caravana ("Novillo 2-3", "Vaca"):
+   sin tildes ni mayúsculas, sin edades ("2-3", "1-2") y en singular. */
+function catBase(c){
+  let t = String(c == null ? '' : c).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  t = t.replace(/\b\d+\s*-\s*\d+\b/g, ' ').replace(/\b\d+\b/g, ' ').replace(/\s+/g, ' ').trim();
+  return t.split(' ').map(w => w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w).join(' ');
+}
+/* generaciones de los animales con caravana (activos) de una categoría: [[año(dígito), cantidad], ...] */
+function gensDeCategoria(cat){
+  if(!datos.gens) return [];
+  const base = catBase(cat), m = {};
+  if(!base) return [];
+  for(const g of datos.gens){
+    if(catBase(g.categoria) !== base) continue;
+    const y = anioGen(g.gen);
+    m[y] = (m[y] || 0) + g.n;
+  }
+  return Object.entries(m).sort((a, b) => (a[0] === 's/d') - (b[0] === 's/d') || b[0].localeCompare(a[0]));
+}
+function etqCaravana(cat){
+  const l = gensDeCategoria(cat);
+  if(!l.length) return '';
+  return '<div class="s" style="margin-top:6px">Generaciones con caravana</div><div class="gen">' + l.map(([y, n]) =>
+    '<span>' + esc(/^\d{4}$/.test(y) ? y + ' (gen ' + y.slice(-1) + ')' : y) + ' · <b>' + esc(n) + '</b></span>').join('') + '</div>';
+}
 function nivelProximo(f){
   const n = f.fecha_prevista ? diasHasta(f.fecha_prevista) : (f.dias == null ? null : Number(f.dias));
   if(n == null || isNaN(n)) return { n: null, nivel: 'verde' };
@@ -199,7 +250,7 @@ function pintarProximos(){
         '<div class="s">' + (x.n != null ? esc(relativo(x.n)) : '') +
         (f.animales != null ? ' · ' + esc(f.animales) + ' animales' : '') + '</div>' +
         '<div class="s">Último: ' + esc(f.ultimo_producto || '—') + (f.ultimo_tratamiento ? ' (' + esc(fechaCorta(f.ultimo_tratamiento)) + ')' : '') + '</div>' +
-        (f.estado ? '<span class="etq ' + nv + '">' + esc(f.estado) + '</span>' : '') + '</div>';
+        (f.estado ? '<span class="etq ' + nv + '">' + esc(f.estado) + '</span>' : '') + etqsGen(genDe(f)) + etqCaravana(f.categoria) + '</div>';
     }
   }
   $('vista-prox').innerHTML = h;
@@ -221,6 +272,7 @@ function pintarUltimos(){
       '<div class="s">' + (f.potrero ? 'Potrero ' + esc(f.potrero) : '') + (f.dias_hace != null ? (f.potrero ? ' · ' : '') + esc(relativo(-Number(f.dias_hace))) : '') + '</div>' +
       (ra != null ? '<span class="etq ' + (ra > 0 ? 'ocre' : 'verde') + '">' + (ra > 0 ? 'En retiro hasta ' + esc(fechaCorta(f.apto_desde)) : 'Apto desde ' + esc(fechaCorta(f.apto_desde))) + '</span>' : '') +
       (f.costo_animal != null && f.costo_animal !== '' ? '<span class="etq">US$ ' + esc(Number(f.costo_animal).toFixed(2)) + ' / animal</span>' : '') +
+      etqsGen(genDe(f)) +
       (f.observaciones ? '<div class="s">' + esc(f.observaciones) + '</div>' : '') + '</div>';
   }
   $('vista-ult').innerHTML = h;
@@ -332,8 +384,8 @@ function resumirGens(filas){      // solo animales activos; se guarda agrupado p
   const m = {};
   for(const a of filas){
     if(a.estado_vida && a.estado_vida !== 'ACTIVO') continue;
-    const k = normPot(a.potrero) + '|' + String(a.gen == null ? '' : a.gen).trim();
-    m[k] = m[k] || { potrero: String(a.potrero == null ? '' : a.potrero).trim(), gen: a.gen, n: 0 };
+    const k = normPot(a.potrero) + '|' + String(a.gen == null ? '' : a.gen).trim() + '|' + normTxt(a.categoria);
+    m[k] = m[k] || { potrero: String(a.potrero == null ? '' : a.potrero).trim(), gen: a.gen, categoria: a.categoria || '', n: 0 };
     m[k].n++;
   }
   return Object.values(m);
@@ -344,13 +396,17 @@ async function actualizar(){
   enCurso = true;
   const estab = $('estab').value;
   try{
-    const [prox, ult, stock, gens] = await Promise.all([
+    const tc = TABLA_CARGA[estab];
+    const [prox, ult, stock, gens, cargas] = await Promise.all([
       pedir('sanidad_proximos', estab, 'fecha_prevista.asc.nullslast'), pedir('sanidad_ultimos', estab, 'fecha.desc'),
       pedirTodo('stock_potreros', estab, 'potrero,categoria,dueno,cantidad,ug,especie,actualizado_en', 'potrero.asc,clave.asc'),
       /* la generación es un extra: si el padrón no se puede leer, el resto del tablero sigue andando */
-      pedirTodo('animales_caravana', estab, 'potrero,gen,estado_vida', 'id8.asc').then(resumirGens).catch(() => null)
+      pedirTodo('animales_caravana', estab, 'potrero,gen,categoria,estado_vida', 'id8.asc').then(resumirGens).catch(() => null),
+      /* también un extra: si la carga no se puede leer, Últimos sale igual, sin generación */
+      tc ? pedirTodo(tc.t, tc.conEstab ? estab : null, 'fecha,categoria,potrero,cantidad,gen', 'fecha.desc,id.asc', '&gen=not.is.null').catch(() => []) : []
     ]);
     if($('estab').value !== estab) return;       // cambió de establecimiento mientras leía
+    cruzarGen(ult, cargas);
     datos = { prox, ult, stock, gens, leido: new Date().toISOString() };
     guardarCache(estab);
     pintarTodo();
