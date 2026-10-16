@@ -40,7 +40,29 @@ const ULT = [
   { establecimiento: 'la_vuelta', fecha: iso(-3), categoria: 'Vacas', potrero: '12', cantidad: 50, productos: '<img src=x onerror=window.pwn=1>', dosis: '5 ml', apto_desde: iso(20), costo_animal: 1.234, actualizado: new Date().toISOString() },
   { establecimiento: 'la_vuelta', fecha: iso(-40), categoria: 'Novillos', potrero: '3', cantidad: 30, productos: 'Ivermectina', apto_desde: iso(-10), actualizado: new Date().toISOString() }
 ];
-const resp = url => url.includes('sanidad_proximos') ? (url.includes('maria_laura') ? [] : PROX) : (url.includes('maria_laura') ? [] : ULT);
+const STOCK = [
+  { potrero: '12', categoria: 'Vacas', dueno: 'Pedro Lanfranco', cantidad: 50, ug: 50, especie: 'Vacunos', actualizado_en: new Date().toISOString() },
+  { potrero: '12', categoria: 'Terneros', dueno: '', cantidad: 30, ug: 0, especie: 'Vacunos', actualizado_en: new Date().toISOString() },
+  { potrero: '3', categoria: 'Ovejas', dueno: 'Silvia Dutra', cantidad: 100, ug: 15, especie: 'Ovinos', actualizado_en: new Date().toISOString() },
+  { potrero: '7', categoria: 'Novillos', dueno: '', cantidad: 0, ug: 0, especie: 'Vacunos', actualizado_en: new Date().toISOString() }
+];
+// gen es el último dígito del año de nacimiento; año de referencia = el actual
+const ANIO = new Date().getFullYear();
+const dig = a => String(a % 10);
+const CARAV = [
+  { potrero: '12', gen: dig(ANIO - 2), estado_vida: 'ACTIVO' }, { potrero: '12', gen: dig(ANIO - 2), estado_vida: 'ACTIVO' },
+  { potrero: '12 ', gen: dig(ANIO - 1), estado_vida: null },
+  { potrero: '12', gen: dig(ANIO - 1), estado_vida: 'VENDIDO' },          // no cuenta
+  { potrero: 'FORCER', gen: dig(ANIO - 3), estado_vida: 'ACTIVO' }         // potrero que no está en el stock
+];
+const resp = url => {
+  const vacio = url.includes('maria_laura');
+  if(url.includes('sanidad_proximos')) return vacio ? [] : PROX;
+  if(url.includes('sanidad_ultimos')) return vacio ? [] : ULT;
+  if(url.includes('stock_potreros')) return vacio ? [] : STOCK;
+  if(url.includes('animales_caravana')) return vacio ? [] : CARAV;
+  return [];
+};
 
 (async () => {
   console.log('Próximos y últimos');
@@ -57,6 +79,30 @@ const resp = url => url.includes('sanidad_proximos') ? (url.includes('maria_laur
   chequear('apto desde (apto en el pasado)', ult.includes('Apto desde'));
   chequear('costo con 2 decimales', ult.includes('US$ 1.23'));
   chequear('el estado dice "Leído"', /Leído/.test(a.doc.getElementById('estado').textContent));
+
+  console.log('Stock por potrero y generación');
+  const st = a.doc.getElementById('vista-stock').innerHTML;
+  const txt = a.doc.getElementById('vista-stock').textContent;
+  chequear('pide stock_potreros y animales_caravana con límite y offset', a.llamadas.some(l => l.url.includes('stock_potreros') && l.url.includes('offset=0')) && a.llamadas.some(l => l.url.includes('animales_caravana')));
+  chequear('total de animales = 180 (ignora cantidad 0)', /<b>180<\/b><span>animales/.test(st), st.slice(0, 200));
+  chequear('total UG = 65', /<b>65<\/b><span>UG/.test(st));
+  chequear('3 potreros... con hacienda son 2 (el de cantidad 0 no cuenta)', /<b>2<\/b><span>potreros con hacienda/.test(st));
+  chequear('totales por especie', txt.includes('Vacunos 80') && txt.includes('Ovinos 100'));
+  chequear('generación total: ' + (ANIO-2) + ' · 2, ' + (ANIO-1) + ' · 1, ' + (ANIO-3) + ' · 1 (sin el vendido)',
+    new RegExp((ANIO-2) + ' · 2').test(txt) && new RegExp((ANIO-1) + ' · 1').test(txt) && new RegExp((ANIO-3) + ' · 1').test(txt) && !/ · 5/.test(txt.slice(txt.indexOf('Generación'))));
+  chequear('generación del potrero 12 se une pese al espacio en el nombre', /Potrero 12[\s\S]*?Generación \(con caravana\)/.test(st));
+  chequear('el potrero que no figura en el stock queda aparte', st.includes('sin potrero del stock') && st.indexOf('FORCER') === -1 && st.includes(String(ANIO-3)));
+  chequear('nota de cobertura (3 de 180)', txt.includes('4 de 180') || txt.includes('3 de 180'), txt.slice(txt.indexOf('Cuenta')));
+  chequear('potrero 3 antes que 12 (orden numérico)', st.indexOf('Potrero 3') < st.indexOf('Potrero 12'));
+  chequear('desglose por dueño/firma', st.includes('Pedro Lanfranco') && st.includes('sin asignar'));
+  const buscar = a.doc.getElementById('buscar'); buscar.value = '12'; buscar.dispatchEvent(new a.win.Event('input'));
+  const st2 = a.doc.getElementById('vista-stock').innerHTML;
+  chequear('el buscador filtra los potreros', st2.includes('Potrero 12') && !st2.includes('Potrero 3<'));
+  chequear('la pestaña elegida se recuerda', (a.win.document.getElementById('tab-stock').click(), a.win.localStorage.getItem('tablero_sanidad_v1_tab') === 'stock'));
+
+  console.log('Si el padrón de caravanas falla, el stock igual se ve');
+  const d = await abrir(url => url.includes('animales_caravana') ? 'caido' : resp(url));
+  chequear('stock sin generación y con aviso', d.doc.getElementById('vista-stock').textContent.includes('180') && d.doc.getElementById('vista-stock').textContent.includes('No se pudo leer la generación'));
 
   console.log('Pestañas y cambio de establecimiento');
   a.doc.getElementById('tab-ult').click();

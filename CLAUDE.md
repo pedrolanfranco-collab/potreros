@@ -628,7 +628,13 @@ Página suelta de solo lectura para ver en el teléfono, sin abrir la app, los *
 tratamientos (`pedrolanfranco-collab.github.io/potreros/tablero-sanidad/`). **No es una app generada**: no pasa por
 `template/generar.js`, no tiene `sw.js` (para no servir datos viejos) ni librerías; es un `index.html` a mano.
 Lee con `fetch` `sanidad_proximos` y `sanidad_ultimos` (las publica la PC con `actualizar_sanidad_supabase.py`;
-`anon` solo tiene SELECT), por establecimiento (La Vuelta / María Laura; Pone Chico no tiene Excel que las llene).
+`anon` solo tiene SELECT), por establecimiento (La Vuelta / María Laura; Pone Chico no tiene Excel que las llene, así que
+sus pestañas de Sanidad salen vacías).
+**Pestaña Stock (16/10/2026):** lee `stock_potreros` (animales, UG, categorías y dueño/firma por potrero, con totales arriba;
+los filtra por `cantidad` ≠ 0) y, para la **generación**, `animales_caravana` (`potrero`, `gen`, `estado_vida`; solo los ACTIVO). `gen` es
+el **último dígito del año de nacimiento** (5 = 2025): se muestra como el año más reciente no futuro con ese dígito. **Solo cuenta animales con
+caravana** (no es todo el stock) y el potrero sale del bastón, no del stock; si no coincide con ninguno del stock queda en un bloque aparte.
+Si el padrón no se puede leer, el stock se ve igual sin generación. Las dos consultas se paginan de a 1000.
 Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
 publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
 `tests/probar_tablero_sanidad.js`.

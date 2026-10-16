@@ -9,9 +9,11 @@
 <title>Tablero de Sanidad</title>
 <!--
   Tablero de solo lectura (16/10/2026). NO es una de las apps generadas por template/generar.js:
-  es un archivo suelto, sin librerías. Lee dos tablas que publica la PC (actualizar_sanidad_supabase.py):
-    sanidad_proximos  (qué tratamiento toca y cuándo)
-    sanidad_ultimos   (lo último que se aplicó)
+  es un archivo suelto, sin librerías. Lee cuatro tablas:
+    sanidad_proximos  (qué tratamiento toca y cuándo)        -- la publica la PC (actualizar_sanidad_supabase.py)
+    sanidad_ultimos   (lo último que se aplicó)              -- idem
+    stock_potreros    (stock actual por potrero, categoría y dueño/firma) -- la publican las apps
+    animales_caravana (padrón por caravana; de ahí sale la GENERACIÓN) -- la publica la PC (publicar_animales.py)
   No escribe nada. Se refresca solo cada 5 min y al volver a la pestaña; guarda la última copia en el
   teléfono para mostrar algo sin señal. Si la lectura anónima se cierra (Fase 4), hay que agregarle la clave.
 -->
@@ -62,6 +64,19 @@ h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--suav
 .etq.rojo{background:var(--rojo-claro);color:var(--rojo)} .etq.ocre{background:var(--ocre-claro);color:var(--ocre)}
 .etq.verde{background:var(--verde-claro);color:var(--verde)}
 .vacio{text-align:center;color:var(--suave);padding:32px 0}
+.gen{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.gen span{background:var(--verde-claro);color:var(--verde);border-radius:8px;padding:2px 8px;font-size:13px;font-weight:600}
+.gen span b{font-size:15px}
+.cats{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.cats span{background:var(--gris-claro);border-radius:8px;padding:2px 8px;font-size:13px}
+.nota{font-size:12px;color:var(--suave);margin:4px 0 0}
+.tabla{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.tabla td{padding:3px 4px;border-top:1px solid var(--borde)} .tabla td:last-child{text-align:right;font-weight:600}
+details>summary{cursor:pointer;color:var(--suave);font-size:13px;margin-top:6px;min-height:28px}
+#buscar{width:100%;padding:10px 12px;border:2px solid var(--borde);border-radius:10px;background:var(--tarjeta);margin:4px 0 8px;min-height:44px}
+.tot{background:var(--tarjeta);border:2px solid var(--borde);border-radius:12px;padding:10px 12px;margin:12px 0}
+.tot .grande{display:flex;gap:16px}.tot .grande div{flex:1}
+.tot .grande b{display:block;font-size:30px;line-height:1.1}.tot .grande span{font-size:12px;color:var(--suave)}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -73,6 +88,7 @@ h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--suav
       <select id="estab" aria-label="Establecimiento">
         <option value="la_vuelta">La Vuelta</option>
         <option value="maria_laura">María Laura</option>
+        <option value="pone_chico">Pone Chico</option>
       </select>
       <button id="refrescar" aria-label="Actualizar ahora">⟳</button>
     </div>
@@ -81,11 +97,13 @@ h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--suav
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tab-prox" aria-selected="true">Próximos</button>
     <button class="tab" role="tab" id="tab-ult" aria-selected="false">Últimos</button>
+    <button class="tab" role="tab" id="tab-stock" aria-selected="false">Stock</button>
   </div>
 </header>
 <main>
   <section id="vista-prox"></section>
   <section id="vista-ult" hidden></section>
+  <section id="vista-stock" hidden></section>
 </main>
 
 <script>
@@ -131,9 +149,24 @@ async function pedir(tabla, estab, orden){
   if(!Array.isArray(filas)) throw new Error(tabla + ': respuesta inesperada');
   return filas;
 }
-let datos = { prox: [], ult: [], leido: null };
+/* PostgREST corta en 1000 filas sin avisar: se pide de a lotes con offset. */
+async function pedirTodo(tabla, estab, select, orden){
+  const filas = [];
+  for(let desde = 0; desde < 20000; desde += 1000){
+    const url = SUPABASE_URL + '/rest/v1/' + tabla + '?select=' + select + '&establecimiento=eq.' + encodeURIComponent(estab) +
+                '&order=' + orden + '&limit=1000&offset=' + desde;
+    const r = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY }, cache: 'no-store' });
+    if(!r.ok) throw new Error(tabla + ': HTTP ' + r.status);
+    const lote = await r.json();
+    if(!Array.isArray(lote)) throw new Error(tabla + ': respuesta inesperada');
+    filas.push(...lote);
+    if(lote.length < 1000) break;
+  }
+  return filas;
+}
+let datos = { prox: [], ult: [], stock: [], gens: null, leido: null };
 function leerCache(estab){
-  try{ const c = JSON.parse(localStorage.getItem(CLAVE_LS + '_' + estab)); if(c && Array.isArray(c.prox) && Array.isArray(c.ult)) return c; }catch(e){}
+  try{ const c = JSON.parse(localStorage.getItem(CLAVE_LS + '_' + estab)); if(c && Array.isArray(c.prox) && Array.isArray(c.ult)){ c.stock = c.stock || []; c.gens = c.gens || null; return c; } }catch(e){}
   return null;
 }
 function guardarCache(estab){ try{ localStorage.setItem(CLAVE_LS + '_' + estab, JSON.stringify(datos)); }catch(e){} }
@@ -191,6 +224,90 @@ function pintarUltimos(){
   }
   $('vista-ult').innerHTML = h;
 }
+
+/* ---------- stock por potrero + generación ---------- */
+const normPot = x => String(x == null ? '' : x).trim().toUpperCase();
+/* GEN en el padrón es el ÚLTIMO DÍGITO del año de nacimiento (5 = 2025): se toma el año más reciente que no sea futuro. */
+function anioGen(g){
+  const t = String(g == null ? '' : g).trim();
+  if(/^\d{4}$/.test(t)) return t;
+  if(!/^\d$/.test(t)) return 's/d';
+  let y = +hoyISO().slice(0, 4);
+  while(y % 10 !== +t) y--;
+  return String(y);
+}
+function nat(a, b){ return String(a).localeCompare(String(b), 'es', { numeric: true, sensitivity: 'base' }); }
+function fmtN(n){ return Number(n).toLocaleString('es-UY', { maximumFractionDigits: 1 }); }
+function chipsGen(m){
+  const ks = Object.keys(m).sort((a, b) => (a === 's/d') - (b === 's/d') || b.localeCompare(a));
+  return ks.length ? '<div class="gen">' + ks.map(k => '<span>' + esc(k) + ' · <b>' + esc(m[k]) + '</b></span>').join('') + '</div>' : '';
+}
+function pintarStock(){
+  const filtro = normPot(($('buscar') || {}).value);
+  const stock = datos.stock;
+  if(!stock.length){ $('vista-stock').innerHTML = '<p class="vacio">No hay stock publicado para este establecimiento.</p>'; return; }
+  const pots = {};
+  let animales = 0, ug = 0;
+  const porEspecie = {}, porCat = {};
+  for(const f of stock){
+    const n = Number(f.cantidad) || 0;
+    if(!n) continue;
+    const p = pots[f.potrero] = pots[f.potrero] || { nombre: f.potrero, n: 0, ug: 0, cats: {}, filas: [] };
+    p.n += n; p.ug += Number(f.ug) || 0; p.cats[f.categoria] = (p.cats[f.categoria] || 0) + n; p.filas.push(f);
+    animales += n; ug += Number(f.ug) || 0;
+    const e = f.especie || 'Otros'; porEspecie[e] = (porEspecie[e] || 0) + n;
+    porCat[f.categoria] = (porCat[f.categoria] || 0) + n;
+  }
+  /* generación (solo animales con caravana, activos): total y por potrero */
+  const gens = datos.gens;
+  const genTotal = {}, genPot = {};
+  let conCaravana = 0;
+  if(gens){
+    for(const g of gens){
+      const y = anioGen(g.gen), k = normPot(g.potrero);
+      genTotal[y] = (genTotal[y] || 0) + g.n; conCaravana += g.n;
+      if(k){ genPot[k] = genPot[k] || {}; genPot[k][y] = (genPot[k][y] || 0) + g.n; }
+    }
+  }
+  const nPots = Object.keys(pots).length;
+  const pub = stock.map(f => f.actualizado_en).filter(Boolean).sort().pop();
+  let h = '<div class="tot"><div class="grande"><div><b>' + fmtN(animales) + '</b><span>animales</span></div>' +
+    '<div><b>' + fmtN(ug) + '</b><span>UG</span></div><div><b>' + nPots + '</b><span>potreros con hacienda</span></div></div>';
+  h += '<div class="cats">' + Object.entries(porEspecie).sort((a, b) => b[1] - a[1]).map(([k, v]) => '<span>' + esc(k) + ' <b>' + fmtN(v) + '</b></span>').join('') + '</div>';
+  h += '<details><summary>Por categoría</summary><table class="tabla">' +
+    Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([k, v]) => '<tr><td>' + esc(k) + '</td><td>' + fmtN(v) + '</td></tr>').join('') + '</table></details>';
+  if(gens){
+    h += '<h2 style="margin-top:12px">Generación (año de nacimiento)</h2>' + chipsGen(genTotal) +
+      '<p class="nota">Cuenta solo los animales con caravana activos (' + fmtN(conCaravana) + ' de ' + fmtN(animales) + '). El resto del stock no tiene generación registrada.</p>';
+  }else{
+    h += '<p class="nota">No se pudo leer la generación (padrón de caravanas) por ahora.</p>';
+  }
+  if(pub) h += '<p class="nota">Stock publicado por las apps: ' + esc(fechaCorta(pub.slice(0, 10))) + ' ' + esc(horaLocal(new Date(pub))) + '</p>';
+  h += '</div><input id="buscar" type="search" placeholder="Buscar potrero…" value="' + esc(($('buscar') || {}).value || '') + '" aria-label="Buscar potrero">';
+  const lista = Object.values(pots).filter(p => !filtro || normPot(p.nombre).includes(filtro)).sort((a, b) => nat(a.nombre, b.nombre));
+  for(const p of lista){
+    h += '<div class="card verde"><div class="t"><strong>Potrero ' + esc(p.nombre) + '</strong><span class="f">' + fmtN(p.n) + '</span></div>' +
+      '<div class="s">' + fmtN(p.ug) + ' UG</div>' +
+      '<div class="cats">' + Object.entries(p.cats).sort((a, b) => b[1] - a[1]).map(([k, v]) => '<span>' + esc(k) + ' <b>' + fmtN(v) + '</b></span>').join('') + '</div>';
+    const g = genPot[normPot(p.nombre)];
+    if(g) h += '<div class="s" style="margin-top:6px">Generación (con caravana)</div>' + chipsGen(g);
+    h += '<details><summary>Por dueño / firma</summary><table class="tabla">' +
+      p.filas.slice().sort((a, b) => nat(a.categoria, b.categoria) || nat(a.dueno, b.dueno)).map(f =>
+        '<tr><td>' + esc(f.categoria) + ' · ' + esc(f.dueno || 'sin asignar') + '</td><td>' + fmtN(f.cantidad) + '</td></tr>').join('') + '</table></details></div>';
+  }
+  if(!lista.length) h += '<p class="vacio">Ningún potrero coincide.</p>';
+  /* sin potrero en el padrón o con un nombre que no figura en el stock */
+  if(gens){
+    const sueltas = {};
+    for(const g of gens){ const k = normPot(g.potrero); if(!k || !Object.keys(pots).some(n => normPot(n) === k)){ const y = anioGen(g.gen); sueltas[y] = (sueltas[y] || 0) + g.n; } }
+    if(Object.keys(sueltas).length && !filtro) h += '<h2>Con caravana, sin potrero del stock</h2><div class="card"><div class="s">Animales cuyo potrero del bastón no coincide con ninguno del stock</div>' + chipsGen(sueltas) + '</div>';
+  }
+  const foco = document.activeElement && document.activeElement.id === 'buscar';
+  $('vista-stock').innerHTML = h;
+  const b = $('buscar');
+  b.oninput = () => pintarStock();
+  if(foco){ b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
+}
 function pintarEstado(msg, mal){
   const el = $('estado'); el.textContent = msg; el.className = mal ? 'mal' : '';
 }
@@ -205,20 +322,35 @@ function textoEstado(extra){
   return { texto: t + (extra || ''), mal: false };
 }
 function pintarTodo(extra){
-  pintarProximos(); pintarUltimos();
+  pintarProximos(); pintarUltimos(); pintarStock();
   const e = textoEstado(extra); pintarEstado(e.texto || 'Sin datos', e.mal);
 }
 
 /* ---------- ciclo ---------- */
+function resumirGens(filas){      // solo animales activos; se guarda agrupado para que la copia sea chica
+  const m = {};
+  for(const a of filas){
+    if(a.estado_vida && a.estado_vida !== 'ACTIVO') continue;
+    const k = normPot(a.potrero) + '|' + String(a.gen == null ? '' : a.gen).trim();
+    m[k] = m[k] || { potrero: String(a.potrero == null ? '' : a.potrero).trim(), gen: a.gen, n: 0 };
+    m[k].n++;
+  }
+  return Object.values(m);
+}
 let enCurso = false;
 async function actualizar(){
   if(enCurso) return;
   enCurso = true;
   const estab = $('estab').value;
   try{
-    const [prox, ult] = await Promise.all([ pedir('sanidad_proximos', estab, 'fecha_prevista.asc.nullslast'), pedir('sanidad_ultimos', estab, 'fecha.desc') ]);
+    const [prox, ult, stock, gens] = await Promise.all([
+      pedir('sanidad_proximos', estab, 'fecha_prevista.asc.nullslast'), pedir('sanidad_ultimos', estab, 'fecha.desc'),
+      pedirTodo('stock_potreros', estab, 'potrero,categoria,dueno,cantidad,ug,especie,actualizado_en', 'potrero.asc,clave.asc'),
+      /* la generación es un extra: si el padrón no se puede leer, el resto del tablero sigue andando */
+      pedirTodo('animales_caravana', estab, 'potrero,gen,estado_vida', 'id8.asc').then(resumirGens).catch(() => null)
+    ]);
     if($('estab').value !== estab) return;       // cambió de establecimiento mientras leía
-    datos = { prox, ult, leido: new Date().toISOString() };
+    datos = { prox, ult, stock, gens, leido: new Date().toISOString() };
     guardarCache(estab);
     pintarTodo();
   }catch(e){
@@ -227,20 +359,25 @@ async function actualizar(){
 }
 function cambiarEstab(){
   try{ localStorage.setItem(CLAVE_LS + '_estab', $('estab').value); }catch(e){}
-  datos = leerCache($('estab').value) || { prox: [], ult: [], leido: null };
+  datos = leerCache($('estab').value) || { prox: [], ult: [], stock: [], gens: null, leido: null };
   pintarTodo(); actualizar();
 }
-function elegirTab(prox){
-  $('vista-prox').hidden = !prox; $('vista-ult').hidden = prox;
-  $('tab-prox').setAttribute('aria-selected', String(prox)); $('tab-ult').setAttribute('aria-selected', String(!prox));
+function elegirTab(cual){
+  for(const t of ['prox', 'ult', 'stock']){
+    $('vista-' + t).hidden = t !== cual;
+    $('tab-' + t).setAttribute('aria-selected', String(t === cual));
+  }
+  try{ localStorage.setItem(CLAVE_LS + '_tab', cual); }catch(e){}
 }
-$('tab-prox').onclick = () => elegirTab(true);
-$('tab-ult').onclick = () => elegirTab(false);
+$('tab-prox').onclick = () => elegirTab('prox');
+$('tab-ult').onclick = () => elegirTab('ult');
+$('tab-stock').onclick = () => elegirTab('stock');
 $('estab').onchange = cambiarEstab;
 $('refrescar').onclick = actualizar;
 document.addEventListener('visibilitychange', () => { if(!document.hidden) actualizar(); });
 setInterval(() => { if(!document.hidden) actualizar(); }, REFRESCO_MS);
 try{ const g = localStorage.getItem(CLAVE_LS + '_estab'); if(g && [...$('estab').options].some(o => o.value === g)) $('estab').value = g; }catch(e){}
+try{ const t = localStorage.getItem(CLAVE_LS + '_tab'); if(['prox', 'ult', 'stock'].includes(t)) elegirTab(t); }catch(e){}
 cambiarEstab();
 </script>
 </body>
