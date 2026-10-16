@@ -622,6 +622,17 @@ tampoco la sabe; una de ficha sin confirmar, como Vaquillona, sigue sin pasar). 
 lecturas con lo que pasó, y la PC la muestra en Herramientas › Consultar › "⚠ Datos faltantes (N)"
 (últimos 60 días, CSV). La app solo lee. Test: `tests/probar_datos_faltantes.js`.
 
+### Tablero de Sanidad (`tablero-sanidad/`, 16/10/2026, a pedido de Pedro)
+
+Página suelta de solo lectura para ver en el teléfono, sin abrir la app, los **próximos** y los **últimos**
+tratamientos (`pedrolanfranco-collab.github.io/potreros/tablero-sanidad/`). **No es una app generada**: no pasa por
+`template/generar.js`, no tiene `sw.js` (para no servir datos viejos) ni librerías; es un `index.html` a mano.
+Lee con `fetch` `sanidad_proximos` y `sanidad_ultimos` (las publica la PC con `actualizar_sanidad_supabase.py`;
+`anon` solo tiene SELECT), por establecimiento (La Vuelta / María Laura; Pone Chico no tiene Excel que las llene).
+Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
+publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
+`tests/probar_tablero_sanidad.js`.
+
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
 RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este

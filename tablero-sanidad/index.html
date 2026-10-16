@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b3a24">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-96x96.png">
+<title>Tablero de Sanidad</title>
+<!--
+  Tablero de solo lectura (16/10/2026). NO es una de las apps generadas por template/generar.js:
+  es un archivo suelto, sin librerías. Lee dos tablas que publica la PC (actualizar_sanidad_supabase.py):
+    sanidad_proximos  (qué tratamiento toca y cuándo)
+    sanidad_ultimos   (lo último que se aplicó)
+  No escribe nada. Se refresca solo cada 5 min y al volver a la pestaña; guarda la última copia en el
+  teléfono para mostrar algo sin señal. Si la lectura anónima se cierra (Fase 4), hay que agregarle la clave.
+-->
+<style>
+:root{
+  --fondo:#f3ecd9; --tarjeta:#fffdf6; --texto:#2a2a22; --suave:#5d5a4a; --borde:#d9cfb2;
+  --verde:#2b3a24; --verde-claro:#e3ecd6; --rojo:#a8321f; --rojo-claro:#f7dcd5;
+  --ocre:#8f5f12; --ocre-claro:#f6e8c4; --gris-claro:#ece6d3;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --fondo:#171a14; --tarjeta:#21261c; --texto:#ece8d8; --suave:#aaa68f; --borde:#3a4132;
+    --verde:#9cc47a; --verde-claro:#2b3a24; --rojo:#ff9b86; --rojo-claro:#4a231b;
+    --ocre:#e2b24f; --ocre-claro:#46361a; --gris-claro:#2c3225; }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--fondo);color:var(--texto);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding:0 16px calc(24px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--fondo);padding:calc(12px + env(safe-area-inset-top)) 0 8px;
+  border-bottom:1px solid var(--borde)}
+.fila{display:flex;align-items:center;gap:8px;justify-content:space-between}
+h1{font-size:19px;margin:0}
+select,button{font:inherit;color:inherit}
+select{padding:8px 10px;border:2px solid var(--borde);border-radius:10px;background:var(--tarjeta);min-height:44px}
+#refrescar{border:2px solid var(--borde);background:var(--tarjeta);border-radius:10px;min-width:44px;min-height:44px;font-size:18px}
+#estado{font-size:13px;color:var(--suave);margin:6px 0 0}
+#estado.mal{color:var(--rojo);font-weight:600}
+.tabs{display:flex;gap:8px;margin-top:10px}
+.tab{flex:1;min-height:46px;border:2px solid var(--borde);background:var(--tarjeta);border-radius:12px;font-weight:600}
+.tab[aria-selected=true]{background:var(--verde);border-color:var(--verde);color:var(--fondo)}
+.resumen{display:flex;gap:8px;margin:12px 0}
+.chip{flex:1;border-radius:12px;padding:8px 6px;text-align:center;background:var(--gris-claro)}
+.chip b{display:block;font-size:24px;line-height:1.1}
+.chip span{font-size:12px;color:var(--suave)}
+.chip.rojo{background:var(--rojo-claro)} .chip.rojo b{color:var(--rojo)}
+.chip.ocre{background:var(--ocre-claro)} .chip.ocre b{color:var(--ocre)}
+.chip.verde{background:var(--verde-claro)} .chip.verde b{color:var(--verde)}
+h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);margin:18px 0 8px}
+.card{background:var(--tarjeta);border:2px solid var(--borde);border-left-width:8px;border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.card.rojo{border-left-color:var(--rojo)} .card.ocre{border-left-color:var(--ocre)} .card.verde{border-left-color:var(--verde)}
+.card .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card .t strong{font-size:17px}
+.card .f{font-weight:700;white-space:nowrap}
+.card.rojo .f{color:var(--rojo)} .card.ocre .f{color:var(--ocre)}
+.card .s{color:var(--suave);font-size:14px;margin-top:2px}
+.etq{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;margin-top:6px;margin-right:4px;
+  background:var(--gris-claro)}
+.etq.rojo{background:var(--rojo-claro);color:var(--rojo)} .etq.ocre{background:var(--ocre-claro);color:var(--ocre)}
+.etq.verde{background:var(--verde-claro);color:var(--verde)}
+.vacio{text-align:center;color:var(--suave);padding:32px 0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="fila">
+    <h1>🩺 Sanidad</h1>
+    <div class="fila">
+      <select id="estab" aria-label="Establecimiento">
+        <option value="la_vuelta">La Vuelta</option>
+        <option value="maria_laura">María Laura</option>
+      </select>
+      <button id="refrescar" aria-label="Actualizar ahora">⟳</button>
+    </div>
+  </div>
+  <p id="estado">Cargando…</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-prox" aria-selected="true">Próximos</button>
+    <button class="tab" role="tab" id="tab-ult" aria-selected="false">Últimos</button>
+  </div>
+</header>
+<main>
+  <section id="vista-prox"></section>
+  <section id="vista-ult" hidden></section>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
+const REFRESCO_MS = 5 * 60 * 1000;      // cada cuánto se vuelve a leer
+const PUBLICACION_VIEJA_H = 6;           // si la PC no publicó hace más que esto, se avisa
+const CLAVE_LS = 'tablero_sanidad_v1';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- fechas (día calendario de Uruguay, sin corrimientos de zona) ---------- */
+function hoyISO(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function diaNum(iso){            // 'YYYY-MM-DD' -> nº de día absoluto (para restar sin zona horaria)
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? Date.UTC(+m[1], +m[2]-1, +m[3]) / 86400000 : null;
+}
+function diasHasta(iso){ const a = diaNum(iso), b = diaNum(hoyISO()); return a == null ? null : a - b; }
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fechaCorta(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? (+m[3]) + ' ' + MESES[+m[2]-1] + (m[1] !== hoyISO().slice(0,4) ? ' ' + m[1] : '') : '—';
+}
+function relativo(n){
+  if(n == null) return '';
+  if(n === 0) return 'hoy';
+  if(n === 1) return 'mañana';
+  if(n === -1) return 'ayer';
+  return n > 0 ? 'en ' + n + ' días' : 'hace ' + (-n) + ' días';
+}
+
+/* ---------- lectura ---------- */
+async function pedir(tabla, estab, orden){
+  const url = SUPABASE_URL + '/rest/v1/' + tabla + '?select=*&establecimiento=eq.' + encodeURIComponent(estab) +
+              '&order=' + orden + '&limit=500';
+  const r = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY }, cache: 'no-store' });
+  if(!r.ok) throw new Error(tabla + ': HTTP ' + r.status);
+  const filas = await r.json();
+  if(!Array.isArray(filas)) throw new Error(tabla + ': respuesta inesperada');
+  return filas;
+}
+let datos = { prox: [], ult: [], leido: null };
+function leerCache(estab){
+  try{ const c = JSON.parse(localStorage.getItem(CLAVE_LS + '_' + estab)); if(c && Array.isArray(c.prox) && Array.isArray(c.ult)) return c; }catch(e){}
+  return null;
+}
+function guardarCache(estab){ try{ localStorage.setItem(CLAVE_LS + '_' + estab, JSON.stringify(datos)); }catch(e){} }
+
+/* ---------- pintado ---------- */
+function nivelProximo(f){
+  const n = f.fecha_prevista ? diasHasta(f.fecha_prevista) : (f.dias == null ? null : Number(f.dias));
+  if(n == null || isNaN(n)) return { n: null, nivel: 'verde' };
+  return { n, nivel: n < 0 ? 'rojo' : n <= 15 ? 'ocre' : 'verde' };
+}
+function pintarProximos(){
+  const filas = datos.prox.map(f => ({ f, ...nivelProximo(f) }));
+  filas.sort((a, b) => (a.n == null) - (b.n == null) || a.n - b.n);
+  const cuenta = nv => filas.filter(x => x.nivel === nv).length;
+  let h = '<div class="resumen">' +
+    '<div class="chip rojo"><b>' + cuenta('rojo') + '</b><span>vencidos</span></div>' +
+    '<div class="chip ocre"><b>' + cuenta('ocre') + '</b><span>en 15 días</span></div>' +
+    '<div class="chip verde"><b>' + cuenta('verde') + '</b><span>más adelante</span></div></div>';
+  if(!filas.length) h += '<p class="vacio">No hay tratamientos próximos cargados.</p>';
+  const grupos = [['rojo','Vencidos'],['ocre','Próximos 15 días'],['verde','Más adelante']];
+  for(const [nv, titulo] of grupos){
+    const g = filas.filter(x => x.nivel === nv);
+    if(!g.length) continue;
+    h += '<h2>' + titulo + '</h2>';
+    for(const x of g){
+      const f = x.f;
+      h += '<div class="card ' + nv + '"><div class="t"><strong>' + esc(f.categoria || '—') + ' · ' + esc(f.sanidad || '') +
+        '</strong><span class="f">' + esc(fechaCorta(f.fecha_prevista)) + '</span></div>' +
+        '<div class="s">' + (x.n != null ? esc(relativo(x.n)) : '') +
+        (f.animales != null ? ' · ' + esc(f.animales) + ' animales' : '') + '</div>' +
+        '<div class="s">Último: ' + esc(f.ultimo_producto || '—') + (f.ultimo_tratamiento ? ' (' + esc(fechaCorta(f.ultimo_tratamiento)) + ')' : '') + '</div>' +
+        (f.estado ? '<span class="etq ' + nv + '">' + esc(f.estado) + '</span>' : '') + '</div>';
+    }
+  }
+  $('vista-prox').innerHTML = h;
+}
+function pintarUltimos(){
+  const filas = datos.ult.slice().sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
+  const en30 = filas.filter(f => { const n = diasHasta(f.fecha); return n != null && n >= -30; }).length;
+  const enRetiro = filas.filter(f => { const n = f.apto_desde ? diasHasta(f.apto_desde) : null; return n != null && n > 0; }).length;
+  let h = '<div class="resumen">' +
+    '<div class="chip verde"><b>' + en30 + '</b><span>últimos 30 días</span></div>' +
+    '<div class="chip ocre"><b>' + enRetiro + '</b><span>en retiro</span></div></div>';
+  if(!filas.length) h += '<p class="vacio">No hay tratamientos cargados.</p>';
+  for(const f of filas){
+    const ra = f.apto_desde ? diasHasta(f.apto_desde) : null;
+    const nivel = ra != null && ra > 0 ? 'ocre' : 'verde';
+    h += '<div class="card ' + nivel + '"><div class="t"><strong>' + esc(f.categoria || '—') +
+      (f.cantidad != null ? ' · ' + esc(f.cantidad) : '') + '</strong><span class="f">' + esc(fechaCorta(f.fecha)) + '</span></div>' +
+      '<div class="s">' + esc(f.productos || '—') + (f.dosis ? ' · ' + esc(f.dosis) : '') + '</div>' +
+      '<div class="s">' + (f.potrero ? 'Potrero ' + esc(f.potrero) : '') + (f.dias_hace != null ? (f.potrero ? ' · ' : '') + esc(relativo(-Number(f.dias_hace))) : '') + '</div>' +
+      (ra != null ? '<span class="etq ' + (ra > 0 ? 'ocre' : 'verde') + '">' + (ra > 0 ? 'En retiro hasta ' + esc(fechaCorta(f.apto_desde)) : 'Apto desde ' + esc(fechaCorta(f.apto_desde))) + '</span>' : '') +
+      (f.costo_animal != null && f.costo_animal !== '' ? '<span class="etq">US$ ' + esc(Number(f.costo_animal).toFixed(2)) + ' / animal</span>' : '') +
+      (f.observaciones ? '<div class="s">' + esc(f.observaciones) + '</div>' : '') + '</div>';
+  }
+  $('vista-ult').innerHTML = h;
+}
+function pintarEstado(msg, mal){
+  const el = $('estado'); el.textContent = msg; el.className = mal ? 'mal' : '';
+}
+function horaLocal(d){ return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+function textoEstado(extra){
+  let t = datos.leido ? 'Leído ' + (diaNum(datos.leido.slice(0,10)) === diaNum(hoyISO()) ? 'hoy ' : fechaCorta(datos.leido) + ' ') + horaLocal(new Date(datos.leido)) : '';
+  const pub = [...datos.prox, ...datos.ult].map(f => f.actualizado).filter(Boolean).sort().pop();
+  if(pub){
+    const hs = (Date.now() - new Date(pub).getTime()) / 3600000;
+    if(hs > PUBLICACION_VIEJA_H) return { texto: t + ' · ⚠ la PC no publica desde hace ' + (hs >= 48 ? Math.round(hs/24) + ' días' : Math.round(hs) + ' h'), mal: true };
+  }
+  return { texto: t + (extra || ''), mal: false };
+}
+function pintarTodo(extra){
+  pintarProximos(); pintarUltimos();
+  const e = textoEstado(extra); pintarEstado(e.texto || 'Sin datos', e.mal);
+}
+
+/* ---------- ciclo ---------- */
+let enCurso = false;
+async function actualizar(){
+  if(enCurso) return;
+  enCurso = true;
+  const estab = $('estab').value;
+  try{
+    const [prox, ult] = await Promise.all([ pedir('sanidad_proximos', estab, 'fecha_prevista.asc.nullslast'), pedir('sanidad_ultimos', estab, 'fecha.desc') ]);
+    if($('estab').value !== estab) return;       // cambió de establecimiento mientras leía
+    datos = { prox, ult, leido: new Date().toISOString() };
+    guardarCache(estab);
+    pintarTodo();
+  }catch(e){
+    if($('estab').value === estab) pintarTodo(' · sin conexión, mostrando la última copia');
+  }finally{ enCurso = false; }
+}
+function cambiarEstab(){
+  try{ localStorage.setItem(CLAVE_LS + '_estab', $('estab').value); }catch(e){}
+  datos = leerCache($('estab').value) || { prox: [], ult: [], leido: null };
+  pintarTodo(); actualizar();
+}
+function elegirTab(prox){
+  $('vista-prox').hidden = !prox; $('vista-ult').hidden = prox;
+  $('tab-prox').setAttribute('aria-selected', String(prox)); $('tab-ult').setAttribute('aria-selected', String(!prox));
+}
+$('tab-prox').onclick = () => elegirTab(true);
+$('tab-ult').onclick = () => elegirTab(false);
+$('estab').onchange = cambiarEstab;
+$('refrescar').onclick = actualizar;
+document.addEventListener('visibilitychange', () => { if(!document.hidden) actualizar(); });
+setInterval(() => { if(!document.hidden) actualizar(); }, REFRESCO_MS);
+try{ const g = localStorage.getItem(CLAVE_LS + '_estab'); if(g && [...$('estab').options].some(o => o.value === g)) $('estab').value = g; }catch(e){}
+cambiarEstab();
+</script>
+</body>
+</html>
