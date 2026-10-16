@@ -640,6 +640,15 @@ el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`mari
 publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
 `tests/probar_tablero_sanidad.js`.
 
+**Cómo se trabajó y qué recordar (16/10/2026):**
+- Cada cambio al tablero fue por **PR y merge a `main` cuando el CI está en verde**, a pedido de Pedro; una vez mergeado, la rama de
+  trabajo se reinicia desde `main` (`git checkout -B <rama> origin/main`) antes del siguiente cambio.
+- **Desde el entorno de Claude en la nube no se puede abrir `github.io`** (el proxy contesta 403): el deploy se confirma mirando el
+  run de Actions en `main` (`jsdom` y `publicar` en success), no con `curl` a la URL. La vista real la prueba Pedro en el teléfono.
+- **Cambiar el ícono no actualiza un acceso directo ya instalado** en la pantalla de inicio: hay que borrarlo y volver a agregarlo.
+- Las capturas de la presentación se sacan con Playwright (Chromium ya instalado) y `fetch` interceptado con datos de ejemplo; no
+  hay forma de verlas con datos reales hasta que Pedro abre la página.
+
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
 RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este
