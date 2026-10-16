@@ -635,7 +635,8 @@ los filtra por `cantidad` ≠ 0) y, para la **generación**, `animales_caravana`
 el **último dígito del año de nacimiento** (5 = 2025): se muestra como el año más reciente no futuro con ese dígito. **Solo cuenta animales con
 caravana** (no es todo el stock) y el potrero sale del bastón, no del stock; si no coincide con ninguno del stock queda en un bloque aparte.
 Si el padrón no se puede leer, el stock se ve igual sin generación. Las dos consultas se paginan de a 1000.
-Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
+Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;
+el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
 publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
 `tests/probar_tablero_sanidad.js`.
 

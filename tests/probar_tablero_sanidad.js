@@ -65,6 +65,21 @@ const resp = url => {
 };
 
 (async () => {
+  console.log('Ícono propio (no el de una app)');
+  const crypto = require('crypto'), path = require('path');
+  const carpeta = path.dirname(archivo);
+  const sha = f => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
+  const manifest = JSON.parse(fs.readFileSync(path.join(carpeta, 'manifest.json'), 'utf8'));
+  chequear('el manifest declara íconos y todos existen', manifest.icons.length >= 6 && manifest.icons.every(i => fs.existsSync(path.join(carpeta, i.src))));
+  const ajenas = fs.readdirSync(path.join(carpeta, '..')).filter(d => /^(la-vuelta|maria-laura|pone-chico)/.test(d));
+  const repetidos = [];
+  for(const n of [48, 72, 96, 144, 192, 512]){
+    const mio = sha(path.join(carpeta, 'icon-' + n + 'x' + n + '.png'));
+    for(const d of ajenas){ const f = path.join(carpeta, '..', d, 'icon-' + n + 'x' + n + '.png'); if(fs.existsSync(f) && sha(f) === mio) repetidos.push(d + '/' + n); }
+  }
+  chequear('ningún ícono es igual al de una app', repetidos.length === 0, repetidos.join(', '));
+  chequear('ícono para iPhone declarado', /rel="apple-touch-icon"/.test(html));
+
   console.log('Próximos y últimos');
   const a = await abrir(resp);
   const prox = a.doc.getElementById('vista-prox').innerHTML;
