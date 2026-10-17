@@ -114,7 +114,7 @@ Fase 3, paso 4 (11/10/2026).
 
 ### Release 2, el cierre: cuándo correrlo
 
-**No correr `fase4_cierre.sql` hasta que se cumplan las dos cosas:**
+**No correr `fase4_cierre.sql` hasta que se cumplan las tres cosas:**
 
 1. la segunda consulta de arriba devuelve **0 filas** (todos los equipos activos ya mandan la clave);
 2. **los scripts de la PC que usan la llave pública ya usan la clave privada**
@@ -123,6 +123,12 @@ Fase 3, paso 4 (11/10/2026).
    El informe de nacimientos (`enviar_informe_nacimientos.py`, abre la app con Playwright) necesita
    además la clave del campo en el `localStorage` de su navegador (`clave_campo_la_vuelta`).
    El keep-alive de GitHub sigue andando: contesta 200 con lista vacía.
+3. **el Tablero de Sanidad (`tablero-sanidad/`, 16/10/2026) tiene la clave del campo.** Lee con la llave pública
+   `sanidad_proximos`, `sanidad_ultimos`, `stock_potreros`, `animales_caravana` y `sanidad_carga*`; el cierre deja
+   `sanidad_ultimos` y `sanidad_proximos` sin política para `anon` ("ninguna app las lee" ya no es cierto) y pide la
+   clave en las demás, así que **sin este paso el tablero queda sin datos**. Hay que decidir cómo se leen
+   `sanidad_ultimos`/`sanidad_proximos` con clave (política por establecimiento, como `animales_caravana`) y agregarle
+   la ventana de clave; el aviso rojo del tablero ("la PC no publica hace más de 6 h") no distingue clave mala de falta de datos.
 
 Después: correr el SQL (guarda las políticas de antes en `auditoria_politicas_antes_fase4`),
 `python scripts/seguridad/verificar_fase4.py --cierre` (sin clave todo cerrado, con la clave anda),

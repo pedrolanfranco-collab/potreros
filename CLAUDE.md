@@ -612,6 +612,52 @@ apenas existan las columnas (`supabase_rodeo_nota.sql`, que corre Pedro **antes*
 de publicar: sin las columnas la PC publica sin esos campos y la ficha queda
 como estaba). Sin dato la fila no aparece. Test: `tests/probar_ficha_rodeo_nota.js`.
 
+### Datos faltantes (13/10/2026, a pedido de Pedro, solo PC de La Vuelta, `CONFIG.datosFaltantes`)
+
+Una lectura del bastón **sin categoría** ya no tranca su tratamiento: `sanidad_puente.py` (carpeta del
+lector XRS2) lo manda a Sanidad con la categoría de la **ficha** del animal (o "Sin categoría" si la ficha
+tampoco la sabe; una de ficha sin confirmar, como Vaquillona, sigue sin pasar). Rige desde el 13/10/2026
+(lo anterior ya se avisó para cargarlo a mano). `publicar_animales.py` publica en
+`animales_caravana.faltantes` (jsonb, `supabase_faltantes.sql`, **correrlo antes**) la lista de esas
+lecturas con lo que pasó, y la PC la muestra en Herramientas › Consultar › "⚠ Datos faltantes (N)"
+(últimos 60 días, CSV). La app solo lee. Test: `tests/probar_datos_faltantes.js`.
+
+### Tablero de Sanidad (`tablero-sanidad/`, 16/10/2026, a pedido de Pedro)
+
+Página suelta de solo lectura para ver en el teléfono, sin abrir la app, los **próximos** y los **últimos**
+tratamientos (`pedrolanfranco-collab.github.io/potreros/tablero-sanidad/`). **No es una app generada**: no pasa por
+`template/generar.js`, no tiene `sw.js` (para no servir datos viejos) ni librerías; es un `index.html` a mano.
+Lee con `fetch` `sanidad_proximos` y `sanidad_ultimos` (las publica la PC con `actualizar_sanidad_supabase.py`;
+`anon` solo tiene SELECT), por establecimiento (La Vuelta / María Laura; Pone Chico no tiene Excel que las llene, así que
+sus pestañas de Sanidad salen vacías).
+**Pestaña Stock (16/10/2026):** lee `stock_potreros` (animales, UG, categorías y dueño/firma por potrero, con totales arriba;
+los filtra por `cantidad` ≠ 0) y, para la **generación**, `animales_caravana` (`potrero`, `gen`, `estado_vida`; solo los ACTIVO). `gen` es
+el **último dígito del año de nacimiento** (5 = 2025): se muestra como el año más reciente no futuro con ese dígito, junto con el dígito ("2025 (gen 5)"; a pedido de Pedro, que descarta animales de más de 10 años). **Solo cuenta animales con
+caravana** (no es todo el stock) y el potrero sale del bastón, no del stock; si no coincide con ninguno del stock queda en un bloque aparte.
+Si el padrón no se puede leer, el stock se ve igual sin generación. Las dos consultas se paginan de a 1000.
+**Generación en Últimos y Próximos (16/10/2026, a pedido de Pedro):** `sanidad_ultimos` y `sanidad_proximos` (las publica la PC desde el Excel)
+**no traen `gen`**. En **Últimos** se cruza con la carga (`sanidad_carga` en La Vuelta, `sanidad_carga_maria_laura`/`_pone_chico` en los otros; solo filas con
+`gen`) por fecha + categoría + potrero + cantidad, y se muestra "Generación 2025 (gen 5)" (puede haber más de una si coinciden varias cargas). Es una
+aproximación: solo aparece donde alguien cargó el campo `gen` (opcional) y los cuatro datos coinciden. **Próximos no tiene forma de cruzar** (no trae
+potrero ni fecha de carga): muestra `gen` solo si la tabla algún día lo publica, y **además un bloque "Generaciones con caravana"**: las generaciones de los
+animales con caravana activos de esa categoría (`animales_caravana.categoria`/`gen`), con su cantidad. Es lo que hay en la categoría, **no** la generación a la que se le
+aplicó el tratamiento. Las categorías se comparan con `catBase()` (sin tildes ni mayúsculas, sin edades "2-3" y en singular: "Novillos" = "Novillo 2-3"); si los
+nombres del padrón difieren más que eso, la tarjeta sale sin bloque. Si la lectura de la carga falla, Últimos sale igual sin generación.
+Para tenerlo en las dos pestañas de verdad, la PC tendría que publicar `gen` (columna nueva en las dos tablas + `actualizar_sanidad_supabase.py`, que vive en OneDrive).
+Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;
+el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
+publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
+`tests/probar_tablero_sanidad.js`.
+
+**Cómo se trabajó y qué recordar (16/10/2026):**
+- Cada cambio al tablero fue por **PR y merge a `main` cuando el CI está en verde**, a pedido de Pedro; una vez mergeado, la rama de
+  trabajo se reinicia desde `main` (`git checkout -B <rama> origin/main`) antes del siguiente cambio.
+- **Desde el entorno de Claude en la nube no se puede abrir `github.io`** (el proxy contesta 403): el deploy se confirma mirando el
+  run de Actions en `main` (`jsdom` y `publicar` en success), no con `curl` a la URL. La vista real la prueba Pedro en el teléfono.
+- **Cambiar el ícono no actualiza un acceso directo ya instalado** en la pantalla de inicio: hay que borrarlo y volver a agregarlo.
+- Las capturas de la presentación se sacan con Playwright (Chromium ya instalado) y `fetch` interceptado con datos de ejemplo; no
+  hay forma de verlas con datos reales hasta que Pedro abre la página.
+
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
 RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este

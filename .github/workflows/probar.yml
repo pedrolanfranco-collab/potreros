@@ -146,6 +146,9 @@ jobs:
       - name: "Ficha de caravana -- rodeo y nota de la ultima lectura, con su fecha; sin dato o sin las columnas no muestra nada; texto de afuera escapado"
         run: node tests/probar_ficha_rodeo_nota.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-movil/index.html
 
+      - name: "Datos faltantes (PC de La Vuelta) -- lecturas del baston sin categoria y que paso con Sanidad; 60 dias; texto de afuera escapado; sin la columna no se rompe"
+        run: node tests/probar_datos_faltantes.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html pone-chico-pc/index.html
+
       - name: "Pesadas (solo La Vuelta) -- historial en la ficha, resumen por lote de la sesion del baston, proporcion contra el stock"
         run: node tests/probar_pesadas.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-movil/index.html pone-chico-movil/index.html
 
@@ -163,6 +166,9 @@ jobs:
 
       - name: "Historiales ocultos detras de un boton en todas las ventanas (11/10/2026) -- lluvias, eventos, abortos, senaladas, campo ajeno, traslados, guias, Sanidad, pesadas"
         run: node tests/probar_historiales_ocultos.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
+      - name: Tablero de Sanidad (solo lectura, tablero-sanidad/)
+        run: node tests/probar_tablero_sanidad.js tablero-sanidad/index.html
 
       - name: "UG: las crias de la temporada no cuentan hasta que se destetan (11/10/2026) -- Terneros desde marzo, Corderos/as desde enero"
         run: node tests/probar_ug_temporada.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html
