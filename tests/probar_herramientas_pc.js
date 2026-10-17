@@ -108,8 +108,10 @@ async function probarPc(archivo){
   chequear('5 botones de grupo en la vista principal', grupos.length === 5, grupos.length);
   chequear('ningún botón de sub-menú está a la vista de entrada',
     Object.values(SUBMENUS).flat().every(id => !visible(doc.getElementById(id))));
-  chequear('los botones directos siguen a la vista', DIRECTOS.every(id => doc.getElementById(id) && visible(doc.getElementById(id))),
-    DIRECTOS.filter(id => !doc.getElementById(id) || !visible(doc.getElementById(id))).join(','));
+  // Pone Chico no usa clave del campo (17/10/2026): su botón está oculto a propósito
+  const directos = /pone-chico/.test(archivo) ? DIRECTOS.filter(id => id !== 'btn-clave-campo') : DIRECTOS;
+  chequear('los botones directos siguen a la vista', directos.every(id => doc.getElementById(id) && visible(doc.getElementById(id))),
+    directos.filter(id => !doc.getElementById(id) || !visible(doc.getElementById(id))).join(','));
   chequear('"Restablecer" va aparte, ocupando las dos columnas', doc.getElementById('btn-restablecer').classList.contains('hg-ancho'));
 
   // cada sub-menú: abre con sus botones originales y "Volver" regresa sin cerrar la caja

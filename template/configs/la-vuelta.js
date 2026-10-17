@@ -2416,6 +2416,7 @@ module.exports = {
   "tablaSanidad": "sanidad_carga",
   "stockSupabase": true,
   "colaOrdenada": true,
+  "claveCampo": true,
   "dicoseHabilitado": true,
   "trasladoHabilitado": true,
   "guiasHabilitado": true,

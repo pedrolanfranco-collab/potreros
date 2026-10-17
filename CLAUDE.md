@@ -796,6 +796,10 @@ siguen abiertas.
 - *Orden obligatorio*: **el SQL antes que el código desplegado** (una app nueva que llama a `verificar_clave` antes de
   que exista la función solo muestra "no se pudo comprobar", pero no hay forma de cargar la clave); después cargar las
   3 claves, correr `verificar_fase4.py`, publicar, y que cada equipo la cargue una vez.
+- *Pone Chico NO usa clave (17/10/2026, a pedido de Pedro)*: `CONFIG.claveCampo` es `true` en La Vuelta y María Laura y
+  `false` en Pone Chico. Con `false` la app no muestra la ventana, el aviso del pie ni el botón, no manda `x-clave-campo` y
+  no llama a `verificar_clave` (aunque haya una clave vieja guardada). **Para el cierre**: sus políticas deben dejar Pone Chico
+  abierto a propósito (o se queda sin sincronizar); ver `scripts/seguridad/README.md`. Test: `probar_clave_campo.js`.
 - *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, escritos y revisados, **no corridos**): las políticas
   pasan a exigir `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los
   equipos activos con `con_clave = true` y los scripts de la PC que usan la llave pública

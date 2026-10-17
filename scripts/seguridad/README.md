@@ -116,6 +116,13 @@ Fase 3, paso 4 (11/10/2026).
 
 **No correr `fase4_cierre.sql` hasta que se cumplan las tres cosas:**
 
+> **Pone Chico no usa clave (17/10/2026, a pedido de Pedro).** `CONFIG.claveCampo` es `false` en sus 3 apps. Con las políticas
+> del cierre tal como están escritas (`'pone_chico' = any(establecimientos_con_clave())`), Pone Chico quedaría **sin poder leer ni
+> escribir**. Antes del cierre hay que cambiar esas políticas para que Pone Chico siga abierto (o ponerle clave de nuevo con
+> `claveCampo: true`). Mientras tanto, su fila de `private.claves_campo` no hace falta: se saca con
+> `delete from private.claves_campo where establecimiento = 'pone_chico';`.
+
+
 1. la segunda consulta de arriba devuelve **0 filas** (todos los equipos activos ya mandan la clave);
 2. **los scripts de la PC que usan la llave pública ya usan la clave privada**
    (`SUPABASE_SECRET_KEY`): `pasar_traslados_a_excel.py`, `sanidad_puente.py`,

@@ -28,6 +28,7 @@ module.exports = {
   "tablaSanidad": "sanidad_carga_pone_chico",
   "stockSupabase": true,
   "colaOrdenada": true,
+  "claveCampo": false,
   "caravanasHabilitado": false,
   "fixFechaIngreso": null,
   "mapaFallback": [

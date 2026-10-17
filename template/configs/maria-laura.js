@@ -263,6 +263,7 @@ module.exports = {
   "tablaSanidad": "sanidad_carga_maria_laura",
   "stockSupabase": true,
   "colaOrdenada": true,
+  "claveCampo": true,
   "caravanasHabilitado": true,
   "fixFechaIngreso": {
     "potreros": [

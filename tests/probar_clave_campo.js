@@ -18,6 +18,8 @@
  *  - la anulación de un traslado (anular_traslado, en el stream del destino) lleva `origenEstablecimiento`;
  *  - el cartel de movimientos trabados dice "revisá la clave del campo" ante un 42501 / 401 / 403 y no ante otros.
  *
+ * Pone Chico no usa clave (17/10/2026): sus 3 variantes se prueban aparte, con probarVarianteSinClave.
+ *
  * Las claves de acá son de JUGUETE: ninguna es la de un campo real.
  *
  * Uso: node probar_clave_campo.js la-vuelta-pc/index.html [...]
@@ -142,7 +144,32 @@ async function levantar(archivo, op){
   return api;
 }
 
+/* 17/10/2026, a pedido de Pedro: Pone Chico NO usa clave del campo (CONFIG.claveCampo = false). Ni ventana, ni
+   aviso, ni botón, ni encabezado, ni verificación, aunque haya una clave vieja guardada en el equipo. */
+async function probarVarianteSinClave(archivo){
+  console.log('\n=== ' + archivo + ' (sin clave del campo) ===');
+  for(const guardada of [null, 'clavevieja123']){
+    const t = await levantar(archivo, { clave: guardada });
+    const rotulo = guardada ? ' (con una clave vieja guardada)' : '';
+    if(t.errores.length){ chequear('carga sin errores' + rotulo, false, t.errores[0]); return; }
+    chequear('carga sin errores' + rotulo, true);
+    await esperar(120);
+    chequear('la ventana no se abre sola' + rotulo, !t.modal() || !t.abierta());
+    chequear('no hay aviso en el pie' + rotulo, !t.aviso());
+    const btn = t.doc.getElementById('btn-clave-campo');
+    chequear('el botón "Clave del campo" está oculto' + rotulo, !btn || btn.style.display === 'none');
+    if(btn){ t.click('btn-clave-campo'); chequear('tocar el botón no abre la ventana' + rotulo, !t.abierta()); }
+    t.ev('clienteSupabase()');
+    const creaciones = t.srv.creaciones;
+    chequear('el cliente de Supabase no manda x-clave-campo' + rotulo,
+      creaciones.length > 0 && creaciones.every(c => !(c.opts && c.opts.global && c.opts.global.headers && c.opts.global.headers['x-clave-campo'])),
+      JSON.stringify(creaciones.map(c => c.opts && c.opts.global && c.opts.global.headers)));
+    chequear('no se llamó a verificar_clave' + rotulo, t.srv.rpc.length === 0, JSON.stringify(t.srv.rpc));
+  }
+}
+
 async function probarVariante(archivo){
+  if(/pone-chico/.test(archivo)) return probarVarianteSinClave(archivo);
   console.log('\n=== ' + archivo + ' ===');
   const hayRestablecer = !/movil-campo/.test(archivo);
   const hayBackup = !/movil-campo/.test(archivo);

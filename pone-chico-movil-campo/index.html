@@ -760,7 +760,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.09","versionMovil":"2.07","simpleHabilitado":true,"versionMovilSimple":"1.50","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.09","versionMovil":"2.07","simpleHabilitado":true,"versionMovilSimple":"1.50","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1285,9 +1285,13 @@ function idDispositivo(){
    sin espacios, de 8 a 64 caracteres (se guarda en minúsculas y sin espacios en los extremos; el servidor
    hace lo mismo). Todo lo que usa el cliente tolera uno sin `.rpc` (los falsos de las pruebas). */
 const CLAVE_CAMPO_KEY = 'clave_campo_' + ESTABLECIMIENTO;
+/* 17/10/2026, a pedido de Pedro: la clave del campo rige solo donde CONFIG.claveCampo es true (La Vuelta y María
+   Laura). Pone Chico NO la usa: ni ventana, ni aviso, ni botón, ni encabezado `x-clave-campo`. */
+const CLAVE_CAMPO_ACTIVA = !!CONFIG.claveCampo;
 const CLAVE_CAMPO_RE = /^[a-z0-9]{8,64}$/;
 function normalizarClaveCampo(txt){ return String(txt == null ? '' : txt).trim().toLowerCase(); }
 function claveCampoGuardada(){
+  if(!CLAVE_CAMPO_ACTIVA) return '';
   try{
     const c = normalizarClaveCampo(localStorage.getItem(CLAVE_CAMPO_KEY));
     return CLAVE_CAMPO_RE.test(c) ? c : '';
@@ -1327,6 +1331,7 @@ async function verificarClaveGuardada(){
 }
 /* Aviso en el pie, debajo del estado de sincronización. Con la clave bien cargada no se muestra nada. */
 function actualizarAvisoClave(){
+  if(!CLAVE_CAMPO_ACTIVA){ const viejo = document.getElementById('aviso-clave'); if(viejo) viejo.remove(); return; }
   const cont = document.getElementById('estado-compacto');
   if(!cont) return;
   let el = document.getElementById('aviso-clave');
@@ -6351,6 +6356,7 @@ function mostrarErrorClave(texto){
   e.style.display = texto ? 'block' : 'none';
 }
 function abrirModalClaveCampo(){
+  if(!CLAVE_CAMPO_ACTIVA) return;
   const modal = document.getElementById('modal-clave-campo');
   if(!modal) return;
   const guardada = claveCampoGuardada();
@@ -6415,6 +6421,7 @@ document.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape' && m && m.style.display !== 'none') document.getElementById('clave-mas-tarde').click();
 });
 document.getElementById('btn-clave-campo').addEventListener('click', abrirModalClaveCampo);
+if(!CLAVE_CAMPO_ACTIVA) document.getElementById('btn-clave-campo').style.display = 'none';
 // Otra página de este mismo campo (la móvil completa y Campo comparten almacenamiento) guardó o cambió la clave
 window.addEventListener('storage', (e)=>{
   if(e.key !== CLAVE_CAMPO_KEY) return;
@@ -6432,6 +6439,7 @@ function hayOtraVentanaAbierta(){
     .some(m => m.id !== 'modal-clave-campo' && getComputedStyle(m).display !== 'none');
 }
 function programarAperturaClaveCampo(intento){
+  if(!CLAVE_CAMPO_ACTIVA) return;
   if(_claveAbiertaSola || claveCampoGuardada() || navigator.webdriver) return;
   setTimeout(()=>{
     if(_claveAbiertaSola || claveCampoGuardada()) return;
