@@ -650,9 +650,29 @@ El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Use
 - **Desde la nube no se corre nada de eso**: faltan `xrs2_lecturas.db` y la clave privada, y escribiría en producción. Y **lo que Pedro cambia en su PC no se ve
   hasta que lo sube a GitHub** (el 18/10 su CSV nuevo no estaba en ningún repo): pedir que lo pegue o que haga `git push`.
 - La nube no llega a `*.supabase.co` ni a `*.github.io` (el proxy contesta 403), así que no se pueden leer las tablas reales: los nombres de columnas y de
-  categorías se infieren del código. Apareció un conector Supabase en la sesión (`mcp__Supabase__*`), **sin probar** contra este proyecto; usarlo solo para leer.
+  categorías se infieren del código. **El conector Supabase (`mcp__Supabase__*`, proyecto `skkknfjpwcstefcroqjt`) sí funciona** (18/10/2026): con `execute_sql`
+  se leen las tablas reales. Usarlo **solo para leer** (SELECT); nunca escribir producción desde la nube.
 - Pedro trabaja en PowerShell, pide los comandos en esa sintaxis y confirma cada `git push`/merge; con los PR de este repo dijo "abrilo y hacé merge" una vez que el CI
   está en verde (el merge se hace sobre la cabeza que pasó el CI, no sobre un run viejo: los avisos de `check_suite` pueden ser de un commit anterior).
+
+**Incidente 13→18/10/2026: el Lector no publicaba nada (lo que conviene recordar).**
+- *Síntoma*: desde el 13/10 no llegaba a Supabase ni el padrón ni Sanidad (ni `sanidad_ultimos`); la tarea "Potreros - Vigilar entrada del baston"
+  corría cada 10 min con resultado 0, pero el log decía "la publicacion quedo pendiente" y `falta SUPABASE_SECRET_KEY en ~/.potreros/.env`.
+  La causa: el 13/10 (Fase 4) `sanidad_puente.py` / `publicar_animales.py` pasaron a la clave privada y **nunca se había creado
+  `C:\Users\Pedro\.potreros\.env`**. Un resultado 0 de la tarea no prueba que publique: mirar `vigilar_entrada.log`.
+- *Arreglo*: Pedro creó una clave `sb_secret_…` (Project Settings → API Keys → Secret keys; el panel se colgaba y anduvo con el link directo
+  `supabase.com/dashboard/project/skkknfjpwcstefcroqjt/settings/api-keys`) y la guardó con `Read-Host -AsSecureString` +
+  `[System.Net.NetworkCredential]::new('', $s).Password` (`PtrToStringAuto` falló). **Ojo**: `sbp_…` es un token PERSONAL de la cuenta
+  (Account → Access Tokens), no sirve y es mucho más poderoso; se coló una vez. `_clave_privada()` del Lector solo rechaza `sb_publishable_` y JWT
+  sin `service_role`, así que con un `sbp_` dice "CLAVE OK": validar siempre que empiece con `sb_secret_`. Nunca pedir ni mostrar la clave.
+- *Los archivos "reemplazados" seguían vacíos*: Pedro guardó otra vez los vacíos encima. Se detectó por el **tamaño** (vacíos 2552/6639/8310/1056,
+  completos 2744/7104/8880/1147) y con una consulta a `lecturas` (producto `''`). **Los adjuntos que Claude manda en el chat no llegan a la PC**
+  (Descargas no los tenía): conviene dar un script que complete en el lugar y verifique el resultado por SHA-1 contra lo probado en la nube.
+- *Diagnóstico útil en la PC* (solo lee): `$env:PYTHONPATH=(Get-Location).Path` y un script en `$env:TEMP` que consulta `xrs2_lecturas.db`
+  (`lecturas` por `archivo like '%SesionNNNN%'`, `archivos`, `sanidad_enviada`) y corre `sanidad_puente.enviar(simular=True)`. Un `.py` fuera de la
+  carpeta del Lector no encuentra sus módulos sin `PYTHONPATH`.
+- *Resultado*: 17 registros de EON (sesiones 1153–1156: 32+93+114+13 = 252 animales; potreros 14, 8, 8, 16; dosis 9/5/6/12 cc) y padrón al día.
+  Instructivo para Pedro de dónde va cada archivo: artifact privado `claude.ai/artifact/4Zw6aEbz4rgNR4c3uYFMe6`.
 
 ### Tablero de Sanidad (`tablero-sanidad/`, 16/10/2026, a pedido de Pedro)
 
