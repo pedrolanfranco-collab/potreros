@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f5c63">
+<link rel="icon" href="../tablero-sanidad/icon-96x96.png">
+<title>Completar sanidad</title>
+<!--
+  Completar sanidad del bastón (18/10/2026, a pedido de Pedro). NO es una app generada: archivo suelto, sin librerías.
+
+  Para qué: cuando en la manga se usa el bastón pero no se le cargan PRODUCTO / DOSIS / POTRERO, el CSV que se exporta de la
+  app de Datamars llega al Lector sin sanidad y no se crea ningún tratamiento. Esta página toma ese CSV, deja completar producto,
+  dosis y potrero (una sola vez para todo el lote, o solo para algunas categorías) y devuelve el MISMO archivo con esas columnas
+  llenas: mismo nombre, mismo separador, mismos saltos de línea y las demás celdas idénticas. Ese archivo va a Entrada\ del Lector.
+
+  Por qué antes de Entrada\: el Lector reconoce una sesión por su contenido (fecha, cantidad y caravanas), no por el producto;
+  si el archivo ya entró sin sanidad, una copia completa se descarta como "gemela". Para esas, scripts/sanidad/cargar_sanidad_csv.py.
+
+  No escribe nada en ningún lado. Solo LEE productos_catalogo (con una copia guardada por si no hay señal o falla la lectura).
+  El producto se guarda con el nombre EXACTO del catálogo (así sanidad_puente.py lo toma sin pasar por productos_sanidad.csv) y el
+  potrero sale de la lista de La Vuelta (potrerosGeo de template/configs/la-vuelta.js; la prueba verifica que coincidan).
+-->
+<style>
+:root{
+  --fondo:#f3ecd9; --tarjeta:#fffdf6; --texto:#2a2a22; --suave:#5d5a4a; --borde:#d9cfb2;
+  --acento:#0f5c63; --acento-texto:#ffffff; --verde-claro:#e3ecd6; --verde:#2b3a24;
+  --rojo:#a8321f; --rojo-claro:#f7dcd5; --ocre:#8f5f12; --ocre-claro:#f6e8c4;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --fondo:#171a14; --tarjeta:#21261c; --texto:#ece8d8; --suave:#aaa68f; --borde:#3a4132;
+    --acento:#4fb3bb; --acento-texto:#0b1d1f; --verde-claro:#2b3a24; --verde:#9cc47a;
+    --rojo:#ff9b86; --rojo-claro:#4a231b; --ocre:#e2b24f; --ocre-claro:#46361a; }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--fondo);color:var(--texto);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding:calc(12px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom));max-width:640px;margin-inline:auto}
+h1{font-size:20px;margin:4px 0 4px}
+.ayuda{color:var(--suave);font-size:14px;margin:0 0 12px}
+.card{background:var(--tarjeta);border:2px solid var(--borde);border-radius:12px;padding:12px;margin:12px 0}
+.card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);margin:0 0 8px}
+label{display:block;font-weight:600;font-size:14px;margin:10px 0 4px}
+input,select,button{font:inherit;color:inherit}
+input[type=text],input[type=number],select{width:100%;min-height:48px;padding:10px 12px;border:2px solid var(--borde);border-radius:10px;background:var(--fondo)}
+input[type=file]{width:100%;min-height:48px}
+.fila{display:flex;gap:10px}.fila>div{flex:1}
+.btn{width:100%;min-height:52px;border:0;border-radius:12px;background:var(--acento);color:var(--acento-texto);font-weight:700;margin-top:12px}
+.btn.secundario{background:var(--tarjeta);color:var(--texto);border:2px solid var(--borde)}
+.btn:disabled{opacity:.5}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips span{background:var(--verde-claro);color:var(--verde);border-radius:8px;padding:2px 8px;font-size:14px}
+.cats label{display:flex;align-items:center;gap:8px;font-weight:500;margin:6px 0;min-height:36px}
+.cats input{width:22px;height:22px}
+.aviso{border-radius:10px;padding:10px 12px;margin-top:10px;font-size:14px}
+.aviso.mal{background:var(--rojo-claro);color:var(--rojo);font-weight:600}
+.aviso.ojo{background:var(--ocre-claro);color:var(--ocre)}
+.aviso.ok{background:var(--verde-claro);color:var(--verde);font-weight:600}
+.resumen{font-size:15px}.resumen b{font-size:17px}
+.nota{font-size:12px;color:var(--suave);margin-top:6px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<h1>💉 Completar sanidad del bastón</h1>
+<p class="ayuda">Para las sesiones en las que se trató con el bastón pero no se cargó el producto. Abrí el CSV que exportaste de la
+app de Datamars, completá la sanidad y bajá el archivo: <b>va a la carpeta Entrada</b> del Lector XRS2 (antes de que entre el vacío).
+Solo La Vuelta.</p>
+
+<div class="card">
+  <h2>1 · Archivo del bastón</h2>
+  <input type="file" id="archivo" accept=".csv,text/csv,text/plain">
+  <div id="msg-archivo"></div>
+</div>
+
+<div class="card" id="paso-resumen" hidden>
+  <h2>2 · Qué trae</h2>
+  <div id="resumen" class="resumen"></div>
+  <label>Aplicar a estas categorías</label>
+  <div id="cats" class="cats"></div>
+</div>
+
+<div class="card" id="paso-sanidad" hidden>
+  <h2>3 · Sanidad realizada</h2>
+  <label for="p1">Producto</label>
+  <input type="text" id="p1" list="catalogo" autocomplete="off" placeholder="Elegí del catálogo">
+  <div class="fila">
+    <div><label for="d1">Dosis por animal</label><input type="text" id="d1" inputmode="decimal" placeholder="ml"></div>
+  </div>
+  <label for="p2">Producto 2 (si hubo)</label>
+  <input type="text" id="p2" list="catalogo" autocomplete="off" placeholder="Opcional">
+  <div class="fila">
+    <div><label for="d2">Dosis 2 por animal</label><input type="text" id="d2" inputmode="decimal" placeholder="ml"></div>
+  </div>
+  <label for="pot">Potrero</label>
+  <select id="pot"><option value="">— Elegí el potrero —</option></select>
+  <datalist id="catalogo"></datalist>
+  <p class="nota" id="nota-catalogo"></p>
+  <button class="btn" id="completar">Completar el archivo</button>
+  <div id="msg-sanidad"></div>
+</div>
+
+<div class="card" id="paso-salida" hidden>
+  <h2>4 · Archivo listo</h2>
+  <div id="msg-salida" class="aviso ok"></div>
+  <button class="btn" id="descargar">⬇ Descargar el CSV completo</button>
+  <button class="btn secundario" id="compartir" hidden>Compartir (OneDrive, etc.)</button>
+  <p class="nota">Guardalo con el <b>mismo nombre</b> en <code>Lector XRS2\2026-2027 Ejercicio Siguiente\Entrada\</code>.
+  No pongas también el archivo vacío: el Lector se queda con uno solo por sesión.</p>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
+/* Los 31 potreros de La Vuelta (potrerosGeo de template/configs/la-vuelta.js): son contra los que valida sanidad_puente.py.
+   tests/probar_completar_sanidad.js falla si dejan de coincidir. */
+const POTREROS = ["CERRO","14","EMBARCADERO","CERRITO","17","15","18","BOMBA","23","7","8","9","OMBU","10","PAST","26","21","TRI",
+  "19","13","12","CALLE","TAJAMAR","16","20","11","6","1","2","3","5"];
+/* Copia del catálogo (productos_catalogo, 18/10/2026): se usa si no hay señal o la lectura falla. */
+const CATALOGO_GUARDADO = ["Aftosa","Altis","Aspersin","Bonlam","Bopriva","Bovisan lepto 8","Bovisan Total Se","Carbazol","Clostrisan",
+  "Clostrisan 9+T","Combo","CreBio 7","Cydectin","Di-Oxi-Forte","Ectima","Ectoraz","EON","Epmox","Eprinoline","Exzolt","Forcer","Fusion",
+  "Galgosantel","Gestovac Fco","Hemovac","Hemovacuna MGAP","Iodacalcio","Ivermectina R","Ivumisol","Level","MEXIVER","Mexiver Triple",
+  "Multifort Plus","Nitro","Rafoxen","Raider Plus","Reproductiva","Ricoverm","Ripercol","Saguacid 15 %","Selfos","Shotapen LA","Tacplus",
+  "Terramicina LA","Terramicina Solución","Tick off","Tickxan plus","Ticxan","Vanguard 20%","Zeppelin"];
+const CLAVE_CACHE = 'completar_sanidad_catalogo_v1';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9%+]/g, '');
+const normCol = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/* ---------------- CSV: leer sin perder el formato ----------------
+   Cada celda guarda su texto ORIGINAL (con comillas si las tenía): al escribir, las que no se tocan salen idénticas. */
+function leerCsv(texto){
+  const bom = texto.charCodeAt(0) === 0xFEFF ? '﻿' : '';
+  if(bom) texto = texto.slice(1);
+  const eol = texto.indexOf('\r\n') >= 0 ? '\r\n' : (texto.indexOf('\r') >= 0 ? '\r' : '\n');
+  const primera = texto.split(/\r\n|\r|\n/)[0] || '';
+  const delim = [',', ';', '\t'].reduce((a, b) => primera.split(b).length > primera.split(a).length ? b : a);
+  const filas = []; let fila = [], crudo = '', valor = '', comillas = false, i = 0;
+  const cerrarCelda = () => { fila.push({ crudo, valor }); crudo = ''; valor = ''; };
+  while(i < texto.length){
+    const c = texto[i];
+    if(comillas){
+      if(c === '"' && texto[i + 1] === '"'){ crudo += '""'; valor += '"'; i += 2; continue; }
+      if(c === '"'){ comillas = false; crudo += c; i++; continue; }
+      crudo += c; valor += c; i++; continue;
+    }
+    if(c === '"'){ comillas = true; crudo += c; i++; continue; }
+    if(c === delim){ cerrarCelda(); i++; continue; }
+    if(c === '\r' || c === '\n'){
+      cerrarCelda(); filas.push(fila); fila = [];
+      i += (c === '\r' && texto[i + 1] === '\n') ? 2 : 1; continue;
+    }
+    crudo += c; valor += c; i++;
+  }
+  const finalConSalto = /[\r\n]$/.test(texto);
+  if(!finalConSalto && (crudo !== '' || fila.length)){ cerrarCelda(); filas.push(fila); }
+  return { bom, eol, delim, finalConSalto, encabezado: filas[0] || [], filas: filas.slice(1).filter(f => f.some(c => c.valor.trim() !== '')) };
+}
+function celdaCruda(valor, delim){
+  return /["\r\n]/.test(valor) || valor.indexOf(delim) >= 0 ? '"' + valor.replace(/"/g, '""') + '"' : valor;
+}
+function escribirCsv(d){
+  const linea = f => f.map(c => c.crudo).join(d.delim);
+  return d.bom + [linea(d.encabezado)].concat(d.filas.map(linea)).join(d.eol) + (d.finalConSalto ? d.eol : '');
+}
+/* índice de la columna (por nombre normalizado, como el Lector); -1 si no está */
+function columna(d, ...nombres){
+  const buscados = nombres.map(normCol);
+  return d.encabezado.findIndex(c => buscados.includes(normCol(c.valor)));
+}
+/* agrega la columna al final si falta (encabezado + celda vacía en cada fila) y devuelve su índice */
+function asegurarColumna(d, nombre, ...alias){
+  let i = columna(d, nombre, ...alias);
+  if(i >= 0) return i;
+  d.encabezado.push({ crudo: celdaCruda(nombre, d.delim), valor: nombre });
+  d.filas.forEach(f => { while(f.length < d.encabezado.length - 1) f.push({ crudo: '', valor: '' }); f.push({ crudo: '', valor: '' }); });
+  return d.encabezado.length - 1;
+}
+function poner(d, fila, idx, valor){
+  while(fila.length <= idx) fila.push({ crudo: '', valor: '' });
+  fila[idx] = { crudo: celdaCruda(valor, d.delim), valor };
+}
+
+/* ---------------- catálogo ---------------- */
+let catalogo = CATALOGO_GUARDADO.slice(), origenCatalogo = 'copia guardada (18/10/2026)';
+function pintarCatalogo(){
+  $('catalogo').innerHTML = catalogo.map(p => '<option value="' + esc(p) + '">').join('');
+  $('nota-catalogo').textContent = 'Catálogo: ' + catalogo.length + ' productos (' + origenCatalogo + ').';
+}
+async function cargarCatalogo(){
+  try{
+    const c = JSON.parse(localStorage.getItem(CLAVE_CACHE) || 'null');
+    if(c && Array.isArray(c.lista) && c.lista.length){ catalogo = c.lista; origenCatalogo = 'guardado ' + (c.fecha || ''); }
+  }catch(e){}
+  pintarCatalogo();
+  try{
+    const r = await fetch(SUPABASE_URL + '/rest/v1/productos_catalogo?select=producto&order=producto&limit=1000',
+                          { headers: { apikey: SUPABASE_ANON_KEY }, cache: 'no-store' });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const filas = await r.json();
+    const lista = (Array.isArray(filas) ? filas : []).map(f => f && f.producto).filter(p => typeof p === 'string' && p.trim());
+    if(lista.length){
+      catalogo = lista; origenCatalogo = 'al día';
+      try{ localStorage.setItem(CLAVE_CACHE, JSON.stringify({ lista, fecha: new Date().toLocaleDateString('es-UY') })); }catch(e){}
+      pintarCatalogo();
+    }
+  }catch(e){ /* sin señal: queda la copia */ }
+}
+function productoDelCatalogo(txt){
+  const k = norm(txt);
+  return k ? (catalogo.find(p => norm(p) === k) || null) : null;
+}
+
+/* ---------------- flujo ---------------- */
+let datos = null, nombreArchivo = '', codificacion = 'utf-8', salida = null;
+window.estadoCompletar = () => ({ datos, nombreArchivo, codificacion, salida, catalogo, origenCatalogo });
+
+function aviso(id, clase, html){ $(id).innerHTML = html ? '<div class="aviso ' + clase + '">' + html + '</div>' : ''; }
+
+async function leerArchivo(file){
+  const buf = file.arrayBuffer ? await file.arrayBuffer()
+    : await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsArrayBuffer(file); });
+  let texto = new TextDecoder('utf-8').decode(buf);
+  codificacion = 'utf-8';
+  if(texto.indexOf('�') >= 0){ texto = new TextDecoder('windows-1252').decode(buf); codificacion = 'windows-1252'; }
+  return texto;
+}
+
+async function alElegirArchivo(){
+  const file = $('archivo').files && $('archivo').files[0];
+  salida = null; $('paso-salida').hidden = true; aviso('msg-sanidad');
+  if(!file) return;
+  nombreArchivo = file.name;
+  let d;
+  try{ d = leerCsv(await leerArchivo(file)); }catch(e){ aviso('msg-archivo', 'mal', 'No se pudo leer el archivo.'); return; }
+  if(columna(d, 'EID', 'IDE', 'VID', 'IDV') < 0){
+    datos = null; $('paso-resumen').hidden = $('paso-sanidad').hidden = true;
+    aviso('msg-archivo', 'mal', 'Este archivo no parece un export del bastón (no tiene columnas EID / VID). ' +
+      'Si es una lista de tratamientos, va por <code>cargar_sanidad_csv.py</code>.');
+    return;
+  }
+  if(!d.filas.length){ datos = null; aviso('msg-archivo', 'mal', 'El archivo no tiene animales.'); return; }
+  datos = d;
+  aviso('msg-archivo');
+  pintarResumen();
+  $('paso-resumen').hidden = $('paso-sanidad').hidden = false;
+}
+
+function valores(d, idx){ return d.filas.map(f => (idx >= 0 && f[idx] ? f[idx].valor : '').trim()); }
+function contar(lista){ const m = {}; lista.forEach(v => { const k = v || '(vacío)'; m[k] = (m[k] || 0) + 1; }); return m; }
+function chips(m){ return '<div class="chips">' + Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, v]) => '<span>' + esc(k) + ' · <b>' + v + '</b></span>').join('') + '</div>'; }
+
+function pintarResumen(){
+  const d = datos;
+  const iFecha = columna(d, 'DATE', 'FECHA'), iCat = columna(d, 'CATEGORIA'), iProp = columna(d, 'PROPIETARIO');
+  const iProd = columna(d, 'PRODUCTO', 'PRODUCTO1', 'PROD1');
+  const fechas = Object.keys(contar(valores(d, iFecha).filter(Boolean)));
+  const conProducto = valores(d, iProd).filter(Boolean).length;
+  let h = '<b>' + d.filas.length + '</b> animales · ' + esc(fechas.join(', ') || 'sin fecha') +
+    '<div class="nota">' + esc(nombreArchivo) + '</div>';
+  h += '<label>Propietario</label>' + chips(contar(valores(d, iProp)));
+  if(conProducto) h += '<div class="aviso ojo">' + conProducto + ' fila(s) ya traen producto: esas no se tocan.</div>';
+  $('resumen').innerHTML = h;
+  const cats = contar(valores(d, iCat));
+  $('cats').innerHTML = Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+    '<label><input type="checkbox" checked value="' + esc(k) + '"> ' + esc(k) + ' <span class="nota">(' + v + ')</span></label>').join('');
+}
+
+function categoriasElegidas(){ return new Set([...$('cats').querySelectorAll('input:checked')].map(i => i.value)); }
+
+function completar(){
+  aviso('msg-sanidad'); salida = null; $('paso-salida').hidden = true;
+  if(!datos) return;
+  const errores = [];
+  const p1 = productoDelCatalogo($('p1').value), p2txt = $('p2').value.trim(), p2 = p2txt ? productoDelCatalogo(p2txt) : null;
+  // la dosis se acepta con coma o punto; un texto que no sea solo un número ("2 ml", "2,5,1") no vale
+  const numeroDe = t => /^\d+([.,]\d+)?$/.test(t) ? parseFloat(t.replace(',', '.')) : NaN;
+  const d1 = numeroDe(String($('d1').value).trim()), d2txt = String($('d2').value).trim();
+  const d2 = d2txt ? numeroDe(d2txt) : null, pot = $('pot').value;
+  if(!$('p1').value.trim()) errores.push('Falta el producto.');
+  else if(!p1) errores.push('"' + esc($('p1').value) + '" no está en el catálogo: elegilo de la lista (un nombre mal escrito traba el tratamiento).');
+  if(!(d1 > 0)) errores.push('Falta la dosis (un número mayor que 0).');
+  if(p2txt && !p2) errores.push('"' + esc(p2txt) + '" (producto 2) no está en el catálogo.');
+  if(p2txt && !(d2 > 0)) errores.push('Falta la dosis del producto 2.');
+  if(!p2txt && d2txt) errores.push('Hay dosis 2 sin producto 2.');
+  if(!POTREROS.includes(pot)) errores.push('Elegí el potrero.');
+  const elegidas = categoriasElegidas();
+  if(!elegidas.size) errores.push('Elegí al menos una categoría.');
+  if(errores.length){ aviso('msg-sanidad', 'mal', errores.join('<br>')); return; }
+
+  // se trabaja sobre una copia: si algo falla, el archivo leído queda como estaba
+  const d = JSON.parse(JSON.stringify(datos));
+  const iCat = columna(d, 'CATEGORIA');
+  const iProd = asegurarColumna(d, 'PRODUCTO', 'PRODUCTO1', 'PROD1');
+  const iDos = asegurarColumna(d, 'DOSIS', 'DOSIS1');
+  const iPot = asegurarColumna(d, 'POTRERO');
+  const iProd2 = p2 ? asegurarColumna(d, 'PRODUCTO2', 'PROD2') : -1;
+  const iDos2 = p2 ? asegurarColumna(d, 'DOSIS 2', 'DOSIS2') : -1;
+  const numero = n => String(n);   // con punto decimal, como lo escribe el bastón
+  let cambiadas = 0, yaTenian = 0, fuera = 0;
+  d.filas.forEach(f => {
+    const cat = (iCat >= 0 && f[iCat] ? f[iCat].valor : '').trim() || '(vacío)';
+    if(!elegidas.has(cat)){ fuera++; return; }
+    if(f[iProd] && f[iProd].valor.trim()){ yaTenian++; return; }
+    poner(d, f, iProd, p1); poner(d, f, iDos, numero(d1)); poner(d, f, iPot, pot);
+    if(p2){ poner(d, f, iProd2, p2); poner(d, f, iDos2, numero(d2)); }
+    cambiadas++;
+  });
+  if(!cambiadas){ aviso('msg-sanidad', 'mal', 'No quedó ninguna fila para completar (todas ya tenían producto o quedaron fuera por categoría).'); return; }
+  salida = { nombre: nombreArchivo, texto: escribirCsv(d), codificacion, cambiadas, yaTenian, fuera };
+  $('msg-salida').innerHTML = '✔ ' + cambiadas + ' animal(es) con <b>' + esc(p1) + ' ' + esc(numero(d1)) + ' ml</b>' +
+    (p2 ? ' + <b>' + esc(p2) + ' ' + esc(numero(d2)) + ' ml</b>' : '') + ' en el potrero <b>' + esc(pot) + '</b>.' +
+    (yaTenian ? '<br>' + yaTenian + ' ya tenían producto (sin tocar).' : '') + (fuera ? '<br>' + fuera + ' quedaron fuera por categoría.' : '');
+  $('paso-salida').hidden = false;
+  $('compartir').hidden = !(navigator.canShare && navigator.canShare({ files: [archivoSalida()] }));
+  $('paso-salida').scrollIntoView && $('paso-salida').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* bytes de salida en la misma codificación que el original (windows-1252 si así vino) */
+const CP1252 = {0x20AC:0x80,0x201A:0x82,0x0192:0x83,0x201E:0x84,0x2026:0x85,0x2020:0x86,0x2021:0x87,0x02C6:0x88,0x2030:0x89,0x0160:0x8A,
+  0x2039:0x8B,0x0152:0x8C,0x017D:0x8E,0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,0x02DC:0x98,
+  0x2122:0x99,0x0161:0x9A,0x203A:0x9B,0x0153:0x9C,0x017E:0x9E,0x0178:0x9F};
+function bytesSalida(){
+  if(salida.codificacion !== 'windows-1252') return new TextEncoder().encode(salida.texto);
+  const out = new Uint8Array(salida.texto.length);
+  for(let i = 0; i < salida.texto.length; i++){
+    const c = salida.texto.charCodeAt(i);
+    out[i] = c < 0x80 || (c >= 0xA0 && c <= 0xFF) ? c : (CP1252[c] || 0x3F);
+  }
+  return out;
+}
+function archivoSalida(){ return new File([bytesSalida()], salida.nombre, { type: 'text/csv' }); }
+
+function descargar(){
+  if(!salida) return;
+  const url = URL.createObjectURL(new Blob([bytesSalida()], { type: 'text/csv' }));
+  const a = document.createElement('a'); a.href = url; a.download = salida.nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+async function compartir(){
+  if(!salida) return;
+  try{ await navigator.share({ files: [archivoSalida()], title: salida.nombre }); }catch(e){}
+}
+
+$('pot').insertAdjacentHTML('beforeend', POTREROS.slice().sort((a, b) => a.localeCompare(b, 'es', { numeric: true }))
+  .map(p => '<option value="' + esc(p) + '">' + esc(p) + '</option>').join(''));
+$('archivo').addEventListener('change', alElegirArchivo);
+$('completar').addEventListener('click', completar);
+$('descargar').addEventListener('click', descargar);
+$('compartir').addEventListener('click', compartir);
+cargarCatalogo();
+</script>
+</body>
+</html>

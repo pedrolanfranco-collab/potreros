@@ -640,6 +640,9 @@ El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Use
   (sin categoría usa la de la ficha). Lo que no se puede traducir no se manda y se avisa. Los CSV de ese repo (`productos_sanidad`, `categorias_sanidad`,
   `correcciones`, `sesiones`, `plazos_propuestos`) son **configuración que decide Pedro, no tratamientos**.
 - Los tratamientos que **no** vienen del bastón (un CSV a mano) van por `scripts/sanidad/cargar_sanidad_csv.py` (ver Sanidad, arriba).
+- Una sesión del bastón **sin** sanidad cargada (el operario no completó PRODUCTO/DOSIS/POTRERO) se completa **antes** de ponerla en `Entrada\`
+  con `completar-sanidad/` (abajo). Si ya entró vacía, una copia completa es "gemela" (`huella()` = fecha + cantidad + caravanas, no mira el
+  producto) y se descarta: esa va por `cargar_sanidad_csv.py`.
 - **Desde la nube no se corre nada de eso**: faltan `xrs2_lecturas.db` y la clave privada, y escribiría en producción. Y **lo que Pedro cambia en su PC no se ve
   hasta que lo sube a GitHub** (el 18/10 su CSV nuevo no estaba en ningún repo): pedir que lo pegue o que haga `git push`.
 - La nube no llega a `*.supabase.co` ni a `*.github.io` (el proxy contesta 403), así que no se pueden leer las tablas reales: los nombres de columnas y de
@@ -682,6 +685,24 @@ publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que 
 - **Cambiar el ícono no actualiza un acceso directo ya instalado** en la pantalla de inicio: hay que borrarlo y volver a agregarlo.
 - Las capturas de la presentación se sacan con Playwright (Chromium ya instalado) y `fetch` interceptado con datos de ejemplo; no
   hay forma de verlas con datos reales hasta que Pedro abre la página.
+
+### Completar sanidad del bastón (`completar-sanidad/`, 18/10/2026, a pedido de Pedro)
+
+Página suelta (como el tablero: no generada, sin `sw.js` ni librerías) para cuando en la manga se usó el bastón pero
+no se cargó la sanidad. Pedro abre el CSV exportado de la app de Datamars (en el teléfono o la PC), elige producto (del
+catálogo), dosis, producto 2 / dosis 2 opcionales, potrero (los 31 de La Vuelta) y qué categorías, y baja **el mismo archivo**
+(mismo nombre, separador, saltos `\r` y codificación; las celdas no tocadas salen idénticas) con `PRODUCTO`, `DOSIS`,
+`PRODUCTO2`, `DOSIS 2`, `POTRERO` llenos (las agrega al final si faltan). Ese va a `Entrada\`: el Lector registra la carencia por
+animal y `sanidad_puente.py` crea el tratamiento. Las filas que ya traían producto no se tocan.
+- **No escribe nada**: solo lee `productos_catalogo` (con una copia de los 50 nombres al 18/10/2026 si no hay señal). El
+  producto se escribe con el nombre **exacto** del catálogo, que `sanidad_puente.py` acepta sin `productos_sanidad.csv`; uno
+  que no está en la lista no se deja usar. Dosis con coma o punto (sale con punto); campos de texto, no `type=number`, que
+  descarta "2,5".
+- La lista de potreros está copiada en la página: `tests/probar_completar_sanidad.js` falla si deja de coincidir con
+  `potrerosGeo` de `template/configs/la-vuelta.js` (contra esos valida `sanidad_puente.py`).
+- Verificado el 18/10/2026 con el export real de la sesión 1154 pasado por `csv_con_encabezado()` / `mapear()` del Lector:
+  93 filas, mismo encabezado, solo cambian las 5 columnas.
+- Pendiente (fase 2, repo `lector-xrs2`): que el Lector avise cuando entra a `Entrada\` una sesión sin ningún producto.
 
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
