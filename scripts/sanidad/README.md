@@ -50,3 +50,31 @@ no va como `Authorization: Bearer`. Sin la clave, cada uno avisa "falta SUPABASE
 `CLAVE_CAMPO_LA_VUELTA` / `CLAVE_CAMPO_MARIA_LAURA` en el mismo `.env`, deja esa clave del campo en el
 `localStorage` (`clave_campo_la_vuelta` / `clave_campo_maria_laura`) antes de cargar la página.
 `scripts\seguridad\verificar_fase2.py` usa la llave pública a propósito (prueba lo que `anon` NO puede hacer).
+
+## `cargar_sanidad_csv.py` — cargar tratamientos desde un CSV hecho a mano (18/10/2026)
+
+Para unos pocos tratamientos que **no vienen del bastón** (no pasan por `Entrada\` del Lector XRS2) y que no se
+quieren tipear uno por uno en "+ Cargar tratamiento". Cada fila termina como una fila de la tabla de Sanidad
+del establecimiento, la misma que escribe la app. **Corre en la PC** (necesita la clave privada de Supabase en
+`~/.potreros/.env`, igual que los demás scripts de esta carpeta); en Windows PowerShell, desde la carpeta del repo:
+
+```powershell
+cd C:\Users\Pedro\repos\potreros\scripts\sanidad
+python cargar_sanidad_csv.py C:\ruta\a\mis_sanidades.csv              # SIMULA: valida y lista, no escribe
+python cargar_sanidad_csv.py C:\ruta\a\mis_sanidades.csv --aplicar    # recién ahí inserta y verifica
+python cargar_sanidad_csv.py C:\ruta\a\mis_sanidades.csv --establecimiento maria_laura
+```
+
+- Columnas (el orden no importa; sin tildes/mayúsculas/espacios da igual): **obligatorias** `fecha, categoria, potrero,
+  cantidad, producto1, dosis1` (+ `dueno` en María Laura / Pone Chico); **opcionales** `gen` (último dígito del año de
+  nacimiento: 5 = 2025), `producto2`, `dosis2`, `observaciones`. Ver `sanidad_nuevas.ejemplo.csv`.
+- Separador `;` o `,` (se detecta), decimales con coma o punto, fecha `AAAA-MM-DD` o `DD/MM/AAAA`.
+- **Todo o nada**: una sola fila con error y no se carga ninguna, ni con `--aplicar`. El **producto** se valida contra
+  `productos_catalogo` y se guarda con el nombre exacto del catálogo; si no existe no se carga (te sugiere los parecidos):
+  un producto mal escrito calcularía una carencia equivocada.
+- **Idempotente**: el id (`csv_…`) sale del contenido de la fila (sin las observaciones) y el insert ignora los que ya
+  existen: correrlo dos veces no duplica. Dos filas idénticas en el mismo archivo se cargan como dos.
+- La Vuelta: queda en `sanidad_carga` con `importado_en` vacío, así que la pantalla Sanidad de la app la ve al instante y
+  `bajar_sanidad_de_potreros.py` (cada hora) la lleva a la Planilla Sanitaria. Prueba: `probar_cargar_sanidad_csv.py`
+  (servidor falso, corre en el CI; no toca Supabase).
+

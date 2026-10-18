@@ -575,6 +575,12 @@ called from `sincronizar()` right after `vaciarColaSync()`).
   editan/borran localmente. Requiere las políticas UPDATE/DELETE de la tabla de arriba. Test:
   `tests/probar_sanidad_editar_borrar.js`.
 
+- **Cargar tratamientos desde un CSV a mano (18/10/2026, a pedido de Pedro):** `scripts/sanidad/cargar_sanidad_csv.py` (PC, clave
+  privada) inserta filas en `sanidad_carga` / `sanidad_carga_maria_laura` / `_pone_chico` para tratamientos que **no** vienen del bastón.
+  Simula por defecto (`--aplicar` para escribir), es todo-o-nada, valida el producto contra `productos_catalogo` y es idempotente
+  (id `csv_…` del contenido). No pasa por el Lector XRS2 ni por `Entrada\`. Detalle y columnas en `scripts/sanidad/README.md`;
+  prueba `probar_cargar_sanidad_csv.py` (en el CI, `python3`).
+
 ### Pesadas (2/10/2026, solo La Vuelta, `CONFIG.pesadasHistorial`)
 
 El historial de pesadas por animal y la ganancia diaria **ya los calcula la PC**
