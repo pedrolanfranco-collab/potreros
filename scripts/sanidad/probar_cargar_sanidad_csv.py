@@ -216,6 +216,19 @@ cod, sal = correr(dup, "--aplicar")
 ids = [f["id"] for f in Falso.posts[0][3]] if Falso.posts else []
 chequear("dos filas iguales en el archivo se cargan como dos, con ids distintos", len(ids) == 2 and ids[0] != ids[1] and "igual a otra" in sal, sal)
 
+print("Saltos de linea sueltos (\\r) y export del baston")
+reiniciar()
+cod, sal = correr(BUENO.replace("\n", "\r"), "--aplicar")
+chequear("un CSV con \\r sueltos (como el del Data Link) se lee igual", cod == 0 and Falso.posts and len(Falso.posts[0][3]) == 2, sal)
+cod, sal = correr(BUENO.replace("\n", "\r\n"))
+chequear("y con \\r\\n (Excel) tambien", cod == 0 and "2 para cargar" in sal, sal)
+reiniciar()
+export = ("EID,VID,Date,Time,PESO,RODEO,GEN,PRODUCTO,DOSIS,CATEGORIA,PROPIETARIO,PRODUCTO2,POTRERO,DOSIS 2,ORIGEN,NOTA\r"
+          "858000061110956,,15/10/2026,09:13:38,,H5,5,,,TERNERA,PEDRO,,,,PROPIO,\r")
+cod, sal = correr(export, "--aplicar")
+chequear("un export del baston se rechaza explicando a donde va, sin tocar la red",
+         cod == 1 and "BASTON" in sal and "Entrada" in sal and not Falso.gets and not Falso.posts, sal)
+
 print("Maria Laura / Pone Chico")
 for est, tabla_esp in (("maria_laura", "sanidad_carga_maria_laura"), ("pone_chico", "sanidad_carga_pone_chico")):
     reiniciar()

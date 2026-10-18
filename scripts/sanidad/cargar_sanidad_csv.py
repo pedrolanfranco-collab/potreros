@@ -182,9 +182,17 @@ def leer_csv(ruta):
         texto = fh.read()
     if not texto.strip():
         raise ValueError("el archivo esta vacio")
+    # Excel manda \r\n, pero hay exportadores (el Data Link del baston) que dejan \r sueltos: csv.reader no los
+    # entiende. Se unifican los saltos de linea antes de leer (los que van dentro de comillas quedan como \n).
+    texto = texto.replace("\r\n", "\n").replace("\r", "\n")
     lector = csv.reader(io.StringIO(texto), delimiter=_separador(texto))
     filas_crudas = [f for f in lector]
     encabezado = filas_crudas[0]
+    if {"eid", "ide", "vid", "idv"} & {_norm_columna(c) for c in encabezado}:
+        raise ValueError("este archivo es un export del BASTON (tiene EID/VID, una fila por animal leido): no es para este "
+                         "script. Los del bastón van a la carpeta Entrada\\ del Lector XRS2 y los procesa solo "
+                         "(sanidad_puente.py). Este script es para una lista de tratamientos con una fila por tratamiento "
+                         "(fecha, categoria, potrero, cantidad, producto1, dosis1...); ver sanidad_nuevas.ejemplo.csv")
     campos, ignoradas = [], []
     for col in encabezado:
         campo = ALIAS.get(_norm_columna(col))
