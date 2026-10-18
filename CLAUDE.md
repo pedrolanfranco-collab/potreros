@@ -641,8 +641,12 @@ El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Use
   `correcciones`, `sesiones`, `plazos_propuestos`) son **configuración que decide Pedro, no tratamientos**.
 - Los tratamientos que **no** vienen del bastón (un CSV a mano) van por `scripts/sanidad/cargar_sanidad_csv.py` (ver Sanidad, arriba).
 - Una sesión del bastón **sin** sanidad cargada (el operario no completó PRODUCTO/DOSIS/POTRERO) se completa **antes** de ponerla en `Entrada\`
-  con `completar-sanidad/` (abajo). Si ya entró vacía, una copia completa es "gemela" (`huella()` = fecha + cantidad + caravanas, no mira el
-  producto) y se descarta: esa va por `cargar_sanidad_csv.py`.
+  con `completar-sanidad/` (abajo). Si ya entró vacía, el archivo completo se guarda **encima** del vacío (mismo nombre, misma carpeta):
+  `procesar()` lo relee porque cambió tamaño/fecha y, con la misma ruta, la huella no lo marca "gemela"; inserta lecturas nuevas con producto
+  (la `clave` de `lecturas` incluye el producto) y `sanidad_puente.py` crea el tratamiento. Las lecturas vacías viejas quedan, sin producto.
+  Una copia **al lado** (otro nombre, p. ej. `…(1).csv`) sí es "gemela" (`huella()` = fecha + cantidad + caravanas, no mira el producto) y se
+  descarta. Si el vacío ya no está, va por `cargar_sanidad_csv.py`. (Verificado en el código de `reconstruir_xrs2.py` el 18/10/2026, caso
+  real: sesiones 1153–1156 con EON.)
 - **Desde la nube no se corre nada de eso**: faltan `xrs2_lecturas.db` y la clave privada, y escribiría en producción. Y **lo que Pedro cambia en su PC no se ve
   hasta que lo sube a GitHub** (el 18/10 su CSV nuevo no estaba en ningún repo): pedir que lo pegue o que haga `git push`.
 - La nube no llega a `*.supabase.co` ni a `*.github.io` (el proxy contesta 403), así que no se pueden leer las tablas reales: los nombres de columnas y de

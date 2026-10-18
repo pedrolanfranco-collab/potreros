@@ -14,8 +14,9 @@
   dosis y potrero (una sola vez para todo el lote, o solo para algunas categorías) y devuelve el MISMO archivo con esas columnas
   llenas: mismo nombre, mismo separador, mismos saltos de línea y las demás celdas idénticas. Ese archivo va a Entrada\ del Lector.
 
-  Por qué antes de Entrada\: el Lector reconoce una sesión por su contenido (fecha, cantidad y caravanas), no por el producto;
-  si el archivo ya entró sin sanidad, una copia completa se descarta como "gemela". Para esas, scripts/sanidad/cargar_sanidad_csv.py.
+  Si el archivo ya entró sin sanidad, el completo se guarda ENCIMA (mismo nombre, misma carpeta): el Lector lo relee porque cambió.
+  Una copia al lado con otro nombre se descarta como "gemela": el Lector reconoce una sesión por su contenido (fecha, cantidad y
+  caravanas), no por el producto. Si el vacío ya no está, scripts/sanidad/cargar_sanidad_csv.py.
 
   No escribe nada en ningún lado. Solo LEE productos_catalogo (con una copia guardada por si no hay señal o falla la lectura).
   El producto se guarda con el nombre EXACTO del catálogo (así sanidad_puente.py lo toma sin pasar por productos_sanidad.csv) y el
@@ -64,7 +65,7 @@ input[type=file]{width:100%;min-height:48px}
 <body>
 <h1>💉 Completar sanidad del bastón</h1>
 <p class="ayuda">Para las sesiones en las que se trató con el bastón pero no se cargó el producto. Abrí el CSV que exportaste de la
-app de Datamars, completá la sanidad y bajá el archivo: <b>va a la carpeta Entrada</b> del Lector XRS2 (antes de que entre el vacío).
+app de Datamars, completá la sanidad y bajá el archivo: <b>va a la carpeta Entrada</b> del Lector XRS2 (si el archivo vacío ya está ahí, el completo va encima).
 Solo La Vuelta.</p>
 
 <div class="card">
@@ -106,7 +107,7 @@ Solo La Vuelta.</p>
   <button class="btn" id="descargar">⬇ Descargar el CSV completo</button>
   <button class="btn secundario" id="compartir" hidden>Compartir (OneDrive, etc.)</button>
   <p class="nota">Guardalo con el <b>mismo nombre</b> en <code>Lector XRS2\2026-2027 Ejercicio Siguiente\Entrada\</code>.
-  No pongas también el archivo vacío: el Lector se queda con uno solo por sesión.</p>
+  Si el vacío ya está ahí, guardalo <b>encima</b> (Reemplazar). Una segunda copia al lado se descarta.</p>
 </div>
 
 <script>
