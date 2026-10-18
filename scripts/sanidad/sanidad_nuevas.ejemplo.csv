@@ -1,0 +1,5 @@
+fecha;categoria;potrero;cantidad;gen;producto1;dosis1;producto2;dosis2;observaciones
+2026-10-15;Vacas;12;60;;Bovisan Total Se;5;;;Ejemplo: sin generación ni producto 2
+2026-10-15;Terneros;21;80;6;Bovisan Total Se;2,5;;;Ejemplo: con generación
+2026-10-16;Novillos 2-3 años;7;45;3;Ricoverm;1;Bovisan Total Se;5;Ejemplo: con dos productos
+16/10/2026;Vaquillonas 2-3 años;3;38;4;Ricoverm;1;;;Ejemplo: la fecha también puede ir como DD/MM/AAAA

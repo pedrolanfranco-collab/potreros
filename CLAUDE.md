@@ -575,6 +575,12 @@ called from `sincronizar()` right after `vaciarColaSync()`).
   editan/borran localmente. Requiere las políticas UPDATE/DELETE de la tabla de arriba. Test:
   `tests/probar_sanidad_editar_borrar.js`.
 
+- **Cargar tratamientos desde un CSV a mano (18/10/2026, a pedido de Pedro):** `scripts/sanidad/cargar_sanidad_csv.py` (PC, clave
+  privada) inserta filas en `sanidad_carga` / `sanidad_carga_maria_laura` / `_pone_chico` para tratamientos que **no** vienen del bastón.
+  Simula por defecto (`--aplicar` para escribir), es todo-o-nada, valida el producto contra `productos_catalogo` y es idempotente
+  (id `csv_…` del contenido). No pasa por el Lector XRS2 ni por `Entrada\`. Detalle y columnas en `scripts/sanidad/README.md`;
+  prueba `probar_cargar_sanidad_csv.py` (en el CI, `python3`).
+
 ### Pesadas (2/10/2026, solo La Vuelta, `CONFIG.pesadasHistorial`)
 
 El historial de pesadas por animal y la ganancia diaria **ya los calcula la PC**
@@ -621,6 +627,25 @@ tampoco la sabe; una de ficha sin confirmar, como Vaquillona, sigue sin pasar). 
 `animales_caravana.faltantes` (jsonb, `supabase_faltantes.sql`, **correrlo antes**) la lista de esas
 lecturas con lo que pasó, y la PC la muestra en Herramientas › Consultar › "⚠ Datos faltantes (N)"
 (últimos 60 días, CSV). La app solo lee. Test: `tests/probar_datos_faltantes.js`.
+
+### Lector XRS2 y trabajo desde la nube — lo que conviene saber (18/10/2026)
+
+El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Lector XRS2`;
+`handoff.md` de ese repo tiene el estado detallado). Cómo llega una sanidad hecha con el bastón:
+- Pedro comparte el CSV del Data Link a `…\Lector XRS2\2026-2027 Ejercicio Siguiente\Entrada\` (la carpeta `Entrada` va **dentro** de la del ejercicio).
+  Una tarea de Windows corre `vigilar_entrada.py` cada 10 min: espera a que OneDrive termine, respalda la base, corre `pipeline.py` (lee sesiones →
+  animales → SNIG → publica el padrón en `animales_caravana`) y `sanidad_puente.py` crea las filas de `sanidad_carga` (solo lo que llegó por `Entrada\` y
+  desde el 2/10/2026, tope 40 por corrida, idempotente; `--simular` no escribe). Después `bajar_sanidad_de_potreros.py` (cada hora) las baja a la Planilla.
+- **Qué las traba**: un `PRODUCTO` que no figura en `productos_sanidad.csv` con `confirmado=SI`, o una `CATEGORIA` que no figura en `categorias_sanidad.csv`
+  (sin categoría usa la de la ficha). Lo que no se puede traducir no se manda y se avisa. Los CSV de ese repo (`productos_sanidad`, `categorias_sanidad`,
+  `correcciones`, `sesiones`, `plazos_propuestos`) son **configuración que decide Pedro, no tratamientos**.
+- Los tratamientos que **no** vienen del bastón (un CSV a mano) van por `scripts/sanidad/cargar_sanidad_csv.py` (ver Sanidad, arriba).
+- **Desde la nube no se corre nada de eso**: faltan `xrs2_lecturas.db` y la clave privada, y escribiría en producción. Y **lo que Pedro cambia en su PC no se ve
+  hasta que lo sube a GitHub** (el 18/10 su CSV nuevo no estaba en ningún repo): pedir que lo pegue o que haga `git push`.
+- La nube no llega a `*.supabase.co` ni a `*.github.io` (el proxy contesta 403), así que no se pueden leer las tablas reales: los nombres de columnas y de
+  categorías se infieren del código. Apareció un conector Supabase en la sesión (`mcp__Supabase__*`), **sin probar** contra este proyecto; usarlo solo para leer.
+- Pedro trabaja en PowerShell, pide los comandos en esa sintaxis y confirma cada `git push`/merge; con los PR de este repo dijo "abrilo y hacé merge" una vez que el CI
+  está en verde (el merge se hace sobre la cabeza que pasó el CI, no sobre un run viejo: los avisos de `check_suite` pueden ser de un commit anterior).
 
 ### Tablero de Sanidad (`tablero-sanidad/`, 16/10/2026, a pedido de Pedro)
 
