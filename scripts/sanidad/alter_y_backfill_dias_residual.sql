@@ -25,5 +25,5 @@ UPDATE productos_catalogo SET dias_residual = 21 WHERE producto = 'MEXIVER';
 UPDATE productos_catalogo SET dias_residual = 21 WHERE producto = 'Reproductiva';
 UPDATE productos_catalogo SET dias_residual = 21 WHERE producto = 'Tacplus';
 UPDATE productos_catalogo SET dias_residual = 35 WHERE producto = 'Tick off';
-UPDATE productos_catalogo SET dias_residual = 35 WHERE producto = 'Tickxan plus';
+UPDATE productos_catalogo SET dias_residual = 35 WHERE producto = 'Tickxan Pour On Plus';
 UPDATE productos_catalogo SET dias_residual = 30 WHERE producto = 'Ticxan';
