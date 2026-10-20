@@ -673,6 +673,17 @@ El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Use
   carpeta del Lector no encuentra sus módulos sin `PYTHONPATH`.
 - *Resultado*: 17 registros de EON (sesiones 1153–1156: 32+93+114+13 = 252 animales; potreros 14, 8, 8, 16; dosis 9/5/6/12 cc) y padrón al día.
   Instructivo para Pedro de dónde va cada archivo: artifact privado `claude.ai/artifact/4Zw6aEbz4rgNR4c3uYFMe6`.
+- *Cierre (20/10/2026)*: Pedro borró el token `sbp_`. La caravana 65095381 (sesión 1155, sin categoría ni dueño) se corrigió en
+  `correcciones.csv` del Lector (Ternero, PEDRO) y 66047322/66047327/66047334 de REFUGO_VENTA ganaron propietario PEDRO; verificado en
+  `animales_caravana`. El registro "Sin categoría" (EON 16/10, 1 animal, potrero 8) ya había bajado a la Planilla (`importado_en` lleno), así
+  que se corrige **en el Excel**, no en la app. La Planilla está en
+  `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Sanidad\Planilla_Sanitaria_v22.xlsm`.
+- *Avisos que se repiten y ya están resueltos*: "Sanidad SIN pasar: LOTE_1_SET (EON ×1)" y "REFUGO_VENTA (Ricoverm ×4)" siguen saliendo en cada
+  corrida, pero Pedro los cargó a mano el 12/10 (`sc_1791844254221…` Vacas EON 8 cc pot 14; `sc_1791844163706…` + `sc_1791844209658…` Terneros 3 +
+  Terneras 1, Ricoverm 3 cc pot 18). **No volver a cargarlos.** Son de antes de `FICHA_DESDE` (13/10): `sanidad_puente.py` los bloquea por falta de
+  categoría en la lectura aunque `correcciones.csv` arregle la ficha, y no sabe de las cargas a mano. Silenciarlos sería un cambio en `lector-xrs2`.
+- *Para corregir fichas desde la nube*: identificar el animal con `animales_caravana.faltantes` (jsonb: `a` sesión, `f` fecha, `p` producto, `falta`)
+  y darle a Pedro las líneas de `correcciones.csv` (`id8;campo;valor;por_que;fecha;lectura`, separador `;`) para `Add-Content -Encoding UTF8` + `--forzar`.
 
 ### Tablero de Sanidad (`tablero-sanidad/`, 16/10/2026, a pedido de Pedro)
 
