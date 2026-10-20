@@ -654,6 +654,9 @@ El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Use
   se leen las tablas reales. Usarlo **solo para leer** (SELECT); nunca escribir producción desde la nube.
 - Pedro trabaja en PowerShell, pide los comandos en esa sintaxis y confirma cada `git push`/merge; con los PR de este repo dijo "abrilo y hacé merge" una vez que el CI
   está en verde (el merge se hace sobre la cabeza que pasó el CI, no sobre un run viejo: los avisos de `check_suite` pueden ser de un commit anterior).
+- **`lector-xrs2` no tiene CI**: antes de abrir el PR se corren a mano en la nube sus pruebas (`python3 probar_*.py`, p. ej. `probar_vigilar.py`) y
+  conviene verificarlas con una mutación. Después del merge el cambio **no llega solo a la PC**: Pedro hace `git pull` en la carpeta del Lector
+  (PowerShell) y corre la prueba ahí; recién con su "todo bien" se da por instalado (así fue la fase 2 el 20/10/2026).
 
 **Incidente 13→18/10/2026: el Lector no publicaba nada (lo que conviene recordar).**
 - *Síntoma*: desde el 13/10 no llegaba a Supabase ni el padrón ni Sanidad (ni `sanidad_ultimos`); la tarea "Potreros - Vigilar entrada del baston"
