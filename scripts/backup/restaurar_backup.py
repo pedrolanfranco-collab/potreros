@@ -91,7 +91,10 @@ def _sql_default(valor):
 def ddl_desde_openapi(doc, con_drop=False):
     """SQL para crear en el proyecto de prueba las mismas tablas (columnas, tipos, NOT NULL, defaults
     simples, clave primaria). No copia politicas ni triggers: para un simulacro de DATOS no hacen falta
-    (la clave privada los saltea) y las tablas quedan con RLS activado y sin politicas, o sea cerradas."""
+    (la clave privada los saltea) y las tablas quedan con RLS activado y sin politicas, o sea cerradas.
+    Desde el 30/10/2026 Supabase no da permisos automaticos a las tablas nuevas de public: sin el GRANT a
+    service_role la carga con la clave privada contesta "permission denied". anon y authenticated no reciben
+    nada (el simulacro es de datos, no de la app)."""
     partes = ["-- Esquema para el simulacro de restauracion (generado por restaurar_backup.py).",
               "-- Correr en el SQL Editor del proyecto de PRUEBA, nunca en el real.", ""]
     for tabla in sorted(doc.get("definitions") or {}):
@@ -121,6 +124,7 @@ def ddl_desde_openapi(doc, con_drop=False):
             partes.append(f'drop table if exists public."{tabla}" cascade;')
         partes.append(f'create table if not exists public."{tabla}" (\n' + ",\n".join(cols) + "\n);")
         partes.append(f'alter table public."{tabla}" enable row level security;')
+        partes.append(f'grant all on public."{tabla}" to service_role;')
         partes.append("")
     return "\n".join(partes)
 

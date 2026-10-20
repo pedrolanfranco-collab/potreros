@@ -145,6 +145,9 @@ chequear("esquema: UNIQUE(event_id) solo en eventos_sync", sql.count("unique (ev
 chequear("esquema: un default con nextval no se copia", "nextval" not in sql)
 chequear("esquema: name[] se conserva y un tipo desconocido cae a text", '"roles" name[]' in sql and '"raro" text' in sql, sql)
 chequear("esquema: RLS activado en cada tabla", sql.count("enable row level security") == 3)
+chequear("esquema: GRANT a service_role en cada tabla y a nadie mas",
+         sql.count('to service_role;') == 3 and 'public."eventos_sync" to service_role' in sql and
+         "to anon" not in sql and "to authenticated" not in sql, sql)
 chequear("esquema: sin --con-drop no borra nada", "drop table" not in sql)
 chequear("esquema: con --con-drop borra y recrea", R.ddl_desde_openapi(doc, True).count("drop table if exists") == 3)
 
