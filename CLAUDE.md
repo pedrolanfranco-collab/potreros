@@ -678,6 +678,8 @@ El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Use
   `animales_caravana`. El registro "Sin categoría" (EON 16/10, 1 animal, potrero 8) ya había bajado a la Planilla (`importado_en` lleno), así
   que se corrige **en el Excel**, no en la app. La Planilla está en
   `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Sanidad\Planilla_Sanitaria_v22.xlsm`.
+  Pedro la corrigió a Terneros el 20/10 (≈19 h). `sanidad_ultimos` se publica desde el Excel una vez por hora (`actualizado`), así que un
+  cambio en la Planilla tarda hasta una hora en verse en el tablero y la app: antes de eso sigue saliendo el valor viejo. **Caso cerrado.**
 - *Avisos que se repiten y ya están resueltos*: "Sanidad SIN pasar: LOTE_1_SET (EON ×1)" y "REFUGO_VENTA (Ricoverm ×4)" siguen saliendo en cada
   corrida, pero Pedro los cargó a mano el 12/10 (`sc_1791844254221…` Vacas EON 8 cc pot 14; `sc_1791844163706…` + `sc_1791844209658…` Terneros 3 +
   Terneras 1, Ricoverm 3 cc pot 18). **No volver a cargarlos.** Son de antes de `FICHA_DESDE` (13/10): `sanidad_puente.py` los bloquea por falta de
