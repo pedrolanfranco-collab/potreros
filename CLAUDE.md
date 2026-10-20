@@ -753,7 +753,11 @@ animal y `sanidad_puente.py` crea el tratamiento. Las filas que ya traían produ
   `potrerosGeo` de `template/configs/la-vuelta.js` (contra esos valida `sanidad_puente.py`).
 - Verificado el 18/10/2026 con el export real de la sesión 1154 pasado por `csv_con_encabezado()` / `mapear()` del Lector:
   93 filas, mismo encabezado, solo cambian las 5 columnas.
-- Pendiente (fase 2, repo `lector-xrs2`): que el Lector avise cuando entra a `Entrada\` una sesión sin ningún producto.
+- **Fase 2 hecha (20/10/2026, PR #1 de `lector-xrs2`, `7cb5dd5`)**: `vigilar_entrada.py` agrega al aviso del celular "OJO: <sesión> (N animales)
+  entro SIN producto ni dosis", urgente y con el link de esta página, cuando una sesión **nueva** de **La Vuelta** entra por `Entrada\` sin producto,
+  peso ni tacto (`tipo_de_sesion() == ["conteo"]` + `vino_por_entrada()`, que mira `lecturas.archivo` con `\Entrada\` o `/Entrada/`). No avisa con
+  producto o peso, en María Laura, fuera de `Entrada\`, ni para un archivo reemplazado (la sesión ya estaba en `sesiones.csv`). Test: 9 controles en
+  `probar_vigilar.py` (verificado con mutaciones). Pedro hizo `git pull` en la PC y la prueba dio "todo bien".
 
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
