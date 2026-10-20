@@ -652,6 +652,10 @@ El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Use
 - La nube no llega a `*.supabase.co` ni a `*.github.io` (el proxy contesta 403), así que no se pueden leer las tablas reales: los nombres de columnas y de
   categorías se infieren del código. **El conector Supabase (`mcp__Supabase__*`, proyecto `skkknfjpwcstefcroqjt`) sí funciona** (18/10/2026): con `execute_sql`
   se leen las tablas reales. Usarlo **solo para leer** (SELECT); nunca escribir producción desde la nube.
+- *"¿Llegaron las sanidades?"* (consulta de rutina): `sanidad_carga*` de los últimos días por `creado_en` (en `America/Montevideo`). Las columnas son
+  `producto1`/`dosis1`/`producto2`/`dosis2` (no hay `producto`), más `categoria`, `dueno`, `cantidad`, `potrero`, `gen`, `observaciones`, `caravana`,
+  `importado_en` (solo La Vuelta: lleno = ya bajó a la Planilla). `id` `bq_…` = vino del bastón, `sc_…` = cargado en la app, `csv_…` = script CSV. Para
+  saber si entró una sesión nueva del bastón: `max(ultima_lectura)` de `animales_caravana`; y `max(actualizado)` de `sanidad_ultimos` dice cuándo publicó la Planilla.
 - Pedro trabaja en PowerShell, pide los comandos en esa sintaxis y confirma cada `git push`/merge; con los PR de este repo dijo "abrilo y hacé merge" una vez que el CI
   está en verde (el merge se hace sobre la cabeza que pasó el CI, no sobre un run viejo: los avisos de `check_suite` pueden ser de un commit anterior).
 - **`lector-xrs2` no tiene CI**: antes de abrir el PR se corren a mano en la nube sus pruebas (`python3 probar_*.py`, p. ej. `probar_vigilar.py`) y
