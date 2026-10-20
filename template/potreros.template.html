@@ -817,6 +817,9 @@
     <p class="modal-info">Los plazos y el costo se calculan al toque, según el catálogo de productos.</p>
     <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento (grupal)</button>
     <button class="btn btn-json btn-full" id="btn-cargar-sanidad-individual" style="margin-bottom:10px;">+ Cargar tratamiento (individual)</button>
+    <!-- @pc:start -->
+    <button class="btn btn-json btn-full" id="btn-csv-baston" style="display:none;margin-bottom:10px;">📂 Completar lectura del bastón (CSV)</button>
+    <!-- @pc:end -->
     <div id="form-sanidad" style="display:none;margin-bottom:12px;">
       <div class="form-row"><label>Fecha</label><input type="date" id="sc-fecha"></div>
       <div class="form-row"><label>Categoría</label><select id="sc-categoria"></select></div>
@@ -844,6 +847,33 @@
         <button class="btn btn-secundario" id="sc-cancelar">Cancelar</button>
       </div>
     </div>
+    <!-- @pc:start -->
+    <div id="form-csv-baston" style="display:none;margin-bottom:12px;">
+      <p class="modal-info">Para cuando en la manga solo se leyó con el bastón y no se cargó la sanidad. Abrí el CSV que exporta la app de Datamars, elegí producto, dosis y potrero, y guardalo con el <b>mismo nombre</b> en <code>Lector XRS2\2026-2027 Ejercicio Siguiente\Entrada\</code>: el Lector registra la carencia de cada animal y crea el tratamiento solo.</p>
+      <input type="file" id="input-csv-baston" accept=".csv,text/csv" style="display:none;">
+      <button class="btn btn-json btn-full" id="cb-elegir" style="margin-bottom:8px;">Elegir archivo CSV…</button>
+      <div id="cb-msg-archivo"></div>
+      <div id="cb-msg-catalogo"></div>
+      <div id="cb-paso" hidden>
+        <div id="cb-resumen" class="modal-info"></div>
+        <div class="form-row"><label>Categorías a completar</label><div id="cb-cats"></div></div>
+        <div class="form-row"><label>Producto 1</label><select id="cb-p1"></select></div>
+        <div class="form-row"><label>Dosis 1</label><input type="text" id="cb-d1" inputmode="decimal" placeholder="ml (acepta 2,5)"></div>
+        <div class="form-row"><label>Producto 2 (opcional)</label><select id="cb-p2"></select></div>
+        <div class="form-row"><label>Dosis 2 (opcional)</label><input type="text" id="cb-d2" inputmode="decimal"></div>
+        <div class="form-row"><label>Potrero</label><select id="cb-pot"></select></div>
+        <div id="cb-msg"></div>
+        <div class="form-botones">
+          <button class="btn btn-agregar" id="cb-completar">Completar</button>
+          <button class="btn btn-secundario" id="cb-cancelar">Cancelar</button>
+        </div>
+        <div id="cb-salida" hidden>
+          <div id="cb-resultado" class="modal-info"></div>
+          <button class="btn btn-agregar btn-full" id="cb-guardar">💾 Guardar en Entrada</button>
+        </div>
+      </div>
+    </div>
+    <!-- @pc:end -->
     <!-- @sanidadExcel:start -->
     <details class="historial-det historial-det-lista"><summary>Mis cargas recientes</summary>
       <div id="sanidad-mis-cargas"></div>
@@ -8818,6 +8848,275 @@ async function borrarTratamiento(id, enCola){
   await refrescarSanidadTrasCambio();
 }
 <!-- @pc:end -->
+
+// @pc:start
+/* ======================= COMPLETAR LECTURA DEL BASTÓN (CSV) ======================= */
+/* 20/10/2026, a pedido de Pedro (solo la PC de La Vuelta, CONFIG.completarCsvBaston).
+   Cuando en la manga se usó el bastón pero no se cargó la sanidad, el CSV que exporta la app de Datamars llega a
+   Entrada\ sin PRODUCTO / DOSIS / POTRERO y el Lector no registra la carencia. Acá se abre ese CSV, se eligen
+   producto, dosis y potrero, y se guarda el MISMO archivo (mismo nombre) en Entrada\: el Lector (vigilar_entrada.py,
+   cada 10 min) registra la carencia de cada animal y sanidad_puente.py crea el tratamiento en Sanidad.
+   LA APP NO ESCRIBE NADA EN SUPABASE: solo lee el catálogo de productos. Es la misma lógica de la página suelta
+   completar-sanidad/ (probada contra un export real), traída acá con prefijo cb.
+   Reglas que vienen del Lector (CLAUDE.md, "Lector XRS2 y trabajo desde la nube"):
+    - El archivo sale idéntico salvo las columnas completadas: mismo nombre, separador, saltos \r y codificación.
+      Cada celda guarda su texto original, así las que no se tocan salen byte a byte iguales.
+    - Si la sesión vacía ya había entrado, el completo se guarda ENCIMA (mismo nombre, misma carpeta). Una copia al
+      lado con otro nombre se descarta como "gemela".
+    - El producto se escribe con el nombre EXACTO del catálogo y no se puede escribir a mano: uno mal escrito traba
+      el tratamiento. La dosis se acepta con coma o punto (es un campo de texto: type=number descarta "2,5"). */
+let cbDatos = null, cbNombre = '', cbCodificacion = 'utf-8', cbSalida = null;
+const cbEl = id => document.getElementById(id);
+const cbNorm = s => String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9%+]/g, '');
+const cbNormCol = s => String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/* CSV: leer sin perder el formato. Cada celda guarda su texto ORIGINAL (con comillas si las tenía). */
+function cbLeerCsv(texto){
+  const bom = texto.charCodeAt(0) === 0xFEFF ? '\uFEFF' : '';
+  if(bom) texto = texto.slice(1);
+  const eol = texto.indexOf('\r\n') >= 0 ? '\r\n' : (texto.indexOf('\r') >= 0 ? '\r' : '\n');
+  const primera = texto.split(/\r\n|\r|\n/)[0] || '';
+  const delim = [',', ';', '\t'].reduce((a, b) => primera.split(b).length > primera.split(a).length ? b : a);
+  const filas = []; let fila = [], crudo = '', valor = '', comillas = false, i = 0;
+  const cerrarCelda = () => { fila.push({ crudo, valor }); crudo = ''; valor = ''; };
+  while(i < texto.length){
+    const c = texto[i];
+    if(comillas){
+      if(c === '"' && texto[i + 1] === '"'){ crudo += '""'; valor += '"'; i += 2; continue; }
+      if(c === '"'){ comillas = false; crudo += c; i++; continue; }
+      crudo += c; valor += c; i++; continue;
+    }
+    if(c === '"'){ comillas = true; crudo += c; i++; continue; }
+    if(c === delim){ cerrarCelda(); i++; continue; }
+    if(c === '\r' || c === '\n'){
+      cerrarCelda(); filas.push(fila); fila = [];
+      i += (c === '\r' && texto[i + 1] === '\n') ? 2 : 1; continue;
+    }
+    crudo += c; valor += c; i++;
+  }
+  const finalConSalto = /[\r\n]$/.test(texto);
+  if(!finalConSalto && (crudo !== '' || fila.length)){ cerrarCelda(); filas.push(fila); }
+  return { bom, eol, delim, finalConSalto, encabezado: filas[0] || [], filas: filas.slice(1).filter(f => f.some(c => c.valor.trim() !== '')) };
+}
+function cbCeldaCruda(valor, delim){
+  return /["\r\n]/.test(valor) || valor.indexOf(delim) >= 0 ? '"' + valor.replace(/"/g, '""') + '"' : valor;
+}
+function cbEscribirCsv(d){
+  const linea = f => f.map(c => c.crudo).join(d.delim);
+  return d.bom + [linea(d.encabezado)].concat(d.filas.map(linea)).join(d.eol) + (d.finalConSalto ? d.eol : '');
+}
+/* índice de la columna (por nombre normalizado, como el Lector); -1 si no está */
+function cbColumna(d, ...nombres){
+  const buscados = nombres.map(cbNormCol);
+  return d.encabezado.findIndex(c => buscados.includes(cbNormCol(c.valor)));
+}
+/* agrega la columna al final si falta (encabezado + celda vacía en cada fila) y devuelve su índice */
+function cbAsegurarColumna(d, nombre, ...alias){
+  const i = cbColumna(d, nombre, ...alias);
+  if(i >= 0) return i;
+  d.encabezado.push({ crudo: cbCeldaCruda(nombre, d.delim), valor: nombre });
+  d.filas.forEach(f => { while(f.length < d.encabezado.length - 1) f.push({ crudo: '', valor: '' }); f.push({ crudo: '', valor: '' }); });
+  return d.encabezado.length - 1;
+}
+function cbPoner(d, fila, idx, valor){
+  while(fila.length <= idx) fila.push({ crudo: '', valor: '' });
+  fila[idx] = { crudo: cbCeldaCruda(valor, d.delim), valor };
+}
+
+/* formulario */
+function cbAviso(id, html, error){
+  cbEl(id).innerHTML = html ? '<div class="modal-info" style="' + (error ? 'color:var(--rojo-hacienda);' : '') + '">' + html + '</div>' : '';
+}
+function cbPotreros(){
+  return POTREROS_GEO.map(p => p.nombre).sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+}
+function cbProductoDelCatalogo(txt){
+  const k = cbNorm(txt);
+  return k ? (catalogoProductos.find(p => cbNorm(p) === k) || null) : null;
+}
+function cbOpcionesProductos(){
+  return '<option value="">Elegir…</option>' + catalogoProductos.map(p => '<option value="' + esc(p) + '">' + esc(p) + '</option>').join('');
+}
+function cbReiniciar(){
+  cbDatos = null; cbNombre = ''; cbSalida = null;
+  cbEl('input-csv-baston').value = '';
+  cbEl('cb-paso').hidden = true; cbEl('cb-salida').hidden = true;
+  cbAviso('cb-msg-archivo'); cbAviso('cb-msg');
+}
+function cbPintarSelects(){
+  const antes = ['cb-p1', 'cb-p2', 'cb-pot'].map(id => cbEl(id).value);
+  cbEl('cb-p1').innerHTML = cbOpcionesProductos();
+  cbEl('cb-p2').innerHTML = cbOpcionesProductos();
+  cbEl('cb-pot').innerHTML = '<option value="">Elegir…</option>' + cbPotreros().map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
+  ['cb-p1', 'cb-p2', 'cb-pot'].forEach((id, i) => { cbEl(id).value = antes[i]; });
+}
+async function cbAbrir(){
+  cbEl('form-sanidad').style.display = 'none';
+  cbReiniciar();
+  ['cb-d1', 'cb-d2'].forEach(id => { cbEl(id).value = ''; });
+  // El formulario se muestra YA, con el catálogo guardado de la última vez: esperar a Supabase dejaba los
+  // selectores vacíos con señal lenta. Después se actualiza con el catálogo al día.
+  if(!catalogoProductos.length){
+    try{ const g = JSON.parse(localStorage.getItem('productos_catalogo_cache') || 'null'); if(Array.isArray(g)) catalogoProductos = g; }catch(e){}
+  }
+  cbPintarSelects();
+  cbEl('form-csv-baston').style.display = 'block';
+  cbAviso('cb-msg-catalogo', 'Actualizando el catálogo de productos…');
+  await cargarCatalogoProductos();
+  cbPintarSelects();
+  cbAviso('cb-msg-catalogo', catalogoProductos.length ? '' : 'No se pudo leer el catálogo de productos (¿sin señal?). Probá de nuevo con conexión.', !catalogoProductos.length);
+}
+async function cbLeerArchivo(file){
+  const buf = file.arrayBuffer ? await file.arrayBuffer()
+    : await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsArrayBuffer(file); });
+  let texto = new TextDecoder('utf-8').decode(buf);
+  cbCodificacion = 'utf-8';
+  if(texto.indexOf('\uFFFD') >= 0){ texto = new TextDecoder('windows-1252').decode(buf); cbCodificacion = 'windows-1252'; }
+  return texto;
+}
+async function cbAlElegirArchivo(){
+  const file = cbEl('input-csv-baston').files && cbEl('input-csv-baston').files[0];
+  cbSalida = null; cbEl('cb-salida').hidden = true; cbAviso('cb-msg');
+  if(!file) return;
+  cbNombre = file.name;
+  let d;
+  try{ d = cbLeerCsv(await cbLeerArchivo(file)); }catch(e){ cbAviso('cb-msg-archivo', 'No se pudo leer el archivo.', true); return; }
+  if(cbColumna(d, 'EID', 'IDE', 'VID', 'IDV') < 0){
+    cbDatos = null; cbEl('cb-paso').hidden = true;
+    cbAviso('cb-msg-archivo', 'Este archivo no parece un export del bastón (no tiene columnas EID / VID). ' +
+      'Si es una lista de tratamientos, va por <code>cargar_sanidad_csv.py</code>.', true);
+    return;
+  }
+  if(!d.filas.length){ cbDatos = null; cbEl('cb-paso').hidden = true; cbAviso('cb-msg-archivo', 'El archivo no tiene animales.', true); return; }
+  cbDatos = d;
+  cbAviso('cb-msg-archivo');
+  cbPintarResumen();
+  cbEl('cb-paso').hidden = false;
+}
+function cbValores(d, idx){ return d.filas.map(f => (idx >= 0 && f[idx] ? f[idx].valor : '').trim()); }
+function cbContar(lista){ const m = {}; lista.forEach(v => { const k = v || '(vacío)'; m[k] = (m[k] || 0) + 1; }); return m; }
+function cbChips(m){
+  return Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, v]) => esc(k) + ' <b>' + v + '</b>').join(' · ');
+}
+function cbPintarResumen(){
+  const d = cbDatos;
+  const iFecha = cbColumna(d, 'DATE', 'FECHA'), iCat = cbColumna(d, 'CATEGORIA'), iProp = cbColumna(d, 'PROPIETARIO');
+  const iProd = cbColumna(d, 'PRODUCTO', 'PRODUCTO1', 'PROD1');
+  const fechas = Object.keys(cbContar(cbValores(d, iFecha).filter(Boolean)));
+  const conProducto = cbValores(d, iProd).filter(Boolean).length;
+  let h = '<b>' + d.filas.length + ' animales</b> · ' + esc(fechas.join(', ') || 'sin fecha') + '<br><span style="font-size:12px;">' + esc(cbNombre) + '</span>';
+  h += '<br>Propietario: ' + cbChips(cbContar(cbValores(d, iProp)));
+  if(conProducto) h += '<br><b>' + conProducto + ' fila(s) ya traen producto:</b> esas no se tocan.';
+  cbEl('cb-resumen').innerHTML = h;
+  const cats = cbContar(cbValores(d, iCat));
+  cbEl('cb-cats').innerHTML = Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+    // el CSS global le da width:100% a todos los input: sin width:auto la casilla se estira y queda debajo del texto
+    '<label style="display:flex;align-items:center;gap:8px;font-weight:normal;margin:4px 0;"><input type="checkbox" checked value="' + esc(k) + '" style="width:auto;margin:0;"> ' + esc(k) + ' <span style="font-size:12px;">(' + v + ')</span></label>').join('');
+}
+function cbCategoriasElegidas(){ return new Set([...cbEl('cb-cats').querySelectorAll('input:checked')].map(i => i.value)); }
+
+function cbCompletar(){
+  cbAviso('cb-msg'); cbSalida = null; cbEl('cb-salida').hidden = true;
+  if(!cbDatos) return;
+  const errores = [];
+  const p1txt = cbEl('cb-p1').value, p2txt = cbEl('cb-p2').value.trim();
+  const p1 = cbProductoDelCatalogo(p1txt), p2 = p2txt ? cbProductoDelCatalogo(p2txt) : null;
+  // la dosis se acepta con coma o punto; un texto que no sea solo un número ("2 ml", "2,5,1") no vale
+  const numeroDe = t => /^\d+([.,]\d+)?$/.test(t) ? parseFloat(t.replace(',', '.')) : NaN;
+  const d1 = numeroDe(String(cbEl('cb-d1').value).trim()), d2txt = String(cbEl('cb-d2').value).trim();
+  const d2 = d2txt ? numeroDe(d2txt) : null, pot = cbEl('cb-pot').value;
+  if(!p1txt.trim()) errores.push('Falta el producto.');
+  else if(!p1) errores.push('"' + esc(p1txt) + '" no está en el catálogo: elegilo de la lista.');
+  if(!(d1 > 0)) errores.push('Falta la dosis (un número mayor que 0).');
+  if(p2txt && !p2) errores.push('"' + esc(p2txt) + '" (producto 2) no está en el catálogo.');
+  if(p2txt && !(d2 > 0)) errores.push('Falta la dosis del producto 2.');
+  if(!p2txt && d2txt) errores.push('Hay dosis 2 sin producto 2.');
+  if(!cbPotreros().includes(pot)) errores.push('Elegí el potrero.');
+  const elegidas = cbCategoriasElegidas();
+  if(!elegidas.size) errores.push('Elegí al menos una categoría.');
+  if(errores.length){ cbAviso('cb-msg', errores.join('<br>'), true); return; }
+
+  // se trabaja sobre una copia: si algo falla, el archivo leído queda como estaba
+  const d = JSON.parse(JSON.stringify(cbDatos));
+  const iCat = cbColumna(d, 'CATEGORIA');
+  const iProd = cbAsegurarColumna(d, 'PRODUCTO', 'PRODUCTO1', 'PROD1');
+  const iDos = cbAsegurarColumna(d, 'DOSIS', 'DOSIS1');
+  const iPot = cbAsegurarColumna(d, 'POTRERO');
+  const iProd2 = p2 ? cbAsegurarColumna(d, 'PRODUCTO2', 'PROD2') : -1;
+  const iDos2 = p2 ? cbAsegurarColumna(d, 'DOSIS 2', 'DOSIS2') : -1;
+  const numero = n => String(n);   // con punto decimal, como lo escribe el bastón
+  let cambiadas = 0, yaTenian = 0, fuera = 0;
+  d.filas.forEach(f => {
+    const cat = (iCat >= 0 && f[iCat] ? f[iCat].valor : '').trim() || '(vacío)';
+    if(!elegidas.has(cat)){ fuera++; return; }
+    if(f[iProd] && f[iProd].valor.trim()){ yaTenian++; return; }
+    cbPoner(d, f, iProd, p1); cbPoner(d, f, iDos, numero(d1)); cbPoner(d, f, iPot, pot);
+    if(p2){ cbPoner(d, f, iProd2, p2); cbPoner(d, f, iDos2, numero(d2)); }
+    cambiadas++;
+  });
+  if(!cambiadas){ cbAviso('cb-msg', 'No quedó ninguna fila para completar (todas ya tenían producto o quedaron fuera por categoría).', true); return; }
+  cbSalida = { nombre: cbNombre, texto: cbEscribirCsv(d), codificacion: cbCodificacion, cambiadas, yaTenian, fuera };
+  cbEl('cb-resultado').innerHTML = '✔ ' + cambiadas + ' animal(es) con <b>' + esc(p1) + ' ' + esc(numero(d1)) + ' ml</b>' +
+    (p2 ? ' + <b>' + esc(p2) + ' ' + esc(numero(d2)) + ' ml</b>' : '') + ' en el potrero <b>' + esc(pot) + '</b>.' +
+    (yaTenian ? '<br>' + yaTenian + ' ya tenían producto (sin tocar).' : '') + (fuera ? '<br>' + fuera + ' quedaron fuera por categoría.' : '');
+  cbEl('cb-salida').hidden = false;
+}
+
+/* bytes de salida en la misma codificación que el original (windows-1252 si así vino) */
+const CB_CP1252 = {0x20AC:0x80,0x201A:0x82,0x0192:0x83,0x201E:0x84,0x2026:0x85,0x2020:0x86,0x2021:0x87,0x02C6:0x88,0x2030:0x89,0x0160:0x8A,
+  0x2039:0x8B,0x0152:0x8C,0x017D:0x8E,0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,0x02DC:0x98,
+  0x2122:0x99,0x0161:0x9A,0x203A:0x9B,0x0153:0x9C,0x017E:0x9E,0x0178:0x9F};
+function cbBytesSalida(){
+  if(cbSalida.codificacion !== 'windows-1252') return new TextEncoder().encode(cbSalida.texto);
+  const out = new Uint8Array(cbSalida.texto.length);
+  for(let i = 0; i < cbSalida.texto.length; i++){
+    const c = cbSalida.texto.charCodeAt(i);
+    out[i] = c < 0x80 || (c >= 0xA0 && c <= 0xFF) ? c : (CB_CP1252[c] || 0x3F);
+  }
+  return out;
+}
+const CB_RUTA_ENTRADA = 'Lector XRS2\\2026-2027 Ejercicio Siguiente\\Entrada\\';
+/* Guardar: el selector de archivos del navegador (Chrome/Edge en la PC) con el MISMO nombre y un id fijo, así la
+   primera vez se elige la carpeta Entrada y después la recuerda; si la sesión vacía ya estaba ahí, se elige ese
+   archivo y se pisa. Sin esa función baja el archivo con el mismo nombre para moverlo a mano. */
+async function cbGuardar(){
+  if(!cbSalida) return;
+  const bytes = cbBytesSalida();
+  if(typeof window.showSaveFilePicker === 'function'){
+    try{
+      const h = await window.showSaveFilePicker({ suggestedName: cbSalida.nombre, id: 'entrada-baston',
+        types: [{ description: 'CSV del bastón', accept: { 'text/csv': ['.csv'] } }] });
+      const w = await h.createWritable();
+      await w.write(bytes); await w.close();
+      cbEl('cb-resultado').insertAdjacentHTML('beforeend', '<br>💾 Guardado como <b>' + esc(h.name || cbSalida.nombre) + '</b>. ' +
+        'Si es la carpeta <code>Entrada</code>, el Lector lo toma solo en unos minutos (máximo 10) y crea el tratamiento en Sanidad.');
+      toast('Guardado');
+      return;
+    }catch(e){
+      if(e && e.name === 'AbortError') return;   // cerró el selector sin guardar
+      /* cualquier otro error: sigue con la descarga común */
+    }
+  }
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'text/csv' }));
+  const a = document.createElement('a'); a.href = url; a.download = cbSalida.nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  cbEl('cb-resultado').insertAdjacentHTML('beforeend', '<br>💾 Se descargó <b>' + esc(cbSalida.nombre) + '</b>. Movelo a <code>' + esc(CB_RUTA_ENTRADA) +
+    '</code> con ese mismo nombre (si la sesión vacía ya estaba ahí, reemplazala; con otro nombre se descarta como copia).');
+}
+if(CONFIG.completarCsvBaston){
+  cbEl('btn-csv-baston').style.display = '';
+  cbEl('btn-csv-baston').addEventListener('click', cbAbrir);
+  cbEl('cb-elegir').addEventListener('click', () => cbEl('input-csv-baston').click());
+  cbEl('input-csv-baston').addEventListener('change', cbAlElegirArchivo);
+  cbEl('cb-completar').addEventListener('click', cbCompletar);
+  cbEl('cb-guardar').addEventListener('click', cbGuardar);
+  cbEl('cb-cancelar').addEventListener('click', () => { cbReiniciar(); cbEl('form-csv-baston').style.display = 'none'; });
+  // abrir cualquiera de los otros formularios de Sanidad, o cerrar la ventana, esconde este
+  ['btn-cargar-sanidad', 'btn-cargar-sanidad-individual', 'sanidad-cerrar'].forEach(id =>
+    cbEl(id).addEventListener('click', () => { cbEl('form-csv-baston').style.display = 'none'; }));
+}
+// @pc:end
 
 /* ======================= BUSCAR CARAVANA ======================= */
 /* 24/9/2026. El padron por animal lo publica la PC a 'animales_caravana'

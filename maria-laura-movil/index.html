@@ -597,7 +597,7 @@
     <p class="modal-info">Los plazos y el costo se calculan al toque, según el catálogo de productos.</p>
     <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento (grupal)</button>
     <button class="btn btn-json btn-full" id="btn-cargar-sanidad-individual" style="margin-bottom:10px;">+ Cargar tratamiento (individual)</button>
-    <div id="form-sanidad" style="display:none;margin-bottom:12px;">
+        <div id="form-sanidad" style="display:none;margin-bottom:12px;">
       <div class="form-row"><label>Fecha</label><input type="date" id="sc-fecha"></div>
       <div class="form-row"><label>Categoría</label><select id="sc-categoria"></select></div>
             <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="sc-dueno"></select></div>
@@ -622,7 +622,7 @@
         <button class="btn btn-secundario" id="sc-cancelar">Cancelar</button>
       </div>
     </div>
-        <div id="sanidad-lista"></div>
+            <div id="sanidad-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="sanidad-cerrar">Cerrar</button></div>
   </div>
 </div>
@@ -6352,6 +6352,7 @@ document.getElementById('sc-guardar').addEventListener('click', async ()=>{
   toast('Tratamiento cargado');
   await cargarSanidad();
 });
+
 
 
 /* ======================= BUSCAR CARAVANA ======================= */

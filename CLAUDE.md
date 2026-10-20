@@ -687,6 +687,20 @@ El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Use
 - *Para corregir fichas desde la nube*: identificar el animal con `animales_caravana.faltantes` (jsonb: `a` sesión, `f` fecha, `p` producto, `falta`)
   y darle a Pedro las líneas de `correcciones.csv` (`id8;campo;valor;por_que;fecha;lectura`, separador `;`) para `Add-Content -Encoding UTF8` + `--forzar`.
 
+### Completar lectura del bastón (CSV) dentro de Sanidad (20/10/2026, a pedido de Pedro, solo PC de La Vuelta, `CONFIG.completarCsvBaston`)
+
+Para cuando en la manga solo se leyó con el bastón y no se cargó la sanidad. En la ventana 🏥 Sanidad de la **PC de La Vuelta**
+hay un tercer botón, "📂 Completar lectura del bastón (CSV)": se abre el CSV que exporta la app de Datamars, se eligen las
+categorías, producto (solo del catálogo, sin "Otro"), dosis (coma o punto), producto 2 opcional y potrero (los 31 de la app), y
+"💾 Guardar en Entrada" guarda **el mismo archivo con el mismo nombre** con `showSaveFilePicker` (id fijo `entrada-baston`, así la
+PC recuerda la carpeta `Lector XRS2\2026-2027 Ejercicio Siguiente\Entrada\`); si la sesión vacía ya había entrado, se elige ese
+mismo archivo y se pisa. Sin esa función del navegador baja el archivo con el mismo nombre para moverlo a mano. **La app no escribe
+nada en Supabase** (solo lee `productos_catalogo`): el Lector registra la carencia por animal y `sanidad_puente.py` crea el
+tratamiento (ver "Lector XRS2 y trabajo desde la nube"). Es la lógica de `completar-sanidad/` (la página suelta, que sigue para el
+celular) traída al template con prefijo `cb` dentro de bloques `@pc`; el botón sale solo con el flag, que solo tiene La Vuelta
+(María Laura/Pone Chico: el puente a Sanidad no existe). Si cambia el CSV de Datamars, tocar las dos copias. Test:
+`tests/probar_csv_baston_pc.js`.
+
 ### Tablero de Sanidad (`tablero-sanidad/`, 16/10/2026, a pedido de Pedro)
 
 Página suelta de solo lectura para ver en el teléfono, sin abrir la app, los **próximos** y los **últimos**

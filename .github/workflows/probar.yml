@@ -149,6 +149,9 @@ jobs:
       - name: "Datos faltantes (PC de La Vuelta) -- lecturas del baston sin categoria y que paso con Sanidad; 60 dias; texto de afuera escapado; sin la columna no se rompe"
         run: node tests/probar_datos_faltantes.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
+      - name: "Completar lectura del baston (CSV) en Sanidad, solo la PC de La Vuelta -- mismo archivo con producto/dosis/potrero, guardar en Entrada, sin escribir en Supabase"
+        run: node tests/probar_csv_baston_pc.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html
+
       - name: "Pesadas (solo La Vuelta) -- historial en la ficha, resumen por lote de la sesion del baston, proporcion contra el stock"
         run: node tests/probar_pesadas.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-movil/index.html pone-chico-movil/index.html
 
