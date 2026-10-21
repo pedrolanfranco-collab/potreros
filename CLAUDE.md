@@ -544,6 +544,11 @@ called from `sincronizar()` right after `vaciarColaSync()`).
   CONFIG.tablaSanidad`, set per establishment in `template/configs/*.js`)
   and both reads and writes go straight there — no tri-state UI, just one
   unified `sanidad-lista`.
+- **Costo del catálogo = última factura (21/10/2026):** los costos de la Planilla son fórmulas que Pedro no puede tocar, y cada
+  publicación borra y reinserta `productos_catalogo`. El trigger `trg_catalogo_ultimo_precio` (BEFORE INSERT, ver
+  `scripts/sanidad/catalogo_ultimo_precio_factura.sql`) pone `valor_dosis_ml` = USD/ml de `precio_ultimo` (facturas cargadas con la
+  skill de precios veterinarios) cuando el producto tiene factura; sin factura queda el valor de la Planilla. Los nombres de la
+  Planilla mandan: alias y `precios_vet` deben llevar el nombre exacto del catálogo (hoy "Tickxan Pour on plus").
 - `productos_catalogo` (product dropdown in the treatment form) **is**
   shared across all three establishments on purpose — it's a reference list,
   not an operational record, and María Laura/Pone Chico sync their catalog
