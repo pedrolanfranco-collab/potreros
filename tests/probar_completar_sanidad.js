@@ -123,7 +123,7 @@ const CAT = ['Aftosa', 'Clostrisan 9+T', 'Ivermectina R', 'Terramicina Solución
 
   // ---------- export sin las columnas de sanidad, \r\n, ; y windows-1252 ----------
   p = await abrir('caido');
-  chequear('sin señal: usa la copia guardada del catálogo', p.doc.querySelectorAll('#catalogo option').length === 50 && /copia guardada/.test(p.doc.getElementById('nota-catalogo').textContent));
+  chequear('sin señal: usa la copia guardada del catálogo', p.doc.querySelectorAll('#catalogo option').length === 51 && /copia guardada/.test(p.doc.getElementById('nota-catalogo').textContent));
   const corto = 'EID;Date;CATEGORIA;NOTA\r\n858000000000001;15/10/2026;Ternera;Peña\r\n858000000000002;15/10/2026;Ternera;\r\n';
   await elegirArchivo(p, 'corto.csv', Buffer.from(corto, 'latin1'));
   llenar(p, { p1: 'Terramicina Solución', d1: '10', pot: 'OMBU' });

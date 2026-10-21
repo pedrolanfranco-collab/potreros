@@ -729,7 +729,7 @@ catálogo), dosis, producto 2 / dosis 2 opcionales, potrero (los 31 de La Vuelta
 (mismo nombre, separador, saltos `\r` y codificación; las celdas no tocadas salen idénticas) con `PRODUCTO`, `DOSIS`,
 `PRODUCTO2`, `DOSIS 2`, `POTRERO` llenos (las agrega al final si faltan). Ese va a `Entrada\`: el Lector registra la carencia por
 animal y `sanidad_puente.py` crea el tratamiento. Las filas que ya traían producto no se tocan.
-- **No escribe nada**: solo lee `productos_catalogo` (con una copia de los 50 nombres al 18/10/2026 si no hay señal). El
+- **No escribe nada**: solo lee `productos_catalogo` (con una copia de los 51 nombres al 21/10/2026 si no hay señal). El
   producto se escribe con el nombre **exacto** del catálogo, que `sanidad_puente.py` acepta sin `productos_sanidad.csv`; uno
   que no está en la lista no se deja usar. Dosis con coma o punto (sale con punto); campos de texto, no `type=number`, que
   descarta "2,5".
