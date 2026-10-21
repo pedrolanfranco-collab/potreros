@@ -79,6 +79,10 @@ begin
 end
 $$;
 
+-- 4. Fuera lo que agrego la version revisada del cierre (21/10/2026). Ya no hay politicas que las usen.
+drop function if exists public.establecimientos_permitidos();
+drop table if exists private.campos_abiertos;
+
 select tablename as tabla, policyname as politica, cmd, roles
 from pg_policies
 where schemaname = 'public'

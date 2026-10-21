@@ -732,7 +732,7 @@ nombres del padrón difieren más que eso, la tarjeta sale sin bloque. Si la lec
 Para tenerlo en las dos pestañas de verdad, la PC tendría que publicar `gen` (columna nueva en las dos tablas + `actualizar_sanidad_supabase.py`, que vive en OneDrive).
 Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;
 el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
-publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
+publica hace más de 6 h. **Clave del campo (21/10/2026):** La Vuelta y María Laura piden la clave; el tablero toma la que ya se cargó en las apps (mismo origen, `clave_campo_<campo>`) o la pide una vez, la comprueba con `verificar_clave` y la manda en `x-clave-campo`; Pone Chico no la usa. Sin clave y con las políticas cerradas no pisa la última copia con una lectura vacía. Test:
 `tests/probar_tablero_sanidad.js`.
 
 **Cómo se trabajó y qué recordar (16/10/2026):**
@@ -915,6 +915,7 @@ siguen abiertas.
   `false` en Pone Chico. Con `false` la app no muestra la ventana, el aviso del pie ni el botón, no manda `x-clave-campo` y
   no llama a `verificar_clave` (aunque haya una clave vieja guardada). **Para el cierre**: sus políticas deben dejar Pone Chico
   abierto a propósito (o se queda sin sincronizar); ver `scripts/seguridad/README.md`. Test: `probar_clave_campo.js`.
+- *Cierre revisado (21/10/2026)*: contempla Pone Chico abierto (`private.campos_abiertos` + `establecimientos_permitidos()`, solo en el stream propio de cada campo; las excepciones entre campos y las tablas sin Pone Chico exigen clave real), `productos_catalogo` legible para todos y `sanidad_ultimos`/`sanidad_proximos` legibles con clave (las lee el tablero). Detalle en `scripts/seguridad/README.md`.
 - *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, escritos y revisados, **no corridos**): las políticas
   pasan a exigir `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los
   equipos activos con `con_clave = true` y los scripts de la PC que usan la llave pública
