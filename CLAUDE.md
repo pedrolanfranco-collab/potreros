@@ -732,17 +732,8 @@ nombres del padrón difieren más que eso, la tarjeta sale sin bloque. Si la lec
 Para tenerlo en las dos pestañas de verdad, la PC tendría que publicar `gen` (columna nueva en las dos tablas + `actualizar_sanidad_supabase.py`, que vive en OneDrive).
 Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;
 el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
-publica hace más de 6 h. Test: `tests/probar_tablero_sanidad.js`.
-**Clave del campo (Fase 4, 21/10/2026):** el cierre de la lectura anónima exige `x-clave-campo` en cada tabla que lee el tablero, así que
-manda la clave en cada lectura. La Vuelta y María Laura la piden; **Pone Chico no** (no usa clave: sin encabezado, aviso ni botón). Se guarda en
-`clave_campo_<campo>`, **la misma clave de `localStorage` que usan las apps**: el tablero vive en el mismo origen (`github.io`), así que donde la app ya la
-tiene no hay que cargarla de nuevo (en iPhone, una página agregada a la pantalla de inicio guarda sus datos aparte de Safari: hay que cargarla ahí).
-Botón 🔑 en el encabezado y ventana (`#modal-clave`) que **comprueba la clave con `verificar_clave` antes de guardarla**; un fallo de red o de la función
-nunca se trata como clave mala. **Sin clave, o con una que el servidor rechaza, NO lee**: con RLS eso no da error sino "0 filas", y ese vacío pisaría la
-última copia buena en `localStorage`; queda la copia y un aviso ("Falta la clave de…" / "La clave guardada ya no sirve"). Si no se pudo comprobar la
-clave y todo viene vacío, tampoco pisa una copia con datos. `sanidad_ultimos`/`sanidad_proximos` pasan a leerse **por establecimiento con la clave**
-(política `…_select_clave` en `fase4_cierre.sql`). `tests/probar_tablero_sanidad.js` (74 chequeos, probado con mutaciones: sin encabezado, leer sin clave,
-clave mala tomada por buena) cubre todo esto.
+publica hace más de 6 h. **Clave del campo (21/10/2026):** La Vuelta y María Laura piden la clave; el tablero toma la que ya se cargó en las apps (mismo origen, `clave_campo_<campo>`) o la pide una vez, la comprueba con `verificar_clave` y la manda en `x-clave-campo`; Pone Chico no la usa. Sin clave y con las políticas cerradas no pisa la última copia con una lectura vacía. Test:
+`tests/probar_tablero_sanidad.js`.
 
 **Cómo se trabajó y qué recordar (16/10/2026):**
 - Cada cambio al tablero fue por **PR y merge a `main` cuando el CI está en verde**, a pedido de Pedro; una vez mergeado, la rama de
@@ -761,9 +752,6 @@ catálogo), dosis, producto 2 / dosis 2 opcionales, potrero (los 31 de La Vuelta
 (mismo nombre, separador, saltos `\r` y codificación; las celdas no tocadas salen idénticas) con `PRODUCTO`, `DOSIS`,
 `PRODUCTO2`, `DOSIS 2`, `POTRERO` llenos (las agrega al final si faltan). Ese va a `Entrada\`: el Lector registra la carencia por
 animal y `sanidad_puente.py` crea el tratamiento. Las filas que ya traían producto no se tocan.
-- **Fase 4 (21/10/2026)**: el cierre pide la clave del campo para leer `productos_catalogo`; la página manda la de La Vuelta
-  (`clave_campo_la_vuelta` de `localStorage`, la que guardan las apps o la que se carga en el Tablero de Sanidad, botón 🔑). Sin ella el
-  servidor contesta "0 filas" y queda la copia de 50 productos: la nota del catálogo lo dice ("falta la clave de La Vuelta en este equipo" / "ya no sirve").
 - **No escribe nada**: solo lee `productos_catalogo` (con una copia de los 50 nombres al 18/10/2026 si no hay señal). El
   producto se escribe con el nombre **exacto** del catálogo, que `sanidad_puente.py` acepta sin `productos_sanidad.csv`; uno
   que no está en la lista no se deja usar. Dosis con coma o punto (sale con punto); campos de texto, no `type=number`, que
@@ -842,6 +830,13 @@ movimiento y la sube con *upsert* por `event_id` (vigente/anulado, `asentado_exc
 (`maestros_dicose`) los lee la PC al abrir Movimientos DICOSE y los agrega la PC (cola `estado.colaMaestros` si no hay
 señal); se siembran desde los Excel con `sembrar_maestros_dicose.py`. Ninguna política permite DELETE; para sacar una
 entrada de las listas se pone `activo = false`.
+**Destare y peso neto (21/10/2026, a pedido de Pedro, solo PC):** la compra muestra "Kilos neto (bruto − destare)" como campo
+de solo lectura (`#cv-kneto`) y la venta ganó "Destare (%)" (`#cv-destare-v`, vacío con "4 a 7": varía entre 4 y 7 %; **obligatorio en 1ª**, aviso en la vista previa fuera de
+ese rango; también en las categorías extra; una venta vieja sin destare se edita con 0) y
+"Kilos neto en pie" (`#cv-kneto-v`). En una venta 1ª el precio va sobre el neto: `calcVenta()` arma `kilosNeto = kilosPie − destare·kilosPie`,
+`kilos` = ese neto, y el rendimiento es res / neto en pie (sin destare da lo mismo que antes). `detalle.fin` de la venta suma `destare`,
+`kilosNeto` y `pesoPromNeto`; `kilosPie` sigue siendo el bruto. `pasar_traslados_a_excel.py` (fuera del repo) tiene que tomar `importeBruto`
+/ `kilos` de `fin`, no recalcular con `kilosPie`. Test: `tests/probar_finanzas_compraventa.js`.
 **Clave privada (secret / service_role)**: como este repo es público y la clave `anon` está en cada app,
 `movimientos_dicose` no admite `anon` para nada y `maestros_dicose` solo SELECT + INSERT. Los scripts de la PC
 (`dicose_supabase.py`, `sembrar_maestros_dicose.py`) escriben con la clave privada, que se lee de la variable de
@@ -918,21 +913,19 @@ siguen abiertas.
   3 claves, correr `verificar_fase4.py`, publicar, y que cada equipo la cargue una vez.
 - *Pone Chico NO usa clave (17/10/2026, a pedido de Pedro)*: `CONFIG.claveCampo` es `true` en La Vuelta y María Laura y
   `false` en Pone Chico. Con `false` la app no muestra la ventana, el aviso del pie ni el botón, no manda `x-clave-campo` y
-  no llama a `verificar_clave` (aunque haya una clave vieja guardada). Test: `probar_clave_campo.js`. **El cierre lo deja
-  abierto a propósito (21/10/2026)**: `public.establecimientos_autorizados()` = campos con la clave del pedido + `pone_chico`, y
-  solo se usa en sus filas propias (`eventos_sync`, `stock_potreros`, `sanidad_carga_pone_chico`); `productos_catalogo` y
-  `maestros_dicose` NO se abren (una app de Pone Chico sin clave ve esas listas vacías). Para ponerle clave después, ver
-  `scripts/seguridad/README.md`.
-- *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, **no corridos en producción** pero sí probados el 21/10/2026
-  contra un Postgres 16 real con `scripts/seguridad/probar_cierre.js`, 62 verificaciones): las políticas pasan a exigir
-  `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los equipos activos de La
-  Vuelta y María Laura con `con_clave = true`** (Pone Chico no cuenta), **y el Tablero de Sanidad y `completar-sanidad/` ya estén publicados con
-  la clave cargada en el teléfono** (publicar ANTES del cierre: el encabezado se ignora mientras las políticas están abiertas). Los
-  scripts de la PC (`pasar_traslados_a_excel.py`, `sanidad_puente.py`, `bajar_sanidad_de_potreros.py`,
-  `regenerar_stock_potreros_excel.py`, `vigilar_tareas_sanidad.py`) ya usan `SUPABASE_SECRET_KEY` desde el 13/10/2026; el
-  informe de nacimientos (Playwright) necesita la clave en su `localStorage`. Pasos exactos en `scripts/seguridad/README.md`.
-  **Trampa de sintaxis**: en una política, `= any ((select f()))` falla (`text = text[]`, Postgres lo lee como subconsulta);
-  hay que escribir `= any ((select f())::text[])`. Cuando se corra, actualizar la tabla de arriba ("RLS real por tabla").
+  no llama a `verificar_clave` (aunque haya una clave vieja guardada). **Para el cierre**: sus políticas deben dejar Pone Chico
+  abierto a propósito (o se queda sin sincronizar); ver `scripts/seguridad/README.md`. Test: `probar_clave_campo.js`.
+- *Cierre revisado (21/10/2026)*: contempla Pone Chico abierto (`private.campos_abiertos` + `establecimientos_permitidos()`, solo en el stream propio de cada campo; las excepciones entre campos y las tablas sin Pone Chico exigen clave real), `productos_catalogo` legible para todos y `sanidad_ultimos`/`sanidad_proximos` legibles con clave (las lee el tablero). Detalle en `scripts/seguridad/README.md`.
+  **Probado el 21/10/2026 contra un Postgres 16 real** (`scripts/seguridad/probar_cierre.js`, PGlite, 68 verificaciones, con el deshacer). Encontró que el SQL
+  original **abortaba**: en una política, `= any ((select f()))` falla con `text = text[]` (Postgres lo lee como subconsulta); hay que escribir
+  `= any ((select f())::text[])`. Y que **volver a correr `fase4_cierre.sql` reinserta `pone_chico` en `campos_abiertos`**: para ponerle clave, borrarlo y no re-ejecutar el cierre.
+- *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, escritos y revisados, **no corridos**): las políticas
+  pasan a exigir `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los
+  equipos activos con `con_clave = true` y los scripts de la PC que usan la llave pública
+  (`pasar_traslados_a_excel.py`, `sanidad_puente.py`, `bajar_sanidad_de_potreros.py`,
+  `regenerar_stock_potreros_excel.py`, `vigilar_tareas_sanidad.py`) ya usen `SUPABASE_SECRET_KEY`**; el informe de
+  nacimientos (Playwright) necesita la clave en su `localStorage`. Pasos exactos en `scripts/seguridad/README.md`.
+  Cuando se corra, actualizar la tabla de arriba ("RLS real por tabla").
 
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del

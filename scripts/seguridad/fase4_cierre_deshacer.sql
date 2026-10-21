@@ -38,9 +38,6 @@ begin
 end
 $$;
 
--- 1b. La funcion que usaban esas politicas (campos autorizados, Pone Chico sin clave). Ya nadie la usa.
-drop function if exists public.establecimientos_autorizados();
-
 -- 2. Las de antes, tal como estaban.
 do $$
 declare
@@ -81,6 +78,10 @@ begin
   end loop;
 end
 $$;
+
+-- 4. Fuera lo que agrego la version revisada del cierre (21/10/2026). Ya no hay politicas que las usen.
+drop function if exists public.establecimientos_permitidos();
+drop table if exists private.campos_abiertos;
 
 select tablename as tabla, policyname as politica, cmd, roles
 from pg_policies

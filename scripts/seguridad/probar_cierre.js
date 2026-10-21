@@ -146,8 +146,8 @@ async function main() {
   check('sanidad_carga_pone_chico: se lee sin clave (abierta a proposito)', (await cuenta(null, 'sanidad_carga_pone_chico')).rows.length === 1);
   check('animales_caravana: sin clave 0, con la de La Vuelta 1, con la de Maria Laura 0',
     (await cuenta(null, 'animales_caravana')).rows.length === 0 && (await cuenta(LV, 'animales_caravana')).rows.length === 1 && (await cuenta(ML, 'animales_caravana')).rows.length === 0);
-  check('productos_catalogo: sin clave 0 (Pone Chico NO lo abre), con clave de cualquier campo 1',
-    (await cuenta(null, 'productos_catalogo')).rows.length === 0 && (await cuenta(ML, 'productos_catalogo')).rows.length === 1);
+  check('productos_catalogo: lista de referencia pública a propósito (sin clave y con cualquier clave se lee)',
+    (await cuenta(null, 'productos_catalogo')).rows.length === 1 && (await cuenta(ML, 'productos_catalogo')).rows.length === 1 && (await cuenta(MALA, 'productos_catalogo')).rows.length === 1);
   check('maestros_dicose: sin clave 0, con clave 1',
     (await cuenta(null, 'maestros_dicose')).rows.length === 0 && (await cuenta(LV, 'maestros_dicose')).rows.length === 1);
   for (const t of ['sanidad_ultimos', 'sanidad_proximos']) {
@@ -228,13 +228,28 @@ async function main() {
     bloqueado(await comoAnon(db, LV, "insert into public.animales_caravana values ('22222222','la_vuelta')")));
 
   console.log('\nFUNCIONES');
-  const fn = await comoAnon(db, null, 'select public.establecimientos_autorizados() as a');
-  check('establecimientos_autorizados() sin clave = {pone_chico}', !fn.error && JSON.stringify(fn.rows[0].a) === '["pone_chico"]', JSON.stringify(fn));
-  const fn2 = await comoAnon(db, LV, 'select public.establecimientos_autorizados() as a');
-  check('establecimientos_autorizados() con la clave de La Vuelta = {la_vuelta,pone_chico}', !fn2.error && fn2.rows[0].a.slice().sort().join() === 'la_vuelta,pone_chico', JSON.stringify(fn2));
+  const fn = await comoAnon(db, null, 'select public.establecimientos_permitidos() as a');
+  check('establecimientos_permitidos() sin clave = {pone_chico}', !fn.error && JSON.stringify(fn.rows[0].a) === '["pone_chico"]', JSON.stringify(fn));
+  const fn2 = await comoAnon(db, LV, 'select public.establecimientos_permitidos() as a');
+  check('establecimientos_permitidos() con la clave de La Vuelta = {la_vuelta,pone_chico}', !fn2.error && fn2.rows[0].a.slice().sort().join() === 'la_vuelta,pone_chico', JSON.stringify(fn2));
   const ver = await comoAnon(db, null, "select public.verificar_clave('la_vuelta','" + LV + "') as ok");
   check('verificar_clave sigue andando (release 1)', !ver.error && ver.rows[0].ok === true, JSON.stringify(ver));
-  check('private.* sigue cerrado a anon', bloqueado(await comoAnon(db, null, 'select * from private.claves_campo')));
+  check('private.* sigue cerrado a anon (claves y campos abiertos: ni leer ni escribir)',
+    bloqueado(await comoAnon(db, null, 'select * from private.claves_campo')) && bloqueado(await comoAnon(db, null, 'select * from private.campos_abiertos')) &&
+    bloqueado(await comoAnon(db, LV, "insert into private.campos_abiertos values ('la_vuelta')")) && bloqueado(await comoAnon(db, LV, 'delete from private.campos_abiertos')));
+
+  console.log('\nPONERLE CLAVE A PONE CHICO MAS ADELANTE (borrarlo de private.campos_abiertos)');
+  await db.exec("delete from private.campos_abiertos where establecimiento = 'pone_chico'");
+  const cerrado = async (clave) => [...new Set((await cuenta(clave, 'eventos_sync')).rows.map(r => r.establecimiento))].sort().join();
+  check('sin clave ya no se ve nada, ni Pone Chico', await cerrado(null) === '', await cerrado(null));
+  check('con la clave de Pone Chico se ve solo Pone Chico', await cerrado(PC) === 'pone_chico', await cerrado(PC));
+  check('sin clave ya no puede escribir en Pone Chico ni leer su sanidad',
+    bloqueado(await comoAnon(db, null, ev('pone_chico', 'movimiento'))) && (await cuenta(null, 'sanidad_carga_pone_chico')).rows.length === 0 &&
+    (await cuenta(null, 'sanidad_ultimos')).rows.length === 0);
+  check('con la clave de Pone Chico si', !(await comoAnon(db, PC, ev('pone_chico', 'movimiento'))).error && (await cuenta(PC, 'sanidad_carga_pone_chico')).rows.length >= 1);
+  await db.exec(cierreSql);
+  check('OJO: volver a correr fase4_cierre.sql REINSERTA pone_chico en campos_abiertos (queda abierto otra vez)',
+    await cerrado(null) === 'pone_chico', await cerrado(null));
 
   if (deshacerSql) {
     console.log('\nDESHACER');
@@ -245,8 +260,10 @@ async function main() {
       JSON.stringify(sinAuditoria.length) + ' vs ' + politicasAntes.length);
     const privDespues = (await db.query("select c.relname t, p.priv from pg_class c cross join (values ('SELECT'),('INSERT'),('UPDATE'),('DELETE')) p(priv) where c.relnamespace='public'::regnamespace and c.relkind='r' and c.relname not like 'auditoria_%' and has_table_privilege('anon', c.oid, p.priv) order by 1,2")).rows;
     check('los permisos de tabla de anon vuelven a ser los de antes', JSON.stringify(privDespues) === JSON.stringify(privAntes));
-    const f = (await db.query("select count(*)::int n from pg_proc where proname='establecimientos_autorizados'")).rows[0].n;
-    check('la funcion establecimientos_autorizados() ya no existe', f === 0, f);
+    const f = (await db.query("select count(*)::int n from pg_proc where proname='establecimientos_permitidos'")).rows[0].n;
+    check('la funcion establecimientos_permitidos() ya no existe', f === 0, f);
+    const t = (await db.query("select count(*)::int n from pg_tables where schemaname='private' and tablename='campos_abiertos'")).rows[0].n;
+    check('la tabla private.campos_abiertos ya no existe', t === 0, t);
     check('despues de deshacer todo vuelve a estar abierto', (await cuenta(null, 'eventos_sync')).rows.length >= 3 && (await cuenta(null, 'maestros_dicose')).rows.length >= 1);
   }
 

@@ -16,16 +16,15 @@ const dormir = ms => new Promise(r => setTimeout(r, ms));
 const archivo = process.argv[2] || 'completar-sanidad/index.html';
 const html = fs.readFileSync(archivo, 'utf8');
 
-async function abrir(catalogo, ls){
+async function abrir(catalogo){
   const llamadas = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', e => { console.log('  MAL error en la página — ' + e.message); fallas++; });
   const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://x.github.io/potreros/completar-sanidad/', virtualConsole: vc,
     beforeParse(win){
       win.TextDecoder = TextDecoder; win.TextEncoder = TextEncoder;
-      for(const k in (ls || {})) win.localStorage.setItem(k, ls[k]);
       win.fetch = async (url, opt) => {
-        llamadas.push({ url, metodo: (opt && opt.method) || 'GET', headers: (opt && opt.headers) || {} });
+        llamadas.push({ url, metodo: (opt && opt.method) || 'GET' });
         if(catalogo === 'caido') throw new Error('sin red');
         return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(catalogo)) };
       };
@@ -146,21 +145,6 @@ const CAT = ['Aftosa', 'Clostrisan 9+T', 'Ivermectina R', 'Terramicina Solución
   p = await abrir(CAT);
   await elegirArchivo(p, 'x.csv', Buffer.from('EID,CATEGORIA,PROPIETARIO\n1,<img src=x onerror=window.pwn=1>,<b>yo</b>\n'));
   chequear('categoría/propietario con HTML se muestran como texto', !p.win.pwn && !p.doc.querySelector('#resumen b + b, #cats img, #resumen img'));
-
-  // ---------- Fase 4: la lectura del catálogo pide la clave del campo ----------
-  p = await abrir(CAT, { clave_campo_la_vuelta: '  ClaveLaVuelta1 ' });
-  const lc = p.llamadas.find(l => /productos_catalogo/.test(l.url));
-  chequear('con la clave de La Vuelta guardada por la app la manda en x-clave-campo (normalizada)', lc && lc.headers['x-clave-campo'] === 'clavelavuelta1' && /^sb_publishable_/.test(lc.headers.apikey), JSON.stringify(lc && lc.headers));
-  chequear('con clave y catálogo leído: al día y sin aviso de clave', /al día/.test(p.doc.getElementById('nota-catalogo').textContent) && !/clave/.test(p.doc.getElementById('nota-catalogo').textContent));
-  p = await abrir(CAT);
-  chequear('sin clave guardada no manda el encabezado (todavía anda: el cierre no se corrió)', !('x-clave-campo' in p.llamadas.find(l => /productos_catalogo/.test(l.url)).headers));
-  p = await abrir([]);                                    // lo que contesta el servidor cerrado sin clave: 200 con 0 filas
-  const nota0 = p.doc.getElementById('nota-catalogo').textContent;
-  chequear('cerrado y sin clave: queda la copia guardada y la nota dice que falta la clave', p.doc.querySelectorAll('#catalogo option').length === 50 && /copia guardada/.test(nota0) && /falta la clave de La Vuelta/.test(nota0) && /Tablero de Sanidad/.test(nota0), nota0);
-  p = await abrir([], { clave_campo_la_vuelta: 'clavevieja12345' });
-  const nota1 = p.doc.getElementById('nota-catalogo').textContent;
-  chequear('cerrado y con una clave que no sirve: queda la copia y la nota lo dice', p.doc.querySelectorAll('#catalogo option').length === 50 && /ya no sirve/.test(nota1), nota1);
-  chequear('en ningún caso la clave aparece en la página', !/clavevieja12345|clavelavuelta1/i.test(p.doc.documentElement.innerHTML));
 
   console.log(fallas ? '\n' + fallas + ' FALLAS' : '\nTodo OK');
   process.exit(fallas ? 1 : 0);

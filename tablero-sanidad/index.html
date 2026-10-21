@@ -17,11 +17,11 @@
     animales_caravana (padrón por caravana; de ahí sale la GENERACIÓN) -- la publica la PC (publicar_animales.py)
   No escribe nada. Se refresca solo cada 5 min y al volver a la pestaña; guarda la última copia en el
   teléfono para mostrar algo sin señal.
-  CLAVE DEL CAMPO (Fase 4): el cierre de la lectura anónima (scripts/seguridad/fase4_cierre.sql) deja leer cada tabla solo
-  a quien manda el encabezado `x-clave-campo` de ese establecimiento. La Vuelta y María Laura la piden; Pone Chico no
-  (no usa clave). Se guarda en `clave_campo_<campo>`, la MISMA clave de localStorage que usan las apps (este tablero vive
-  en el mismo origen), así que en un navegador donde la app ya la tiene no hay que cargarla de nuevo. Sin clave, o con una
-  que el servidor rechaza, NO se lee: las políticas no dan error sino "0 filas", y ese vacío pisaría la última copia buena.
+  Clave del campo (Fase 4, 21/10/2026): La Vuelta y María Laura piden la clave del campo; Pone Chico no. El tablero
+  vive en el mismo origen que las apps, así que toma la clave que ya se cargó en ellas (localStorage
+  `clave_campo_<campo>`); si no está, la pide una vez, la comprueba con verificar_clave y la guarda en esa misma
+  posición. La manda en el encabezado `x-clave-campo`. Con las políticas cerradas, una lectura sin clave contesta
+  200 SIN FILAS (no un error): por eso, sin clave, no se pisa la última copia con una lectura vacía.
 -->
 <style>
 :root{
@@ -47,22 +47,12 @@ select{padding:8px 10px;border:2px solid var(--borde);border-radius:10px;backgro
 #refrescar{border:2px solid var(--borde);background:var(--tarjeta);border-radius:10px;min-width:44px;min-height:44px;font-size:18px}
 #estado{font-size:13px;color:var(--suave);margin:6px 0 0}
 #estado.mal{color:var(--rojo);font-weight:600}
-#btn-clave{border:2px solid var(--borde);background:var(--tarjeta);border-radius:10px;min-width:44px;min-height:44px;font-size:18px}
-#aviso-clave{display:block;width:100%;margin:8px 0 0;padding:10px 12px;min-height:44px;border-radius:10px;text-align:left;
-  border:2px solid var(--ocre);background:var(--ocre-claro);color:var(--ocre);font-weight:600;font-size:14px}
-#aviso-clave.invalida{border-color:var(--rojo);background:var(--rojo-claro);color:var(--rojo)}
-#modal-clave{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;
-  padding:16px}
-.mc-caja{background:var(--tarjeta);border:2px solid var(--borde);border-radius:14px;padding:16px;width:100%;max-width:420px}
-.mc-caja h2{margin:0 0 6px;font-size:18px;letter-spacing:0;text-transform:none;color:var(--texto)}
-.mc-caja p{margin:0 0 10px;font-size:14px;line-height:1.4}
-.mc-caja input{width:100%;padding:10px 12px;border:2px solid var(--borde);border-radius:10px;background:var(--fondo);color:var(--texto);
-  min-height:44px;font:inherit}
-.mc-caja .botones{display:flex;gap:8px;margin-top:12px}
-.mc-caja .botones button{flex:1;min-height:46px;border-radius:12px;border:2px solid var(--borde);background:var(--tarjeta);font-weight:600}
-.mc-caja .botones #mc-guardar{background:var(--verde);border-color:var(--verde);color:var(--fondo)}
-#mc-error{color:var(--rojo);font-weight:600;margin-top:8px}
-#mc-cargada{font-weight:600}
+#clave-aviso{background:var(--ocre-claro);border:2px solid var(--ocre);border-radius:12px;padding:10px 12px;margin:12px 0}
+#clave-aviso p{margin:0 0 8px}
+#clave-aviso .fila{justify-content:flex-start}
+#clave-input{flex:1;min-width:0;padding:8px 10px;border:2px solid var(--borde);border-radius:10px;background:var(--tarjeta);min-height:44px;font-size:16px}
+#clave-guardar{border:2px solid var(--verde);background:var(--verde);color:var(--fondo);border-radius:10px;min-height:44px;padding:0 16px;font-weight:600}
+#clave-error{color:var(--rojo);font-size:13px;margin:6px 0 0}
 .tabs{display:flex;gap:8px;margin-top:10px}
 .tab{flex:1;min-height:46px;border:2px solid var(--borde);background:var(--tarjeta);border-radius:12px;font-weight:600}
 .tab[aria-selected=true]{background:var(--verde);border-color:var(--verde);color:var(--fondo)}
@@ -112,12 +102,10 @@ details>summary{cursor:pointer;color:var(--suave);font-size:13px;margin-top:6px;
         <option value="maria_laura">María Laura</option>
         <option value="pone_chico">Pone Chico</option>
       </select>
-      <button id="btn-clave" type="button" aria-label="Clave del campo" title="Clave del campo">🔑</button>
       <button id="refrescar" aria-label="Actualizar ahora">⟳</button>
     </div>
   </div>
   <p id="estado">Cargando…</p>
-  <button id="aviso-clave" type="button" hidden></button>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tab-prox" aria-selected="true">Próximos</button>
     <button class="tab" role="tab" id="tab-ult" aria-selected="false">Últimos</button>
@@ -125,24 +113,18 @@ details>summary{cursor:pointer;color:var(--suave);font-size:13px;margin-top:6px;
   </div>
 </header>
 <main>
+  <div id="clave-aviso" hidden>
+    <p id="clave-msg"></p>
+    <div class="fila">
+      <input id="clave-input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Clave del campo" aria-label="Clave del campo">
+      <button id="clave-guardar">Guardar</button>
+    </div>
+    <p id="clave-error" hidden></p>
+  </div>
   <section id="vista-prox"></section>
   <section id="vista-ult" hidden></section>
   <section id="vista-stock" hidden></section>
 </main>
-
-<div id="modal-clave" hidden role="dialog" aria-modal="true" aria-labelledby="mc-titulo">
-  <div class="mc-caja">
-    <h2 id="mc-titulo">🔑 Clave del campo</h2>
-    <p id="mc-texto"></p>
-    <p id="mc-cargada" hidden></p>
-    <input type="text" id="mc-input" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Escribí la clave" aria-label="Clave del campo">
-    <div id="mc-error" role="alert" hidden></div>
-    <div class="botones">
-      <button type="button" id="mc-guardar">Guardar</button>
-      <button type="button" id="mc-mas-tarde">Más tarde</button>
-    </div>
-  </div>
-</div>
 
 <script>
 const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
@@ -150,33 +132,13 @@ const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
 const REFRESCO_MS = 5 * 60 * 1000;      // cada cuánto se vuelve a leer
 const PUBLICACION_VIEJA_H = 6;           // si la PC no publicó hace más que esto, se avisa
 const CLAVE_LS = 'tablero_sanidad_v1';
+/* Clave del campo (Fase 4). Pone Chico no usa clave (21/10/2026). */
+const CON_CLAVE = { la_vuelta: true, maria_laura: true, pone_chico: false };
+const NOMBRE_CAMPO = { la_vuelta: 'La Vuelta', maria_laura: 'María Laura', pone_chico: 'Pone Chico' };
+const CLAVE_RE = /^[a-z0-9]{8,64}$/;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-/* ---------- clave del campo (Fase 4) ---------- */
-const NOMBRES = { la_vuelta: 'La Vuelta', maria_laura: 'María Laura', pone_chico: 'Pone Chico' };
-const CON_CLAVE = { la_vuelta: true, maria_laura: true, pone_chico: false };   // Pone Chico no usa clave
-const CLAVE_RE = /^[a-z0-9]{8,64}$/;
-const normClave = t => String(t == null ? '' : t).trim().toLowerCase();
-const claveLS = estab => 'clave_campo_' + estab;      // la misma que usan las apps
-function claveGuardada(estab){
-  if(!CON_CLAVE[estab]) return '';
-  try{ const c = normClave(localStorage.getItem(claveLS(estab))); return CLAVE_RE.test(c) ? c : ''; }catch(e){ return ''; }
-}
-const estadoClave = {};              // `${campo}|${clave}` -> 'ok' (el servidor la aceptó en esta apertura)
-const cabeceras = clave => clave ? { apikey: SUPABASE_ANON_KEY, 'x-clave-campo': clave } : { apikey: SUPABASE_ANON_KEY };
-/* 'ok' | 'mala' | 'sin_respuesta'. Un error de red o de la función (todavía no publicada, por ejemplo) NUNCA cuenta como
-   clave mala: es 'sin_respuesta'. Es un POST, pero solo pregunta (no escribe nada). */
-async function comprobarClave(estab, clave){
-  try{
-    const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/verificar_clave', { method: 'POST', cache: 'no-store',
-      headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ est: estab, clave }) });
-    if(!r.ok) return 'sin_respuesta';
-    const v = await r.json();
-    return v === true ? 'ok' : v === false ? 'mala' : 'sin_respuesta';
-  }catch(e){ return 'sin_respuesta'; }
-}
 
 /* ---------- fechas (día calendario de Uruguay, sin corrimientos de zona) ---------- */
 function hoyISO(){
@@ -201,23 +163,88 @@ function relativo(n){
   return n > 0 ? 'en ' + n + ' días' : 'hace ' + (-n) + ' días';
 }
 
+/* ---------- clave del campo ---------- */
+function claveDe(estab){
+  if(!CON_CLAVE[estab]) return '';
+  try{
+    const c = String(localStorage.getItem('clave_campo_' + estab) || '').trim().toLowerCase();
+    return CLAVE_RE.test(c) ? c : '';
+  }catch(e){ return ''; }
+}
+function cab(estab){
+  const h = { apikey: SUPABASE_ANON_KEY };
+  const c = claveDe(estab);
+  if(c) h['x-clave-campo'] = c;
+  return h;
+}
+const claveMala = {};          // campo -> true si el servidor dijo que la clave guardada no sirve
+const claveVerificada = {};    // campo + clave -> ya hubo una respuesta definitiva
+/* 'ok' | 'mala' | 'sin_respuesta': un error de red o de la función NUNCA cuenta como clave mala. */
+async function verificarClave(estab, clave){
+  try{
+    const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/verificar_clave', { method: 'POST', cache: 'no-store',
+      headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ est: estab, clave }) });
+    if(!r.ok) return 'sin_respuesta';
+    const v = await r.json();
+    return v === true ? 'ok' : v === false ? 'mala' : 'sin_respuesta';
+  }catch(e){ return 'sin_respuesta'; }
+}
+async function verificarGuardada(estab){
+  const c = claveDe(estab);
+  if(!c || claveVerificada[estab + c]) return;
+  const r = await verificarClave(estab, c);
+  if(r === 'sin_respuesta') return;
+  claveVerificada[estab + c] = true;
+  claveMala[estab] = (r === 'mala');
+}
+function pintarAvisoClave(){
+  const estab = $('estab').value;
+  let msg = '';
+  if(CON_CLAVE[estab]){
+    if(!claveDe(estab)) msg = '🔑 Falta la clave de ' + NOMBRE_CAMPO[estab] + '. Escribila una vez para seguir viendo los datos.';
+    else if(claveMala[estab]) msg = '🔑 La clave guardada de ' + NOMBRE_CAMPO[estab] + ' ya no sirve. Escribí la nueva.';
+  }
+  $('clave-msg').textContent = msg;
+  $('clave-aviso').hidden = !msg;
+}
+function errorClave(txt){ const e = $('clave-error'); e.textContent = txt || ''; e.hidden = !txt; }
+async function guardarClave(){
+  const estab = $('estab').value;
+  const c = String($('clave-input').value || '').trim().toLowerCase();
+  errorClave('');
+  if(!CON_CLAVE[estab]) return;
+  if(!CLAVE_RE.test(c)){ errorClave('La clave tiene solo letras (sin tildes ni ñ) y números, sin espacios, y al menos 8 caracteres.'); return; }
+  $('clave-guardar').disabled = true;
+  try{
+    const r = await verificarClave(estab, c);
+    if(r === 'sin_respuesta'){ errorClave('No se pudo comprobar la clave ahora (sin conexión). Probá de nuevo cuando tengas señal.'); return; }
+    if(r === 'mala'){ errorClave('Esa no es la clave de ' + NOMBRE_CAMPO[estab] + '. Revisala y probá de nuevo.'); return; }
+    try{ localStorage.setItem('clave_campo_' + estab, c); }
+    catch(e){ errorClave('No se pudo guardar la clave en este equipo (memoria llena o navegador bloqueado).'); return; }
+    claveMala[estab] = false; claveVerificada[estab + c] = true;
+    $('clave-input').value = '';
+    pintarAvisoClave();
+    actualizar();
+  }finally{ $('clave-guardar').disabled = false; }
+}
+
 /* ---------- lectura ---------- */
-async function pedir(tabla, estab, orden, clave){
+async function pedir(tabla, estab, orden){
   const url = SUPABASE_URL + '/rest/v1/' + tabla + '?select=*&establecimiento=eq.' + encodeURIComponent(estab) +
               '&order=' + orden + '&limit=500';
-  const r = await fetch(url, { headers: cabeceras(clave), cache: 'no-store' });
+  const r = await fetch(url, { headers: cab(estab), cache: 'no-store' });
   if(!r.ok) throw new Error(tabla + ': HTTP ' + r.status);
   const filas = await r.json();
   if(!Array.isArray(filas)) throw new Error(tabla + ': respuesta inesperada');
   return filas;
 }
 /* PostgREST corta en 1000 filas sin avisar: se pide de a lotes con offset. */
-async function pedirTodo(tabla, estab, select, orden, extra, clave){
+async function pedirTodo(tabla, estab, select, orden, extra, claveEstab){
   const filas = [];
   for(let desde = 0; desde < 20000; desde += 1000){
     const url = SUPABASE_URL + '/rest/v1/' + tabla + '?select=' + select + (estab ? '&establecimiento=eq.' + encodeURIComponent(estab) : '') +
                 (extra || '') + '&order=' + orden + '&limit=1000&offset=' + desde;
-    const r = await fetch(url, { headers: cabeceras(clave), cache: 'no-store' });
+    const r = await fetch(url, { headers: cab(claveEstab || estab), cache: 'no-store' });
     if(!r.ok) throw new Error(tabla + ': HTTP ' + r.status);
     const lote = await r.json();
     if(!Array.isArray(lote)) throw new Error(tabla + ': respuesta inesperada');
@@ -438,66 +465,6 @@ function textoEstado(extra){
 function pintarTodo(extra){
   pintarProximos(); pintarUltimos(); pintarStock();
   const e = textoEstado(extra); pintarEstado(e.texto || 'Sin datos', e.mal);
-  pintarAvisoClave();
-}
-/* Aviso bajo el estado: falta la clave del campo, o la guardada ya no sirve. Con la clave bien no se muestra nada. */
-function pintarAvisoClave(){
-  const estab = $('estab').value, aviso = $('aviso-clave');
-  $('btn-clave').hidden = !CON_CLAVE[estab];
-  let texto = '', clase = '';
-  if(CON_CLAVE[estab]){
-    const clave = claveGuardada(estab);
-    if(!clave) texto = '🔑 Falta la clave de ' + NOMBRES[estab] + ' · tocá para cargarla';
-    else if(estadoClave[estab + '|' + clave] === 'mala'){ texto = '🔑 La clave guardada ya no sirve · tocá para cambiarla'; clase = 'invalida'; }
-  }
-  aviso.hidden = !texto; aviso.textContent = texto; aviso.className = clase;
-}
-
-/* ---------- ventana de la clave ---------- */
-let modalEstab = null, guardandoClave = false;
-const ofrecida = {};                  // la ventana se abre sola UNA vez por campo y por apertura de la página
-function mostrarErrorClave(t){ const e = $('mc-error'); e.textContent = t || ''; e.hidden = !t; }
-function abrirModalClave(estab){
-  if(!CON_CLAVE[estab]) return;
-  modalEstab = estab;
-  const guardada = claveGuardada(estab), mala = guardada && estadoClave[estab + '|' + guardada] === 'mala';
-  $('mc-texto').textContent = 'Escribí la clave de ' + NOMBRES[estab] + ' (la misma que usan las apps de ese campo). Si no la tenés, pedísela a Pedro.';
-  const c = $('mc-cargada');
-  c.hidden = !guardada;
-  if(guardada){
-    c.textContent = mala ? '🔑 La clave guardada en este equipo ya no sirve. Escribí la nueva.' : '✅ Este equipo ya tiene la clave cargada. Si cambió, escribí la nueva.';
-    c.style.color = mala ? 'var(--rojo)' : 'var(--verde)';
-  }
-  $('mc-input').value = guardada;
-  mostrarErrorClave('');
-  $('modal-clave').hidden = false;
-  try{ $('mc-input').focus(); }catch(e){}
-}
-function cerrarModalClave(){ $('modal-clave').hidden = true; modalEstab = null; }
-/* Se abre sola, una vez por campo y por apertura, cuando falta la clave o el servidor la rechaza. No con automatización. */
-function ofrecerClave(estab){
-  if(ofrecida[estab] || navigator.webdriver || !$('modal-clave').hidden) return;
-  ofrecida[estab] = true;
-  abrirModalClave(estab);
-}
-async function guardarClaveDesdeVentana(){
-  if(guardandoClave || !modalEstab) return;
-  const estab = modalEstab, clave = normClave($('mc-input').value);
-  mostrarErrorClave('');
-  if(!clave){ mostrarErrorClave('Escribí la clave del campo.'); return; }
-  if(!CLAVE_RE.test(clave)){ mostrarErrorClave('La clave tiene solo letras (sin tildes ni ñ) y números, sin espacios, y al menos 8 caracteres.'); return; }
-  guardandoClave = true; $('mc-guardar').disabled = true;
-  try{
-    const r = await comprobarClave(estab, clave);
-    if(r === 'sin_respuesta'){ mostrarErrorClave('No se pudo comprobar la clave ahora (sin conexión). Probá de nuevo cuando tengas señal.'); return; }
-    if(r === 'mala'){ mostrarErrorClave('Esa no es la clave de ' + NOMBRES[estab] + '. Revisala y probá de nuevo.'); return; }
-    try{ localStorage.setItem(claveLS(estab), clave); }
-    catch(e){ mostrarErrorClave('No se pudo guardar la clave en este equipo (memoria llena o navegador bloqueado).'); return; }
-    estadoClave[estab + '|' + clave] = 'ok';
-    cerrarModalClave();
-    pintarAvisoClave();
-    if($('estab').value === estab) actualizar();
-  }finally{ guardandoClave = false; $('mc-guardar').disabled = false; }
 }
 
 /* ---------- ciclo ---------- */
@@ -517,39 +484,28 @@ async function actualizar(){
   enCurso = true;
   const estab = $('estab').value;
   try{
-    /* Sin la clave (o con una que el servidor rechaza) las políticas no dan error: contestan "0 filas". Si se leyera igual,
-       ese vacío pisaría la última copia buena. Por eso con la clave faltante o mala NO se lee: queda la copia y el aviso. */
-    const clave = claveGuardada(estab);
-    if(CON_CLAVE[estab]){
-      if(!clave){ pintarTodo(); ofrecerClave(estab); return; }
-      const k = estab + '|' + clave;
-      if(estadoClave[k] !== 'ok'){
-        const r = await comprobarClave(estab, clave);
-        if($('estab').value !== estab) return;
-        if(r === 'mala'){ estadoClave[k] = 'mala'; pintarTodo(); ofrecerClave(estab); return; }
-        if(r === 'ok') estadoClave[k] = 'ok';      // 'sin_respuesta': se intenta leer igual; sin señal, falla y queda la copia
-      }
-    }
+    await verificarGuardada(estab);
+    if($('estab').value !== estab) return;
     const tc = TABLA_CARGA[estab];
     const [prox, ult, stock, gens, cargas] = await Promise.all([
-      pedir('sanidad_proximos', estab, 'fecha_prevista.asc.nullslast', clave), pedir('sanidad_ultimos', estab, 'fecha.desc', clave),
-      pedirTodo('stock_potreros', estab, 'potrero,categoria,dueno,cantidad,ug,especie,actualizado_en', 'potrero.asc,clave.asc', '', clave),
+      pedir('sanidad_proximos', estab, 'fecha_prevista.asc.nullslast'), pedir('sanidad_ultimos', estab, 'fecha.desc'),
+      pedirTodo('stock_potreros', estab, 'potrero,categoria,dueno,cantidad,ug,especie,actualizado_en', 'potrero.asc,clave.asc'),
       /* la generación es un extra: si el padrón no se puede leer, el resto del tablero sigue andando */
-      pedirTodo('animales_caravana', estab, 'potrero,gen,categoria,estado_vida', 'id8.asc', '', clave).then(resumirGens).catch(() => null),
+      pedirTodo('animales_caravana', estab, 'potrero,gen,categoria,estado_vida', 'id8.asc').then(resumirGens).catch(() => null),
       /* también un extra: si la carga no se puede leer, Últimos sale igual, sin generación */
-      tc ? pedirTodo(tc.t, tc.conEstab ? estab : null, 'fecha,categoria,potrero,cantidad,gen', 'fecha.desc,id.asc', '&gen=not.is.null', clave).catch(() => []) : []
+      tc ? pedirTodo(tc.t, tc.conEstab ? estab : null, 'fecha,categoria,potrero,cantidad,gen', 'fecha.desc,id.asc', '&gen=not.is.null', estab).catch(() => []) : []
     ]);
     if($('estab').value !== estab) return;       // cambió de establecimiento mientras leía
-    /* Red de seguridad: si no se pudo comprobar la clave y TODO vino vacío, puede ser una clave mala disfrazada de "0 filas":
-       no se pisa una copia que tenía datos. */
-    if(CON_CLAVE[estab] && estadoClave[estab + '|' + clave] !== 'ok' && !prox.length && !ult.length && !stock.length &&
-       (datos.prox.length || datos.ult.length || datos.stock.length)){
-      pintarTodo(' · no se pudo comprobar la clave, mostrando la última copia');
+    /* Sin clave válida las políticas contestan 200 sin filas: no se pisa la última copia con una lectura vacía. */
+    if(CON_CLAVE[estab] && (!claveDe(estab) || claveMala[estab]) && !prox.length && !ult.length && !stock.length){
+      pintarAvisoClave();
+      pintarTodo(' · sin clave, mostrando la última copia');
       return;
     }
     cruzarGen(ult, cargas);
     datos = { prox, ult, stock, gens, leido: new Date().toISOString() };
     guardarCache(estab);
+    pintarAvisoClave();
     pintarTodo();
   }catch(e){
     if($('estab').value === estab) pintarTodo(' · sin conexión, mostrando la última copia');
@@ -558,7 +514,7 @@ async function actualizar(){
 function cambiarEstab(){
   try{ localStorage.setItem(CLAVE_LS + '_estab', $('estab').value); }catch(e){}
   datos = leerCache($('estab').value) || { prox: [], ult: [], stock: [], gens: null, leido: null };
-  pintarTodo(); actualizar();
+  pintarAvisoClave(); pintarTodo(); actualizar();
 }
 function elegirTab(cual){
   for(const t of ['prox', 'ult', 'stock']){
@@ -572,14 +528,8 @@ $('tab-ult').onclick = () => elegirTab('ult');
 $('tab-stock').onclick = () => elegirTab('stock');
 $('estab').onchange = cambiarEstab;
 $('refrescar').onclick = actualizar;
-$('aviso-clave').onclick = () => abrirModalClave($('estab').value);
-$('btn-clave').onclick = () => abrirModalClave($('estab').value);
-$('mc-guardar').onclick = guardarClaveDesdeVentana;
-$('mc-mas-tarde').onclick = cerrarModalClave;
-$('mc-input').addEventListener('keydown', e => { if(e.key === 'Enter') guardarClaveDesdeVentana(); });
-document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('modal-clave').hidden) cerrarModalClave(); });
-/* Otra página de este mismo origen (una app) guardó o cambió la clave de este campo */
-window.addEventListener('storage', e => { if(e.key === claveLS($('estab').value)){ pintarAvisoClave(); actualizar(); } });
+$('clave-guardar').onclick = guardarClave;
+$('clave-input').addEventListener('keydown', e => { if(e.key === 'Enter') guardarClave(); });
 document.addEventListener('visibilitychange', () => { if(!document.hidden) actualizar(); });
 setInterval(() => { if(!document.hidden) actualizar(); }, REFRESCO_MS);
 try{ const g = localStorage.getItem(CLAVE_LS + '_estab'); if(g && [...$('estab').options].some(o => o.value === g)) $('estab').value = g; }catch(e){}
