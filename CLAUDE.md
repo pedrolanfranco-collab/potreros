@@ -835,8 +835,16 @@ de solo lectura (`#cv-kneto`) y la venta ganó "Destare (%)" (`#cv-destare-v`, v
 ese rango; también en las categorías extra; una venta vieja sin destare se edita con 0) y
 "Kilos neto en pie" (`#cv-kneto-v`). En una venta 1ª el precio va sobre el neto: `calcVenta()` arma `kilosNeto = kilosPie − destare·kilosPie`,
 `kilos` = ese neto, y el rendimiento es res / neto en pie (sin destare da lo mismo que antes). `detalle.fin` de la venta suma `destare`,
-`kilosNeto` y `pesoPromNeto`; `kilosPie` sigue siendo el bruto. `pasar_traslados_a_excel.py` (fuera del repo) tiene que tomar `importeBruto`
-/ `kilos` de `fin`, no recalcular con `kilosPie`. Test: `tests/probar_finanzas_compraventa.js`.
+`kilosNeto` y `pesoPromNeto`; `kilosPie` sigue siendo el bruto. Test: `tests/probar_finanzas_compraventa.js`.
+*Scripts de la PC (revisados el 21/10/2026, carpeta `Ganaderia\Macros & phyton`):* `pasar_traslados_a_excel.py` no necesitó cambios
+(al Excel de DICOSE pasa solo cantidades, sin kilos ni importes). `dicose_supabase.py` (`fila_compraventa()`) ya copiaba `importeBruto`,
+`neto` y `rendimiento` de `fin` sin recalcular; se le agregó en la rama de venta `"destare"` y `"kilos_neto"` (antes solo en la compra), y
+Pedro lo aplicó en la PC con un bloque de PowerShell (copia del original en `dicose_supabase.py.bak`; prueba local con una venta de
+2.000 kg al 5 %: `destare 0.05`, `kilos_neto 1900`). Las ventas de antes quedan con esas dos columnas vacías.
+*Para cambiar un archivo de la PC desde la nube:* pegar en PowerShell un bloque envuelto en `& { … }` (si no, la consola ejecuta línea por
+línea y un `elseif`/`else` suelto da "no se reconoce"), que lea/escriba con `[System.IO.File]` conservando BOM y CRLF, sea idempotente y deje
+`.bak`; probarlo antes en la nube con `pwsh` (se baja de los releases de GitHub) pasándolo por stdin (`pwsh -Command - < bloque.txt`, con
+una línea en blanco al final). Para leer un archivo de la PC, lo más fácil para Pedro es `notepad <archivo>`, Ctrl+A, Ctrl+C y pegar en el chat.
 **Clave privada (secret / service_role)**: como este repo es público y la clave `anon` está en cada app,
 `movimientos_dicose` no admite `anon` para nada y `maestros_dicose` solo SELECT + INSERT. Los scripts de la PC
 (`dicose_supabase.py`, `sembrar_maestros_dicose.py`) escriben con la clave privada, que se lee de la variable de
