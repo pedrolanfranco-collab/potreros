@@ -38,6 +38,9 @@ begin
 end
 $$;
 
+-- 1b. La funcion que usaban esas politicas (campos autorizados, Pone Chico sin clave). Ya nadie la usa.
+drop function if exists public.establecimientos_autorizados();
+
 -- 2. Las de antes, tal como estaban.
 do $$
 declare

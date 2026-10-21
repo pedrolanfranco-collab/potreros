@@ -3,11 +3,12 @@
 -- ##                                                                              ##
 -- ##   NO CORRER TODAVIA.  ESTE ES EL RELEASE 2 (EL CIERRE) DE LA FASE 4.         ##
 -- ##                                                                              ##
--- ##   No correrlo hasta que se cumplan LAS DOS cosas:                            ##
--- ##     1. `private.equipos_vistos` muestre TODOS los equipos activos con        ##
--- ##        con_clave = true (ver la consulta del README), y                      ##
+-- ##   No correrlo hasta que se cumplan LAS TRES cosas:                           ##
+-- ##     1. `private.equipos_vistos` muestre TODOS los equipos activos de La      ##
+-- ##        Vuelta y Maria Laura con con_clave = true (consulta del README), y    ##
 -- ##     2. los scripts de la PC que usan la llave publica ya usen la clave       ##
--- ##        privada (SUPABASE_SECRET_KEY).                                        ##
+-- ##        privada (SUPABASE_SECRET_KEY) -- hecho el 13/10/2026, y              ##
+-- ##     3. el Tablero de Sanidad pueda leer con la clave del campo (README).     ##
 -- ##                                                                              ##
 -- ##   Un equipo sin clave, o un script con la llave publica, deja de leer y de   ##
 -- ##   escribir en cuanto este script corre (en la app: el cartel rojo "trabados" ##
@@ -33,30 +34,44 @@
 -- El keep-alive de GitHub (mantener_activo.yml) sigue andando: una consulta con la llave publica contesta
 -- 200 con lista vacia.
 --
+-- POR QUE PONE CHICO QUEDA ABIERTO (17/10/2026, a pedido de Pedro): sus apps tienen CONFIG.claveCampo = false
+-- y NO mandan el encabezado `x-clave-campo`. Con las politicas "solo con clave" quedaria sin poder leer ni
+-- escribir. Por eso las filas PROPIAS de Pone Chico (su stream de eventos_sync, su stock y su tabla de sanidad)
+-- siguen abiertas a quien tenga la llave publica, como hoy. La lista de campos sin clave vive en UN solo lugar:
+-- public.establecimientos_autorizados() (paso 1b). Para ponerle clave a Pone Chico mas adelante: sacar
+-- 'pone_chico' de esa lista (create or replace), claveCampo:true en template/configs/pone-chico.js y que cada
+-- equipo cargue la clave (la de pone_chico ya esta cargada en private.claves_campo).
+-- Lo abierto NO se extiende a lo que Pone Chico comparte con los otros campos: productos_catalogo (costos por
+-- dosis) y maestros_dicose (compradores y proveedores con su DICOSE) siguen pidiendo la clave de algun campo, asi
+-- que una app de Pone Chico sin clave ve esas dos listas vacias (el selector de productos queda en "Otro").
+-- Tampoco se abre el espejo de un traslado (Pone Chico no hace traslados) ni sanidad_carga / animales_caravana.
+--
 -- Que hace (todo en UNA transaccion: si algo falla, no queda nada aplicado):
 --   0. Guarda las politicas actuales y los permisos de anon sobre estas tablas en
 --      `auditoria_politicas_antes_fase4` y `auditoria_privilegios_antes_fase4` (para poder deshacer).
 --   1. Borra TODAS las politicas de `anon`/`public` de las 10 tablas de abajo (sin importar el nombre).
+--   1b. Crea public.establecimientos_autorizados(): los campos con la clave de este pedido + los campos sin clave.
 --   2. Crea las nuevas, siempre `to anon`:
 --
 --        tabla                       leer                      escribir
 --        --------------------------  ------------------------  --------------------------------------------
---        eventos_sync                clave del campo           INSERT con la clave del campo; excepcion:
+--        eventos_sync                clave del campo (*)       INSERT con la clave del campo (*); excepcion:
 --                                                              traslado_entrada si la clave es la del campo de
 --                                                              origen (detalle.origen.establecimiento) y la
 --                                                              correccion anular_traslado si es la del campo
 --                                                              de origen (detalle.origenEstablecimiento).
 --                                                              Sin UPDATE ni DELETE (como hoy).
---        stock_potreros              clave del campo           todo, con la clave de su establecimiento
+--        stock_potreros              clave del campo (*)       todo, con la clave de su establecimiento (*)
 --        sanidad_carga (La Vuelta)   clave de la_vuelta        INSERT con la clave; UPDATE/DELETE con la clave
 --                                                              y solo filas con importado_en vacio
 --        sanidad_carga_maria_laura   clave de maria_laura      todo con la clave de maria_laura
---        sanidad_carga_pone_chico    clave de pone_chico       todo con la clave de pone_chico
+--        sanidad_carga_pone_chico    sin clave (*)             todo, sin clave (*)
 --        animales_caravana           clave del campo           nadie (la escribe la PC con la clave privada)
 --        productos_catalogo          cualquier campo           nadie (la escribe la PC con la clave privada)
 --        maestros_dicose             cualquier campo           INSERT con la clave de cualquier campo
 --        sanidad_ultimos             nadie                     nadie
 --        sanidad_proximos            nadie                     nadie
+--        (*) Pone Chico: sus filas no piden clave (ver arriba). Las de La Vuelta y Maria Laura, si.
 --
 --   3. Ajusta los permisos de tabla de anon: donde conserva algo bajo politica, el permiso de tabla sigue
 --      (sin el permiso de tabla la politica no alcanza); sanidad_ultimos y sanidad_proximos se cierran del todo.
@@ -141,61 +156,77 @@ begin
 end
 $$;
 
--- 2. Politicas nuevas. `(select public.establecimientos_con_clave())` se evalua una vez por consulta.
+-- 1b. Campos autorizados para este pedido: los que traen su clave + los que NO usan clave (hoy solo Pone Chico).
+--     Para ponerle clave a Pone Chico: reemplazar `array['pone_chico']::text[]` por `array[]::text[]` (create or replace).
+--     Solo se usa en las politicas de las filas propias de ese campo (eventos_sync, stock_potreros,
+--     sanidad_carga_pone_chico). Las excepciones de traslado y el resto siguen con establecimientos_con_clave().
+create or replace function public.establecimientos_autorizados()
+returns text[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.establecimientos_con_clave() || array['pone_chico']::text[];
+$$;
+revoke all on function public.establecimientos_autorizados() from public;
+grant execute on function public.establecimientos_autorizados() to anon, authenticated;
+
+-- 2. Politicas nuevas. `(select public.establecimientos_autorizados())` se evalua una vez por consulta.
 
 -- eventos_sync: registro de solo-agregar (sin UPDATE ni DELETE).
 create policy eventos_sync_select_clave on public.eventos_sync
   for select to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())));
+  using (establecimiento = any ((select public.establecimientos_autorizados())::text[]));
 
 create policy eventos_sync_insert_clave on public.eventos_sync
   for insert to anon
   with check (
-    establecimiento = any ((select public.establecimientos_con_clave()))
+    establecimiento = any ((select public.establecimientos_autorizados())::text[])
     -- traslado entre campos: el espejo de entrada se escribe en el stream del destino con la clave del origen
     or (tipo = 'traslado_entrada'
-        and (detalle -> 'origen' ->> 'establecimiento') = any ((select public.establecimientos_con_clave())))
+        and (detalle -> 'origen' ->> 'establecimiento') = any ((select public.establecimientos_con_clave())::text[]))
     -- borrar la salida de un traslado anula la entrada en el destino: correccion en el stream del destino
     or (tipo = 'correccion'
         and (detalle ->> 'accion') = 'anular_traslado'
-        and (detalle ->> 'origenEstablecimiento') = any ((select public.establecimientos_con_clave())))
+        and (detalle ->> 'origenEstablecimiento') = any ((select public.establecimientos_con_clave())::text[]))
   );
 
 -- stock_potreros: la app lo escribe (upsert + delete), nunca lo lee.
 create policy stock_potreros_all_clave on public.stock_potreros
   for all to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())))
-  with check (establecimiento = any ((select public.establecimientos_con_clave())));
+  using (establecimiento = any ((select public.establecimientos_autorizados())::text[]))
+  with check (establecimiento = any ((select public.establecimientos_autorizados())::text[]));
 
 -- sanidad_carga (La Vuelta; tabla compartida con columna `establecimiento` y puente a Excel).
 create policy sanidad_carga_select_clave on public.sanidad_carga
   for select to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())));
+  using (establecimiento = any ((select public.establecimientos_con_clave())::text[]));
 create policy sanidad_carga_insert_clave on public.sanidad_carga
   for insert to anon
-  with check (establecimiento = any ((select public.establecimientos_con_clave())));
+  with check (establecimiento = any ((select public.establecimientos_con_clave())::text[]));
 create policy sanidad_carga_update_clave on public.sanidad_carga
   for update to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())) and importado_en is null)
-  with check (establecimiento = any ((select public.establecimientos_con_clave())) and importado_en is null);
+  using (establecimiento = any ((select public.establecimientos_con_clave())::text[]) and importado_en is null)
+  with check (establecimiento = any ((select public.establecimientos_con_clave())::text[]) and importado_en is null);
 create policy sanidad_carga_delete_clave on public.sanidad_carga
   for delete to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())) and importado_en is null);
+  using (establecimiento = any ((select public.establecimientos_con_clave())::text[]) and importado_en is null);
 
 -- sanidad_carga_maria_laura / sanidad_carga_pone_chico: tabla propia, sin columna `establecimiento`.
 create policy sanidad_carga_maria_laura_all_clave on public.sanidad_carga_maria_laura
   for all to anon
-  using ('maria_laura' = any ((select public.establecimientos_con_clave())))
-  with check ('maria_laura' = any ((select public.establecimientos_con_clave())));
+  using ('maria_laura' = any ((select public.establecimientos_con_clave())::text[]))
+  with check ('maria_laura' = any ((select public.establecimientos_con_clave())::text[]));
 create policy sanidad_carga_pone_chico_all_clave on public.sanidad_carga_pone_chico
   for all to anon
-  using ('pone_chico' = any ((select public.establecimientos_con_clave())))
-  with check ('pone_chico' = any ((select public.establecimientos_con_clave())));
+  using ('pone_chico' = any ((select public.establecimientos_autorizados())::text[]))
+  with check ('pone_chico' = any ((select public.establecimientos_autorizados())::text[]));
 
 -- animales_caravana: padron por animal; solo lectura con la clave del campo (lo publica la PC con la privada).
 create policy animales_caravana_select_clave on public.animales_caravana
   for select to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())));
+  using (establecimiento = any ((select public.establecimientos_con_clave())::text[]));
 
 -- productos_catalogo y maestros_dicose: referencias compartidas por los 3 campos (sin columna `establecimiento`):
 -- alcanza con la clave de cualquiera.

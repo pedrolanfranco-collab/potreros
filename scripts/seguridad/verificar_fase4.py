@@ -9,6 +9,9 @@ Modo normal (release 1, "modo suave"):
 
 Modo --cierre (release 2, despues de correr fase4_cierre.sql):
   - SIN el encabezado `x-clave-campo`, cada tabla da 0 filas o un rechazo (401/403);
+  - EXCEPCION a proposito: Pone Chico no usa clave (CONFIG.claveCampo = false), asi que sus filas propias
+    (eventos_sync y stock_potreros con establecimiento = pone_chico, y sanidad_carga_pone_chico) tienen que
+    seguir legibles sin clave, y en las tablas de varios campos todo LO DEMAS tiene que dar 0 filas;
   - CON la clave (variables de entorno de arriba), cada tabla del campo se deja leer;
   - sanidad_ultimos y sanidad_proximos quedan cerradas aun con clave.
   La escritura sin clave NO se prueba desde aca (un insert que entrara dejaria una fila de prueba en una
@@ -48,22 +51,32 @@ TABLAS = [
     ("maestros_dicose", None, "*", "nombre"),
 ]
 CERRADAS = [("sanidad_ultimos", "establecimiento"), ("sanidad_proximos", "establecimiento")]
+# Tablas cuyas filas de Pone Chico quedan abiertas (sin clave) tras el cierre: ver fase4_cierre.sql,
+# public.establecimientos_autorizados(). Si Pone Chico pasa a usar clave, vaciar este conjunto.
+CAMPO_ABIERTO = "pone_chico"
+ABIERTAS_CAMPO_ABIERTO = {"eventos_sync", "stock_potreros", "sanidad_carga_pone_chico"}
 
 
 def leer_env_local():
-    """Variables CLAVE_CAMPO_* desde ~/.potreros/.env (sin imprimirlas)."""
+    """Variables de ~/.potreros/.env (sin imprimirlas). utf-8-sig: el archivo puede traer BOM."""
     ruta = os.path.join(os.path.expanduser("~"), ".potreros", ".env")
     claves = {}
     try:
-        with open(ruta, encoding="utf-8") as f:
+        with open(ruta, encoding="utf-8-sig") as f:
             for linea in f:
                 linea = linea.strip()
-                if linea.startswith("CLAVE_CAMPO_") and "=" in linea:
+                if linea and not linea.startswith("#") and "=" in linea:
                     k, v = linea.split("=", 1)
-                    claves[k.strip()] = v.strip().strip('"').strip("'")
+                    claves[k.strip().replace("export ", "")] = v.strip().strip('"').strip("'")
     except OSError:
         pass
     return claves
+
+
+def clave_privada():
+    """SUPABASE_SECRET_KEY (variable de entorno o ~/.potreros/.env), o None. Se usa SOLO para saber si una tabla
+    tiene filas (lectura): sin ella los chequeos de 'abierta a proposito' no distinguen 'vacia' de 'cerrada'."""
+    return os.environ.get("SUPABASE_SECRET_KEY") or leer_env_local().get("SUPABASE_SECRET_KEY") or None
 
 
 def claves_reales():
@@ -90,6 +103,41 @@ def pedir(metodo, ruta, cuerpo=None, clave=None):
         return e.code, e.read().decode("utf-8", "replace")
     except Exception as e:  # sin red, DNS, timeout
         return 0, str(e)
+
+
+def pedir_privada(ruta, privada):
+    """GET de solo lectura con la clave privada (no pasa por las politicas). Devuelve (status, texto)."""
+    cab = {"apikey": privada}
+    if privada.startswith("eyJ"):                 # formato viejo (JWT); las sb_secret_ no van como Bearer
+        cab["Authorization"] = "Bearer " + privada
+    req = request.Request(URL + ruta, method="GET", headers=cab)
+    try:
+        with request.urlopen(req, timeout=30) as r:
+            return r.status, r.read().decode("utf-8", "replace")
+    except error.HTTPError as e:
+        return e.code, e.read().decode("utf-8", "replace")
+    except Exception as e:
+        return 0, str(e)
+
+
+def hay_datos_abiertos(tabla, colest, sel, privada):
+    """True/False si la tabla tiene filas del campo abierto (mirando con la clave privada); None si no se sabe."""
+    if not privada:
+        return None
+    q = "%s?select=%s&limit=1" % (tabla, sel) + (("&%s=eq.%s" % (colest, CAMPO_ABIERTO)) if colest else "")
+    st, tx = pedir_privada(q, privada)
+    li = filas(tx) if st in (200, 206) else None
+    return None if li is None else len(li) > 0
+
+
+def vacia_o_cerrada(tabla, colest, sel, privada):
+    """Texto y 'mal' para una tabla abierta a proposito que contesto 200 sin filas."""
+    datos = hay_datos_abiertos(tabla, colest, sel, privada)
+    if datos is True:
+        return "MAL tiene filas de %s pero sin clave no se ve ninguna: quedo CERRADA" % CAMPO_ABIERTO, 1
+    if datos is False:
+        return "--  200 sin filas (la tabla no tiene datos de %s)" % CAMPO_ABIERTO, 0
+    return "--  200 sin filas (sin SUPABASE_SECRET_KEY no se distingue de cerrada)", 0
 
 
 def verificar_rpc(est, clave):
@@ -160,19 +208,52 @@ def modo_suave(claves):
     return mal
 
 
-def modo_cierre(claves):
+def modo_cierre(claves, privada=None):
     mal = 0
     print("Release 2 (cierre)\n")
     if not claves:
         print("Sin ninguna CLAVE_CAMPO_*: solo se prueba que SIN clave quede cerrado.\n")
+    if not privada:
+        print("Sin SUPABASE_SECRET_KEY: si una tabla de %s contesta 'sin filas' no se sabe si esta vacia o cerrada.\n" % CAMPO_ABIERTO)
     print("%-28s %-30s %s" % ("tabla", "sin encabezado", "con la clave"))
     for tabla, colest, fijo, sel in TABLAS:
-        # sin encabezado: 0 filas o rechazo
-        status, texto = pedir("GET", "%s?select=%s&limit=1" % (tabla, sel))
-        lista = filas(texto) if status in (200, 206) else None
-        cerrado = status in (401, 403) or (lista is not None and len(lista) == 0)
-        sin = marca(cerrado, "status %s, %s" % (status, ("%d filas" % len(lista)) if lista is not None else "rechazo"))
-        mal += (not cerrado)
+        abierta = tabla in ABIERTAS_CAMPO_ABIERTO
+        base = "%s?select=%s&limit=1" % (tabla, sel)
+        if abierta and fijo == CAMPO_ABIERTO:
+            # tabla propia del campo sin clave (sanidad_carga_pone_chico): tiene que estar ABIERTA
+            status, texto = pedir("GET", base)
+            lista = filas(texto) if status in (200, 206) else None
+            if lista is None:
+                sin = marca(False, "abierta a proposito, pero contesta status %s" % status)
+                mal += 1
+            elif len(lista) == 0:
+                txt, falla = vacia_o_cerrada(tabla, colest, sel, privada)
+                sin = "abierta a proposito: " + txt
+                mal += falla
+            else:
+                sin = marca(True, "abierta a proposito (%s sin clave): lee" % CAMPO_ABIERTO)
+        else:
+            # sin encabezado: 0 filas o rechazo. En las tablas de varios campos con un campo abierto, se
+            # excluyen las filas de ese campo: lo demas tiene que estar cerrado.
+            q_sin = base + (("&%s=neq.%s" % (colest, CAMPO_ABIERTO)) if abierta and colest else "")
+            status, texto = pedir("GET", q_sin)
+            lista = filas(texto) if status in (200, 206) else None
+            cerrado = status in (401, 403) or (lista is not None and len(lista) == 0)
+            sin = marca(cerrado, "status %s, %s" % (status, ("%d filas" % len(lista)) if lista is not None else "rechazo"))
+            mal += (not cerrado)
+            if abierta and colest:
+                # y las filas del campo abierto tienen que seguir legibles sin clave
+                st_a, tx_a = pedir("GET", base + "&%s=eq.%s" % (colest, CAMPO_ABIERTO))
+                li_a = filas(tx_a) if st_a in (200, 206) else None
+                if li_a is None:
+                    sin += " | " + marca(False, "%s sin clave: status %s" % (CAMPO_ABIERTO, st_a))
+                    mal += 1
+                elif len(li_a) == 0:
+                    txt, falla = vacia_o_cerrada(tabla, colest, sel, privada)
+                    sin += " | %s sin clave: %s" % (CAMPO_ABIERTO, txt)
+                    mal += falla
+                else:
+                    sin += " | " + marca(True, "%s sin clave: lee" % CAMPO_ABIERTO)
         # con la clave del campo de la tabla (o la de cualquiera para las compartidas)
         if fijo == "*":
             claves_usar = list(claves.items())[:1]
@@ -222,7 +303,7 @@ def modo_cierre(claves):
 
 def main():
     claves = claves_reales()
-    mal = modo_cierre(claves) if "--cierre" in sys.argv[1:] else modo_suave(claves)
+    mal = modo_cierre(claves, clave_privada()) if "--cierre" in sys.argv[1:] else modo_suave(claves)
     return 1 if mal else 0
 
 

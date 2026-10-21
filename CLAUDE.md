@@ -906,15 +906,20 @@ siguen abiertas.
   3 claves, correr `verificar_fase4.py`, publicar, y que cada equipo la cargue una vez.
 - *Pone Chico NO usa clave (17/10/2026, a pedido de Pedro)*: `CONFIG.claveCampo` es `true` en La Vuelta y María Laura y
   `false` en Pone Chico. Con `false` la app no muestra la ventana, el aviso del pie ni el botón, no manda `x-clave-campo` y
-  no llama a `verificar_clave` (aunque haya una clave vieja guardada). **Para el cierre**: sus políticas deben dejar Pone Chico
-  abierto a propósito (o se queda sin sincronizar); ver `scripts/seguridad/README.md`. Test: `probar_clave_campo.js`.
-- *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, escritos y revisados, **no corridos**): las políticas
-  pasan a exigir `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los
-  equipos activos con `con_clave = true` y los scripts de la PC que usan la llave pública
-  (`pasar_traslados_a_excel.py`, `sanidad_puente.py`, `bajar_sanidad_de_potreros.py`,
-  `regenerar_stock_potreros_excel.py`, `vigilar_tareas_sanidad.py`) ya usen `SUPABASE_SECRET_KEY`**; el informe de
-  nacimientos (Playwright) necesita la clave en su `localStorage`. Pasos exactos en `scripts/seguridad/README.md`.
-  Cuando se corra, actualizar la tabla de arriba ("RLS real por tabla").
+  no llama a `verificar_clave` (aunque haya una clave vieja guardada). Test: `probar_clave_campo.js`. **El cierre lo deja
+  abierto a propósito (21/10/2026)**: `public.establecimientos_autorizados()` = campos con la clave del pedido + `pone_chico`, y
+  solo se usa en sus filas propias (`eventos_sync`, `stock_potreros`, `sanidad_carga_pone_chico`); `productos_catalogo` y
+  `maestros_dicose` NO se abren (una app de Pone Chico sin clave ve esas listas vacías). Para ponerle clave después, ver
+  `scripts/seguridad/README.md`.
+- *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, **no corridos en producción** pero sí probados el 21/10/2026
+  contra un Postgres 16 real con `scripts/seguridad/probar_cierre.js`, 54 verificaciones): las políticas pasan a exigir
+  `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los equipos activos de La
+  Vuelta y María Laura con `con_clave = true`** (Pone Chico no cuenta), **y el Tablero de Sanidad pueda leer con clave**. Los
+  scripts de la PC (`pasar_traslados_a_excel.py`, `sanidad_puente.py`, `bajar_sanidad_de_potreros.py`,
+  `regenerar_stock_potreros_excel.py`, `vigilar_tareas_sanidad.py`) ya usan `SUPABASE_SECRET_KEY` desde el 13/10/2026; el
+  informe de nacimientos (Playwright) necesita la clave en su `localStorage`. Pasos exactos en `scripts/seguridad/README.md`.
+  **Trampa de sintaxis**: en una política, `= any ((select f()))` falla (`text = text[]`, Postgres lo lee como subconsulta);
+  hay que escribir `= any ((select f())::text[])`. Cuando se corra, actualizar la tabla de arriba ("RLS real por tabla").
 
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del

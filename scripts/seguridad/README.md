@@ -7,7 +7,7 @@ hacer cualquiera**. Cada fase tiene su SQL, su vuelta atrás y una verificación
 | Fase | Qué cierra | Archivos |
 |---|---|---|
 | 2 | Escritura anónima en `productos_catalogo`, `animales_caravana`, `sanidad_ultimos`, `sanidad_proximos`; `creado_en` de `eventos_sync` lo fija el servidor | `fase2_carencia.sql`, `fase2_carencia_deshacer.sql`, `verificar_fase2.py` |
-| 4 | Clave del campo: eventos falsos con la llave pública y lectura del padrón y los datos comerciales (en dos releases, ver abajo) | `fase4_clave_campo.sql`, `fase4_clave_campo_deshacer.sql`, `fase4_cierre.sql`, `fase4_cierre_deshacer.sql`, `verificar_fase4.py` |
+| 4 | Clave del campo: eventos falsos con la llave pública y lectura del padrón y los datos comerciales (en dos releases, ver abajo) | `fase4_clave_campo.sql`, `fase4_clave_campo_deshacer.sql`, `fase4_cierre.sql`, `fase4_cierre_deshacer.sql`, `verificar_fase4.py`; pruebas sin tocar Supabase: `probar_cierre.js` (el SQL contra un Postgres real) y `probar_verificar_fase4.py` |
 
 ## Cómo se corre una fase
 
@@ -101,9 +101,11 @@ from private.equipos_vistos
 order by establecimiento, con_clave, ultima desc;
 
 -- los que escribieron en los últimos 30 días y todavía NO mandan la clave
+-- (sin Pone Chico: no usa clave, sus equipos figuran con_clave = false para siempre y no cuentan)
 select establecimiento, usuario, dispositivo, version, ultima
 from private.equipos_vistos
 where not con_clave and ultima > now() - interval '30 days'
+  and establecimiento <> 'pone_chico'
 order by establecimiento, ultima desc;
 ```
 
@@ -116,17 +118,27 @@ Fase 3, paso 4 (11/10/2026).
 
 **No correr `fase4_cierre.sql` hasta que se cumplan las tres cosas:**
 
-> **Pone Chico no usa clave (17/10/2026, a pedido de Pedro).** `CONFIG.claveCampo` es `false` en sus 3 apps. Con las políticas
-> del cierre tal como están escritas (`'pone_chico' = any(establecimientos_con_clave())`), Pone Chico quedaría **sin poder leer ni
-> escribir**. Antes del cierre hay que cambiar esas políticas para que Pone Chico siga abierto (o ponerle clave de nuevo con
-> `claveCampo: true`). Mientras tanto, su fila de `private.claves_campo` no hace falta: se saca con
-> `delete from private.claves_campo where establecimiento = 'pone_chico';`.
+> **Pone Chico no usa clave (17/10/2026, a pedido de Pedro) y el cierre lo deja abierto a propósito (21/10/2026).**
+> `CONFIG.claveCampo` es `false` en sus 3 apps, que no mandan `x-clave-campo`. Con las políticas "solo con clave" quedaría
+> sin poder leer ni escribir, así que `fase4_cierre.sql` crea `public.establecimientos_autorizados()` (los campos cuya clave
+> trae el pedido **más** `pone_chico`) y la usa solo en las filas propias de ese campo: su stream de `eventos_sync`, su
+> `stock_potreros` y `sanidad_carga_pone_chico`. Lo que **no** se abre: `productos_catalogo` (costos por dosis) y
+> `maestros_dicose` (compradores y proveedores con su DICOSE) siguen pidiendo la clave de algún campo, porque no tienen
+> columna de campo y abrirlos sería abrirlos para cualquiera; una app de Pone Chico sin clave ve esas dos listas vacías
+> (el selector de productos queda solo con "Otro"). Tampoco se abre el espejo de un traslado (Pone Chico no hace traslados),
+> ni `sanidad_carga` ni `animales_caravana`. Hoy Pone Chico tiene 9 eventos de prueba y nada más, así que lo abierto no
+> expone datos reales.
+>
+> **Para ponerle clave a Pone Chico más adelante:** `create or replace` de `establecimientos_autorizados()` con
+> `array[]::text[]` en lugar de `array['pone_chico']::text[]`, `claveCampo: true` en `template/configs/pone-chico.js`, vaciar
+> `ABIERTAS_CAMPO_ABIERTO` en `verificar_fase4.py`, sacar el `and establecimiento <> 'pone_chico'` de la consulta de arriba, y que
+> cada equipo cargue la clave (la de `pone_chico` ya está cargada en `private.claves_campo`).
 
-
-1. la segunda consulta de arriba devuelve **0 filas** (todos los equipos activos ya mandan la clave);
+1. la segunda consulta de arriba devuelve **0 filas** (todos los equipos activos de La Vuelta y María Laura ya mandan la clave);
 2. **los scripts de la PC que usan la llave pública ya usan la clave privada**
    (`SUPABASE_SECRET_KEY`): `pasar_traslados_a_excel.py`, `sanidad_puente.py`,
    `bajar_sanidad_de_potreros.py`, `regenerar_stock_potreros_excel.py` y `vigilar_tareas_sanidad.py`.
+   **Hecho el 13/10/2026 y verificado el 21/10/2026** (sus pruebas dan "Todo OK" y una lectura real con la clave da 200).
    El informe de nacimientos (`enviar_informe_nacimientos.py`, abre la app con Playwright) necesita
    además la clave del campo en el `localStorage` de su navegador (`clave_campo_la_vuelta`).
    El keep-alive de GitHub sigue andando: contesta 200 con lista vacía.
@@ -138,9 +150,19 @@ Fase 3, paso 4 (11/10/2026).
    la ventana de clave; el aviso rojo del tablero ("la PC no publica hace más de 6 h") no distingue clave mala de falta de datos.
 
 Después: correr el SQL (guarda las políticas de antes en `auditoria_politicas_antes_fase4`),
-`python scripts/seguridad/verificar_fase4.py --cierre` (sin clave todo cerrado, con la clave anda),
+`python scripts/seguridad/verificar_fase4.py --cierre` (sin clave todo cerrado salvo las filas de Pone Chico, con la clave
+anda; si `SUPABASE_SECRET_KEY` está en `~/.potreros/.env` además distingue "tabla de Pone Chico vacía" de "quedó cerrada"),
 y probar a mano un movimiento y un traslado La Vuelta → María Laura. Para volver atrás:
 `fase4_cierre_deshacer.sql`.
+
+**Cómo se probó el SQL del cierre (21/10/2026).** `fase4_cierre.sql` no se estrenó en producción: `probar_cierre.js` lo corre
+contra un Postgres 16 real (PGlite, en WASM) con las tablas y las políticas de hoy, el release 1 de verdad y claves de juguete,
+y prueba 54 cosas (lectura y escritura de `anon` sin clave, con clave mala y con la clave de cada campo; las excepciones de
+traslado; que `UPDATE`/`DELETE` de `eventos_sync` sigan imposibles; que el cierre corra dos veces; y que el deshacer deje las
+políticas y los permisos exactamente como estaban). Encontró un error que habría frenado el cierre: `= any ((select f()))`
+Postgres lo lee como "ANY de una subconsulta" y falla con `operator does not exist: text = text[]`; por eso las políticas usan
+`= any ((select f())::text[])`. PGlite no es dependencia del repo (instrucciones en la cabecera de `probar_cierre.js`).
+`probar_verificar_fase4.py` prueba el verificador contra un servidor simulado.
 
 Qué queda abierto aun con la clave, a propósito: quien tiene la clave de un campo puede escribir en
 su stream (la clave es una sola por campo, compartida con el empleado de Campo), y quien tiene la de
