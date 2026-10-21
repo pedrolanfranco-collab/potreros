@@ -122,7 +122,7 @@ Fase 3, paso 4 (11/10/2026).
 > `CONFIG.claveCampo` es `false` en sus 3 apps, que no mandan `x-clave-campo`. Con las políticas "solo con clave" quedaría
 > sin poder leer ni escribir, así que `fase4_cierre.sql` crea `public.establecimientos_autorizados()` (los campos cuya clave
 > trae el pedido **más** `pone_chico`) y la usa solo en las filas propias de ese campo: su stream de `eventos_sync`, su
-> `stock_potreros` y `sanidad_carga_pone_chico`. Lo que **no** se abre: `productos_catalogo` (costos por dosis) y
+> `stock_potreros`, `sanidad_carga_pone_chico` y sus filas de `sanidad_ultimos`/`sanidad_proximos` (hoy vacías). Lo que **no** se abre: `productos_catalogo` (costos por dosis) y
 > `maestros_dicose` (compradores y proveedores con su DICOSE) siguen pidiendo la clave de algún campo, porque no tienen
 > columna de campo y abrirlos sería abrirlos para cualquiera; una app de Pone Chico sin clave ve esas dos listas vacías
 > (el selector de productos queda solo con "Otro"). Tampoco se abre el espejo de un traslado (Pone Chico no hace traslados),
@@ -142,12 +142,20 @@ Fase 3, paso 4 (11/10/2026).
    El informe de nacimientos (`enviar_informe_nacimientos.py`, abre la app con Playwright) necesita
    además la clave del campo en el `localStorage` de su navegador (`clave_campo_la_vuelta`).
    El keep-alive de GitHub sigue andando: contesta 200 con lista vacía.
-3. **el Tablero de Sanidad (`tablero-sanidad/`, 16/10/2026) tiene la clave del campo.** Lee con la llave pública
+3. **el Tablero de Sanidad (`tablero-sanidad/`) y `completar-sanidad/` ya mandan la clave del campo, están publicados y la
+   clave está cargada en el teléfono (21/10/2026: código hecho; falta publicar y cargar la clave).** El tablero lee
    `sanidad_proximos`, `sanidad_ultimos`, `stock_potreros`, `animales_caravana` y `sanidad_carga*`; el cierre deja
-   `sanidad_ultimos` y `sanidad_proximos` sin política para `anon` ("ninguna app las lee" ya no es cierto) y pide la
-   clave en las demás, así que **sin este paso el tablero queda sin datos**. Hay que decidir cómo se leen
-   `sanidad_ultimos`/`sanidad_proximos` con clave (política por establecimiento, como `animales_caravana`) y agregarle
-   la ventana de clave; el aviso rojo del tablero ("la PC no publica hace más de 6 h") no distingue clave mala de falta de datos.
+   `sanidad_ultimos` y `sanidad_proximos` legibles **por establecimiento con la clave** (como `animales_caravana`) y pide la clave en
+   las demás. El tablero manda `x-clave-campo` en cada lectura, tiene un botón 🔑 y una ventana para cargarla, y **sin clave (o con
+   una que el servidor rechaza) no lee**: con RLS esos casos no dan error sino "0 filas", y ese vacío pisaría la última copia
+   guardada. `completar-sanidad/` lee `productos_catalogo` (hoy con la clave de cualquier campo): manda la de La Vuelta; sin ella queda su
+   copia de 50 productos y la nota lo avisa.
+   **Orden:** publicar (merge a `main`) ANTES de correr el cierre; las dos páginas andan igual con el cierre sin correr (el encabezado
+   se ignora mientras las políticas están abiertas). Después, **en cada teléfono o PC donde se use el tablero**, abrirlo y cargar la
+   clave del campo (botón 🔑). Si el navegador es el mismo donde la app ya tiene la clave, no hace falta: comparten `localStorage`
+   (`clave_campo_<campo>`, mismo origen). **Ojo en iPhone:** una página agregada a la pantalla de inicio guarda sus datos aparte de
+   Safari, así que ahí hay que cargarla de nuevo. El aviso rojo del tablero ("la PC no publica hace más de 6 h") sigue sin distinguir
+   clave mala de falta de datos, pero con clave mala el tablero ya no llega a leer y muestra su propio aviso.
 
 Después: correr el SQL (guarda las políticas de antes en `auditoria_politicas_antes_fase4`),
 `python scripts/seguridad/verificar_fase4.py --cierre` (sin clave todo cerrado salvo las filas de Pone Chico, con la clave
@@ -157,7 +165,7 @@ y probar a mano un movimiento y un traslado La Vuelta → María Laura. Para vol
 
 **Cómo se probó el SQL del cierre (21/10/2026).** `fase4_cierre.sql` no se estrenó en producción: `probar_cierre.js` lo corre
 contra un Postgres 16 real (PGlite, en WASM) con las tablas y las políticas de hoy, el release 1 de verdad y claves de juguete,
-y prueba 54 cosas (lectura y escritura de `anon` sin clave, con clave mala y con la clave de cada campo; las excepciones de
+y prueba 62 cosas (lectura y escritura de `anon` sin clave, con clave mala y con la clave de cada campo; las excepciones de
 traslado; que `UPDATE`/`DELETE` de `eventos_sync` sigan imposibles; que el cierre corra dos veces; y que el deshacer deje las
 políticas y los permisos exactamente como estaban). Encontró un error que habría frenado el cierre: `= any ((select f()))`
 Postgres lo lee como "ANY de una subconsulta" y falla con `operator does not exist: text = text[]`; por eso las políticas usan

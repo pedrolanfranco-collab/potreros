@@ -87,8 +87,8 @@ insert into public.sanidad_carga_pone_chico (producto) values ('pc');
 insert into public.animales_caravana values ('11111111','la_vuelta');
 insert into public.productos_catalogo values ('Ivomec', 1.5);
 insert into public.maestros_dicose (tipo, nombre, dicose) values ('comprador','Fulano','123');
-insert into public.sanidad_ultimos (establecimiento) values ('la_vuelta');
-insert into public.sanidad_proximos (establecimiento) values ('la_vuelta');
+insert into public.sanidad_ultimos (establecimiento) values ('la_vuelta'),('maria_laura'),('pone_chico');
+insert into public.sanidad_proximos (establecimiento) values ('la_vuelta'),('maria_laura'),('pone_chico');
 `;
 
 // Corre `sql` como anon con la clave `campo` (o sin clave / con una mala). Devuelve {filas, error}.
@@ -151,7 +151,17 @@ async function main() {
   check('maestros_dicose: sin clave 0, con clave 1',
     (await cuenta(null, 'maestros_dicose')).rows.length === 0 && (await cuenta(LV, 'maestros_dicose')).rows.length === 1);
   for (const t of ['sanidad_ultimos', 'sanidad_proximos']) {
-    check(`${t}: cerrada aun con clave`, bloqueado(await cuenta(null, t)) && bloqueado(await cuenta(LV, t)));
+    // las lee el Tablero de Sanidad con la clave del campo
+    const sin = await cuenta(null, t), lv = await cuenta(LV, t), ml = await cuenta(ML, t), mala = await cuenta(MALA, t);
+    check(`${t}: sin clave solo se ve pone_chico (abierto a proposito)`, !sin.error && sin.rows.length === 1 && sin.rows[0].establecimiento === 'pone_chico', JSON.stringify(sin));
+    check(`${t}: clave mala = igual que sin clave`, !mala.error && mala.rows.length === 1 && mala.rows[0].establecimiento === 'pone_chico', JSON.stringify(mala));
+    check(`${t}: con la clave de La Vuelta ve La Vuelta + Pone Chico, no Maria Laura`, !lv.error && lv.rows.map(r => r.establecimiento).sort().join() === 'la_vuelta,pone_chico', JSON.stringify(lv.rows));
+    check(`${t}: con la clave de Maria Laura ve Maria Laura + Pone Chico, no La Vuelta`, !ml.error && ml.rows.map(r => r.establecimiento).sort().join() === 'maria_laura,pone_chico', JSON.stringify(ml.rows));
+    check(`${t}: anon no escribe (ni con clave): insert, update y delete`,
+      bloqueado(await comoAnon(db, LV, `insert into public.${t} (establecimiento) values ('la_vuelta')`)) &&
+      bloqueado(await comoAnon(db, LV, `update public.${t} set establecimiento='la_vuelta' where establecimiento='la_vuelta'`)) &&
+      bloqueado(await comoAnon(db, LV, `delete from public.${t} where establecimiento='la_vuelta'`)) &&
+      bloqueado(await comoAnon(db, null, `insert into public.${t} (establecimiento) values ('pone_chico')`)));
   }
 
   console.log('\nESCRIBIR: eventos_sync');

@@ -190,6 +190,14 @@ function pintarCatalogo(){
   $('catalogo').innerHTML = catalogo.map(p => '<option value="' + esc(p) + '">').join('');
   $('nota-catalogo').textContent = 'Catálogo: ' + catalogo.length + ' productos (' + origenCatalogo + ').';
 }
+/* Fase 4: el cierre de la lectura anónima exige la clave del campo para leer productos_catalogo (encabezado
+   `x-clave-campo`). Esta página es solo de La Vuelta: usa la clave que guardan las apps en `clave_campo_la_vuelta` (mismo
+   origen) o la que se cargó en el Tablero de Sanidad (botón 🔑). Sin ella, el servidor contesta "0 filas" (no un error) y
+   queda la copia guardada: la nota lo dice para que no parezca un catálogo al día. */
+function claveLaVuelta(){
+  try{ const c = String(localStorage.getItem('clave_campo_la_vuelta') || '').trim().toLowerCase(); return /^[a-z0-9]{8,64}$/.test(c) ? c : ''; }
+  catch(e){ return ''; }
+}
 async function cargarCatalogo(){
   try{
     const c = JSON.parse(localStorage.getItem(CLAVE_CACHE) || 'null');
@@ -197,14 +205,19 @@ async function cargarCatalogo(){
   }catch(e){}
   pintarCatalogo();
   try{
+    const clave = claveLaVuelta();
     const r = await fetch(SUPABASE_URL + '/rest/v1/productos_catalogo?select=producto&order=producto&limit=1000',
-                          { headers: { apikey: SUPABASE_ANON_KEY }, cache: 'no-store' });
+                          { headers: clave ? { apikey: SUPABASE_ANON_KEY, 'x-clave-campo': clave } : { apikey: SUPABASE_ANON_KEY }, cache: 'no-store' });
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const filas = await r.json();
     const lista = (Array.isArray(filas) ? filas : []).map(f => f && f.producto).filter(p => typeof p === 'string' && p.trim());
     if(lista.length){
       catalogo = lista; origenCatalogo = 'al día';
       try{ localStorage.setItem(CLAVE_CACHE, JSON.stringify({ lista, fecha: new Date().toLocaleDateString('es-UY') })); }catch(e){}
+      pintarCatalogo();
+    }else{
+      origenCatalogo += clave ? ' · el servidor no devolvió productos: ¿la clave de La Vuelta ya no sirve? Revisala en el Tablero de Sanidad (botón 🔑)'
+                              : ' · falta la clave de La Vuelta en este equipo: cargala en el Tablero de Sanidad (botón 🔑)';
       pintarCatalogo();
     }
   }catch(e){ /* sin señal: queda la copia */ }

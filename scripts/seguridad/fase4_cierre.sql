@@ -8,7 +8,8 @@
 -- ##        Vuelta y Maria Laura con con_clave = true (consulta del README), y    ##
 -- ##     2. los scripts de la PC que usan la llave publica ya usen la clave       ##
 -- ##        privada (SUPABASE_SECRET_KEY) -- hecho el 13/10/2026, y              ##
--- ##     3. el Tablero de Sanidad pueda leer con la clave del campo (README).     ##
+-- ##     3. el Tablero de Sanidad y completar-sanidad ya manden la clave del      ##
+-- ##        campo (publicados, y la clave cargada en el telefono; README).        ##
 -- ##                                                                              ##
 -- ##   Un equipo sin clave, o un script con la llave publica, deja de leer y de   ##
 -- ##   escribir en cuanto este script corre (en la app: el cartel rojo "trabados" ##
@@ -69,12 +70,13 @@
 --        animales_caravana           clave del campo           nadie (la escribe la PC con la clave privada)
 --        productos_catalogo          cualquier campo           nadie (la escribe la PC con la clave privada)
 --        maestros_dicose             cualquier campo           INSERT con la clave de cualquier campo
---        sanidad_ultimos             nadie                     nadie
---        sanidad_proximos            nadie                     nadie
+--        sanidad_ultimos             clave del campo (*)       nadie (la escribe la PC con la clave privada)
+--        sanidad_proximos            clave del campo (*)       nadie (idem)
 --        (*) Pone Chico: sus filas no piden clave (ver arriba). Las de La Vuelta y Maria Laura, si.
 --
 --   3. Ajusta los permisos de tabla de anon: donde conserva algo bajo politica, el permiso de tabla sigue
---      (sin el permiso de tabla la politica no alcanza); sanidad_ultimos y sanidad_proximos se cierran del todo.
+--      (sin el permiso de tabla la politica no alcanza). sanidad_ultimos y sanidad_proximos quedan solo con
+--      SELECT: las lee el Tablero de Sanidad, que manda la clave del campo.
 --
 -- NO toca: movimientos_dicose (ya cerrada a anon), el trigger eventos_sync_fijar_creado_en (Fase 2) ni el
 -- de equipos vistos (release 1).
@@ -192,7 +194,7 @@ create policy eventos_sync_insert_clave on public.eventos_sync
         and (detalle ->> 'origenEstablecimiento') = any ((select public.establecimientos_con_clave())::text[]))
   );
 
--- stock_potreros: la app lo escribe (upsert + delete), nunca lo lee.
+-- stock_potreros: la app lo escribe (upsert + delete); lo lee el Tablero de Sanidad (con la clave del campo).
 create policy stock_potreros_all_clave on public.stock_potreros
   for all to anon
   using (establecimiento = any ((select public.establecimientos_autorizados())::text[]))
@@ -241,7 +243,14 @@ create policy maestros_dicose_insert_clave on public.maestros_dicose
   for insert to anon
   with check (cardinality((select public.establecimientos_con_clave())) > 0);
 
--- sanidad_ultimos y sanidad_proximos: ninguna app las lee; anon queda sin politica.
+-- sanidad_ultimos y sanidad_proximos: las publica la PC (clave privada) y las lee el Tablero de Sanidad
+-- (tablero-sanidad/) con la clave del campo. Solo lectura, por establecimiento; nadie escribe con anon.
+create policy sanidad_ultimos_select_clave on public.sanidad_ultimos
+  for select to anon
+  using (establecimiento = any ((select public.establecimientos_autorizados())::text[]));
+create policy sanidad_proximos_select_clave on public.sanidad_proximos
+  for select to anon
+  using (establecimiento = any ((select public.establecimientos_autorizados())::text[]));
 
 -- 3. Permisos de tabla (anon). Hace falta politica Y permiso de tabla.
 grant select, insert on table public.eventos_sync to anon;
@@ -252,6 +261,7 @@ to anon;
 grant select on table public.animales_caravana, public.productos_catalogo to anon;
 grant select, insert on table public.maestros_dicose to anon;
 revoke all on table public.sanidad_ultimos, public.sanidad_proximos from anon;
+grant select on table public.sanidad_ultimos, public.sanidad_proximos to anon;   -- el Tablero de Sanidad las lee
 
 -- 4. Resultado: que le queda permitido a anon en cada tabla (se ve al correr el script).
 select p.tablename as tabla,

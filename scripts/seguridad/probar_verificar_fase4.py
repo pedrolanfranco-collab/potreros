@@ -4,7 +4,7 @@ PostgREST con las politicas del cierre (Pone Chico abierto a proposito) y a Post
 
 Comprueba que el verificador:
   - da `Todo OK` con el servidor ya cerrado (todo lo de La Vuelta y Maria Laura cerrado sin clave, Pone Chico
-    abierto, lo compartido y sanidad_ultimos/proximos cerrados, con la clave todo se lee);
+    abierto, lo compartido cerrado, con la clave de un campo se lee lo de ese campo);
   - falla si el cierre NO se corrio (todo abierto), si Pone Chico quedo cerrado, o si alguna fila de otro campo
     se escapa sin clave;
   - no imprime nunca una clave.
@@ -43,8 +43,8 @@ FILAS = {
     "animales_caravana": [{"id8": "11111111", "establecimiento": "la_vuelta"}],
     "productos_catalogo": [{"producto": "Ivomec"}],
     "maestros_dicose": [{"nombre": "Fulano"}],
-    "sanidad_ultimos": [{"establecimiento": "la_vuelta"}],
-    "sanidad_proximos": [{"establecimiento": "la_vuelta"}],
+    "sanidad_ultimos": [{"establecimiento": "la_vuelta"}, {"establecimiento": "maria_laura"}, {"establecimiento": "pone_chico"}],
+    "sanidad_proximos": [{"establecimiento": "la_vuelta"}, {"establecimiento": "maria_laura"}, {"establecimiento": "pone_chico"}],
 }
 FIJO = {"sanidad_carga": "la_vuelta", "sanidad_carga_maria_laura": "maria_laura", "sanidad_carga_pone_chico": "pone_chico"}
 
@@ -59,10 +59,8 @@ def servidor(modo, pone_chico_cerrado=False, fuga_de_otro_campo=False):
             return 404, "{}"
         filas = list(FILAS[tabla])
         if modo == "cerrado":
-            if tabla in ("sanidad_ultimos", "sanidad_proximos"):
-                return 401, '{"message":"permission denied"}'
             autorizados = set(campos_con_clave) | (set() if pone_chico_cerrado else {"pone_chico"})
-            if tabla in ("eventos_sync", "stock_potreros"):
+            if tabla in ("eventos_sync", "stock_potreros", "sanidad_ultimos", "sanidad_proximos"):
                 filas = [f for f in filas if f["establecimiento"] in autorizados]
                 if fuga_de_otro_campo and tabla == "eventos_sync":
                     filas = list(FILAS[tabla])

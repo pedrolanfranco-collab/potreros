@@ -732,8 +732,17 @@ nombres del padrón difieren más que eso, la tarjeta sale sin bloque. Si la lec
 Para tenerlo en las dos pestañas de verdad, la PC tendría que publicar `gen` (columna nueva en las dos tablas + `actualizar_sanidad_supabase.py`, que vive en OneDrive).
 Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;
 el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
-publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
-`tests/probar_tablero_sanidad.js`.
+publica hace más de 6 h. Test: `tests/probar_tablero_sanidad.js`.
+**Clave del campo (Fase 4, 21/10/2026):** el cierre de la lectura anónima exige `x-clave-campo` en cada tabla que lee el tablero, así que
+manda la clave en cada lectura. La Vuelta y María Laura la piden; **Pone Chico no** (no usa clave: sin encabezado, aviso ni botón). Se guarda en
+`clave_campo_<campo>`, **la misma clave de `localStorage` que usan las apps**: el tablero vive en el mismo origen (`github.io`), así que donde la app ya la
+tiene no hay que cargarla de nuevo (en iPhone, una página agregada a la pantalla de inicio guarda sus datos aparte de Safari: hay que cargarla ahí).
+Botón 🔑 en el encabezado y ventana (`#modal-clave`) que **comprueba la clave con `verificar_clave` antes de guardarla**; un fallo de red o de la función
+nunca se trata como clave mala. **Sin clave, o con una que el servidor rechaza, NO lee**: con RLS eso no da error sino "0 filas", y ese vacío pisaría la
+última copia buena en `localStorage`; queda la copia y un aviso ("Falta la clave de…" / "La clave guardada ya no sirve"). Si no se pudo comprobar la
+clave y todo viene vacío, tampoco pisa una copia con datos. `sanidad_ultimos`/`sanidad_proximos` pasan a leerse **por establecimiento con la clave**
+(política `…_select_clave` en `fase4_cierre.sql`). `tests/probar_tablero_sanidad.js` (74 chequeos, probado con mutaciones: sin encabezado, leer sin clave,
+clave mala tomada por buena) cubre todo esto.
 
 **Cómo se trabajó y qué recordar (16/10/2026):**
 - Cada cambio al tablero fue por **PR y merge a `main` cuando el CI está en verde**, a pedido de Pedro; una vez mergeado, la rama de
@@ -752,6 +761,9 @@ catálogo), dosis, producto 2 / dosis 2 opcionales, potrero (los 31 de La Vuelta
 (mismo nombre, separador, saltos `\r` y codificación; las celdas no tocadas salen idénticas) con `PRODUCTO`, `DOSIS`,
 `PRODUCTO2`, `DOSIS 2`, `POTRERO` llenos (las agrega al final si faltan). Ese va a `Entrada\`: el Lector registra la carencia por
 animal y `sanidad_puente.py` crea el tratamiento. Las filas que ya traían producto no se tocan.
+- **Fase 4 (21/10/2026)**: el cierre pide la clave del campo para leer `productos_catalogo`; la página manda la de La Vuelta
+  (`clave_campo_la_vuelta` de `localStorage`, la que guardan las apps o la que se carga en el Tablero de Sanidad, botón 🔑). Sin ella el
+  servidor contesta "0 filas" y queda la copia de 50 productos: la nota del catálogo lo dice ("falta la clave de La Vuelta en este equipo" / "ya no sirve").
 - **No escribe nada**: solo lee `productos_catalogo` (con una copia de los 50 nombres al 18/10/2026 si no hay señal). El
   producto se escribe con el nombre **exacto** del catálogo, que `sanidad_puente.py` acepta sin `productos_sanidad.csv`; uno
   que no está en la lista no se deja usar. Dosis con coma o punto (sale con punto); campos de texto, no `type=number`, que
@@ -912,9 +924,10 @@ siguen abiertas.
   `maestros_dicose` NO se abren (una app de Pone Chico sin clave ve esas listas vacías). Para ponerle clave después, ver
   `scripts/seguridad/README.md`.
 - *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, **no corridos en producción** pero sí probados el 21/10/2026
-  contra un Postgres 16 real con `scripts/seguridad/probar_cierre.js`, 54 verificaciones): las políticas pasan a exigir
+  contra un Postgres 16 real con `scripts/seguridad/probar_cierre.js`, 62 verificaciones): las políticas pasan a exigir
   `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los equipos activos de La
-  Vuelta y María Laura con `con_clave = true`** (Pone Chico no cuenta), **y el Tablero de Sanidad pueda leer con clave**. Los
+  Vuelta y María Laura con `con_clave = true`** (Pone Chico no cuenta), **y el Tablero de Sanidad y `completar-sanidad/` ya estén publicados con
+  la clave cargada en el teléfono** (publicar ANTES del cierre: el encabezado se ignora mientras las políticas están abiertas). Los
   scripts de la PC (`pasar_traslados_a_excel.py`, `sanidad_puente.py`, `bajar_sanidad_de_potreros.py`,
   `regenerar_stock_potreros_excel.py`, `vigilar_tareas_sanidad.py`) ya usan `SUPABASE_SECRET_KEY` desde el 13/10/2026; el
   informe de nacimientos (Playwright) necesita la clave en su `localStorage`. Pasos exactos en `scripts/seguridad/README.md`.

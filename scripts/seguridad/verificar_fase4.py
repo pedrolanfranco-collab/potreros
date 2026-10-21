@@ -13,7 +13,8 @@ Modo --cierre (release 2, despues de correr fase4_cierre.sql):
     (eventos_sync y stock_potreros con establecimiento = pone_chico, y sanidad_carga_pone_chico) tienen que
     seguir legibles sin clave, y en las tablas de varios campos todo LO DEMAS tiene que dar 0 filas;
   - CON la clave (variables de entorno de arriba), cada tabla del campo se deja leer;
-  - sanidad_ultimos y sanidad_proximos quedan cerradas aun con clave.
+  - sanidad_ultimos y sanidad_proximos (las lee el Tablero de Sanidad) se comportan como eventos_sync: sin clave
+    solo se ven las filas de Pone Chico, con la clave de un campo se ven las de ese campo.
   La escritura sin clave NO se prueba desde aca (un insert que entrara dejaria una fila de prueba en una
   tabla real): se mira en la app, ver scripts/seguridad/README.md.
 
@@ -49,12 +50,14 @@ TABLAS = [
     ("animales_caravana", "establecimiento", None, "id8"),
     ("productos_catalogo", None, "*", "producto"),    # '*' = alcanza con la clave de cualquier campo
     ("maestros_dicose", None, "*", "nombre"),
+    ("sanidad_ultimos", "establecimiento", None, "establecimiento"),     # las lee el Tablero de Sanidad con la clave
+    ("sanidad_proximos", "establecimiento", None, "establecimiento"),
 ]
-CERRADAS = [("sanidad_ultimos", "establecimiento"), ("sanidad_proximos", "establecimiento")]
+CERRADAS = []   # tablas que tienen que seguir cerradas aun con clave (hoy ninguna: las dos de sanidad las lee el tablero)
 # Tablas cuyas filas de Pone Chico quedan abiertas (sin clave) tras el cierre: ver fase4_cierre.sql,
 # public.establecimientos_autorizados(). Si Pone Chico pasa a usar clave, vaciar este conjunto.
 CAMPO_ABIERTO = "pone_chico"
-ABIERTAS_CAMPO_ABIERTO = {"eventos_sync", "stock_potreros", "sanidad_carga_pone_chico"}
+ABIERTAS_CAMPO_ABIERTO = {"eventos_sync", "stock_potreros", "sanidad_carga_pone_chico", "sanidad_ultimos", "sanidad_proximos"}
 
 
 def leer_env_local():
@@ -277,8 +280,9 @@ def modo_cierre(claves, privada=None):
                 con_partes.append(marca(True, "%s: lee" % campo))
         con = " | ".join(con_partes) if con_partes else "--  sin clave para probar"
         print("%-28s %-30s %s" % (tabla, sin, con))
-    print()
-    print("%-28s %s" % ("tabla", "tiene que seguir cerrada aun con clave"))
+    if CERRADAS:
+        print()
+        print("%-28s %s" % ("tabla", "tiene que seguir cerrada aun con clave"))
     for tabla, colest in CERRADAS:
         status, texto = pedir("GET", "%s?select=%s&limit=1" % (tabla, colest))
         lista = filas(texto) if status in (200, 206) else None

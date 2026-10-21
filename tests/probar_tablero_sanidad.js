@@ -14,15 +14,19 @@ const iso = dias => { const d = new Date(); d.setDate(d.getDate() + dias); retur
 const archivo = process.argv[2] || 'tablero-sanidad/index.html';
 const html = fs.readFileSync(archivo, 'utf8');
 
-async function abrir(respuestas, ls){
+const CLAVE_LV = 'clavelavuelta1', CLAVE_ML = 'clavemarialaura1';
+// Por defecto el equipo ya tiene la clave de La Vuelta y la de María Laura (la cargó la app: mismo origen, mismas claves de localStorage)
+const CLAVES = { clave_campo_la_vuelta: CLAVE_LV, clave_campo_maria_laura: CLAVE_ML };
+async function abrir(respuestas, ls, sinClaves){
+  ls = Object.assign({}, sinClaves ? {} : CLAVES, ls || {});
   const llamadas = [];
   const vc = new VirtualConsole();
   const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://x.github.io/potreros/tablero-sanidad/', virtualConsole: vc,
     beforeParse(win){
-      for(const k in (ls || {})) win.localStorage.setItem(k, ls[k]);
+      for(const k in ls) win.localStorage.setItem(k, ls[k]);
       win.fetch = async (url, opt) => {
-        llamadas.push({ url, metodo: (opt && opt.method) || 'GET' });
-        const r = respuestas(url);
+        llamadas.push({ url, metodo: (opt && opt.method) || 'GET', headers: (opt && opt.headers) || {}, body: opt && opt.body });
+        const r = respuestas(url, opt);
         if(r === 'caido') throw new Error('sin red');
         return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(r)) };   // copia: como un JSON recién leído
       };
@@ -61,7 +65,11 @@ const CARGAS = [
   { fecha: iso(-3), categoria: 'Vacas', potrero: '12', cantidad: 50, gen: 3 },
   { fecha: iso(-3), categoria: 'Vacas', potrero: '99', cantidad: 50, gen: 8 }
 ];
-const resp = url => {
+const resp = (url, opt) => {
+  if(url.includes('rpc/verificar_clave')){            // la clave buena de cada campo
+    const b = JSON.parse((opt && opt.body) || '{}');
+    return b.clave === (b.est === 'la_vuelta' ? CLAVE_LV : CLAVE_ML);
+  }
   const vacio = url.includes('maria_laura');
   if(url.includes('sanidad_proximos')) return vacio ? [] : PROX;
   if(url.includes('sanidad_ultimos')) return vacio ? [] : ULT;
@@ -91,7 +99,7 @@ const resp = url => {
   const a = await abrir(resp);
   const prox = a.doc.getElementById('vista-prox').innerHTML;
   chequear('pide las dos tablas del establecimiento', a.llamadas.some(l => l.url.includes('sanidad_proximos') && l.url.includes('establecimiento=eq.la_vuelta')) && a.llamadas.some(l => l.url.includes('sanidad_ultimos')));
-  chequear('solo GET', a.llamadas.every(l => l.metodo === 'GET'));
+  chequear('solo GET (salvo la pregunta verificar_clave, que no escribe)', a.llamadas.every(l => l.metodo === 'GET' || (l.metodo === 'POST' && l.url.includes('/rpc/verificar_clave'))));
   chequear('un vencido, uno en 15 días, uno más adelante', /<b>1<\/b><span>vencidos/.test(prox) && /<b>1<\/b><span>en 15 días/.test(prox) && /<b>1<\/b><span>más adelante/.test(prox), prox.slice(0, 300));
   chequear('el vencido sale primero', prox.indexOf('Terneros') < prox.indexOf('Vacas') && prox.indexOf('Vacas') < prox.indexOf('Novillos'));
   chequear('"hace 5 días" en el vencido', prox.includes('hace 5 días'));
@@ -120,7 +128,7 @@ const resp = url => {
   chequear('catBase une singular, plural y edades', a.win.catBase('Novillo 2-3') === a.win.catBase('Novillos') && a.win.catBase('Vacas') === a.win.catBase('Vaca') && a.win.catBase('Vaquillona 1-2') === a.win.catBase('Vaquillonas') && a.win.catBase('Vacas') !== a.win.catBase('Novillos'));
 
   console.log('Si falla la lectura de la carga, Últimos igual se ve');
-  const e0 = await abrir(url => url.includes('sanidad_carga') ? 'caido' : resp(url));
+  const e0 = await abrir((url, opt) => url.includes('sanidad_carga') ? 'caido' : resp(url, opt));
   const u0 = e0.doc.getElementById('vista-ult');
   chequear('Últimos sin generación pero con los datos', u0.textContent.includes('Ivermectina') && u0.textContent.includes('Vacas') && !u0.textContent.includes('Generación'), u0.textContent.slice(0, 200));
 
@@ -146,7 +154,7 @@ const resp = url => {
   chequear('la pestaña elegida se recuerda', (a.win.document.getElementById('tab-stock').click(), a.win.localStorage.getItem('tablero_sanidad_v1_tab') === 'stock'));
 
   console.log('Si el padrón de caravanas falla, el stock igual se ve');
-  const d = await abrir(url => url.includes('animales_caravana') ? 'caido' : resp(url));
+  const d = await abrir((url, opt) => url.includes('animales_caravana') ? 'caido' : resp(url, opt));
   chequear('stock sin generación y con aviso', d.doc.getElementById('vista-stock').textContent.includes('180') && d.doc.getElementById('vista-stock').textContent.includes('No se pudo leer la generación'));
 
   console.log('Pestañas y cambio de establecimiento');
@@ -168,6 +176,87 @@ const resp = url => {
   const vieja = ULT.map(f => ({ ...f, actualizado: new Date(Date.now() - 30 * 3600e3).toISOString() }));
   const c = await abrir(url => url.includes('proximos') ? PROX.map(f => ({ ...f, actualizado: new Date(Date.now() - 30 * 3600e3).toISOString() })) : vieja);
   chequear('advierte que la PC no publica', /la PC no publica/.test(c.doc.getElementById('estado').textContent) && c.doc.getElementById('estado').className === 'mal');
+
+  console.log('Clave del campo (Fase 4)');
+  const tablas = ls => ls.filter(l => /\/rest\/v1\/(sanidad_|stock_|animales_)/.test(l.url));
+  const deLV = l => l.url.includes('la_vuelta') || /sanidad_carga\?/.test(l.url);
+  chequear('La Vuelta: todas las lecturas mandan x-clave-campo con la clave guardada por la app', tablas(a.llamadas).length >= 5 &&
+    tablas(a.llamadas).filter(deLV).every(l => l.headers['x-clave-campo'] === CLAVE_LV), JSON.stringify(tablas(a.llamadas).map(l => l.headers)));
+  chequear('y la apikey es la publicable, nunca otra', tablas(a.llamadas).every(l => /^sb_publishable_/.test(l.headers.apikey)));
+  chequear('comprueba la clave una vez (verificar_clave) y con el campo correcto', (() => {
+    const v = a.llamadas.filter(l => l.url.includes('rpc/verificar_clave')).map(l => JSON.parse(l.body)).filter(b => b.est === 'la_vuelta');
+    return v.length === 1 && v[0].clave === CLAVE_LV;       // una sola vez por apertura, no en cada lectura
+  })());
+  chequear('con la clave bien no hay aviso ni ventana', a.doc.getElementById('aviso-clave').hidden && a.doc.getElementById('modal-clave').hidden);
+  chequear('el botón 🔑 está visible en La Vuelta', !a.doc.getElementById('btn-clave').hidden);
+
+  const mm = await abrir(resp, { clave_campo_la_vuelta: '  ClaveLaVuelta1 ' });
+  chequear('una clave guardada con mayúsculas y espacios se manda normalizada', tablas(mm.llamadas).length > 0 && tablas(mm.llamadas).filter(deLV).every(l => l.headers['x-clave-campo'] === 'clavelavuelta1'));
+
+  const pc = await abrir(resp, { tablero_sanidad_v1_estab: 'pone_chico' });
+  chequear('Pone Chico no usa clave: sin encabezado, sin verificar, sin aviso, sin botón', tablas(pc.llamadas).length >= 5 &&
+    tablas(pc.llamadas).every(l => !('x-clave-campo' in l.headers)) && !pc.llamadas.some(l => l.url.includes('rpc/')) &&
+    pc.doc.getElementById('aviso-clave').hidden && pc.doc.getElementById('btn-clave').hidden && pc.doc.getElementById('modal-clave').hidden);
+
+  console.log('Sin clave guardada: no lee, no pisa la copia, ofrece cargarla');
+  const copiaLV = { prox: PROX, ult: ULT, stock: STOCK, gens: null, leido: new Date(Date.now() - 3600e3).toISOString() };
+  const copiaTxt = JSON.stringify(copiaLV);
+  const s0 = await abrir(resp, { tablero_sanidad_v1_la_vuelta: copiaTxt }, true);
+  chequear('no hace ninguna lectura de tablas ni pregunta a la base', tablas(s0.llamadas).length === 0 && s0.llamadas.every(l => !l.url.includes('rpc/')), JSON.stringify(s0.llamadas.map(l => l.url)));
+  chequear('sigue mostrando la última copia', s0.doc.getElementById('vista-prox').innerHTML.includes('Clostridiales'));
+  chequear('la copia guardada queda intacta (no se pisa con vacío)', s0.win.localStorage.getItem('tablero_sanidad_v1_la_vuelta') === copiaTxt);
+  chequear('aviso "Falta la clave de La Vuelta"', !s0.doc.getElementById('aviso-clave').hidden && /Falta la clave de La Vuelta/.test(s0.doc.getElementById('aviso-clave').textContent));
+  chequear('la ventana se abre sola', !s0.doc.getElementById('modal-clave').hidden && /La Vuelta/.test(s0.doc.getElementById('mc-texto').textContent));
+  s0.doc.getElementById('mc-mas-tarde').click();
+  s0.doc.getElementById('refrescar').click(); await dormir(50);
+  chequear('"Más tarde" la cierra y no vuelve sola al refrescar', s0.doc.getElementById('modal-clave').hidden);
+  s0.doc.getElementById('aviso-clave').click();
+  chequear('el aviso sigue ahí y la abre a mano', !s0.doc.getElementById('modal-clave').hidden);
+
+  console.log('Cargar la clave desde la ventana');
+  const input = s0.doc.getElementById('mc-input'), guardar = s0.doc.getElementById('mc-guardar'), err = s0.doc.getElementById('mc-error');
+  const antes = s0.llamadas.length;
+  input.value = 'corta'; guardar.click(); await dormir(30);
+  chequear('una clave con formato inválido se rechaza sin preguntar al servidor', !err.hidden && s0.llamadas.length === antes && s0.win.localStorage.getItem('clave_campo_la_vuelta') === null);
+  input.value = 'claveequivocada1'; guardar.click(); await dormir(60);
+  chequear('una clave mala se rechaza, no se guarda y lo dice', !err.hidden && /no es la clave de La Vuelta/.test(err.textContent) && s0.win.localStorage.getItem('clave_campo_la_vuelta') === null);
+  chequear('y no hizo lecturas de tablas', tablas(s0.llamadas).length === 0);
+  input.value = '  CLAVELAVUELTA1 '; guardar.click(); await dormir(150);
+  chequear('la clave buena (con mayúsculas y espacios) se guarda normalizada', s0.win.localStorage.getItem('clave_campo_la_vuelta') === CLAVE_LV);
+  chequear('cierra la ventana y saca el aviso', s0.doc.getElementById('modal-clave').hidden && s0.doc.getElementById('aviso-clave').hidden);
+  chequear('lee con el encabezado de la clave nueva', tablas(s0.llamadas).length >= 5 && tablas(s0.llamadas).filter(deLV).every(l => l.headers['x-clave-campo'] === CLAVE_LV));
+  chequear('la copia ahora sí se actualiza con los datos reales', s0.win.localStorage.getItem('tablero_sanidad_v1_la_vuelta') !== copiaTxt && s0.doc.getElementById('vista-prox').innerHTML.includes('Vacas'));
+
+  console.log('Sin señal al guardar la clave: no se guarda y no se confunde con clave mala');
+  const sn = await abrir((url, opt) => url.includes('rpc/') ? 'caido' : resp(url, opt), {}, true);
+  sn.doc.getElementById('aviso-clave').click();
+  sn.doc.getElementById('mc-input').value = CLAVE_LV; sn.doc.getElementById('mc-guardar').click(); await dormir(60);
+  chequear('avisa que no pudo comprobar y no guarda', /No se pudo comprobar/.test(sn.doc.getElementById('mc-error').textContent) && sn.win.localStorage.getItem('clave_campo_la_vuelta') === null);
+
+  console.log('Clave guardada que el servidor rechaza');
+  const ma = await abrir(resp, { clave_campo_la_vuelta: 'clavevieja12345', tablero_sanidad_v1_la_vuelta: copiaTxt });
+  chequear('no lee las tablas y deja la copia', tablas(ma.llamadas).length === 0 && ma.win.localStorage.getItem('tablero_sanidad_v1_la_vuelta') === copiaTxt && ma.doc.getElementById('vista-prox').innerHTML.includes('Clostridiales'));
+  chequear('aviso rojo "ya no sirve" y ventana con el mismo mensaje', ma.doc.getElementById('aviso-clave').className === 'invalida' && /ya no sirve/.test(ma.doc.getElementById('aviso-clave').textContent) && !ma.doc.getElementById('modal-clave').hidden && /ya no sirve/.test(ma.doc.getElementById('mc-cargada').textContent));
+
+  console.log('Si no se puede comprobar la clave guardada, igual se intenta leer (no es "clave mala")');
+  const nr = await abrir((url, opt) => url.includes('rpc/') ? 'caido' : resp(url, opt));
+  chequear('lee con la clave y muestra datos, sin aviso', tablas(nr.llamadas).length >= 5 && nr.doc.getElementById('vista-prox').innerHTML.includes('Vacas') && nr.doc.getElementById('aviso-clave').hidden);
+  const nv = await abrir((url, opt) => url.includes('rpc/') ? 'caido' : [], { tablero_sanidad_v1_la_vuelta: copiaTxt });
+  chequear('pero si no se pudo comprobar y todo viene vacío, no pisa una copia con datos', nv.win.localStorage.getItem('tablero_sanidad_v1_la_vuelta') === copiaTxt && /no se pudo comprobar la clave/.test(nv.doc.getElementById('estado').textContent), nv.doc.getElementById('estado').textContent);
+
+  console.log('Cada campo tiene su clave');
+  const cc = await abrir(resp);
+  cc.doc.getElementById('estab').value = 'maria_laura';
+  cc.doc.getElementById('estab').dispatchEvent(new cc.win.Event('change'));
+  await dormir(80);
+  const deML = l => l.url.includes('establecimiento=eq.maria_laura') || /sanidad_carga_maria_laura/.test(l.url);
+  chequear('María Laura manda SU clave, no la de La Vuelta', tablas(cc.llamadas).filter(deML).length >= 5 && tablas(cc.llamadas).filter(deML).every(l => l.headers['x-clave-campo'] === CLAVE_ML));
+  const sm = await abrir(resp, { tablero_sanidad_v1_estab: 'maria_laura', clave_campo_la_vuelta: CLAVE_LV }, true);
+  chequear('María Laura sin su clave (aunque La Vuelta sí la tenga) pide la suya y no lee', tablas(sm.llamadas).length === 0 && !sm.doc.getElementById('aviso-clave').hidden && /Falta la clave de María Laura/.test(sm.doc.getElementById('aviso-clave').textContent));
+
+  console.log('La clave nunca se escribe en la página ni se manda a otro lado');
+  chequear('no aparece en el HTML pintado', !a.doc.documentElement.innerHTML.includes(CLAVE_LV));
+  chequear('todas las llamadas van al proyecto de Supabase', a.llamadas.concat(s0.llamadas, ma.llamadas, cc.llamadas).every(l => l.url.startsWith('https://skkknfjpwcstefcroqjt.supabase.co/')));
 
   console.log(fallas ? '\n' + fallas + ' FALLAS' : '\nTODO OK');
   process.exit(fallas ? 1 : 0);
