@@ -226,6 +226,13 @@ async function probarPC(archivoPC, archivoMovil){
   chequear(`${etiqueta}: calcVenta con descuentos: total 629,19 y neto = bruto − descuentos`, cerca(v.descuentos, 629.19) && cerca(v.neto, 4.56 * 4232.2 - 629.19, 0.01) && cerca(v.rendimiento, 4232.2 / 8000, 0.0001) && cerca(v.pesoProm, 400), JSON.stringify(v));
   v = W.calcVenta({cantidad: 8, precioTipo: '1ª', precioKg: 2.95, kilosPie: 1513});
   chequear(`${etiqueta}: calcVenta 1ª usa los kilos en pie: 2,95 × 1513 = 4463,35`, cerca(v.importeBruto, 4463.35) && v.descuentos === null, JSON.stringify(v));
+  // 21/10/2026: venta 1ª con destare -> el precio va sobre los kilos neto en pie
+  v = W.calcVenta({cantidad: 8, precioTipo: '1ª', precioKg: 2.95, kilosPie: 1513, destare: 0.04});
+  chequear(`${etiqueta}: calcVenta 1ª con destare 4 %: neto 1452,48 kg y bruto 2,95 × 1452,48`,
+    cerca(v.kilosNeto, 1452.48) && cerca(v.kilos, 1452.48) && cerca(v.importeBruto, 2.95 * 1452.48) && cerca(v.pesoProm, 1513 / 8) && cerca(v.pesoPromNeto, 1452.48 / 8), JSON.stringify(v));
+  v = W.calcVenta({cantidad: 20, precioTipo: '2ª', precioKg: 4.56, kilosRes: 4232.2, kilosPie: 8000, destare: 0.05});
+  chequear(`${etiqueta}: calcVenta 2ª con destare: el importe sigue sobre la res y el rendimiento es res / neto en pie`,
+    cerca(v.importeBruto, 4.56 * 4232.2, 0.01) && cerca(v.kilosNeto, 7600) && cerca(v.rendimiento, 4232.2 / 7600, 0.0001), JSON.stringify(v));
   chequear(`${etiqueta}: códigos del Excel: Vacas→VACA, Vacas de invernada→VINV, VCUT, Pieza, Terneros→TERNERO; ventas: Vacas Inv`,
     W.catExcelCompra('Vacas') === 'VACA' && W.catExcelCompra('Vacas de invernada') === 'VINV' && W.catExcelCompra('Vacas', 'vcut') === 'VCUT'
     && W.catExcelCompra('Vacas', 'pieza') === 'Pieza' && W.catExcelCompra('Terneros') === 'TERNERO' && W.catExcelVenta('Vacas de invernada') === 'Vacas Inv' && W.catExcelVenta('Terneras') === 'Terneros/as');
@@ -255,6 +262,7 @@ async function probarPC(archivoPC, archivoMovil){
   poner(W, 'cv-kbrutos', 4000); poner(W, 'cv-destare', 5); poner(W, 'cv-pcompra', 2.5); poner(W, 'cv-comisionista', 'Fabian Braga', 'change'); poner(W, 'cv-pcom', 2); poner(W, 'cv-flete', 100); poner(W, 'cv-pago', 'Pendiente', 'change'); poner(W, 'cv-km', 120);
   chequear(`${etiqueta}: la vista previa calcula como el Excel (neto 3.800, costo total 9.790)`,
     /3\.800/.test(E(W, 'cv-resumen-compra').textContent) && /9\.790/.test(E(W, 'cv-resumen-compra').textContent), E(W, 'cv-resumen-compra').textContent);
+  chequear(`${etiqueta}: el peso neto de la compra se ve como campo debajo del destare (3.800 kg)`, /^3\.800 kg$/.test(E(W, 'cv-kneto').value) && E(W, 'cv-kneto').readOnly, E(W, 'cv-kneto').value);
   E(W, 'cv-guardar').click();
   await esperarHasta(() => hayNuevo(servidor, evAntes, 'compra'));
   chequear(`${etiqueta}: la compra suma 10 vacas al potrero`, aW[kA('Vacas')] === 10 && W.totalPotrero(potrero) === totalAntes + 10, String(aW[kA('Vacas')]));
@@ -329,6 +337,23 @@ async function probarPC(archivoPC, archivoMovil){
   poner(W, 'cv-cant', 1); poner(W, 'cv-pkg', 4); poner(W, 'cv-kres', '');
   E(W, 'cv-guardar').click();
   chequear(`${etiqueta}: una venta 2ª sin kilos de la res NO registra`, servidor.filas.eventos_sync.length === sinKilos && /Kilos 2ª/.test(ultimoToast(W)), ultimoToast(W));
+  // venta 1ª (en pie) con destare: el precio va sobre los kilos neto
+  abrirCV(W, 'Venta');
+  chequear(`${etiqueta}: la venta tiene destare (0 % por defecto) y peso neto`, E(W, 'cv-destare-v').value === '0' && !!E(W, 'cv-kneto-v'));
+  poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Vacas de invernada', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 5);
+  poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-destino', 'Frigorifico Canelones', 'change');
+  poner(W, 'cv-ptipo', '1ª', 'change'); poner(W, 'cv-pkg', 2); poner(W, 'cv-kpie', 2000); poner(W, 'cv-destare-v', 5);
+  chequear(`${etiqueta}: la venta muestra el peso neto en pie (2.000 − 5 % = 1.900 kg) y el bruto sobre el neto (3.800)`,
+    E(W, 'cv-kneto-v').value === '1.900 kg' && /1\.900/.test(E(W, 'cv-resumen-venta').textContent) && /3\.800/.test(E(W, 'cv-resumen-venta').textContent), E(W, 'cv-kneto-v').value + ' | ' + E(W, 'cv-resumen-venta').textContent);
+  const evV1 = servidor.filas.eventos_sync.length;
+  E(W, 'cv-guardar').click();
+  await esperarHasta(() => hayNuevo(servidor, evV1, 'venta'));
+  const fv1 = (servidor.filas.eventos_sync.slice(evV1).find(r => r.tipo === 'venta') || {detalle: {}}).detalle.fin;
+  chequear(`${etiqueta}: el evento de venta 1ª trae destare, kilos neto e importe sobre el neto`,
+    !!fv1 && cerca(fv1.kilosPie, 2000) && cerca(fv1.destare, 0.05) && cerca(fv1.kilosNeto, 1900) && cerca(fv1.kilos, 1900) && cerca(fv1.importeBruto, 3800) && cerca(fv1.pesoPromNeto, 380), JSON.stringify(fv1));
+  chequear(`${etiqueta}: al terminar la venta se borran los kilos y el peso neto (el destare queda para la próxima, como en la compra)`, E(W, 'cv-destare-v').value === '5' && E(W, 'cv-kneto-v').value === '' && E(W, 'cv-kpie').value === '', E(W, 'cv-destare-v').value + '|' + E(W, 'cv-kneto-v').value);
+  abrirCV(W, 'Venta');
+  chequear(`${etiqueta}: al abrir de nuevo el formulario el destare de la venta vuelve a 0`, E(W, 'cv-destare-v').value === '0');
 
   // ---- 8) altas de catálogo desde la PC ----
   abrirCV(W, 'Compra');

@@ -830,6 +830,12 @@ movimiento y la sube con *upsert* por `event_id` (vigente/anulado, `asentado_exc
 (`maestros_dicose`) los lee la PC al abrir Movimientos DICOSE y los agrega la PC (cola `estado.colaMaestros` si no hay
 señal); se siembran desde los Excel con `sembrar_maestros_dicose.py`. Ninguna política permite DELETE; para sacar una
 entrada de las listas se pone `activo = false`.
+**Destare y peso neto (21/10/2026, a pedido de Pedro, solo PC):** la compra muestra "Kilos neto (bruto − destare)" como campo
+de solo lectura (`#cv-kneto`) y la venta ganó "Destare (%)" (`#cv-destare-v`, 0 por defecto, también en las categorías extra) y
+"Kilos neto en pie" (`#cv-kneto-v`). En una venta 1ª el precio va sobre el neto: `calcVenta()` arma `kilosNeto = kilosPie − destare·kilosPie`,
+`kilos` = ese neto, y el rendimiento es res / neto en pie (sin destare da lo mismo que antes). `detalle.fin` de la venta suma `destare`,
+`kilosNeto` y `pesoPromNeto`; `kilosPie` sigue siendo el bruto. `pasar_traslados_a_excel.py` (fuera del repo) tiene que tomar `importeBruto`
+/ `kilos` de `fin`, no recalcular con `kilosPie`. Test: `tests/probar_finanzas_compraventa.js`.
 **Clave privada (secret / service_role)**: como este repo es público y la clave `anon` está en cada app,
 `movimientos_dicose` no admite `anon` para nada y `maestros_dicose` solo SELECT + INSERT. Los scripts de la PC
 (`dicose_supabase.py`, `sembrar_maestros_dicose.py`) escriben con la clave privada, que se lee de la variable de
