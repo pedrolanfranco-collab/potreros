@@ -1,4 +1,4 @@
--- Renombra el tratamiento histórico "Tickxan plus" a "Tickxan Pour On Plus" (20/10/2026).
+-- Renombra el tratamiento histórico "Tickxan plus" a "Tickxan Pour on plus" (20/10/2026).
 -- Es 1 sola fila en todo el proyecto: sanidad_carga (La Vuelta), id sc_1789781703541_f681d4b1,
 -- 24/7/2025, 54 animales V. Inv. Se corre a mano en el SQL Editor de Supabase (rol postgres:
 -- la app no puede, porque la fila ya fue importada por el Excel y la política lo impide).
@@ -7,7 +7,7 @@
 begin;
 
 update sanidad_carga
-   set producto1 = 'Tickxan Pour On Plus'
+   set producto1 = 'Tickxan Pour on plus'
  where id = 'sc_1789781703541_f681d4b1'
    and producto1 = 'Tickxan plus';          -- debe decir "UPDATE 1"
 
