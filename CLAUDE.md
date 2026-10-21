@@ -734,6 +734,15 @@ Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petr
 el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
 publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
 `tests/probar_tablero_sanidad.js`.
+**"Ya se hizo" en los vencidos (21/10/2026, a pedido de Pedro):** `sanidad_proximos` la regenera la Planilla cada hora y arrastra
+vencidos viejos (23 en La Vuelta, el más viejo de jul/2025, varios con nombres de categoría viejos como "Nov. 2 a 3"), así que borrar ahí no
+sirve. Cada tarjeta **vencida** tiene "✓ Ya se hizo" (confirmación en la página, sin `confirm()`) que inserta en `sanidad_proximos_hechos`
+(establecimiento + categoría + sanidad + `fecha_prevista` como fecha; `on_conflict` + `ignore-duplicates`) y la oculta **en todos los equipos**;
+quedan en "Marcados como hechos (N)" con "Deshacer" (DELETE por `id`, se confirma con `return=representation`). Se compara sin mayúsculas ni
+espacios y por fecha prevista: si la Planilla registra un tratamiento nuevo, la fecha cambia y el próximo vencimiento vuelve a aparecer. **Es la
+única escritura del tablero.** Sin la tabla (SQL no corrido) o si no se puede leer, no hay botón y se ven todos. SQL:
+`scripts/sanidad/proximos_hechos.sql` (+ `_deshacer.sql`; lo corre Pedro, probado en un Postgres local con roles `anon`/`service_role`).
+Los falsos Supabase de la prueba deben atender `sanidad_proximos_hechos` **antes** que `sanidad_proximos` (la URL contiene las dos).
 
 **Cómo se trabajó y qué recordar (16/10/2026):**
 - Cada cambio al tablero fue por **PR y merge a `main` cuando el CI está en verde**, a pedido de Pedro; una vez mergeado, la rama de
@@ -788,6 +797,7 @@ no implícito.
 | `sanidad_proximos` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2: `anon` solo lee; la escribe `actualizar_sanidad_supabase.py` con la clave privada)* |
 | `animales_caravana` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2: `anon` solo lee; antes tenía una política "ALL". La escribe `publicar_animales.py` con la clave privada. Sigue legible con la llave pública hasta la Fase 4)* |
 | `stock_potreros` (16/9/2026) | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL", igual criterio que `eventos_sync`)* |
+| `sanidad_proximos_hechos` (21/10/2026) | ✅ | ✅ | ❌ | ✅ *(tablero de Sanidad, "Ya se hizo"; solo oculta tarjetas. No está en `fase4_cierre.sql`: sumarla al cerrar)* |
 | `maestros_dicose` (9/10/2026) | ✅ | ✅ | ❌ | ❌ *(dos políticas para `anon`: SELECT e INSERT, sin UPDATE ni DELETE; catálogos de compradores / comisionistas / clientes y proveedores. La app agrega con `upsert` + `ignoreDuplicates` (ON CONFLICT DO NOTHING). Actualizar o desactivar una entrada lo hace solo la clave privada)* |
 | `movimientos_dicose` (9/10/2026) | ❌ | ❌ | ❌ | ❌ *(`anon` sin ningún permiso: ni SELECT, INSERT ni UPDATE; lleva importes, descuentos y DICOSE de terceros. La lee y la llena solo el script de la PC con la clave privada. La vista `movimientos_dicose_vigentes` es `security_invoker = true`)* |
 
