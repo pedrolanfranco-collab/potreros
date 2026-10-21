@@ -831,7 +831,8 @@ movimiento y la sube con *upsert* por `event_id` (vigente/anulado, `asentado_exc
 señal); se siembran desde los Excel con `sembrar_maestros_dicose.py`. Ninguna política permite DELETE; para sacar una
 entrada de las listas se pone `activo = false`.
 **Destare y peso neto (21/10/2026, a pedido de Pedro, solo PC):** la compra muestra "Kilos neto (bruto − destare)" como campo
-de solo lectura (`#cv-kneto`) y la venta ganó "Destare (%)" (`#cv-destare-v`, 0 por defecto, también en las categorías extra) y
+de solo lectura (`#cv-kneto`) y la venta ganó "Destare (%)" (`#cv-destare-v`, vacío con "4 a 7": varía entre 4 y 7 %; **obligatorio en 1ª**, aviso en la vista previa fuera de
+ese rango; también en las categorías extra; una venta vieja sin destare se edita con 0) y
 "Kilos neto en pie" (`#cv-kneto-v`). En una venta 1ª el precio va sobre el neto: `calcVenta()` arma `kilosNeto = kilosPie − destare·kilosPie`,
 `kilos` = ese neto, y el rendimiento es res / neto en pie (sin destare da lo mismo que antes). `detalle.fin` de la venta suma `destare`,
 `kilosNeto` y `pesoPromNeto`; `kilosPie` sigue siendo el bruto. `pasar_traslados_a_excel.py` (fuera del repo) tiene que tomar `importeBruto`

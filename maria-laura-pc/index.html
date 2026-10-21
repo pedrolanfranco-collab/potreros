@@ -902,7 +902,7 @@
           </div>
           <div class="form-row"><label>$/Kg (USD/kg)</label><input type="number" id="cv-pkg" min="0" step="0.01"></div>
           <div class="form-row"><label>Kilos 1ª — en pie (brutos, balanza)</label><input type="number" id="cv-kpie" min="0" step="0.1"></div>
-          <div class="form-row"><label>Destare (%)</label><input type="number" id="cv-destare-v" min="0" max="100" step="0.1" value="0"></div>
+          <div class="form-row"><label>Destare (%) — habitual 4 a 7</label><input type="number" id="cv-destare-v" min="0" max="100" step="0.1" placeholder="4 a 7"></div>
           <div class="form-row"><label>Kilos neto en pie (bruto − destare)</label><input type="text" id="cv-kneto-v" readonly tabindex="-1" placeholder="se calcula solo" style="background:var(--crema);font-weight:600;"></div>
           <div class="form-row"><label>Kilos 2ª — res (en gancho)</label><input type="number" id="cv-kres" min="0" step="0.1"></div>
           <div id="cv-extra-venta"></div>
@@ -9630,7 +9630,7 @@ function leerFinCV(){
     if(variante) fin.variante = variante;
     return {fin, contraparte: origen};
   }
-  const f = {cantidad: cant, precioTipo: texto('cv-ptipo'), precioKg: cvVal('cv-pkg'), kilosPie: cvVal('cv-kpie'), destare: (cvVal('cv-destare-v') || 0) / 100,
+  const f = {cantidad: cant, precioTipo: texto('cv-ptipo'), precioKg: cvVal('cv-pkg'), kilosPie: cvVal('cv-kpie'), destare: destareCV(cvVal('cv-destare-v')),
     kilosRes: cvVal('cv-kres'), imeba: cvVal('cv-imeba'), inia: cvVal('cv-inia'), mevir: cvVal('cv-mevir'), inac: cvVal('cv-inac'), mgap: cvVal('cv-mgap'),
     sepb: cvVal('cv-sepb'), gastos: cvVal('cv-gastos')};
   const destino = texto('cv-destino');
@@ -9639,6 +9639,7 @@ function leerFinCV(){
   if(!destino) faltan.push('Destino');
   if(f.precioKg === null) faltan.push('$/Kg');
   if(f.precioTipo === '1ª' && f.kilosPie === null) faltan.push('Kilos 1ª en pie');
+  if(f.precioTipo === '1ª' && f.destare === null) faltan.push('Destare (%)');
   if(f.precioTipo === '2ª' && f.kilosRes === null) faltan.push('Kilos 2ª (res)');
   if(faltan.length) return {error: 'Faltan datos de la venta: ' + faltan.join(', ')};
   const c = calcVenta(f);
@@ -9647,6 +9648,12 @@ function leerFinCV(){
     plazo: cvVal('cv-plazo'), imeba: f.imeba, inia: f.inia, mevir: f.mevir, inac: f.inac, mgap: f.mgap, sepb: f.sepb, gastos: f.gastos,
     descuentos: c.descuentos, neto: c.neto, pesoProm: c.pesoProm, pesoPromNeto: c.pesoPromNeto, rendimiento: c.rendimiento};
   return {fin, contraparte: destino};
+}
+/* Destare de la venta: % del formulario -> fracción; vacío = null (en una venta 1ª es obligatorio). */
+function destareCV(pct){ return pct === null ? null : pct / 100; }
+/* El destare de una venta en pie anda entre 4 y 7 % (Pedro, 21/10/2026): fuera de eso se avisa, no se bloquea. */
+function avisoDestareCV(pct){
+  return (pct !== null && (pct < 4 || pct > 7)) ? `⚠ Destare de ${fmtNum(pct, 1)} %: lo habitual es entre 4 y 7 %\n` : '';
 }
 function actualizarResumenCV(){
   const venta = document.getElementById('cv-tipo').value === 'Venta';
@@ -9668,9 +9675,10 @@ function actualizarResumenCV(){
       `COSTO TOTAL: USD ${fmtNum(c.costoTotal)} · por cabeza USD ${fmtNum(c.costoCab)} · por kg USD ${fmtNum(c.costoKg)}`;
   } else {
     const c = calcVenta({cantidad: cant, precioTipo: document.getElementById('cv-ptipo').value, precioKg: cvVal('cv-pkg'),
-      kilosPie: cvVal('cv-kpie'), destare: (cvVal('cv-destare-v') || 0) / 100, kilosRes: cvVal('cv-kres'), imeba: cvVal('cv-imeba'), inia: cvVal('cv-inia'), mevir: cvVal('cv-mevir'),
+      kilosPie: cvVal('cv-kpie'), destare: destareCV(cvVal('cv-destare-v')), kilosRes: cvVal('cv-kres'), imeba: cvVal('cv-imeba'), inia: cvVal('cv-inia'), mevir: cvVal('cv-mevir'),
       inac: cvVal('cv-inac'), mgap: cvVal('cv-mgap'), sepb: cvVal('cv-sepb'), gastos: cvVal('cv-gastos')});
     document.getElementById('cv-resumen-venta').textContent =
+      avisoDestareCV(cvVal('cv-destare-v')) +
       `Kilos neto en pie: ${fmtNum(c.kilosNeto, 1)} kg · Peso promedio en pie: ${fmtNum(c.pesoProm, 1)} kg bruto / ${fmtNum(c.pesoPromNeto, 1)} kg neto\n` +
       `Rendimiento (res / neto en pie): ${c.rendimiento === null ? '—' : fmtNum(c.rendimiento * 100, 1) + ' %'}\n` +
       `Importe bruto: USD ${fmtNum(c.importeBruto)} · por cabeza USD ${fmtNum(c.brutoCab)}\n` +
@@ -9697,7 +9705,7 @@ function htmlLineaCV(venta){
   const cuerpo = venta
     ? `${num('cvl-cant', 'Cantidad', 'min="1" value="1"')}
        <div class="form-row"><label>Precio tipo</label><select class="cvl-ptipo"><option value="1ª">1ª (en pie)</option><option value="2ª">2ª (en gancho)</option></select></div>
-       ${num('cvl-pkg', '$/Kg (USD/kg)', 'min="0" step="0.01"')}${num('cvl-kpie', 'Kilos 1ª — en pie (brutos)', 'min="0" step="0.1"')}${num('cvl-dest', 'Destare (%)', 'min="0" max="100" step="0.1" value="' + (document.getElementById('cv-destare-v').value || 0) + '"')}${num('cvl-kres', 'Kilos 2ª — res (en gancho)', 'min="0" step="0.1"')}`
+       ${num('cvl-pkg', '$/Kg (USD/kg)', 'min="0" step="0.01"')}${num('cvl-kpie', 'Kilos 1ª — en pie (brutos)', 'min="0" step="0.1"')}${num('cvl-dest', 'Destare (%) — habitual 4 a 7', 'min="0" max="100" step="0.1" placeholder="4 a 7" value="' + esc(document.getElementById('cv-destare-v').value) + '"')}${num('cvl-kres', 'Kilos 2ª — res (en gancho)', 'min="0" step="0.1"')}`
     : `<div class="form-row cvl-var-fila" style="display:none;"><label>Tipo de vaca</label><select class="cvl-var"><option value="">Vaca (cría)</option><option value="vcut">Vaca de última cría (VCUT)</option><option value="pieza">Vaca con cría al pie (Pieza: suma vaca y ternero)</option></select></div>
        ${num('cvl-cant', 'Cantidad', 'min="1" value="1"')}${num('cvl-kb', '<span class="cvl-lbl-kb">Kilos brutos</span>', 'min="0" step="0.1"')}${num('cvl-dest', 'Destare (%)', 'min="0" max="100" step="0.1" value="' + (document.getElementById('cv-destare').value || 5) + '"')}
        <div class="form-row"><label>Tipo de precio</label><select class="cvl-tp"><option value="Kg">Por kg</option><option value="Pieza">Por pieza (cabeza)</option></select></div>
@@ -9718,13 +9726,13 @@ function lineasCV(){
   const v = id => document.getElementById(id).value;
   const l0 = venta
     ? {cat: v('cv-cat'), cant: parseInt(v('cv-cant'), 10), precioTipo: v('cv-ptipo'), precioKg: cvVal('cv-pkg'), kilosPie: cvVal('cv-kpie'),
-       destare: (cvVal('cv-destare-v') || 0) / 100, kilosRes: cvVal('cv-kres')}
+       destare: destareCV(cvVal('cv-destare-v')), kilosRes: cvVal('cv-kres')}
     : {cat: v('cv-cat'), cant: parseInt(v('cv-cant'), 10), variante: v('cv-variante'), tipoPrecio: v('cv-tprecio'), kilosBrutos: cvVal('cv-kbrutos'),
        destare: (cvVal('cv-destare') || 0) / 100, precio: cvVal('cv-pcompra')};
   const q = (el, s) => el.querySelector(s).value;
   const extras = Array.from(contenedorLineasCV().querySelectorAll('.cv-linea')).map(el => venta
     ? {cat: q(el, '.cvl-cat'), cant: parseInt(q(el, '.cvl-cant'), 10), precioTipo: q(el, '.cvl-ptipo'), precioKg: numONull(q(el, '.cvl-pkg')),
-       kilosPie: numONull(q(el, '.cvl-kpie')), destare: (numONull(q(el, '.cvl-dest')) || 0) / 100, kilosRes: numONull(q(el, '.cvl-kres'))}
+       kilosPie: numONull(q(el, '.cvl-kpie')), destare: destareCV(numONull(q(el, '.cvl-dest'))), kilosRes: numONull(q(el, '.cvl-kres'))}
     : {cat: q(el, '.cvl-cat'), cant: parseInt(q(el, '.cvl-cant'), 10), variante: q(el, '.cvl-var'), tipoPrecio: q(el, '.cvl-tp'),
        kilosBrutos: numONull(q(el, '.cvl-kb')), destare: (numONull(q(el, '.cvl-dest')) || 0) / 100, precio: numONull(q(el, '.cvl-pr'))});
   return [l0].concat(extras);
@@ -9779,6 +9787,7 @@ function armarOperacionesCV(estricto){
     if(!(l.cant >= 1)) faltan.push('Cantidad' + n(i));
     if(l.precioKg === null) faltan.push('$/Kg' + n(i));
     if(l.precioTipo === '1ª' && l.kilosPie === null) faltan.push('Kilos 1ª en pie' + n(i));
+    if(l.precioTipo === '1ª' && l.destare === null) faltan.push('Destare (%)' + n(i));          // en pie el precio va sobre el neto
     if(l.precioTipo === '2ª' && l.kilosRes === null) faltan.push('Kilos 2ª (res)' + n(i));
   });
   if(estricto && faltan.length) return {error: 'Faltan datos de la venta: ' + faltan.join(', ')};
@@ -9936,7 +9945,7 @@ function reiniciarFormularioCompraVenta(){
   ['cv-precio','cv-contraparte','cv-guia','cv-obs'].forEach(id=>{ document.getElementById(id).value = ''; });
   ['cv-kbrutos','cv-pcompra','cv-km','cv-pkg','cv-kpie','cv-kres','cv-plazo','cv-imeba','cv-inia','cv-mevir','cv-inac','cv-mgap','cv-sepb','cv-gastos']
     .forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('cv-destare').value = '5'; document.getElementById('cv-destare-v').value = '0'; document.getElementById('cv-pcom').value = '0'; document.getElementById('cv-flete').value = '0';
+  document.getElementById('cv-destare').value = '5'; document.getElementById('cv-destare-v').value = ''; document.getElementById('cv-pcom').value = '0'; document.getElementById('cv-flete').value = '0';
   document.getElementById('cv-tprecio').value = 'Kg'; document.getElementById('cv-pago').value = 'Pagado'; document.getElementById('cv-ptipo').value = '1ª';
   document.getElementById('cv-variante').value = '';
   document.getElementById('cv-rapido').checked = false;

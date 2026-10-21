@@ -339,10 +339,17 @@ async function probarPC(archivoPC, archivoMovil){
   chequear(`${etiqueta}: una venta 2ª sin kilos de la res NO registra`, servidor.filas.eventos_sync.length === sinKilos && /Kilos 2ª/.test(ultimoToast(W)), ultimoToast(W));
   // venta 1ª (en pie) con destare: el precio va sobre los kilos neto
   abrirCV(W, 'Venta');
-  chequear(`${etiqueta}: la venta tiene destare (0 % por defecto) y peso neto`, E(W, 'cv-destare-v').value === '0' && !!E(W, 'cv-kneto-v'));
+  chequear(`${etiqueta}: la venta tiene destare (vacío, "4 a 7") y peso neto`, E(W, 'cv-destare-v').value === '' && E(W, 'cv-destare-v').placeholder === '4 a 7' && !!E(W, 'cv-kneto-v'));
   poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Vacas de invernada', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 5);
   poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-destino', 'Frigorifico Canelones', 'change');
-  poner(W, 'cv-ptipo', '1ª', 'change'); poner(W, 'cv-pkg', 2); poner(W, 'cv-kpie', 2000); poner(W, 'cv-destare-v', 5);
+  poner(W, 'cv-ptipo', '1ª', 'change'); poner(W, 'cv-pkg', 2); poner(W, 'cv-kpie', 2000);
+  const sinDestare = servidor.filas.eventos_sync.length;
+  E(W, 'cv-guardar').click();
+  chequear(`${etiqueta}: una venta 1ª sin destare NO registra y lo pide`, servidor.filas.eventos_sync.length === sinDestare && /Destare/.test(ultimoToast(W)), ultimoToast(W));
+  poner(W, 'cv-destare-v', 9);
+  chequear(`${etiqueta}: un destare fuera de 4–7 % se avisa en la vista previa`, /lo habitual es entre 4 y 7/.test(E(W, 'cv-resumen-venta').textContent), E(W, 'cv-resumen-venta').textContent);
+  poner(W, 'cv-destare-v', 5);
+  chequear(`${etiqueta}: con 5 % no hay aviso`, !/lo habitual/.test(E(W, 'cv-resumen-venta').textContent));
   chequear(`${etiqueta}: la venta muestra el peso neto en pie (2.000 − 5 % = 1.900 kg) y el bruto sobre el neto (3.800)`,
     E(W, 'cv-kneto-v').value === '1.900 kg' && /1\.900/.test(E(W, 'cv-resumen-venta').textContent) && /3\.800/.test(E(W, 'cv-resumen-venta').textContent), E(W, 'cv-kneto-v').value + ' | ' + E(W, 'cv-resumen-venta').textContent);
   const evV1 = servidor.filas.eventos_sync.length;
@@ -353,7 +360,7 @@ async function probarPC(archivoPC, archivoMovil){
     !!fv1 && cerca(fv1.kilosPie, 2000) && cerca(fv1.destare, 0.05) && cerca(fv1.kilosNeto, 1900) && cerca(fv1.kilos, 1900) && cerca(fv1.importeBruto, 3800) && cerca(fv1.pesoPromNeto, 380), JSON.stringify(fv1));
   chequear(`${etiqueta}: al terminar la venta se borran los kilos y el peso neto (el destare queda para la próxima, como en la compra)`, E(W, 'cv-destare-v').value === '5' && E(W, 'cv-kneto-v').value === '' && E(W, 'cv-kpie').value === '', E(W, 'cv-destare-v').value + '|' + E(W, 'cv-kneto-v').value);
   abrirCV(W, 'Venta');
-  chequear(`${etiqueta}: al abrir de nuevo el formulario el destare de la venta vuelve a 0`, E(W, 'cv-destare-v').value === '0');
+  chequear(`${etiqueta}: al abrir de nuevo el formulario el destare de la venta queda vacío`, E(W, 'cv-destare-v').value === '');
 
   // ---- 8) altas de catálogo desde la PC ----
   abrirCV(W, 'Compra');
@@ -499,7 +506,7 @@ async function probarPC(archivoPC, archivoMovil){
     abrirCV(W, 'Venta');
     poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Terneros', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 10);
     poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-guia', 'n600006'); poner(W, 'cv-destino', 'Frigorifico Canelones', 'change');
-    poner(W, 'cv-ptipo', '1ª', 'change'); poner(W, 'cv-pkg', 1.9); poner(W, 'cv-kpie', 4500); poner(W, 'cv-plazo', 30); poner(W, 'cv-imeba', 100);
+    poner(W, 'cv-ptipo', '1ª', 'change'); poner(W, 'cv-pkg', 1.9); poner(W, 'cv-kpie', 4500); poner(W, 'cv-destare-v', 0); poner(W, 'cv-plazo', 30); poner(W, 'cv-imeba', 100);
     E(W, 'cv-agregar-linea-venta').click();
     const v2 = E(W, 'cv-extra-venta').querySelector('.cv-linea');
     const ponerV = (cls, v, ev) => { const e = v2.querySelector(cls); e.value = String(v); e.dispatchEvent(new W.Event(ev || 'input', { bubbles: true })); };
