@@ -116,12 +116,16 @@ Fase 3, paso 4 (11/10/2026).
 
 **No correr `fase4_cierre.sql` hasta que se cumplan las tres cosas:**
 
-> **Pone Chico no usa clave (17/10/2026, a pedido de Pedro).** `CONFIG.claveCampo` es `false` en sus 3 apps. Con las políticas
-> del cierre tal como están escritas (`'pone_chico' = any(establecimientos_con_clave())`), Pone Chico quedaría **sin poder leer ni
-> escribir**. Antes del cierre hay que cambiar esas políticas para que Pone Chico siga abierto (o ponerle clave de nuevo con
-> `claveCampo: true`). Mientras tanto, su fila de `private.claves_campo` no hace falta: se saca con
+> **Pone Chico no usa clave (17/10/2026, a pedido de Pedro)** y el cierre ya lo contempla (revisión del 21/10/2026):
+> `fase4_cierre.sql` crea `private.campos_abiertos` (hoy `pone_chico`) y `public.establecimientos_permitidos()` = campos con
+> clave válida + campos abiertos. Esa función se usa solo en el **stream propio** de cada campo (`eventos_sync`,
+> `stock_potreros`, `sanidad_carga_pone_chico`, `sanidad_ultimos`, `sanidad_proximos`); las excepciones entre campos
+> (`traslado_entrada`, `anular_traslado`) y las tablas que Pone Chico no usa (`sanidad_carga`, `sanidad_carga_maria_laura`,
+> `animales_caravana`, `maestros_dicose`) siguen exigiendo una clave **real**, así nadie se hace pasar por un campo abierto
+> para escribir en otro. `productos_catalogo` queda legible para todos (lista de referencia). Para ponerle clave a Pone Chico
+> más adelante: `claveCampo: true` en su config, cargar su clave y `delete from private.campos_abiertos where establecimiento = 'pone_chico';`.
+> Su fila de `private.claves_campo` no hace falta mientras esté abierto: se saca con
 > `delete from private.claves_campo where establecimiento = 'pone_chico';`.
-
 
 1. la segunda consulta de arriba devuelve **0 filas** (todos los equipos activos ya mandan la clave);
 2. **los scripts de la PC que usan la llave pública ya usan la clave privada**
@@ -130,15 +134,15 @@ Fase 3, paso 4 (11/10/2026).
    El informe de nacimientos (`enviar_informe_nacimientos.py`, abre la app con Playwright) necesita
    además la clave del campo en el `localStorage` de su navegador (`clave_campo_la_vuelta`).
    El keep-alive de GitHub sigue andando: contesta 200 con lista vacía.
-3. **el Tablero de Sanidad (`tablero-sanidad/`, 16/10/2026) tiene la clave del campo.** Lee con la llave pública
-   `sanidad_proximos`, `sanidad_ultimos`, `stock_potreros`, `animales_caravana` y `sanidad_carga*`; el cierre deja
-   `sanidad_ultimos` y `sanidad_proximos` sin política para `anon` ("ninguna app las lee" ya no es cierto) y pide la
-   clave en las demás, así que **sin este paso el tablero queda sin datos**. Hay que decidir cómo se leen
-   `sanidad_ultimos`/`sanidad_proximos` con clave (política por establecimiento, como `animales_caravana`) y agregarle
-   la ventana de clave; el aviso rojo del tablero ("la PC no publica hace más de 6 h") no distingue clave mala de falta de datos.
+3. **el Tablero de Sanidad (`tablero-sanidad/`) ya publicado manda la clave del campo** (21/10/2026): toma la que se cargó
+   en las apps (mismo origen, `localStorage['clave_campo_<campo>']`) o la pide una vez con su propia ventana, y la manda
+   en `x-clave-campo`. Con las políticas cerradas, una lectura sin clave contesta 200 sin filas; el tablero conserva
+   entonces la última copia y avisa "Falta la clave". Pone Chico (sin clave) sigue andando. **Publicar el tablero antes del cierre**
+   y abrirlo una vez en cada celular: si ese celular no comparte almacenamiento con la app (por ejemplo un acceso directo
+   de iPhone), escribe la clave en el tablero.
 
 Después: correr el SQL (guarda las políticas de antes en `auditoria_politicas_antes_fase4`),
-`python scripts/seguridad/verificar_fase4.py --cierre` (sin clave todo cerrado, con la clave anda),
+`python scripts/seguridad/verificar_fase4.py --cierre` (sin clave todo cerrado salvo lo abierto a propósito —el stream de Pone Chico y `productos_catalogo`—, con la clave anda, incluidas `sanidad_ultimos` y `sanidad_proximos`),
 y probar a mano un movimiento y un traslado La Vuelta → María Laura. Para volver atrás:
 `fase4_cierre_deshacer.sql`.
 

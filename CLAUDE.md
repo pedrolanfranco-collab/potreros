@@ -732,7 +732,7 @@ nombres del padrón difieren más que eso, la tarjeta sale sin bloque. Si la lec
 Para tenerlo en las dos pestañas de verdad, la PC tendría que publicar `gen` (columna nueva en las dos tablas + `actualizar_sanidad_supabase.py`, que vive en OneDrive).
 Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;
 el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
-publica hace más de 6 h. **Cuando la Fase 4 cierre la lectura anónima hay que darle la clave del campo.** Test:
+publica hace más de 6 h. **Clave del campo (21/10/2026):** La Vuelta y María Laura piden la clave; el tablero toma la que ya se cargó en las apps (mismo origen, `clave_campo_<campo>`) o la pide una vez, la comprueba con `verificar_clave` y la manda en `x-clave-campo`; Pone Chico no la usa. Sin clave y con las políticas cerradas no pisa la última copia con una lectura vacía. Test:
 `tests/probar_tablero_sanidad.js`.
 **"Ya se hizo" en los vencidos (21/10/2026, a pedido de Pedro):** `sanidad_proximos` la regenera la Planilla cada hora y arrastra
 vencidos viejos (23 en La Vuelta, el más viejo de jul/2025, varios con nombres de categoría viejos como "Nov. 2 a 3"), así que borrar ahí no
@@ -845,8 +845,26 @@ de solo lectura (`#cv-kneto`) y la venta ganó "Destare (%)" (`#cv-destare-v`, v
 ese rango; también en las categorías extra; una venta vieja sin destare se edita con 0) y
 "Kilos neto en pie" (`#cv-kneto-v`). En una venta 1ª el precio va sobre el neto: `calcVenta()` arma `kilosNeto = kilosPie − destare·kilosPie`,
 `kilos` = ese neto, y el rendimiento es res / neto en pie (sin destare da lo mismo que antes). `detalle.fin` de la venta suma `destare`,
-`kilosNeto` y `pesoPromNeto`; `kilosPie` sigue siendo el bruto. `pasar_traslados_a_excel.py` (fuera del repo) tiene que tomar `importeBruto`
-/ `kilos` de `fin`, no recalcular con `kilosPie`. Test: `tests/probar_finanzas_compraventa.js`.
+`kilosNeto` y `pesoPromNeto`; `kilosPie` sigue siendo el bruto. Test: `tests/probar_finanzas_compraventa.js`.
+*Scripts de la PC (revisados el 21/10/2026, carpeta `Ganaderia\Macros & phyton`):* `pasar_traslados_a_excel.py` no necesitó cambios
+(al Excel de DICOSE pasa solo cantidades, sin kilos ni importes). `dicose_supabase.py` (`fila_compraventa()`) ya copiaba `importeBruto`,
+`neto` y `rendimiento` de `fin` sin recalcular; se le agregó en la rama de venta `"destare"` y `"kilos_neto"` (antes solo en la compra), y
+Pedro lo aplicó en la PC con un bloque de PowerShell (copia del original en `dicose_supabase.py.bak`; prueba local con una venta de
+2.000 kg al 5 %: `destare 0.05`, `kilos_neto 1900`). Las ventas de antes quedan con esas dos columnas vacías.
+**Comisión del intermediario y carga rápida (22/10/2026, a pedido de Pedro, solo PC):** compra y venta tienen comisionista /
+intermediario (catálogo `comisionista`, "Directo" por defecto), "% Comisión — habitual 0 a 4" (aviso en la vista previa fuera de ese
+rango) y "Con boleta del intermediario (+ IVA 22 % sobre la comisión)" (`IVA_COMISION`, `ivaComision()`). Compra: `costoTotal` suma la
+comisión y su IVA. Venta (`#cv-comisionista-v`, `#cv-pcom-v`, `#cv-boleta-v`, nuevo): comisión = % del bruto de cada línea y el neto la
+descuenta con su IVA. `fin` suma `conBoleta` e `ivaCom` (y en la venta `comisionista`, `pctCom`, `importeCom`). El tilde **"Carga rápida"
+está justo después de la Operación** (antes estaba abajo de la fecha) y la carga rápida acepta **varias categorías** de la misma guía
+(`#cv-extra-rapido`, líneas de categoría + cantidad + precio por cabeza opcional; `registrarRapidasCV()` → `registrarOperacionesCV()`, la
+misma validación todo-o-nada que la carga completa); cambiar de modo borra las líneas extra, igual que cambiar la operación.
+`dicose_supabase.py` llena `pct_comision` / `importe_comision` / `comisionista` solo en la compra hasta que se le aplique el cambio de la
+venta; el IVA de la comisión no tiene columna en `movimientos_dicose` (queda en `detalle`).
+*Para cambiar un archivo de la PC desde la nube:* pegar en PowerShell un bloque envuelto en `& { … }` (si no, la consola ejecuta línea por
+línea y un `elseif`/`else` suelto da "no se reconoce"), que lea/escriba con `[System.IO.File]` conservando BOM y CRLF, sea idempotente y deje
+`.bak`; probarlo antes en la nube con `pwsh` (se baja de los releases de GitHub) pasándolo por stdin (`pwsh -Command - < bloque.txt`, con
+una línea en blanco al final). Para leer un archivo de la PC, lo más fácil para Pedro es `notepad <archivo>`, Ctrl+A, Ctrl+C y pegar en el chat.
 **Clave privada (secret / service_role)**: como este repo es público y la clave `anon` está en cada app,
 `movimientos_dicose` no admite `anon` para nada y `maestros_dicose` solo SELECT + INSERT. Los scripts de la PC
 (`dicose_supabase.py`, `sembrar_maestros_dicose.py`) escriben con la clave privada, que se lee de la variable de
@@ -925,6 +943,7 @@ siguen abiertas.
   `false` en Pone Chico. Con `false` la app no muestra la ventana, el aviso del pie ni el botón, no manda `x-clave-campo` y
   no llama a `verificar_clave` (aunque haya una clave vieja guardada). **Para el cierre**: sus políticas deben dejar Pone Chico
   abierto a propósito (o se queda sin sincronizar); ver `scripts/seguridad/README.md`. Test: `probar_clave_campo.js`.
+- *Cierre revisado (21/10/2026)*: contempla Pone Chico abierto (`private.campos_abiertos` + `establecimientos_permitidos()`, solo en el stream propio de cada campo; las excepciones entre campos y las tablas sin Pone Chico exigen clave real), `productos_catalogo` legible para todos y `sanidad_ultimos`/`sanidad_proximos` legibles con clave (las lee el tablero). Detalle en `scripts/seguridad/README.md`.
 - *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, escritos y revisados, **no corridos**): las políticas
   pasan a exigir `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los
   equipos activos con `con_clave = true` y los scripts de la PC que usan la llave pública

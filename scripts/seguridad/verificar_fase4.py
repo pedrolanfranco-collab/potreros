@@ -7,10 +7,12 @@ Modo normal (release 1, "modo suave"):
     CLAVE_CAMPO_PONE_CHICO, contesta `true` con la real de cada campo (la clave NUNCA se imprime);
   - las tablas siguen legibles (el modo suave no corta nada).
 
-Modo --cierre (release 2, despues de correr fase4_cierre.sql):
-  - SIN el encabezado `x-clave-campo`, cada tabla da 0 filas o un rechazo (401/403);
-  - CON la clave (variables de entorno de arriba), cada tabla del campo se deja leer;
-  - sanidad_ultimos y sanidad_proximos quedan cerradas aun con clave.
+Modo --cierre (release 2, despues de correr fase4_cierre.sql, version revisada del 21/10/2026):
+  - SIN el encabezado `x-clave-campo`, cada tabla da 0 filas o un rechazo (401/403), salvo lo que queda abierto
+    a proposito: el stream de Pone Chico (eventos_sync, stock_potreros, sanidad_carga_pone_chico) y
+    productos_catalogo, que tienen que contestar;
+  - CON la clave (variables de entorno de arriba), cada tabla del campo se deja leer, incluidas
+    sanidad_ultimos y sanidad_proximos (las lee el Tablero de Sanidad).
   La escritura sin clave NO se prueba desde aca (un insert que entrara dejaria una fila de prueba en una
   tabla real): se mira en la app, ver scripts/seguridad/README.md.
 
@@ -47,7 +49,20 @@ TABLAS = [
     ("productos_catalogo", None, "*", "producto"),    # '*' = alcanza con la clave de cualquier campo
     ("maestros_dicose", None, "*", "nombre"),
 ]
-CERRADAS = [("sanidad_ultimos", "establecimiento"), ("sanidad_proximos", "establecimiento")]
+
+# Lo que despues del cierre (modo --cierre) se prueba aparte:
+CAMPO_ABIERTO = "pone_chico"      # sin clave a proposito (private.campos_abiertos)
+# (tabla, columna con el establecimiento o None, columna para el select, se prueba solo el stream del campo abierto)
+ABIERTAS = [
+    ("eventos_sync", "establecimiento", "event_id", True),
+    ("stock_potreros", "establecimiento", "potrero", True),
+    ("sanidad_carga_pone_chico", None, "id", False),
+    ("productos_catalogo", None, "producto", False),    # referencia publica a proposito
+]
+# Se leen con la clave del campo (las lee el Tablero de Sanidad):
+CON_CLAVE_LECTURA = [("sanidad_ultimos", "establecimiento", None, "fecha"), ("sanidad_proximos", "establecimiento", None, "fecha_prevista")]
+# Tablas que despues del cierre NO se prueban en el bucle general (van en ABIERTAS):
+ABIERTAS_NOMBRES = {"sanidad_carga_pone_chico", "productos_catalogo"}
 
 
 def leer_env_local():
@@ -55,7 +70,7 @@ def leer_env_local():
     ruta = os.path.join(os.path.expanduser("~"), ".potreros", ".env")
     claves = {}
     try:
-        with open(ruta, encoding="utf-8") as f:
+        with open(ruta, encoding="utf-8-sig") as f:   # utf-8-sig: el Bloc de notas agrega un BOM al guardar
             for linea in f:
                 linea = linea.strip()
                 if linea.startswith("CLAVE_CAMPO_") and "=" in linea:
@@ -166,9 +181,12 @@ def modo_cierre(claves):
     if not claves:
         print("Sin ninguna CLAVE_CAMPO_*: solo se prueba que SIN clave quede cerrado.\n")
     print("%-28s %-30s %s" % ("tabla", "sin encabezado", "con la clave"))
-    for tabla, colest, fijo, sel in TABLAS:
-        # sin encabezado: 0 filas o rechazo
-        status, texto = pedir("GET", "%s?select=%s&limit=1" % (tabla, sel))
+    for tabla, colest, fijo, sel in [t for t in TABLAS if t[0] not in ABIERTAS_NOMBRES] + CON_CLAVE_LECTURA:
+        # sin encabezado: 0 filas o rechazo (el stream del campo abierto se deja afuera: se prueba abajo)
+        q0 = "%s?select=%s&limit=1" % (tabla, sel)
+        if colest:
+            q0 += "&%s=neq.%s" % (colest, CAMPO_ABIERTO)
+        status, texto = pedir("GET", q0)
         lista = filas(texto) if status in (200, 206) else None
         cerrado = status in (401, 403) or (lista is not None and len(lista) == 0)
         sin = marca(cerrado, "status %s, %s" % (status, ("%d filas" % len(lista)) if lista is not None else "rechazo"))
@@ -179,7 +197,7 @@ def modo_cierre(claves):
         elif fijo:
             claves_usar = [(fijo, claves[fijo])] if fijo in claves else []
         else:
-            claves_usar = list(claves.items())
+            claves_usar = [(c, k) for c, k in claves.items() if c != CAMPO_ABIERTO]
         con_partes = []
         for campo, clave in claves_usar:
             q = "%s?select=%s&limit=1" % (tabla, sel)
@@ -197,26 +215,27 @@ def modo_cierre(claves):
         con = " | ".join(con_partes) if con_partes else "--  sin clave para probar"
         print("%-28s %-30s %s" % (tabla, sin, con))
     print()
-    print("%-28s %s" % ("tabla", "tiene que seguir cerrada aun con clave"))
-    for tabla, colest in CERRADAS:
-        status, texto = pedir("GET", "%s?select=%s&limit=1" % (tabla, colest))
+    print("%-28s %s" % ("tabla (abierta a proposito)", "sin encabezado: tiene que contestar"))
+    for tabla, colest, sel, solo_campo in ABIERTAS:
+        q = "%s?select=%s&limit=1" % (tabla, sel)
+        if solo_campo and colest:
+            q += "&%s=eq.%s" % (colest, CAMPO_ABIERTO)
+        status, texto = pedir("GET", q)
         lista = filas(texto) if status in (200, 206) else None
-        cerrado = status in (401, 403) or (lista is not None and len(lista) == 0)
-        extra = ""
-        if claves:
-            campo, clave = list(claves.items())[0]
-            st2, tx2 = pedir("GET", "%s?select=%s&limit=1" % (tabla, colest), clave=clave)
-            li2 = filas(tx2) if st2 in (200, 206) else None
-            cerrado = cerrado and (st2 in (401, 403) or (li2 is not None and len(li2) == 0))
-            extra = " / con clave status %s" % st2
-        print("%-28s %s" % (tabla, marca(cerrado, "status %s%s" % (status, extra))))
-        mal += (not cerrado)
+        ok = lista is not None
+        detalle = "status %s" % status
+        if ok and len(lista) == 0:
+            detalle += ", 0 filas (no hay datos para distinguirlo de cerrado)"
+        elif ok:
+            detalle += ", lee"
+        print("%-28s %s" % (tabla, marca(ok, detalle)))
+        mal += (not ok)
     print()
     if mal:
         print("%d verificacion(es) fallaron: 'MAL' en 'sin encabezado' = sigue abierta; "
               "'MAL' en 'con la clave' = la app dejaria de ver esa tabla." % mal)
     else:
-        print("Todo OK: sin clave queda cerrado, con la clave del campo se lee.")
+        print("Todo OK: sin clave queda cerrado (salvo lo abierto a proposito), con la clave del campo se lee.")
     return mal
 
 

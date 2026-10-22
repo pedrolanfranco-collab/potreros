@@ -1021,6 +1021,9 @@
           <option value="Venta">Venta (salen animales)</option>
         </select>
       </div>
+<!-- @pc:start -->
+      <div class="form-row" id="cv-rapido-fila"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cv-rapido"> Carga rápida: solo categorías y cantidades (kilos y precios se completan después con ✍)</label></div>
+<!-- @pc:end -->
       <div class="form-row"><label id="cv-label-potrero">Potrero donde entran</label><select id="cv-potrero"></select></div>
       <div class="form-row"><label>Categoría</label><select id="cv-cat"></select></div>
 <!-- @pc:start -->
@@ -1035,12 +1038,13 @@
       <div class="form-row"><label id="cv-label-dueno">Dueño</label><select id="cv-dueno"></select></div>
       <div class="form-row"><label>Cantidad</label><input type="number" id="cv-cant" min="1" value="1"></div>
       <div class="form-row"><label>Fecha</label><input type="date" id="cv-fecha"></div>
-<!-- @pc:start -->
-      <div class="form-row" id="cv-rapido-fila"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cv-rapido"> Carga rápida (sin kilos ni detalle; se completa después con ✍)</label></div>
-<!-- @pc:end -->
       <div id="cv-simple">
         <div class="form-row"><label>Precio unitario USD (opcional)</label><input type="number" id="cv-precio" min="0" step="0.01" placeholder="Ej: 850"></div>
         <div class="form-row"><label>Contraparte (opcional)</label><input type="text" id="cv-contraparte" placeholder="Comprador / vendedor / consignatario"></div>
+<!-- @pc:start -->
+        <div id="cv-extra-rapido"></div>
+        <button type="button" class="btn btn-secundario cv-agregar-linea" id="cv-agregar-linea-rapido" style="margin:4px 0 10px;">➕ Agregar otra categoría de esta guía</button>
+<!-- @pc:end -->
       </div>
 <!-- @pc:start -->
       <div id="cv-pc" style="display:none;">
@@ -1059,8 +1063,9 @@
           <div class="form-row"><label id="cv-label-pcompra">Precio U$S por kg</label><input type="number" id="cv-pcompra" min="0" step="0.01"></div>
           <div id="cv-extra-compra"></div>
           <button type="button" class="btn btn-secundario cv-agregar-linea" id="cv-agregar-linea-compra" style="margin:4px 0 10px;">➕ Agregar otra categoría de esta guía</button>
-          <div class="form-row"><label>Comisionista</label><select id="cv-comisionista"></select></div>
-          <div class="form-row"><label>% Comisión</label><input type="number" id="cv-pcom" min="0" max="100" step="0.1" value="0"></div>
+          <div class="form-row"><label>Comisionista / intermediario</label><select id="cv-comisionista"></select></div>
+          <div class="form-row"><label>% Comisión — habitual 0 a 4</label><input type="number" id="cv-pcom" min="0" max="100" step="0.1" value="0"></div>
+          <div class="form-row"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cv-boleta"> Con boleta del intermediario (+ IVA 22 % sobre la comisión)</label></div>
           <div class="form-row"><label>Flete (U$S)</label><input type="number" id="cv-flete" min="0" step="0.01" value="0"></div>
           <div class="form-row"><label>Estado de pago</label>
             <select id="cv-pago"><option value="Pagado">Pagado</option><option value="Pendiente">Pendiente</option></select>
@@ -1082,6 +1087,10 @@
           <div class="form-row"><label>Kilos 2ª — res (en gancho)</label><input type="number" id="cv-kres" min="0" step="0.1"></div>
           <div id="cv-extra-venta"></div>
           <button type="button" class="btn btn-secundario cv-agregar-linea" id="cv-agregar-linea-venta" style="margin:4px 0 10px;">➕ Agregar otra categoría de esta guía</button>
+          <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px;">Comisión del intermediario</label>
+          <div class="form-row"><label>Comisionista / intermediario</label><select id="cv-comisionista-v"></select></div>
+          <div class="form-row"><label>% Comisión — habitual 0 a 4</label><input type="number" id="cv-pcom-v" min="0" max="100" step="0.1" value="0"></div>
+          <div class="form-row"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cv-boleta-v"> Con boleta del intermediario (+ IVA 22 % sobre la comisión)</label></div>
           <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px;">Descuentos y neto</label>
           <div class="form-row"><label>Plazo (días)</label><input type="number" id="cv-plazo" min="0" step="1"></div>
           <div class="form-row"><label>IMEBA ($)</label><input type="number" id="cv-imeba" min="0" step="0.01"></div>
@@ -1687,7 +1696,7 @@ function detalleNumericoValido(d){
   if(d.fin != null){
     if(typeof d.fin !== 'object' || Array.isArray(d.fin)) return false;
     const campos = ['kilosBrutos','destare','kilosNeto','precio','importe','pctCom','importeCom','flete','km','costoTotal','precioKg','kilosPie','kilosRes',
-      'kilos','plazo','imeba','inia','mevir','inac','mgap','sepb','gastos','descuentos','neto','importeBruto','rendimiento','pesoProm','pesoPromNeto'];
+      'kilos','plazo','imeba','inia','mevir','inac','mgap','sepb','gastos','descuentos','neto','importeBruto','rendimiento','pesoProm','pesoPromNeto','ivaCom'];
     if(!campos.every(k => numOk(d.fin[k], 1e10))) return false;
   }
   return true;
@@ -5699,9 +5708,15 @@ function numONull(v){
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
-/* Compra. f = {cantidad, tipoPrecio 'Kg'|'Pieza', kilosBrutos, destare (fracción), precio, pctCom (fracción), flete}
+/* IVA que el intermediario suma a su comisión cuando se le pide boleta (22/10/2026, a pedido de Pedro). */
+const IVA_COMISION = 0.22;
+function ivaComision(importeCom, conBoleta){
+  return importeCom === null ? null : (conBoleta ? IVA_COMISION * importeCom : 0);
+}
+/* Compra. f = {cantidad, tipoPrecio 'Kg'|'Pieza', kilosBrutos, destare (fracción), precio, pctCom (fracción), conBoleta, flete}
    Mismas fórmulas que la tabla Compras: Kilos Neto = bruto − destare·bruto; Importe = (Kg ? precio·neto : precio·cantidad);
-   Importe_Com = %Com·Importe; U$S/U y U$S/Kg = (Importe + Importe_Com + Flete) / cantidad | kilos neto. */
+   Importe_Com = %Com·Importe (+ IVA 22 % de la comisión con boleta);
+   U$S/U y U$S/Kg = (Importe + Importe_Com + IVA_Com + Flete) / cantidad | kilos neto. */
 function calcCompra(f){
   const kb = numONull(f.kilosBrutos), d = numONull(f.destare) || 0, cant = numONull(f.cantidad);
   const p = numONull(f.precio), pc = numONull(f.pctCom) || 0, fl = numONull(f.flete) || 0;
@@ -5713,13 +5728,16 @@ function calcCompra(f){
     else importe = p * cant;
   }
   const importeCom = importe !== null ? pc * importe : null;
-  const costoTotal = importe !== null ? importe + (importeCom || 0) + fl : null;
-  return {kilosNeto, promedio, importe, importeCom, costoTotal,
+  const ivaCom = ivaComision(importeCom, f.conBoleta);
+  const costoTotal = importe !== null ? importe + (importeCom || 0) + (ivaCom || 0) + fl : null;
+  return {kilosNeto, promedio, importe, importeCom, ivaCom, costoTotal,
     costoCab: (costoTotal !== null && cant) ? costoTotal / cant : null,
     costoKg: (costoTotal !== null && kilosNeto) ? costoTotal / kilosNeto : null};
 }
-/* Venta. f = {cantidad, precioTipo '1ª'|'2ª', precioKg, kilosPie, destare (fracción), kilosRes, imeba, inia, mevir, inac, mgap, sepb, gastos}
+/* Venta. f = {cantidad, precioTipo '1ª'|'2ª', precioKg, kilosPie, destare (fracción), kilosRes, imeba, inia, mevir, inac, mgap, sepb, gastos,
+   pctCom (fracción), conBoleta}
    Igual que Ingreso Ventas: Importe bruto = $/kg × (1ª ? kilos neto en pie : kilos de la res); Neto = bruto − descuentos.
+   22/10/2026: la comisión del intermediario (%Com·bruto, + IVA 22 % con boleta) también se descuenta del neto.
    21/10/2026: kilos en pie = los brutos de la balanza; Kilos neto en pie = bruto − destare·bruto (sin destare, igual que antes).
    Rendimiento = kilos res / kilos neto en pie; Peso promedio en pie = kilos en pie (brutos) / cabezas, y el neto aparte. */
 function calcVenta(f){
@@ -5731,8 +5749,10 @@ function calcVenta(f){
   const descs = ['imeba','inia','mevir','inac','mgap','sepb','gastos'].map(k => numONull(f[k]));
   const hayDesc = descs.some(x => x !== null);
   const descuentos = hayDesc ? descs.reduce((s, x) => s + (x || 0), 0) : null;
-  return {kilos, kilosNeto, importeBruto, descuentos,
-    neto: importeBruto !== null ? importeBruto - (descuentos || 0) : null,
+  const importeCom = importeBruto !== null ? (numONull(f.pctCom) || 0) * importeBruto : null;
+  const ivaCom = ivaComision(importeCom, f.conBoleta);
+  return {kilos, kilosNeto, importeBruto, descuentos, importeCom, ivaCom,
+    neto: importeBruto !== null ? importeBruto - (descuentos || 0) - (importeCom || 0) - (ivaCom || 0) : null,
     pesoProm: (kpie !== null && cant) ? kpie / cant : null,
     pesoPromNeto: (kilosNeto !== null && cant) ? kilosNeto / cant : null,
     rendimiento: (kilosNeto && kres !== null) ? kres / kilosNeto : null,
@@ -5751,10 +5771,10 @@ function fmtNum(n, dec){
 function resumenFin(fin){
   if(!fin) return '';
   if(fin.op === 'venta'){
-    return `${fmtNum(fin.kilos, 1)} kg ${fin.precioTipo === '1ª' && fin.destare ? 'neto (destare ' + fmtNum(fin.destare * 100, 1) + ' %) ' : ''}${fin.precioTipo || ''} a USD ${fmtNum(fin.precioKg)}/kg · bruto ${fmtNum(fin.importeBruto, 0)} · neto ${fmtNum(fin.neto, 0)}`;
+    return `${fmtNum(fin.kilos, 1)} kg ${fin.precioTipo === '1ª' && fin.destare ? 'neto (destare ' + fmtNum(fin.destare * 100, 1) + ' %) ' : ''}${fin.precioTipo || ''} a USD ${fmtNum(fin.precioKg)}/kg · bruto ${fmtNum(fin.importeBruto, 0)}${fin.importeCom ? ' · comisión ' + fmtNum(fin.importeCom, 0) + (fin.ivaCom ? ' + IVA ' + fmtNum(fin.ivaCom, 0) : '') : ''} · neto ${fmtNum(fin.neto, 0)}`;
   }
   if(fin.pieza && fin.pieza.rol === 'cria') return 'cría al pie de una Pieza';
-  return `${fin.kilosNeto != null ? fmtNum(fin.kilosNeto, 1) + ' kg neto · ' : ''}USD ${fmtNum(fin.precio)}/${fin.tipoPrecio === 'Kg' ? 'kg' : 'pieza'} · importe ${fmtNum(fin.importe, 0)}${fin.importeCom ? ' + comisión ' + fmtNum(fin.importeCom, 0) : ''}${fin.flete ? ' + flete ' + fmtNum(fin.flete, 0) : ''}`;
+  return `${fin.kilosNeto != null ? fmtNum(fin.kilosNeto, 1) + ' kg neto · ' : ''}USD ${fmtNum(fin.precio)}/${fin.tipoPrecio === 'Kg' ? 'kg' : 'pieza'} · importe ${fmtNum(fin.importe, 0)}${fin.importeCom ? ' + comisión ' + fmtNum(fin.importeCom, 0) : ''}${fin.ivaCom ? ' + IVA comisión ' + fmtNum(fin.ivaCom, 0) : ''}${fin.flete ? ' + flete ' + fmtNum(fin.flete, 0) : ''}`;
 }
 
 /* ===== Catálogos compartidos (tabla maestros_dicose de Supabase): compradores, comisionistas y
@@ -10319,6 +10339,7 @@ function llenarCatalogosCV(){
   };
   poner('cv-comprador', 'comprador', null, compradorSugerido(document.getElementById('cv-dueno').value));
   poner('cv-comisionista', 'comisionista', null, 'Directo');
+  poner('cv-comisionista-v', 'comisionista', null, 'Directo');
   poner('cv-origen', 'contraparte', ['Cliente', 'Productor']);
   poner('cv-destino', 'contraparte', ['Destinatario', 'Cliente', 'Productor']);
   actualizarDicoseInfoCV();
@@ -10356,7 +10377,7 @@ function leerFinCV(){
   const texto = id => { const v = document.getElementById(id).value; return v === '__nuevo__' ? '' : v; };
   if(!venta){
     const f = {cantidad: cant, tipoPrecio: texto('cv-tprecio'), kilosBrutos: cvVal('cv-kbrutos'), destare: (cvVal('cv-destare') || 0) / 100,
-      precio: cvVal('cv-pcompra'), pctCom: (cvVal('cv-pcom') || 0) / 100, flete: cvVal('cv-flete') || 0};
+      precio: cvVal('cv-pcompra'), pctCom: (cvVal('cv-pcom') || 0) / 100, conBoleta: document.getElementById('cv-boleta').checked, flete: cvVal('cv-flete') || 0};
     const origen = texto('cv-origen'), comprador = texto('cv-comprador');
     if(f.kilosBrutos === null && f.precio === null && !origen) return null;
     const faltan = [];
@@ -10368,14 +10389,14 @@ function leerFinCV(){
     const c = calcCompra(f), variante = texto('cv-variante');
     const fin = {v: 1, op: 'compra', catExcel: catExcelCompra(cat, variante), comprador, origen, tipoPrecio: f.tipoPrecio,
       kilosBrutos: f.kilosBrutos, destare: f.destare, kilosNeto: c.kilosNeto, precio: f.precio, importe: c.importe,
-      pctCom: f.pctCom, importeCom: c.importeCom, comisionista: texto('cv-comisionista') || 'Directo', flete: f.flete,
+      pctCom: f.pctCom, importeCom: c.importeCom, conBoleta: f.conBoleta, ivaCom: c.ivaCom, comisionista: texto('cv-comisionista') || 'Directo', flete: f.flete,
       pagado: texto('cv-pago') !== 'Pendiente', km: cvVal('cv-km'), costoTotal: c.costoTotal};
     if(variante) fin.variante = variante;
     return {fin, contraparte: origen};
   }
   const f = {cantidad: cant, precioTipo: texto('cv-ptipo'), precioKg: cvVal('cv-pkg'), kilosPie: cvVal('cv-kpie'), destare: destareCV(cvVal('cv-destare-v')),
     kilosRes: cvVal('cv-kres'), imeba: cvVal('cv-imeba'), inia: cvVal('cv-inia'), mevir: cvVal('cv-mevir'), inac: cvVal('cv-inac'), mgap: cvVal('cv-mgap'),
-    sepb: cvVal('cv-sepb'), gastos: cvVal('cv-gastos')};
+    sepb: cvVal('cv-sepb'), gastos: cvVal('cv-gastos'), pctCom: (cvVal('cv-pcom-v') || 0) / 100, conBoleta: document.getElementById('cv-boleta-v').checked};
   const destino = texto('cv-destino');
   if(f.precioKg === null && f.kilosPie === null && f.kilosRes === null && !destino) return null;
   const faltan = [];
@@ -10389,7 +10410,8 @@ function leerFinCV(){
   const fin = {v: 1, op: 'venta', catExcel: catExcelVenta(cat), destino, precioTipo: f.precioTipo, precioKg: f.precioKg,
     kilosPie: f.kilosPie, destare: f.destare, kilosNeto: c.kilosNeto, kilosRes: f.kilosRes, kilos: c.kilos, importe: c.importeBruto, importeBruto: c.importeBruto,
     plazo: cvVal('cv-plazo'), imeba: f.imeba, inia: f.inia, mevir: f.mevir, inac: f.inac, mgap: f.mgap, sepb: f.sepb, gastos: f.gastos,
-    descuentos: c.descuentos, neto: c.neto, pesoProm: c.pesoProm, pesoPromNeto: c.pesoPromNeto, rendimiento: c.rendimiento};
+    descuentos: c.descuentos, comisionista: texto('cv-comisionista-v') || 'Directo', pctCom: f.pctCom, importeCom: c.importeCom,
+    conBoleta: f.conBoleta, ivaCom: c.ivaCom, neto: c.neto, pesoProm: c.pesoProm, pesoPromNeto: c.pesoPromNeto, rendimiento: c.rendimiento};
   return {fin, contraparte: destino};
 }
 /* Destare de la venta: % del formulario -> fracción; vacío = null (en una venta 1ª es obligatorio). */
@@ -10398,6 +10420,13 @@ function destareCV(pct){ return pct === null ? null : pct / 100; }
 function avisoDestareCV(pct){
   return (pct !== null && (pct < 4 || pct > 7)) ? `⚠ Destare de ${fmtNum(pct, 1)} %: lo habitual es entre 4 y 7 %\n` : '';
 }
+/* La comisión del intermediario anda entre 0 y 4 % (Pedro, 22/10/2026): fuera de eso se avisa, no se bloquea. */
+function avisoComisionCV(pct){
+  return (pct !== null && (pct < 0 || pct > 4)) ? `⚠ Comisión de ${fmtNum(pct, 1)} %: lo habitual es entre 0 y 4 %\n` : '';
+}
+function textoComisionCV(c){
+  return `Comisión intermediario: USD ${fmtNum(c.importeCom)}${c.ivaCom ? ' + IVA USD ' + fmtNum(c.ivaCom) : ''}`;
+}
 function actualizarResumenCV(){
   const venta = document.getElementById('cv-tipo').value === 'Venta';
   const cant = parseInt(document.getElementById('cv-cant').value, 10) || null;
@@ -10405,27 +10434,32 @@ function actualizarResumenCV(){
   const kb = cvVal('cv-kbrutos'), kp = cvVal('cv-kpie');
   document.getElementById('cv-kneto').value = kb === null ? '' : fmtNum(kb - (cvVal('cv-destare') || 0) / 100 * kb, 1) + ' kg';
   document.getElementById('cv-kneto-v').value = kp === null ? '' : fmtNum(kp - (cvVal('cv-destare-v') || 0) / 100 * kp, 1) + ' kg';
+  if(document.getElementById('cv-rapido').checked) return;           // la carga rápida no tiene importes que mostrar
   if(hayLineasExtraCV()){
     document.getElementById(venta ? 'cv-resumen-venta' : 'cv-resumen-compra').textContent = resumenVariasCV();
     return;
   }
   if(!venta){
     const c = calcCompra({cantidad: cant, tipoPrecio: document.getElementById('cv-tprecio').value, kilosBrutos: cvVal('cv-kbrutos'),
-      destare: (cvVal('cv-destare') || 0) / 100, precio: cvVal('cv-pcompra'), pctCom: (cvVal('cv-pcom') || 0) / 100, flete: cvVal('cv-flete') || 0});
+      destare: (cvVal('cv-destare') || 0) / 100, precio: cvVal('cv-pcompra'), pctCom: (cvVal('cv-pcom') || 0) / 100,
+      conBoleta: document.getElementById('cv-boleta').checked, flete: cvVal('cv-flete') || 0});
     document.getElementById('cv-resumen-compra').textContent =
+      avisoComisionCV(cvVal('cv-pcom')) +
       `Kilos neto: ${fmtNum(c.kilosNeto, 1)} kg · Promedio por cabeza: ${fmtNum(c.promedio, 1)} kg\n` +
-      `Importe: USD ${fmtNum(c.importe)} · Comisión: USD ${fmtNum(c.importeCom)}\n` +
+      `Importe: USD ${fmtNum(c.importe)} · ${textoComisionCV(c)}\n` +
       `COSTO TOTAL: USD ${fmtNum(c.costoTotal)} · por cabeza USD ${fmtNum(c.costoCab)} · por kg USD ${fmtNum(c.costoKg)}`;
   } else {
     const c = calcVenta({cantidad: cant, precioTipo: document.getElementById('cv-ptipo').value, precioKg: cvVal('cv-pkg'),
       kilosPie: cvVal('cv-kpie'), destare: destareCV(cvVal('cv-destare-v')), kilosRes: cvVal('cv-kres'), imeba: cvVal('cv-imeba'), inia: cvVal('cv-inia'), mevir: cvVal('cv-mevir'),
-      inac: cvVal('cv-inac'), mgap: cvVal('cv-mgap'), sepb: cvVal('cv-sepb'), gastos: cvVal('cv-gastos')});
+      inac: cvVal('cv-inac'), mgap: cvVal('cv-mgap'), sepb: cvVal('cv-sepb'), gastos: cvVal('cv-gastos'),
+      pctCom: (cvVal('cv-pcom-v') || 0) / 100, conBoleta: document.getElementById('cv-boleta-v').checked});
     document.getElementById('cv-resumen-venta').textContent =
-      avisoDestareCV(cvVal('cv-destare-v')) +
+      avisoDestareCV(cvVal('cv-destare-v')) + avisoComisionCV(cvVal('cv-pcom-v')) +
       `Kilos neto en pie: ${fmtNum(c.kilosNeto, 1)} kg · Peso promedio en pie: ${fmtNum(c.pesoProm, 1)} kg bruto / ${fmtNum(c.pesoPromNeto, 1)} kg neto\n` +
       `Rendimiento (res / neto en pie): ${c.rendimiento === null ? '—' : fmtNum(c.rendimiento * 100, 1) + ' %'}\n` +
       `Importe bruto: USD ${fmtNum(c.importeBruto)} · por cabeza USD ${fmtNum(c.brutoCab)}\n` +
-      `Descuentos: ${fmtNum(c.descuentos)} · VALOR NETO: ${fmtNum(c.neto)}`;
+      `Descuentos: ${fmtNum(c.descuentos)} · ${textoComisionCV(c)}\n` +
+      `VALOR NETO: ${fmtNum(c.neto)}`;
   }
 }
 /* ---- Varias categorías en una misma compra / venta (una guía con 40 Terneros + 15 Vacas) ----
@@ -10434,18 +10468,22 @@ function actualizarResumenCV(){
    en la venta los descuentos en proporción al importe bruto. Cada línea queda como una compra (o venta) propia con la
    MISMA guía, así el stock, las anulaciones y el Excel siguen usando la lógica de siempre. */
 function contenedorLineasCV(){
+  if(document.getElementById('cv-rapido').checked) return document.getElementById('cv-extra-rapido');
   return document.getElementById(document.getElementById('cv-tipo').value === 'Venta' ? 'cv-extra-venta' : 'cv-extra-compra');
 }
-function hayLineasExtraCV(){ return document.querySelectorAll('#cv-extra-compra .cv-linea, #cv-extra-venta .cv-linea').length > 0; }
+/* Solo cuentan las líneas del formulario que está a la vista (al cambiar la operación o la carga rápida se borran). */
+function hayLineasExtraCV(){ return contenedorLineasCV().querySelectorAll('.cv-linea').length > 0; }
 function limpiarLineasCV(){
-  ['cv-extra-compra', 'cv-extra-venta'].forEach(id => { const e = document.getElementById(id); if(e) e.innerHTML = ''; });
+  ['cv-extra-compra', 'cv-extra-venta', 'cv-extra-rapido'].forEach(id => { const e = document.getElementById(id); if(e) e.innerHTML = ''; });
 }
-function htmlLineaCV(venta){
+function htmlLineaCV(venta, rapido){
   const num = (cls, rotulo, attrs) => `<div class="form-row"><label>${rotulo}</label><input type="number" class="${cls}" ${attrs}></div>`;
   const comunes = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><strong class="cvl-titulo" style="font-size:13px;"></strong>
       <button type="button" class="hist-btn cvl-quitar" title="Quitar esta categoría">✕</button></div>
     <div class="form-row"><label>Categoría</label><select class="cvl-cat"><option value="">— elegir —</option>${opcionesCategorias()}</select></div>`;
-  const cuerpo = venta
+  const cuerpo = rapido
+    ? `${num('cvl-cant', 'Cantidad', 'min="1" value="1"')}${num('cvl-precio', 'Precio unitario USD (opcional)', 'min="0" step="0.01"')}`
+    : venta
     ? `${num('cvl-cant', 'Cantidad', 'min="1" value="1"')}
        <div class="form-row"><label>Precio tipo</label><select class="cvl-ptipo"><option value="1ª">1ª (en pie)</option><option value="2ª">2ª (en gancho)</option></select></div>
        ${num('cvl-pkg', '$/Kg (USD/kg)', 'min="0" step="0.01"')}${num('cvl-kpie', 'Kilos 1ª — en pie (brutos)', 'min="0" step="0.1"')}${num('cvl-dest', 'Destare (%) — habitual 4 a 7', 'min="0" max="100" step="0.1" placeholder="4 a 7" value="' + esc(document.getElementById('cv-destare-v').value) + '"')}${num('cvl-kres', 'Kilos 2ª — res (en gancho)', 'min="0" step="0.1"')}`
@@ -10459,7 +10497,7 @@ function numerarLineasCV(){
   Array.from(contenedorLineasCV().querySelectorAll('.cv-linea')).forEach((el, i) => { el.querySelector('.cvl-titulo').textContent = 'Categoría ' + (i + 2); });
 }
 function agregarLineaCV(){
-  contenedorLineasCV().insertAdjacentHTML('beforeend', htmlLineaCV(document.getElementById('cv-tipo').value === 'Venta'));
+  contenedorLineasCV().insertAdjacentHTML('beforeend', htmlLineaCV(document.getElementById('cv-tipo').value === 'Venta', document.getElementById('cv-rapido').checked));
   numerarLineasCV();
   actualizarResumenCV();
 }
@@ -10511,13 +10549,13 @@ function armarOperacionesCV(estricto){
       if(l.precio === null) faltan.push('Precio' + n(i));
     });
     if(estricto && faltan.length) return {error: 'Faltan datos de la compra: ' + faltan.join(', ')};
-    const pctCom = (cvVal('cv-pcom') || 0) / 100, comisionista = texto('cv-comisionista') || 'Directo';
+    const pctCom = (cvVal('cv-pcom') || 0) / 100, comisionista = texto('cv-comisionista') || 'Directo', conBoleta = document.getElementById('cv-boleta').checked;
     const fletes = repartirCV(cvVal('cv-flete') || 0, lineas.map(l => l.cant));
     const ops = lineas.map((l, i) => {
-      const c = calcCompra({cantidad: l.cant, tipoPrecio: l.tipoPrecio, kilosBrutos: l.kilosBrutos, destare: l.destare, precio: l.precio, pctCom, flete: fletes[i]});
+      const c = calcCompra({cantidad: l.cant, tipoPrecio: l.tipoPrecio, kilosBrutos: l.kilosBrutos, destare: l.destare, precio: l.precio, pctCom, conBoleta, flete: fletes[i]});
       const fin = {v: 1, op: 'compra', catExcel: catExcelCompra(l.cat, l.variante), comprador, origen, tipoPrecio: l.tipoPrecio,
         kilosBrutos: l.kilosBrutos, destare: l.destare, kilosNeto: c.kilosNeto, precio: l.precio, importe: c.importe,
-        pctCom, importeCom: c.importeCom, comisionista, flete: fletes[i], pagado: texto('cv-pago') !== 'Pendiente', km: cvVal('cv-km'), costoTotal: c.costoTotal};
+        pctCom, importeCom: c.importeCom, conBoleta, ivaCom: c.ivaCom, comisionista, flete: fletes[i], pagado: texto('cv-pago') !== 'Pendiente', km: cvVal('cv-km'), costoTotal: c.costoTotal};
       if(l.variante) fin.variante = l.variante;
       return {cat: l.cat, cant: l.cant, fin, contraparte: origen, calc: c};
     });
@@ -10538,13 +10576,17 @@ function armarOperacionesCV(estricto){
   const brutos = lineas.map(l => calcVenta({cantidad: l.cant, precioTipo: l.precioTipo, precioKg: l.precioKg, kilosPie: l.kilosPie, destare: l.destare, kilosRes: l.kilosRes}).importeBruto);
   const partes = {};
   DESCUENTOS_CV.forEach(([k, id]) => { const tot = cvVal(id); partes[k] = tot === null ? lineas.map(() => null) : repartirCV(tot, brutos.some(x => x) ? brutos : lineas.map(l => l.cant)); });
+  // la comisión del intermediario es un % del bruto de cada línea (con el mismo % y la misma boleta para toda la guía)
+  const pctComV = (cvVal('cv-pcom-v') || 0) / 100, conBoletaV = document.getElementById('cv-boleta-v').checked, comisionistaV = texto('cv-comisionista-v') || 'Directo';
   const ops = lineas.map((l, i) => {
     const d = {}; DESCUENTOS_CV.forEach(([k]) => { d[k] = partes[k][i]; });
-    const c = calcVenta(Object.assign({cantidad: l.cant, precioTipo: l.precioTipo, precioKg: l.precioKg, kilosPie: l.kilosPie, destare: l.destare, kilosRes: l.kilosRes}, d));
+    const c = calcVenta(Object.assign({cantidad: l.cant, precioTipo: l.precioTipo, precioKg: l.precioKg, kilosPie: l.kilosPie, destare: l.destare, kilosRes: l.kilosRes,
+      pctCom: pctComV, conBoleta: conBoletaV}, d));
     const fin = {v: 1, op: 'venta', catExcel: catExcelVenta(l.cat), destino, precioTipo: l.precioTipo, precioKg: l.precioKg,
       kilosPie: l.kilosPie, destare: l.destare, kilosNeto: c.kilosNeto, kilosRes: l.kilosRes, kilos: c.kilos, importe: c.importeBruto, importeBruto: c.importeBruto,
       plazo: cvVal('cv-plazo'), imeba: d.imeba, inia: d.inia, mevir: d.mevir, inac: d.inac, mgap: d.mgap, sepb: d.sepb, gastos: d.gastos,
-      descuentos: c.descuentos, neto: c.neto, pesoProm: c.pesoProm, pesoPromNeto: c.pesoPromNeto, rendimiento: c.rendimiento};
+      descuentos: c.descuentos, comisionista: comisionistaV, pctCom: pctComV, importeCom: c.importeCom, conBoleta: conBoletaV, ivaCom: c.ivaCom,
+      neto: c.neto, pesoProm: c.pesoProm, pesoPromNeto: c.pesoPromNeto, rendimiento: c.rendimiento};
     return {cat: l.cat, cant: l.cant, fin, contraparte: destino, calc: c};
   });
   return {ops};
@@ -10559,14 +10601,28 @@ function resumenVariasCV(){
     ? `${i + 1}. ${o.cat || '—'} × ${o.cant || 0}: ${fmtNum(o.calc.kilosNeto, 1)} kg neto en pie · bruto USD ${fmtNum(o.calc.importeBruto)}`
     : `${i + 1}. ${o.cat || '—'} × ${o.cant || 0}: ${fmtNum(o.calc.kilosNeto, 1)} kg neto · importe USD ${fmtNum(o.calc.importe)} · costo USD ${fmtNum(o.calc.costoTotal)}`);
   lineas.push(venta
-    ? `TOTAL DE LA GUÍA (${cab} cabezas): bruto USD ${fmtNum(suma('importeBruto'))} · descuentos ${fmtNum(suma('descuentos'))} · VALOR NETO ${fmtNum(suma('neto'))}`
-    : `TOTAL DE LA GUÍA (${cab} cabezas): importe USD ${fmtNum(suma('importe'))} · comisión ${fmtNum(suma('importeCom'))} · COSTO TOTAL USD ${fmtNum(suma('costoTotal'))}`);
+    ? `TOTAL DE LA GUÍA (${cab} cabezas): bruto USD ${fmtNum(suma('importeBruto'))} · descuentos ${fmtNum(suma('descuentos'))} · comisión ${fmtNum(suma('importeCom'))}${suma('ivaCom') ? ' + IVA ' + fmtNum(suma('ivaCom')) : ''} · VALOR NETO ${fmtNum(suma('neto'))}`
+    : `TOTAL DE LA GUÍA (${cab} cabezas): importe USD ${fmtNum(suma('importe'))} · comisión ${fmtNum(suma('importeCom'))}${suma('ivaCom') ? ' + IVA ' + fmtNum(suma('ivaCom')) : ''} · COSTO TOTAL USD ${fmtNum(suma('costoTotal'))}`);
   return lineas.join('\n');
 }
 /* Registra todas las líneas juntas (todo o nada: se valida todo antes de registrar la primera). */
 function registrarVariasCV(base){
   const r = armarOperacionesCV(true);
   if(r.error){ toast(r.error); return false; }
+  return registrarOperacionesCV(base, r);
+}
+/* Carga rápida con varias categorías (22/10/2026): cada línea es categoría + cantidad + precio por cabeza opcional, sin detalle
+   (se completa después con ✍ como cualquier carga rápida). Misma guía, misma contraparte. */
+function registrarRapidasCV(base){
+  const q = (el, s) => el.querySelector(s).value;
+  const lineas = [{cat: base.cat, cant: base.cant, precio: base.precio}].concat(Array.from(document.querySelectorAll('#cv-extra-rapido .cv-linea')).map(el =>
+    ({cat: q(el, '.cvl-cat'), cant: parseInt(q(el, '.cvl-cant'), 10), precio: parseFloat(q(el, '.cvl-precio'))})));
+  const faltan = [];
+  lineas.forEach((l, i) => { if(!l.cat) faltan.push('Categoría (categoría ' + (i + 1) + ')'); });
+  if(faltan.length){ toast('Faltan datos: ' + faltan.join(', ')); return false; }
+  return registrarOperacionesCV(base, {ops: lineas.map(l => ({cat: l.cat, cant: l.cant, fin: null, contraparte: base.contraparte, precio: l.precio}))});
+}
+function registrarOperacionesCV(base, r){
   const venta = base.tipoOp === 'Venta';
   if(!base.potrero || !estado.potreros[base.potrero]){ toast('Elegí un potrero'); return false; }
   if(base.guiaRaw && !/^[A-Z]\d{6}$/.test(base.guiaRaw)){ toast('La guía debe tener 1 letra y 6 dígitos (ej: A592366)'); return false; }
@@ -10583,9 +10639,9 @@ function registrarVariasCV(base){
   }
   let hechas = 0;
   for(const o of r.ops){
-    const b = Object.assign({}, base, {cat: o.cat, cant: o.cant, fin: o.fin, contraparte: o.contraparte, precio: NaN});
+    const b = Object.assign({}, base, {cat: o.cat, cant: o.cant, fin: o.fin, contraparte: o.contraparte, precio: o.fin ? NaN : o.precio});
     let cria = null;
-    if(!venta && o.fin.variante === 'pieza'){
+    if(!venta && o.fin && o.fin.variante === 'pieza'){
       const piezaId = crypto.randomUUID();
       o.fin.pieza = {id: piezaId, rol: 'vaca'};
       cria = Object.assign({}, b, {cat: 'Terneros', precio: NaN,
@@ -10633,13 +10689,15 @@ function cargarFinEnCV(fin){
     document.getElementById('cv-destino').innerHTML = opcionesCatalogo('contraparte', ['Destinatario', 'Cliente', 'Productor'], fin.destino);
     set('cv-ptipo', fin.precioTipo || '1ª'); set('cv-pkg', fin.precioKg); set('cv-kpie', fin.kilosPie); set('cv-kres', fin.kilosRes);
     set('cv-destare-v', fin.destare != null ? +(fin.destare * 100).toFixed(2) : 0); set('cv-plazo', fin.plazo);
+    document.getElementById('cv-comisionista-v').innerHTML = opcionesCatalogo('comisionista', null, fin.comisionista || 'Directo');
+    set('cv-pcom-v', fin.pctCom != null ? +(fin.pctCom * 100).toFixed(2) : 0); document.getElementById('cv-boleta-v').checked = !!fin.conBoleta;
     set('cv-imeba', fin.imeba); set('cv-inia', fin.inia); set('cv-mevir', fin.mevir); set('cv-inac', fin.inac); set('cv-mgap', fin.mgap); set('cv-sepb', fin.sepb); set('cv-gastos', fin.gastos);
   } else {
     document.getElementById('cv-comprador').innerHTML = opcionesCatalogo('comprador', null, fin.comprador);
     document.getElementById('cv-origen').innerHTML = opcionesCatalogo('contraparte', ['Cliente', 'Productor'], fin.origen);
     document.getElementById('cv-comisionista').innerHTML = opcionesCatalogo('comisionista', null, fin.comisionista || 'Directo');
     set('cv-tprecio', fin.tipoPrecio || 'Kg'); set('cv-kbrutos', fin.kilosBrutos); set('cv-destare', fin.destare != null ? +(fin.destare * 100).toFixed(2) : 5);
-    set('cv-pcompra', fin.precio); set('cv-pcom', fin.pctCom != null ? +(fin.pctCom * 100).toFixed(2) : 0); set('cv-flete', fin.flete != null ? fin.flete : 0);
+    set('cv-pcompra', fin.precio); set('cv-pcom', fin.pctCom != null ? +(fin.pctCom * 100).toFixed(2) : 0); document.getElementById('cv-boleta').checked = !!fin.conBoleta; set('cv-flete', fin.flete != null ? fin.flete : 0);
     set('cv-pago', fin.pagado === false ? 'Pendiente' : 'Pagado'); set('cv-km', fin.km);
     set('cv-variante', fin.variante === 'vcut' ? 'vcut' : fin.variante === 'pieza' ? 'pieza' : '');
   }
@@ -10692,11 +10750,12 @@ function reiniciarFormularioCompraVenta(){
   // @pc:start
   ['cv-kbrutos','cv-pcompra','cv-km','cv-pkg','cv-kpie','cv-kres','cv-plazo','cv-imeba','cv-inia','cv-mevir','cv-inac','cv-mgap','cv-sepb','cv-gastos']
     .forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('cv-destare').value = '5'; document.getElementById('cv-destare-v').value = ''; document.getElementById('cv-pcom').value = '0'; document.getElementById('cv-flete').value = '0';
+  document.getElementById('cv-destare').value = '5'; document.getElementById('cv-destare-v').value = ''; document.getElementById('cv-pcom').value = '0';
+  document.getElementById('cv-pcom-v').value = '0'; document.getElementById('cv-boleta').checked = false; document.getElementById('cv-boleta-v').checked = false; document.getElementById('cv-flete').value = '0';
   document.getElementById('cv-tprecio').value = 'Kg'; document.getElementById('cv-pago').value = 'Pagado'; document.getElementById('cv-ptipo').value = '1ª';
   document.getElementById('cv-variante').value = '';
   document.getElementById('cv-rapido').checked = false;
-  ['cv-comprador', 'cv-comisionista', 'cv-origen', 'cv-destino'].forEach(id => { document.getElementById(id).innerHTML = ''; });
+  ['cv-comprador', 'cv-comisionista', 'cv-comisionista-v', 'cv-origen', 'cv-destino'].forEach(id => { document.getElementById(id).innerHTML = ''; });
   llenarCatalogosCV();
   // @pc:end
   actualizarRotulosCompraVenta();
@@ -10804,18 +10863,22 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
   });
   // @pc:start
   ['cv-cat', 'cv-tprecio', 'cv-ptipo', 'cv-rapido'].forEach(id => document.getElementById(id).addEventListener('change', mostrarBloquesCV));
-  ['cv-cant', 'cv-kbrutos', 'cv-destare', 'cv-pcompra', 'cv-pcom', 'cv-flete', 'cv-pkg', 'cv-kpie', 'cv-destare-v', 'cv-kres', 'cv-imeba', 'cv-inia', 'cv-mevir', 'cv-inac', 'cv-mgap', 'cv-sepb', 'cv-gastos']
+  // las categorías extra son de un modo (completo o rápido): al cambiarlo se empieza de nuevo, igual que al cambiar la operación
+  document.getElementById('cv-rapido').addEventListener('change', () => { limpiarLineasCV(); actualizarResumenCV(); });
+  ['cv-boleta', 'cv-boleta-v'].forEach(id => document.getElementById(id).addEventListener('change', actualizarResumenCV));
+  ['cv-cant', 'cv-kbrutos', 'cv-destare', 'cv-pcompra', 'cv-pcom', 'cv-flete', 'cv-pkg', 'cv-kpie', 'cv-destare-v', 'cv-kres', 'cv-pcom-v', 'cv-imeba', 'cv-inia', 'cv-mevir', 'cv-inac', 'cv-mgap', 'cv-sepb', 'cv-gastos']
     .forEach(id => document.getElementById(id).addEventListener('input', actualizarResumenCV));
   document.getElementById('cv-dueno').addEventListener('change', ()=>{
     const c = compradorSugerido(document.getElementById('cv-dueno').value);
     if(c && !cvCompletarId) document.getElementById('cv-comprador').value = c;
   });
-  [['cv-comprador', 'comprador'], ['cv-comisionista', 'comisionista'], ['cv-origen', 'contraparte'], ['cv-destino', 'contraparte']].forEach(([id, tipo]) => {
+  [['cv-comprador', 'comprador'], ['cv-comisionista', 'comisionista'], ['cv-comisionista-v', 'comisionista'], ['cv-origen', 'contraparte'], ['cv-destino', 'contraparte']].forEach(([id, tipo]) => {
     document.getElementById(id).addEventListener('change', (e)=>{ if(e.target.value === '__nuevo__') abrirNuevoMaestroCV(tipo, id); else actualizarDicoseInfoCV(); });
   });
   document.getElementById('cv-agregar-linea-compra').addEventListener('click', agregarLineaCV);
   document.getElementById('cv-agregar-linea-venta').addEventListener('click', agregarLineaCV);
-  const zonaLineasCV = document.getElementById('cv-pc');
+  document.getElementById('cv-agregar-linea-rapido').addEventListener('click', agregarLineaCV);
+  const zonaLineasCV = document.getElementById('compraventa-seccion');
   zonaLineasCV.addEventListener('input', (e)=>{ if(e.target.closest('.cv-linea')) actualizarResumenCV(); });
   zonaLineasCV.addEventListener('change', (e)=>{
     const l = e.target.closest('.cv-linea');
@@ -10862,6 +10925,15 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
           .forEach(id => { document.getElementById(id).value = ''; });
         limpiarLineasCV();
         actualizarResumenCV();
+        renderGuiasLista();
+      }
+      return;
+    }
+    if(!cvCompletarId && document.getElementById('cv-rapido').checked && hayLineasExtraCV()){
+      if(registrarRapidasCV(base)){
+        document.getElementById('cv-cant').value = '1';
+        ['cv-precio','cv-contraparte','cv-guia','cv-obs'].forEach(id => { document.getElementById(id).value = ''; });
+        limpiarLineasCV();
         renderGuiasLista();
       }
       return;
