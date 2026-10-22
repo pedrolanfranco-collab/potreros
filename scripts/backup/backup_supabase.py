@@ -71,9 +71,12 @@ TABLAS = {
 }
 ORDEN = {"eventos_sync": "creado_en.asc,id.asc"}
 # Vistas: el OpenAPI las lista igual que las tablas, pero son derivadas (y una anulacion baja sus
-# filas, que dispararia una falsa alerta de borrado). Una vista nueva que no se agregue aca se
-# respalda como si fuera una tabla: no pasa nada grave, solo duplica datos.
-VISTAS = {"movimientos_dicose_vigentes"}
+# filas, que dispararia una falsa alerta de borrado). comparacion_catalogo y precio_ultimo/vigente
+# cruzan productos_catalogo con precios_vet: su cantidad de filas sube y baja con los precios
+# cargados (21/10/2026: comparacion_catalogo 3 -> 2 dio ALERTA sin que se borrara nada). Una vista
+# nueva que no se agregue aca se respalda como si fuera una tabla: no pasa nada grave, solo
+# duplica datos y puede dar una falsa alerta.
+VISTAS = {"movimientos_dicose_vigentes", "comparacion_catalogo", "precio_ultimo", "precio_vigente"}
 
 PAGINA = 1000
 UMBRAL_CAIDA = 0.10
@@ -209,7 +212,9 @@ def conteos_anteriores(destino, excluir):
         return {}
     try:
         with open(os.path.join(destino, previas[-1], "manifest.json"), encoding="utf-8") as f:
-            return {t: v.get("filas") for t, v in json.load(f).get("tablas", {}).items() if v.get("filas") is not None}
+            # Las vistas no se comparan: un backup anterior hecho antes de excluirlas las trae.
+            return {t: v.get("filas") for t, v in json.load(f).get("tablas", {}).items()
+                    if v.get("filas") is not None and t not in VISTAS}
     except Exception:
         return {}
 

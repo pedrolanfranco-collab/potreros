@@ -3,8 +3,9 @@
     python scripts/backup/probar_backup.py
 
 Verifica (Fase 5 de la auditoria, 10/10/2026):
-  - con clave privada descubre las tablas desde el OpenAPI, deja afuera las vistas y baja todo
-    (pagina de a 1000) con la clave privada, nunca con la publica;
+  - con clave privada descubre las tablas desde el OpenAPI, deja afuera las vistas (tambien las
+    que cambian de filas con los precios, como comparacion_catalogo) y baja todo (pagina de a
+    1000) con la clave privada, nunca con la publica;
   - el manifest tiene las filas y el sha256 de cada archivo, la clave usada y el origen de la lista;
   - si una tabla pierde mas del 10%, o desaparece, sale ALERTA (exit 2), por ntfy, y no se borra
     ningun backup viejo;
@@ -40,7 +41,9 @@ def chequear(nombre, cond, detalle=""):
 SECRETA = "sb_secret_de_prueba_0123456789"
 TEMA = "tema-ntfy-de-prueba-" + "z" * 20
 datos = {}                 # tabla -> lista de filas
-vistas = {"movimientos_dicose_vigentes": [{"a": 1}]}
+vistas = {"movimientos_dicose_vigentes": [{"a": 1}],
+          "comparacion_catalogo": [{"p": 1}, {"p": 2}, {"p": 3}],
+          "precio_ultimo": [{"p": 1}], "precio_vigente": [{"p": 1}]}
 pedidos = []               # (ruta, apikey)
 openapi_ok = {"valor": True}
 avisos = []                # lo que recibe el ntfy falso
@@ -136,6 +139,23 @@ chequear("cayo mas del 10%: ALERTA (exit 2)", codigo == 2 and "ALERTA" in salida
 chequear("la alerta sale por ntfy con la tabla y las cantidades", len(avisos) == 1 and "eventos_sync: 2500 -> 2000" in avisos[0]["message"], avisos)
 chequear("ntfy: prioridad alta al tema configurado", avisos and avisos[0]["priority"] == 4 and avisos[0]["topic"] == TEMA)
 chequear("con alerta no se borra ningun backup viejo", "2026-01-01_0000" in B.carpetas_backup(destino))
+
+# -- 2b) una vista que cambia de filas no es alerta, ni aunque el backup anterior la traiga --------
+avisos.clear()
+destino2b = tempfile.mkdtemp()
+codigo, salida = correr(destino2b)
+man2b = json.load(open(os.path.join(destino2b, B.carpetas_backup(destino2b)[0], "manifest.json"), encoding="utf-8"))
+chequear("las vistas no entran al manifest", not set(man2b["tablas"]) & B.VISTAS and codigo == 0, (codigo, sorted(man2b["tablas"])))
+c2b = os.path.join(destino2b, B.carpetas_backup(destino2b)[0])
+os.rename(c2b, os.path.join(destino2b, "2026-01-01_0000"))
+mf = os.path.join(destino2b, "2026-01-01_0000", "manifest.json")
+viejo = json.load(open(mf, encoding="utf-8"))
+viejo["tablas"]["comparacion_catalogo"] = {"filas": 3, "sha256": "0" * 64}   # como el backup del 21/10, hecho con la version anterior
+json.dump(viejo, open(mf, "w", encoding="utf-8"))
+vistas["comparacion_catalogo"] = vistas["comparacion_catalogo"][:2]           # 3 -> 2
+codigo, salida = correr(destino2b)
+chequear("comparacion_catalogo 3 -> 2 no alerta (sale con 0, sin ntfy)", codigo == 0 and "ALERTA" not in salida and not avisos, (codigo, salida))
+vistas["comparacion_catalogo"] = [{"p": 1}, {"p": 2}, {"p": 3}]
 
 # -- 3) una tabla desaparece ---------------------------------------------------------------------
 avisos.clear()
