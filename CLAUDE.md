@@ -851,6 +851,11 @@ está justo después de la Operación** (antes estaba abajo de la fecha) y la ca
 misma validación todo-o-nada que la carga completa); cambiar de modo borra las líneas extra, igual que cambiar la operación.
 `dicose_supabase.py` llena `pct_comision` / `importe_comision` / `comisionista` solo en la compra hasta que se le aplique el cambio de la
 venta; el IVA de la comisión no tiene columna en `movimientos_dicose` (queda en `detalle`).
+**Pase automático a DICOSE (22/10/2026):** `scripts/dicose/pasar_traslados_automatico.py` corre cada hora (tarea
+"Potreros - Pasar traslados a Excel", instalada con `scripts/dicose/instalar_tarea_traslados.ps1`) y ejecuta
+`pasar_traslados_a_excel.py --aplicar` de la carpeta de Pedro: escribe los libros y sube `movimientos_dicose`. No corre si hay un
+libro abierto; avisa por ntfy (sin repetir rechazos ni fallas). Detalle en `scripts/dicose/README.md`. Test:
+`scripts/dicose/probar_pasar_traslados_automatico.py`.
 *Para cambiar un archivo de la PC desde la nube:* pegar en PowerShell un bloque envuelto en `& { … }` (si no, la consola ejecuta línea por
 línea y un `elseif`/`else` suelto da "no se reconoce"), que lea/escriba con `[System.IO.File]` conservando BOM y CRLF, sea idempotente y deje
 `.bak`; probarlo antes en la nube con `pwsh` (se baja de los releases de GitHub) pasándolo por stdin (`pwsh -Command - < bloque.txt`, con

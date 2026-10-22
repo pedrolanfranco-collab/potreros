@@ -246,6 +246,9 @@ jobs:
       - name: "Cargar tratamientos de Sanidad desde un CSV (scripts/sanidad) -- valida todo o nada, producto contra el catalogo, idempotente, no manda la clave a otro destino"
         run: python3 scripts/sanidad/probar_cargar_sanidad_csv.py
 
+      - name: "Pasar traslados a Excel y a movimientos_dicose (automatico cada hora) -- Excel abierto no corre, avisos sin repetir, poda de respaldos"
+        run: python3 scripts/dicose/probar_pasar_traslados_automatico.py
+
   # 9/10/2026 (auditoria, hallazgo 23): antes GitHub Pages publicaba desde la rama en paralelo con
   # las pruebas, y una version con una prueba rota llegaba igual a los celulares (CI fallo 7 de 115
   # veces). Ahora se publica desde aca, y solo si el job `jsdom` paso.
