@@ -934,6 +934,9 @@ siguen abiertas.
   no llama a `verificar_clave` (aunque haya una clave vieja guardada). **Para el cierre**: sus políticas deben dejar Pone Chico
   abierto a propósito (o se queda sin sincronizar); ver `scripts/seguridad/README.md`. Test: `probar_clave_campo.js`.
 - *Cierre revisado (21/10/2026)*: contempla Pone Chico abierto (`private.campos_abiertos` + `establecimientos_permitidos()`, solo en el stream propio de cada campo; las excepciones entre campos y las tablas sin Pone Chico exigen clave real), `productos_catalogo` legible para todos y `sanidad_ultimos`/`sanidad_proximos` legibles con clave (las lee el tablero). Detalle en `scripts/seguridad/README.md`.
+  **Probado el 21/10/2026 contra un Postgres 16 real** (`scripts/seguridad/probar_cierre.js`, PGlite, 68 verificaciones, con el deshacer). Encontró que el SQL
+  original **abortaba**: en una política, `= any ((select f()))` falla con `text = text[]` (Postgres lo lee como subconsulta); hay que escribir
+  `= any ((select f())::text[])`. Y que **volver a correr `fase4_cierre.sql` reinserta `pone_chico` en `campos_abiertos`**: para ponerle clave, borrarlo y no re-ejecutar el cierre.
 - *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, escritos y revisados, **no corridos**): las políticas
   pasan a exigir `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los
   equipos activos con `con_clave = true` y los scripts de la PC que usan la llave pública

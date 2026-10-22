@@ -21,7 +21,8 @@
 -- REVISADO el 21/10/2026 (a pedido de Pedro): Pone Chico NO usa clave y el Tablero de Sanidad si.
 --   * `private.campos_abiertos` + `public.establecimientos_permitidos()`: los campos sin clave a proposito
 --     (hoy solo pone_chico) pasan igual en SU PROPIO stream (eventos_sync, stock_potreros, sanidad_carga_pone_chico,
---     sanidad_ultimos, sanidad_proximos). Para ponerle clave mas adelante basta borrarlo de esa tabla.
+--     sanidad_ultimos, sanidad_proximos). Para ponerle clave mas adelante basta borrarlo de esa tabla
+--     (y NO volver a correr este script despues: lo reinserta, `on conflict do nothing`; probado en probar_cierre.js).
 --   * Las excepciones entre campos (traslado_entrada, anular_traslado) y las tablas que Pone Chico no usa
 --     (sanidad_carga, sanidad_carga_maria_laura, animales_caravana, maestros_dicose) siguen exigiendo una clave REAL
 --     (`establecimientos_con_clave()`), asi nadie puede hacerse pasar por un campo abierto para escribir en otro.
@@ -178,61 +179,64 @@ begin
 end
 $$;
 
--- 2. Politicas nuevas. `(select public.establecimientos_con_clave())` se evalua una vez por consulta.
+-- 2. Politicas nuevas. `(select public.f())` se evalua una vez por consulta.
+--    OJO con la sintaxis: `= any ((select public.f()))` NO anda. Postgres lo lee como "ANY de una subconsulta" y
+--    falla con `operator does not exist: text = text[]` (con eso este script abortaba entero). Hay que castear el
+--    arreglo: `= any ((select public.f())::text[])`. Lo prueba scripts/seguridad/probar_cierre.js.
 
 -- eventos_sync: registro de solo-agregar (sin UPDATE ni DELETE).
 create policy eventos_sync_select_clave on public.eventos_sync
   for select to anon
-  using (establecimiento = any ((select public.establecimientos_permitidos())));
+  using (establecimiento = any ((select public.establecimientos_permitidos())::text[]));
 
 create policy eventos_sync_insert_clave on public.eventos_sync
   for insert to anon
   with check (
-    establecimiento = any ((select public.establecimientos_permitidos()))
+    establecimiento = any ((select public.establecimientos_permitidos())::text[])
     -- traslado entre campos (clave REAL del origen, no campos abiertos): el espejo de entrada se escribe en el stream del destino con la clave del origen
     or (tipo = 'traslado_entrada'
-        and (detalle -> 'origen' ->> 'establecimiento') = any ((select public.establecimientos_con_clave())))
+        and (detalle -> 'origen' ->> 'establecimiento') = any ((select public.establecimientos_con_clave())::text[]))
     -- borrar la salida de un traslado anula la entrada en el destino: correccion en el stream del destino
     or (tipo = 'correccion'
         and (detalle ->> 'accion') = 'anular_traslado'
-        and (detalle ->> 'origenEstablecimiento') = any ((select public.establecimientos_con_clave())))
+        and (detalle ->> 'origenEstablecimiento') = any ((select public.establecimientos_con_clave())::text[]))
   );
 
 -- stock_potreros: la app lo escribe (upsert + delete), nunca lo lee.
 create policy stock_potreros_all_clave on public.stock_potreros
   for all to anon
-  using (establecimiento = any ((select public.establecimientos_permitidos())))
-  with check (establecimiento = any ((select public.establecimientos_permitidos())));
+  using (establecimiento = any ((select public.establecimientos_permitidos())::text[]))
+  with check (establecimiento = any ((select public.establecimientos_permitidos())::text[]));
 
 -- sanidad_carga (La Vuelta; tabla compartida con columna `establecimiento` y puente a Excel).
 create policy sanidad_carga_select_clave on public.sanidad_carga
   for select to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())));
+  using (establecimiento = any ((select public.establecimientos_con_clave())::text[]));
 create policy sanidad_carga_insert_clave on public.sanidad_carga
   for insert to anon
-  with check (establecimiento = any ((select public.establecimientos_con_clave())));
+  with check (establecimiento = any ((select public.establecimientos_con_clave())::text[]));
 create policy sanidad_carga_update_clave on public.sanidad_carga
   for update to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())) and importado_en is null)
-  with check (establecimiento = any ((select public.establecimientos_con_clave())) and importado_en is null);
+  using (establecimiento = any ((select public.establecimientos_con_clave())::text[]) and importado_en is null)
+  with check (establecimiento = any ((select public.establecimientos_con_clave())::text[]) and importado_en is null);
 create policy sanidad_carga_delete_clave on public.sanidad_carga
   for delete to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())) and importado_en is null);
+  using (establecimiento = any ((select public.establecimientos_con_clave())::text[]) and importado_en is null);
 
 -- sanidad_carga_maria_laura / sanidad_carga_pone_chico: tabla propia, sin columna `establecimiento`.
 create policy sanidad_carga_maria_laura_all_clave on public.sanidad_carga_maria_laura
   for all to anon
-  using ('maria_laura' = any ((select public.establecimientos_con_clave())))
-  with check ('maria_laura' = any ((select public.establecimientos_con_clave())));
+  using ('maria_laura' = any ((select public.establecimientos_con_clave())::text[]))
+  with check ('maria_laura' = any ((select public.establecimientos_con_clave())::text[]));
 create policy sanidad_carga_pone_chico_all_clave on public.sanidad_carga_pone_chico
   for all to anon
-  using ('pone_chico' = any ((select public.establecimientos_permitidos())))
-  with check ('pone_chico' = any ((select public.establecimientos_permitidos())));
+  using ('pone_chico' = any ((select public.establecimientos_permitidos())::text[]))
+  with check ('pone_chico' = any ((select public.establecimientos_permitidos())::text[]));
 
 -- animales_caravana: padron por animal; solo lectura con la clave del campo (lo publica la PC con la privada).
 create policy animales_caravana_select_clave on public.animales_caravana
   for select to anon
-  using (establecimiento = any ((select public.establecimientos_con_clave())));
+  using (establecimiento = any ((select public.establecimientos_con_clave())::text[]));
 
 -- productos_catalogo: lista de referencia compartida; la lee cualquiera (Pone Chico y Completar sanidad no mandan clave).
 -- Nadie la escribe con la llave publica desde la Fase 2.
@@ -253,10 +257,10 @@ create policy maestros_dicose_insert_clave on public.maestros_dicose
 -- sanidad_ultimos y sanidad_proximos: las lee el Tablero de Sanidad (manda la clave del campo). Las escribe la PC.
 create policy sanidad_ultimos_select_clave on public.sanidad_ultimos
   for select to anon
-  using (establecimiento = any ((select public.establecimientos_permitidos())));
+  using (establecimiento = any ((select public.establecimientos_permitidos())::text[]));
 create policy sanidad_proximos_select_clave on public.sanidad_proximos
   for select to anon
-  using (establecimiento = any ((select public.establecimientos_permitidos())));
+  using (establecimiento = any ((select public.establecimientos_permitidos())::text[]));
 
 -- 3. Permisos de tabla (anon). Hace falta politica Y permiso de tabla.
 grant select, insert on table public.eventos_sync to anon;
