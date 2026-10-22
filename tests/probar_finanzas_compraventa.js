@@ -218,6 +218,10 @@ async function probarPC(archivoPC, archivoMovil){
   chequear(`${etiqueta}: calcCompra por pieza: importe 900`, cerca(c.importe, 900) && cerca(c.kilosNeto, 628.9), JSON.stringify(c));
   c = W.calcCompra({cantidad: 10, tipoPrecio: 'Kg', kilosBrutos: 4000, destare: 0.05, precio: 2.5, pctCom: 0.02, flete: 100});
   chequear(`${etiqueta}: calcCompra con comisión y flete: comisión 190, costo total 9790, por cabeza 979`, cerca(c.importeCom, 190) && cerca(c.costoTotal, 9790) && cerca(c.costoCab, 979) && cerca(c.costoKg, 9790 / 3800, 0.0001), JSON.stringify(c));
+  // 22/10/2026: comisión del intermediario con boleta -> + IVA 22 % sobre la comisión
+  c = W.calcCompra({cantidad: 10, tipoPrecio: 'Kg', kilosBrutos: 4000, destare: 0.05, precio: 2.5, pctCom: 0.02, conBoleta: true, flete: 100});
+  chequear(`${etiqueta}: calcCompra con boleta: comisión 190 + IVA 41,8, costo total 9831,8`, cerca(c.importeCom, 190) && cerca(c.ivaCom, 41.8) && cerca(c.costoTotal, 9831.8), JSON.stringify(c));
+  chequear(`${etiqueta}: calcCompra sin boleta: IVA de la comisión 0`, W.calcCompra({cantidad: 10, tipoPrecio: 'Kg', kilosBrutos: 4000, destare: 0.05, precio: 2.5, pctCom: 0.02, flete: 100}).ivaCom === 0);
   chequear(`${etiqueta}: calcCompra con datos incompletos devuelve null (no NaN)`, W.calcCompra({cantidad: 5, tipoPrecio: 'Kg'}).importe === null);
   // Ventas fila 4: 32 Vacas Inv, 2ª, 4,7431 $/kg, 19524,3 kg -> 92605,84
   let v = W.calcVenta({cantidad: 32, precioTipo: '2ª', precioKg: 4.74310694573302, kilosRes: 19524.3, kilosPie: 40000});
@@ -233,6 +237,11 @@ async function probarPC(archivoPC, archivoMovil){
   v = W.calcVenta({cantidad: 20, precioTipo: '2ª', precioKg: 4.56, kilosRes: 4232.2, kilosPie: 8000, destare: 0.05});
   chequear(`${etiqueta}: calcVenta 2ª con destare: el importe sigue sobre la res y el rendimiento es res / neto en pie`,
     cerca(v.importeBruto, 4.56 * 4232.2, 0.01) && cerca(v.kilosNeto, 7600) && cerca(v.rendimiento, 4232.2 / 7600, 0.0001), JSON.stringify(v));
+  v = W.calcVenta({cantidad: 10, precioTipo: '1ª', precioKg: 2, kilosPie: 2000, destare: 0.05, imeba: 20, pctCom: 0.03, conBoleta: true});
+  chequear(`${etiqueta}: calcVenta con comisión 3 % y boleta: comisión 114 + IVA 25,08 y el neto los descuenta`,
+    cerca(v.importeBruto, 3800) && cerca(v.importeCom, 114) && cerca(v.ivaCom, 25.08) && cerca(v.neto, 3800 - 20 - 114 - 25.08), JSON.stringify(v));
+  v = W.calcVenta({cantidad: 10, precioTipo: '1ª', precioKg: 2, kilosPie: 2000, destare: 0.05, pctCom: 0.03});
+  chequear(`${etiqueta}: calcVenta con comisión sin boleta: sin IVA`, cerca(v.importeCom, 114) && v.ivaCom === 0 && cerca(v.neto, 3800 - 114), JSON.stringify(v));
   chequear(`${etiqueta}: códigos del Excel: Vacas→VACA, Vacas de invernada→VINV, VCUT, Pieza, Terneros→TERNERO; ventas: Vacas Inv`,
     W.catExcelCompra('Vacas') === 'VACA' && W.catExcelCompra('Vacas de invernada') === 'VINV' && W.catExcelCompra('Vacas', 'vcut') === 'VCUT'
     && W.catExcelCompra('Vacas', 'pieza') === 'Pieza' && W.catExcelCompra('Terneros') === 'TERNERO' && W.catExcelVenta('Vacas de invernada') === 'Vacas Inv' && W.catExcelVenta('Terneras') === 'Terneros/as');
@@ -361,6 +370,84 @@ async function probarPC(archivoPC, archivoMovil){
   chequear(`${etiqueta}: al terminar la venta se borran los kilos y el peso neto (el destare queda para la próxima, como en la compra)`, E(W, 'cv-destare-v').value === '5' && E(W, 'cv-kneto-v').value === '' && E(W, 'cv-kpie').value === '', E(W, 'cv-destare-v').value + '|' + E(W, 'cv-kneto-v').value);
   abrirCV(W, 'Venta');
   chequear(`${etiqueta}: al abrir de nuevo el formulario el destare de la venta queda vacío`, E(W, 'cv-destare-v').value === '');
+
+  // ---- 7b) comisión del intermediario en la venta (22/10/2026): 0 a 4 %, + IVA 22 % con boleta, se descuenta del neto ----
+  chequear(`${etiqueta}: la venta tiene intermediario (Directo por defecto), % comisión 0 y boleta sin marcar`,
+    E(W, 'cv-comisionista-v').value === 'Directo' && E(W, 'cv-pcom-v').value === '0' && E(W, 'cv-boleta-v').checked === false);
+  aW[kVI] = 10;
+  poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Vacas de invernada', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 4);
+  poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-destino', 'Frigorifico Canelones', 'change');
+  poner(W, 'cv-ptipo', '1ª', 'change'); poner(W, 'cv-pkg', 2); poner(W, 'cv-kpie', 2000); poner(W, 'cv-destare-v', 5);
+  poner(W, 'cv-comisionista-v', 'Fabian Braga', 'change'); poner(W, 'cv-pcom-v', 6);
+  chequear(`${etiqueta}: una comisión fuera de 0–4 % se avisa en la vista previa`, /lo habitual es entre 0 y 4/.test(E(W, 'cv-resumen-venta').textContent), E(W, 'cv-resumen-venta').textContent);
+  poner(W, 'cv-pcom-v', 3); E(W, 'cv-boleta-v').checked = true; E(W, 'cv-boleta-v').dispatchEvent(new W.Event('change', { bubbles: true }));
+  chequear(`${etiqueta}: la vista previa muestra la comisión con su IVA y el neto descontado (3.800 − 114 − 25,08 = 3.660,92)`,
+    !/lo habitual es entre 0 y 4/.test(E(W, 'cv-resumen-venta').textContent) && /114/.test(E(W, 'cv-resumen-venta').textContent) && /IVA USD 25,08/.test(E(W, 'cv-resumen-venta').textContent) && /3\.660,92/.test(E(W, 'cv-resumen-venta').textContent),
+    E(W, 'cv-resumen-venta').textContent);
+  const evCom = servidor.filas.eventos_sync.length;
+  E(W, 'cv-guardar').click();
+  await esperarHasta(() => hayNuevo(servidor, evCom, 'venta'));
+  const fCom = (servidor.filas.eventos_sync.slice(evCom).find(r => r.tipo === 'venta') || {detalle: {}}).detalle.fin;
+  chequear(`${etiqueta}: el evento de venta trae intermediario, % comisión, comisión, boleta e IVA, y el neto descontado`,
+    !!fCom && fCom.comisionista === 'Fabian Braga' && cerca(fCom.pctCom, 0.03) && cerca(fCom.importeCom, 114) && fCom.conBoleta === true && cerca(fCom.ivaCom, 25.08) && cerca(fCom.neto, 3660.92),
+    JSON.stringify(fCom));
+  W.cargarFinEnCV(fCom);
+  chequear(`${etiqueta}: editar esa venta trae de vuelta el intermediario, el % y la boleta`,
+    E(W, 'cv-comisionista-v').value === 'Fabian Braga' && E(W, 'cv-pcom-v').value === '3' && E(W, 'cv-boleta-v').checked === true);
+
+  // ---- 7c) compra con boleta del intermediario ----
+  abrirCV(W, 'Compra');
+  poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Toros', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 10);
+  poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-origen', 'Walter Lanfranco', 'change'); poner(W, 'cv-comprador', 'Pedro', 'change');
+  poner(W, 'cv-kbrutos', 4000); poner(W, 'cv-destare', 5); poner(W, 'cv-pcompra', 2.5); poner(W, 'cv-pcom', 2); poner(W, 'cv-flete', 100);
+  E(W, 'cv-boleta').checked = true; E(W, 'cv-boleta').dispatchEvent(new W.Event('change', { bubbles: true }));
+  chequear(`${etiqueta}: la vista previa de la compra suma el IVA de la comisión al costo (9.831,8)`, /IVA USD 41,8/.test(E(W, 'cv-resumen-compra').textContent) && /9\.831,8/.test(E(W, 'cv-resumen-compra').textContent), E(W, 'cv-resumen-compra').textContent);
+  const evBol = servidor.filas.eventos_sync.length;
+  E(W, 'cv-guardar').click();
+  await esperarHasta(() => hayNuevo(servidor, evBol, 'compra'));
+  const fBol = (servidor.filas.eventos_sync.slice(evBol).find(r => r.tipo === 'compra') || {detalle: {}}).detalle.fin;
+  chequear(`${etiqueta}: el evento de compra trae boleta e IVA de la comisión`, !!fBol && fBol.conBoleta === true && cerca(fBol.ivaCom, 41.8) && cerca(fBol.costoTotal, 9831.8), JSON.stringify(fBol));
+
+  // ---- 7d) carga rápida: arriba de todo y con varias categorías (22/10/2026) ----
+  abrirCV(W, 'Compra');
+  const orden = Array.from(E(W, 'compraventa-seccion').querySelectorAll('#cv-tipo, #cv-rapido, #cv-potrero, #cv-cat')).map(e => e.id).join(',');
+  chequear(`${etiqueta}: el tilde de carga rápida está justo después de la operación, antes del potrero y la categoría`, orden === 'cv-tipo,cv-rapido,cv-potrero,cv-cat', orden);
+  E(W, 'cv-rapido').checked = true; E(W, 'cv-rapido').dispatchEvent(new W.Event('change', { bubbles: true }));
+  chequear(`${etiqueta}: en carga rápida se ve el botón para agregar otra categoría`, E(W, 'cv-simple').style.display !== 'none' && E(W, 'cv-agregar-linea-rapido').style.display !== 'none');
+  const kTo = W.claveAnimal('Terneros', dueno), kTa = W.claveAnimal('Terneras', dueno);
+  const to0 = aW[kTo] || 0, ta0 = aW[kTa] || 0;
+  poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Terneros', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 18);
+  poner(W, 'cv-fecha', W.fechaISOHoy(), 'change'); poner(W, 'cv-precio', 250); poner(W, 'cv-contraparte', 'Nebio Domingez'); poner(W, 'cv-guia', 'q700007');
+  E(W, 'cv-agregar-linea-rapido').click();
+  const lr = E(W, 'cv-extra-rapido').querySelector('.cv-linea');
+  chequear(`${etiqueta}: la línea rápida pide solo categoría, cantidad y precio por cabeza`, !!lr && !!lr.querySelector('.cvl-cat') && !!lr.querySelector('.cvl-cant') && !!lr.querySelector('.cvl-precio') && !lr.querySelector('.cvl-kb') && !lr.querySelector('.cvl-pkg'));
+  const ponerL = (cls, v, ev) => { const e = lr.querySelector(cls); e.value = String(v); e.dispatchEvent(new W.Event(ev || 'input', { bubbles: true })); };
+  ponerL('.cvl-cat', 'Terneras', 'change'); ponerL('.cvl-cant', 32);
+  const evR = servidor.filas.eventos_sync.length;
+  E(W, 'cv-guardar').click();
+  await esperarHasta(() => hayNuevo(servidor, evR, 'compra', 2));
+  const evsR = servidor.filas.eventos_sync.slice(evR).filter(r => r.tipo === 'compra');
+  chequear(`${etiqueta}: la carga rápida con 2 categorías registra 2 compras con la misma guía y contraparte, sin detalle`,
+    evsR.length === 2 && evsR.every(e => e.detalle.guia === 'Q700007' && e.detalle.contraparte === 'Nebio Domingez' && e.detalle.fin == null)
+    && evsR.some(e => e.detalle.categoria === 'Terneros' && e.detalle.cantidad === 18 && cerca(e.detalle.precio, 250)) && evsR.some(e => e.detalle.categoria === 'Terneras' && e.detalle.cantidad === 32 && e.detalle.precio == null),
+    JSON.stringify(evsR.map(e => e.detalle)));
+  chequear(`${etiqueta}: …y suma 18 Terneros y 32 Terneras al stock`, (aW[kTo] || 0) === to0 + 18 && (aW[kTa] || 0) === ta0 + 32, `${aW[kTo]} / ${aW[kTa]}`);
+  chequear(`${etiqueta}: después de registrar, la línea extra se borra`, E(W, 'cv-extra-rapido').querySelectorAll('.cv-linea').length === 0);
+  chequear(`${etiqueta}: las dos figuran "faltan datos" para completar con ✍`, W.movimientosConGuia().filter(r => r.guia === 'Q700007' && r.faltanDatos).length === 2);
+  // venta rápida que pide más de lo que hay en una categoría: no registra ninguna
+  poner(W, 'cv-tipo', 'Venta', 'change');
+  E(W, 'cv-rapido').checked = true; E(W, 'cv-rapido').dispatchEvent(new W.Event('change', { bubbles: true }));
+  poner(W, 'cv-potrero', potrero, 'change'); poner(W, 'cv-cat', 'Terneros', 'change'); poner(W, 'cv-dueno', dueno, 'change'); poner(W, 'cv-cant', 1);
+  poner(W, 'cv-fecha', W.fechaISOHoy(), 'change');
+  E(W, 'cv-agregar-linea-rapido').click();
+  const lv = E(W, 'cv-extra-rapido').querySelector('.cv-linea');
+  lv.querySelector('.cvl-cat').value = 'Terneras'; lv.querySelector('.cvl-cant').value = String((aW[kTa] || 0) + 1);
+  const evNo = servidor.filas.eventos_sync.length, toAntes = aW[kTo];
+  E(W, 'cv-guardar').click();
+  await dormir(50);
+  chequear(`${etiqueta}: una venta rápida que pide más de lo que hay no registra ninguna categoría`, servidor.filas.eventos_sync.length === evNo && aW[kTo] === toAntes && /Solo hay/.test(ultimoToast(W)), ultimoToast(W));
+  E(W, 'cv-rapido').checked = false; E(W, 'cv-rapido').dispatchEvent(new W.Event('change', { bubbles: true }));
+  chequear(`${etiqueta}: al destildar la carga rápida se borran sus líneas`, E(W, 'cv-extra-rapido').querySelectorAll('.cv-linea').length === 0);
 
   // ---- 8) altas de catálogo desde la PC ----
   abrirCV(W, 'Compra');
