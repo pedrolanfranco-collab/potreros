@@ -841,6 +841,16 @@ ese rango; también en las categorías extra; una venta vieja sin destare se edi
 `neto` y `rendimiento` de `fin` sin recalcular; se le agregó en la rama de venta `"destare"` y `"kilos_neto"` (antes solo en la compra), y
 Pedro lo aplicó en la PC con un bloque de PowerShell (copia del original en `dicose_supabase.py.bak`; prueba local con una venta de
 2.000 kg al 5 %: `destare 0.05`, `kilos_neto 1900`). Las ventas de antes quedan con esas dos columnas vacías.
+**Comisión del intermediario y carga rápida (22/10/2026, a pedido de Pedro, solo PC):** compra y venta tienen comisionista /
+intermediario (catálogo `comisionista`, "Directo" por defecto), "% Comisión — habitual 0 a 4" (aviso en la vista previa fuera de ese
+rango) y "Con boleta del intermediario (+ IVA 22 % sobre la comisión)" (`IVA_COMISION`, `ivaComision()`). Compra: `costoTotal` suma la
+comisión y su IVA. Venta (`#cv-comisionista-v`, `#cv-pcom-v`, `#cv-boleta-v`, nuevo): comisión = % del bruto de cada línea y el neto la
+descuenta con su IVA. `fin` suma `conBoleta` e `ivaCom` (y en la venta `comisionista`, `pctCom`, `importeCom`). El tilde **"Carga rápida"
+está justo después de la Operación** (antes estaba abajo de la fecha) y la carga rápida acepta **varias categorías** de la misma guía
+(`#cv-extra-rapido`, líneas de categoría + cantidad + precio por cabeza opcional; `registrarRapidasCV()` → `registrarOperacionesCV()`, la
+misma validación todo-o-nada que la carga completa); cambiar de modo borra las líneas extra, igual que cambiar la operación.
+`dicose_supabase.py` llena `pct_comision` / `importe_comision` / `comisionista` solo en la compra hasta que se le aplique el cambio de la
+venta; el IVA de la comisión no tiene columna en `movimientos_dicose` (queda en `detalle`).
 *Para cambiar un archivo de la PC desde la nube:* pegar en PowerShell un bloque envuelto en `& { … }` (si no, la consola ejecuta línea por
 línea y un `elseif`/`else` suelto da "no se reconoce"), que lea/escriba con `[System.IO.File]` conservando BOM y CRLF, sea idempotente y deje
 `.bak`; probarlo antes en la nube con `pwsh` (se baja de los releases de GitHub) pasándolo por stdin (`pwsh -Command - < bloque.txt`, con
