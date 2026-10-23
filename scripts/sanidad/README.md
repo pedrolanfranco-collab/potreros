@@ -78,3 +78,11 @@ python cargar_sanidad_csv.py C:\ruta\a\mis_sanidades.csv --establecimiento maria
   `bajar_sanidad_de_potreros.py` (cada hora) la lleva a la Planilla Sanitaria. Prueba: `probar_cargar_sanidad_csv.py`
   (servidor falso, corre en el CI; no toca Supabase).
 
+
+## `proximos_hechos.sql` — "Ya se hizo" en el tablero de Sanidad (21/10/2026)
+
+Crea `sanidad_proximos_hechos`, donde el tablero (`tablero-sanidad/`) guarda los vencimientos de Próximos que ya se
+hicieron para ocultarlos en todos los equipos (la Planilla regenera `sanidad_proximos` cada hora, así que borrar ahí no
+sirve). Correrlo **una vez** en el SQL Editor de Supabase; es transaccional e idempotente y al final muestra `rls = true`
+y las 3 políticas (SELECT, INSERT, DELETE para `anon`). Se deshace con `proximos_hechos_deshacer.sql`. Sin la tabla el
+tablero anda igual, sin el botón.

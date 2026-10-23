@@ -9,13 +9,14 @@
 <link rel="apple-touch-icon" href="icon-192x192.png">
 <title>Tablero de Sanidad</title>
 <!--
-  Tablero de solo lectura (16/10/2026). NO es una de las apps generadas por template/generar.js:
+  Tablero (16/10/2026). NO es una de las apps generadas por template/generar.js:
   es un archivo suelto, sin librerías. Lee cuatro tablas:
     sanidad_proximos  (qué tratamiento toca y cuándo)        -- la publica la PC (actualizar_sanidad_supabase.py)
     sanidad_ultimos   (lo último que se aplicó)              -- idem
     stock_potreros    (stock actual por potrero, categoría y dueño/firma) -- la publican las apps
     animales_caravana (padrón por caravana; de ahí sale la GENERACIÓN) -- la publica la PC (publicar_animales.py)
-  No escribe nada. Se refresca solo cada 5 min y al volver a la pestaña; guarda la última copia en el
+  Lo único que escribe (21/10/2026) es `sanidad_proximos_hechos`: el botón "Ya se hizo" de un vencido lo marca
+  (y "Deshacer" lo borra) para ocultarlo en todos los equipos; ver scripts/sanidad/proximos_hechos.sql. Se refresca solo cada 5 min y al volver a la pestaña; guarda la última copia en el
   teléfono para mostrar algo sin señal.
   Clave del campo (Fase 4, 21/10/2026): La Vuelta y María Laura piden la clave del campo; Pone Chico no. El tablero
   vive en el mismo origen que las apps, así que toma la clave que ya se cargó en ellas (localStorage
@@ -90,6 +91,13 @@ details>summary{cursor:pointer;color:var(--suave);font-size:13px;margin-top:6px;
 .tot .grande{display:flex;gap:16px}.tot .grande div{flex:1}
 .tot .grande b{display:block;font-size:30px;line-height:1.1}.tot .grande span{font-size:12px;color:var(--suave)}
 [hidden]{display:none!important}
+.hecho{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hecho button{min-height:40px;padding:6px 12px;border-radius:10px;border:2px solid var(--borde);background:var(--tarjeta);font-weight:600}
+.hecho button.si{background:var(--verde);border-color:var(--verde);color:var(--fondo)}
+.hecho .pregunta{font-size:14px}
+.hecho .error{font-size:13px;color:var(--rojo);font-weight:600;flex-basis:100%}
+.lista-hechos .fila-hecho{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--borde);font-size:14px}
+.lista-hechos .fila-hecho button{min-height:36px;padding:4px 10px;border-radius:8px;border:2px solid var(--borde);background:var(--tarjeta);font-weight:600}
 </style>
 </head>
 <body>
@@ -253,9 +261,9 @@ async function pedirTodo(tabla, estab, select, orden, extra, claveEstab){
   }
   return filas;
 }
-let datos = { prox: [], ult: [], stock: [], gens: null, leido: null };
+let datos = { prox: [], ult: [], stock: [], gens: null, hechos: null, leido: null };
 function leerCache(estab){
-  try{ const c = JSON.parse(localStorage.getItem(CLAVE_LS + '_' + estab)); if(c && Array.isArray(c.prox) && Array.isArray(c.ult)){ c.stock = c.stock || []; c.gens = c.gens || null; return c; } }catch(e){}
+  try{ const c = JSON.parse(localStorage.getItem(CLAVE_LS + '_' + estab)); if(c && Array.isArray(c.prox) && Array.isArray(c.ult)){ c.stock = c.stock || []; c.gens = c.gens || null; c.hechos = c.hechos || null; return c; } }catch(e){}
   return null;
 }
 function guardarCache(estab){ try{ localStorage.setItem(CLAVE_LS + '_' + estab, JSON.stringify(datos)); }catch(e){} }
@@ -317,8 +325,77 @@ function nivelProximo(f){
   if(n == null || isNaN(n)) return { n: null, nivel: 'verde' };
   return { n, nivel: n < 0 ? 'rojo' : n <= 15 ? 'ocre' : 'verde' };
 }
+/* ---------- "Ya se hizo" (21/10/2026) ----------
+   Un vencimiento = establecimiento + categoría + sanidad + fecha prevista. Marcado como hecho se oculta en todos
+   los equipos (tabla sanidad_proximos_hechos). Si la Planilla registra un tratamiento nuevo, la fecha prevista
+   cambia y el próximo vencimiento vuelve a aparecer. Sin la tabla (datos.hechos = null) no hay botón. */
+const TABLA_HECHOS = 'sanidad_proximos_hechos';
+const dia10 = x => String(x == null ? '' : x).slice(0, 10);
+const claveHecho = (est, cat, san, fecha) => est + '|' + normTxt(cat) + '|' + normTxt(san) + '|' + dia10(fecha);
+function hechoDe(f){
+  if(!datos.hechos || !f.fecha_prevista) return null;
+  const k = claveHecho(f.establecimiento, f.categoria, f.sanidad, f.fecha_prevista);
+  return datos.hechos.find(h => claveHecho(h.establecimiento, h.categoria, h.sanidad, h.fecha_prevista) === k) || null;
+}
+let confirmando = null, errorHecho = null, guardandoHecho = false;   // índice de la fila de Próximos en curso
+function botonHecho(i){
+  if(confirmando === i){
+    return '<div class="hecho"><span class="pregunta">¿Ya se hizo? Se oculta en todos los equipos.</span>' +
+      '<button class="si" data-hecho-si="' + i + '"' + (guardandoHecho ? ' disabled' : '') + '>' + (guardandoHecho ? 'Guardando…' : 'Sí, ya se hizo') + '</button>' +
+      '<button data-hecho-no="' + i + '"' + (guardandoHecho ? ' disabled' : '') + '>Cancelar</button>' +
+      (errorHecho ? '<span class="error">' + esc(errorHecho) + '</span>' : '') + '</div>';
+  }
+  return '<div class="hecho"><button data-hecho="' + i + '">✓ Ya se hizo</button></div>';
+}
+async function marcarHecho(i){
+  const f = datos.prox[i];
+  if(!f || guardandoHecho) return;
+  guardandoHecho = true; errorHecho = null; pintarProximos();
+  const fila = { establecimiento: f.establecimiento, categoria: f.categoria, sanidad: f.sanidad, fecha_prevista: dia10(f.fecha_prevista) };
+  try{
+    const r = await fetch(SUPABASE_URL + '/rest/v1/' + TABLA_HECHOS + '?on_conflict=establecimiento,categoria,sanidad,fecha_prevista', {
+      method: 'POST', cache: 'no-store',
+      headers: { ...cab(f.establecimiento), 'Content-Type': 'application/json', Prefer: 'return=representation,resolution=ignore-duplicates' },
+      body: JSON.stringify(fila) });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const vuelta = await r.json();
+    /* vacío = ya estaba marcado (otro equipo): igual queda oculto */
+    const h = Array.isArray(vuelta) && vuelta[0] ? vuelta[0] : { ...fila, id: null, marcado_en: new Date().toISOString() };
+    datos.hechos = [h, ...(datos.hechos || []).filter(x => claveHecho(x.establecimiento, x.categoria, x.sanidad, x.fecha_prevista) !== claveHecho(h.establecimiento, h.categoria, h.sanidad, h.fecha_prevista))];
+    confirmando = null;
+    guardarCache($('estab').value);
+    if(!h.id) actualizar();          // para tener el id y poder deshacerlo
+  }catch(e){
+    errorHecho = 'No se pudo guardar (' + e.message + '). Revisá la señal y probá de nuevo.';
+  }finally{ guardandoHecho = false; pintarProximos(); }
+}
+async function deshacerHecho(id){
+  try{
+    const r = await fetch(SUPABASE_URL + '/rest/v1/' + TABLA_HECHOS + '?id=eq.' + encodeURIComponent(id), {
+      method: 'DELETE', cache: 'no-store', headers: { ...cab($('estab').value), Prefer: 'return=representation' } });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const vuelta = await r.json();
+    /* PostgREST contesta 200 vacío si no borró nada (ya no estaba o no hay permiso): se relee para mostrar lo real */
+    if(!Array.isArray(vuelta) || vuelta.length !== 1){ actualizar(); return; }
+    datos.hechos = (datos.hechos || []).filter(h => String(h.id) !== String(id));
+    guardarCache($('estab').value);
+    pintarProximos();
+  }catch(e){
+    pintarEstado('No se pudo deshacer (' + e.message + '). Revisá la señal y probá de nuevo.', true);
+  }
+}
+$('vista-prox').addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if(!b) return;
+  if(b.dataset.hecho != null){ confirmando = +b.dataset.hecho; errorHecho = null; pintarProximos(); }
+  else if(b.dataset.hechoNo != null){ confirmando = null; errorHecho = null; pintarProximos(); }
+  else if(b.dataset.hechoSi != null) marcarHecho(+b.dataset.hechoSi);
+  else if(b.dataset.deshacer != null) deshacerHecho(b.dataset.deshacer);
+});
 function pintarProximos(){
-  const filas = datos.prox.map(f => ({ f, ...nivelProximo(f) }));
+  const ocultos = [];
+  const filas = [];
+  datos.prox.forEach((f, i) => { const h = hechoDe(f); if(h) ocultos.push({ f, h }); else filas.push({ f, i, ...nivelProximo(f) }); });
   filas.sort((a, b) => (a.n == null) - (b.n == null) || a.n - b.n);
   const cuenta = nv => filas.filter(x => x.nivel === nv).length;
   let h = '<div class="resumen">' +
@@ -338,8 +415,15 @@ function pintarProximos(){
         '<div class="s">' + (x.n != null ? esc(relativo(x.n)) : '') +
         (f.animales != null ? ' · ' + esc(f.animales) + ' animales' : '') + '</div>' +
         '<div class="s">Último: ' + esc(f.ultimo_producto || '—') + (f.ultimo_tratamiento ? ' (' + esc(fechaCorta(f.ultimo_tratamiento)) + ')' : '') + '</div>' +
-        (f.estado ? '<span class="etq ' + nv + '">' + esc(f.estado) + '</span>' : '') + etqsGen(genDe(f)) + etqCaravana(f.categoria) + '</div>';
+        (f.estado ? '<span class="etq ' + nv + '">' + esc(f.estado) + '</span>' : '') + etqsGen(genDe(f)) + etqCaravana(f.categoria) +
+        (nv === 'rojo' && datos.hechos && f.fecha_prevista ? botonHecho(x.i) : '') + '</div>';
     }
+  }
+  if(ocultos.length){
+    h += '<details class="lista-hechos"><summary>Marcados como hechos (' + ocultos.length + ')</summary>' +
+      ocultos.map(({ f, h: m }) => '<div class="fila-hecho"><span>' + esc(f.categoria || '—') + ' · ' + esc(f.sanidad || '') +
+        ' · vencía ' + esc(fechaCorta(f.fecha_prevista)) + (m.marcado_en ? ' · marcado ' + esc(fechaCorta(m.marcado_en)) : '') + '</span>' +
+        (m.id != null ? '<button data-deshacer="' + esc(m.id) + '">Deshacer</button>' : '') + '</div>').join('') + '</details>';
   }
   $('vista-prox').innerHTML = h;
 }
@@ -487,13 +571,15 @@ async function actualizar(){
     await verificarGuardada(estab);
     if($('estab').value !== estab) return;
     const tc = TABLA_CARGA[estab];
-    const [prox, ult, stock, gens, cargas] = await Promise.all([
+    const [prox, ult, stock, gens, cargas, hechos] = await Promise.all([
       pedir('sanidad_proximos', estab, 'fecha_prevista.asc.nullslast'), pedir('sanidad_ultimos', estab, 'fecha.desc'),
       pedirTodo('stock_potreros', estab, 'potrero,categoria,dueno,cantidad,ug,especie,actualizado_en', 'potrero.asc,clave.asc'),
       /* la generación es un extra: si el padrón no se puede leer, el resto del tablero sigue andando */
       pedirTodo('animales_caravana', estab, 'potrero,gen,categoria,estado_vida', 'id8.asc').then(resumirGens).catch(() => null),
       /* también un extra: si la carga no se puede leer, Últimos sale igual, sin generación */
-      tc ? pedirTodo(tc.t, tc.conEstab ? estab : null, 'fecha,categoria,potrero,cantidad,gen', 'fecha.desc,id.asc', '&gen=not.is.null', estab).catch(() => []) : []
+      tc ? pedirTodo(tc.t, tc.conEstab ? estab : null, 'fecha,categoria,potrero,cantidad,gen', 'fecha.desc,id.asc', '&gen=not.is.null', estab).catch(() => []) : [],
+      /* "Ya se hizo": si la tabla no existe o no se puede leer, se muestran todos los vencidos y sin botón */
+      pedirTodo(TABLA_HECHOS, estab, '*', 'id.asc').catch(() => null)
     ]);
     if($('estab').value !== estab) return;       // cambió de establecimiento mientras leía
     /* Sin clave válida las políticas contestan 200 sin filas: no se pisa la última copia con una lectura vacía. */
@@ -503,7 +589,8 @@ async function actualizar(){
       return;
     }
     cruzarGen(ult, cargas);
-    datos = { prox, ult, stock, gens, leido: new Date().toISOString() };
+    datos = { prox, ult, stock, gens, hechos, leido: new Date().toISOString() };
+    if(confirmando != null && !guardandoHecho){ confirmando = null; errorHecho = null; }   // las filas pudieron cambiar de lugar
     guardarCache(estab);
     pintarAvisoClave();
     pintarTodo();
@@ -513,7 +600,8 @@ async function actualizar(){
 }
 function cambiarEstab(){
   try{ localStorage.setItem(CLAVE_LS + '_estab', $('estab').value); }catch(e){}
-  datos = leerCache($('estab').value) || { prox: [], ult: [], stock: [], gens: null, leido: null };
+  confirmando = null; errorHecho = null;
+  datos = leerCache($('estab').value) || { prox: [], ult: [], stock: [], gens: null, hechos: null, leido: null };
   pintarAvisoClave(); pintarTodo(); actualizar();
 }
 function elegirTab(cual){
