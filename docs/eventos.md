@@ -101,6 +101,7 @@ Registros del establecimiento (no tocan el stock):
 | `reporte_creado` | `{id, categoria, subtipo, obs, fecha, lat, lon}` |
 | `reporte_resuelto` | `{id, fecha}` |
 | `reporte_eliminado` | `{id}` |
+| `reporte_foto` | `{id, fotoId, path, momento, fecha}` (foto del reporte ya subida a Storage, bucket `fotos-reportes`; `path` = `<establecimiento>/<id>/<fotoId>.jpg`, `momento` = `reporte` o `resuelto`) |
 | `proximo_confirmado` | `{id}` |
 
 Potreros:

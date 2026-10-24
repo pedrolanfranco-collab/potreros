@@ -8,6 +8,7 @@ hacer cualquiera**. Cada fase tiene su SQL, su vuelta atrás y una verificación
 |---|---|---|
 | 2 | Escritura anónima en `productos_catalogo`, `animales_caravana`, `sanidad_ultimos`, `sanidad_proximos`; `creado_en` de `eventos_sync` lo fija el servidor | `fase2_carencia.sql`, `fase2_carencia_deshacer.sql`, `verificar_fase2.py` |
 | 4 | Clave del campo: eventos falsos con la llave pública y lectura del padrón y los datos comerciales (en dos releases, ver abajo) | `fase4_clave_campo.sql`, `fase4_clave_campo_deshacer.sql`, `fase4_cierre.sql`, `fase4_cierre_deshacer.sql`, `verificar_fase4.py` |
+| (24/10/2026, fuera de las fases) | Bucket `fotos-reportes` para las fotos de los reportes de campo: `anon` solo sube y ve fotos dentro de la carpeta de cada establecimiento, sin UPDATE ni DELETE | `fotos_reportes.sql`, `fotos_reportes_deshacer.sql` |
 
 ## Cómo se corre una fase
 
@@ -151,3 +152,12 @@ su stream (la clave es una sola por campo, compartida con el empleado de Campo),
 La Vuelta puede escribir el espejo de un traslado en el stream de María Laura (es lo que permite el
 traslado entre campos). Si se filtra una clave, se cambia con `private.cargar_clave` y cada equipo
 pide la nueva.
+
+## Bucket `fotos-reportes` (fotos de los reportes, 24/10/2026)
+
+`fotos_reportes.sql` crea el bucket privado y las políticas de `storage.objects` (INSERT y SELECT
+para `anon`, solo dentro de las carpetas `la_vuelta`, `maria_laura`, `pone_chico`). Corre **antes**
+de publicar la app que sube fotos. **El cierre de la Fase 4 tiene que sumar este bucket**: en
+`fase4_cierre.sql` las políticas de `storage.objects` de `fotos-reportes` deben exigir
+`establecimientos_con_clave()` (y `establecimientos_permitidos()` para Pone Chico, que sigue abierto),
+igual que las de las tablas. Si se olvida, las fotos quedan legibles con la llave pública.

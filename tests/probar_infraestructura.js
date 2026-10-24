@@ -184,7 +184,11 @@ async function probarArchivo(archivo){
   doc.getElementById('btn-infraestructura').dispatchEvent(new win.Event('click', { bubbles: true }));
   const idInfra = win.__reportes().find(r=>r.categoria==='infraestructura').id;
   chequear('fila activa tiene botón "✓ Resuelto"', !!doc.querySelector(`[data-resolver="${idInfra}"]`));
+  // 24/10/2026: "✓ Resuelto" abre el mini formulario (foto opcional + "Confirmar resuelto"); recién ahí se resuelve
   doc.querySelector(`[data-resolver="${idInfra}"]`).dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('"✓ Resuelto" abre el mini formulario con "Confirmar resuelto"', !!doc.querySelector(`[data-confirmar-resuelto="${idInfra}"]`));
+  chequear('todavía no está resuelto con solo abrir el formulario', win.__reportes().find(r=>r.id===idInfra).resuelto===false);
+  doc.querySelector(`[data-confirmar-resuelto="${idInfra}"]`).dispatchEvent(new win.Event('click', { bubbles: true }));
   let infra = win.__reportes().find(r=>r.id===idInfra);
   chequear('resolverReporte marca resuelto:true y guarda fechaResuelto',
     infra.resuelto===true && !!infra.fechaResuelto, JSON.stringify(infra));
@@ -198,6 +202,7 @@ async function probarArchivo(archivo){
   const idCapin = win.__reportes().find(r=>r.categoria==='capin_annoni').id;
   const antesResolver = JSON.stringify(win.__reportes().find(r=>r.id===idCapin));
   doc.querySelector(`[data-resolver="${idCapin}"]`).dispatchEvent(new win.Event('click', { bubbles: true }));
+  doc.querySelector(`[data-confirmar-resuelto="${idCapin}"]`).dispatchEvent(new win.Event('click', { bubbles: true }));
   chequear('cancelar el confirm de "Resuelto" no cambia nada', JSON.stringify(win.__reportes().find(r=>r.id===idCapin)) === antesResolver);
   doc.querySelector(`[data-del="${idCapin}"]`).dispatchEvent(new win.Event('click', { bubbles: true }));
   chequear('cancelar el confirm de "Eliminar" no borra nada', win.__reportes().some(r=>r.id===idCapin));

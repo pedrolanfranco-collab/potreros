@@ -766,6 +766,16 @@ animal y `sanidad_puente.py` crea el tratamiento. Las filas que ya traían produ
   producto o peso, en María Laura, fuera de `Entrada\`, ni para un archivo reemplazado (la sesión ya estaba en `sesiones.csv`). Test: 9 controles en
   `probar_vigilar.py` (verificado con mutaciones). Pedro hizo `git pull` en la PC y la prueba dio "todo bien".
 
+### Fotos de reportes de campo (24/10/2026, a pedido de Pedro)
+
+Infraestructura y Capín Annoni aceptan hasta 3 fotos al crear, más fotos después (tope 10 por reporte) y una del arreglo al resolver (`momento: 'resuelto'`).
+
+- **Dónde**: Supabase Storage, bucket privado `fotos-reportes`, ruta `<establecimiento>/<reporteId>/<fotoId>.jpg` (JPEG, máximo 1 MB). Política de `anon`: solo INSERT y SELECT dentro de las carpetas de los 3 establecimientos. SQL en `scripts/seguridad/fotos_reportes.sql` (+ `fotos_reportes_deshacer.sql`): **correrlo en el SQL Editor antes de publicar** el código que sube fotos. El cierre de la Fase 4 tiene que sumar este bucket (ver `scripts/seguridad/README.md`).
+- **Cola sin señal**: IndexedDB `potreros_fotos` (envoltorio `fotosPendientes`, con respaldo en memoria si no hay IndexedDB). `vaciarColaFotos()` corre en `sincronizar()` después de `vaciarColaSync()` y en "Reintentar". Sube de a una; el evento `reporte_foto` sale solo cuando Storage confirma (un 409 cuenta como subida, así no se duplica). Un error se registra en `estado.fallos.fotos` y el indicador dice "N fotos sin subir".
+- **Evento** `reporte_foto` `{id, fotoId, path, momento, fecha}`: va en `docs/eventos.md`, `TIPOS_EVENTO_CONOCIDOS` y `aplicarEventoRemoto()`. El receptor acepta solo la ruta exacta (`fotoRemotaValida()`), es idempotente por `fotoId` y se ignora si el reporte no llegó.
+- **Ver**: miniaturas en la lista y en el popup; URLs firmadas (1 h) para las subidas, `URL.createObjectURL` para las pendientes; visor `#visor-fotos`. "🗺 Ver en el mapa" es `verReporteEnMapa()` → `verUbicacionEnMapa()` (genérica, para reusar con aguadas).
+- **Test**: `tests/probar_fotos_reportes.js` (corre en las 9 variantes, en el workflow). En jsdom solo se prueba la cola en memoria, no IndexedDB.
+
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
 RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este

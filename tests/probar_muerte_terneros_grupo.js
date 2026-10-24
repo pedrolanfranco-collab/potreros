@@ -120,7 +120,11 @@ async function levantar(archivo, servidor){
   const win = dom.window;
   stubLeaflet(win);
   win.supabase = { createClient: servidor.createClient };
-  Object.defineProperty(win.navigator, 'onLine', { value: true, configurable: true });
+  // Sin señal al cargar: si no, la app programa una sincronización automática a los 1,5 s que corre en medio de
+  // la prueba (dos sincronizaciones a la vez: la segunda se saltea y la cuenta del stock sale de a ratos). Con
+  // señal recién después de cargar, como en probar_paginacion.js.
+  let enLinea = false;
+  Object.defineProperty(win.navigator, 'onLine', { get(){ return enLinea; }, configurable: true });
   win.alert = () => {}; win.confirm = () => true; win.prompt = () => null;
   win.URL.createObjectURL = () => 'blob:x'; win.URL.revokeObjectURL = () => {};
   win.HTMLElement.prototype.scrollIntoView = function(){};
@@ -134,6 +138,7 @@ async function levantar(archivo, servidor){
       window.__config = function(){ return CONFIG; };
     `);
   } catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
+  enLinea = true;
   await dormir(60);
   return { win, errores };
 }
