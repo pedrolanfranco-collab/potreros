@@ -151,6 +151,13 @@ function main() {
   const templateText = fs.readFileSync(TEMPLATE_PATH, 'utf-8').replace(/\r\n/g, '\n');
 
   let algunoDistinto = false;
+  // Sin la carpeta de OneDrive (por ejemplo, en Linux o en la nube) no se escriben las copias maestras, pero sí los
+  // archivos del repo: antes el primer writeFileSync a OneDrive tiraba ENOENT después de escribir un solo index.html.
+  // Se avisa en voz alta para que nadie crea que las copias quedaron al día.
+  const ondriveDisponible = fs.existsSync(ONEDRIVE_DIR);
+  if (!check && !ondriveDisponible) {
+    console.warn(`AVISO: no existe la carpeta de OneDrive (${ONEDRIVE_DIR}): se escriben los archivos del repo, pero NO las copias maestras. Para cambiarla, POTREROS_ONEDRIVE_DIR=<carpeta>.`);
+  }
 
   for (const est of ESTABLECIMIENTOS) {
     const variantes = ['pc', 'movil'].concat(est.config.simpleHabilitado ? ['movil-simple'] : []);
@@ -181,8 +188,10 @@ function main() {
       } else {
         fs.writeFileSync(repoPath, salida, 'utf-8');
         console.log(`escrito: ${repoPath} (${salida.length} caracteres)`);
-        fs.writeFileSync(onedrivePath, salida, 'utf-8');
-        console.log(`escrito: ${onedrivePath} (${salida.length} caracteres)`);
+        if (ondriveDisponible) {
+          fs.writeFileSync(onedrivePath, salida, 'utf-8');
+          console.log(`escrito: ${onedrivePath} (${salida.length} caracteres)`);
+        }
 
         if (fs.existsSync(swPath)) {
           const swTextOriginal = fs.readFileSync(swPath, 'utf-8');

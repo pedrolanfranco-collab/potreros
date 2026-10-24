@@ -476,6 +476,45 @@
     font-weight:600;
   }
   .puntos-vacio{font-size:12px;color:var(--texto-suave);font-style:italic;padding:6px 0;}
+  /* Fotos de los reportes (24/10/2026): miniaturas en la lista y en el popup, elegidas antes de guardar, visor a pantalla completa */
+  .punto-item.rp-item{flex-wrap:wrap;}
+  .rp-item .rp-bloque{flex-basis:100%;margin-top:6px;}
+  .rp-item .acciones{flex-basis:100%;flex-wrap:wrap;justify-content:flex-start;margin-top:4px;}
+  .rp-fotos,.rp-fotos-elegidas{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;}
+  .rp-thumb,.rp-foto-elegida{
+    width:56px;height:56px;border-radius:6px;border:1px solid var(--linea);background:var(--crema);
+    display:inline-flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;
+    font-size:20px;position:relative;flex-shrink:0;
+  }
+  .rp-thumb img,.rp-foto-elegida img{width:100%;height:100%;object-fit:cover;display:block;}
+  .rp-foto-elegida .rp-quitar{
+    position:absolute;top:0;right:0;background:rgba(0,0,0,.6);color:#fff;border:none;
+    width:20px;height:20px;font-size:12px;line-height:20px;cursor:pointer;padding:0;
+  }
+  .rp-nota{font-size:11px;color:var(--texto-suave);font-style:italic;}
+  .rp-form-resolver{
+    flex-basis:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--crema);
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .rp-form-resolver .acciones{display:flex;gap:10px;flex-wrap:wrap;}
+  .rp-form-resolver button{font-size:13px;}
+  .visor-fotos{
+    position:fixed;inset:0;background:rgba(20,18,12,0.94);z-index:11000;
+    display:flex;align-items:center;justify-content:center;padding:16px;
+  }
+  .visor-cuerpo{flex:1;max-width:760px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  #visor-imagen{display:flex;align-items:center;justify-content:center;min-height:200px;max-height:78vh;color:#fff;font-size:14px;}
+  #visor-imagen img{max-width:100%;max-height:78vh;object-fit:contain;border-radius:6px;}
+  #visor-pie{color:#fff;font-size:13px;text-align:center;}
+  .visor-x{
+    position:absolute;top:12px;right:14px;background:none;border:none;color:#fff;
+    font-size:26px;cursor:pointer;line-height:1;padding:4px 8px;
+  }
+  .visor-nav{
+    background:rgba(255,255,255,0.14);border:none;color:#fff;font-size:34px;line-height:1;
+    width:44px;height:64px;border-radius:8px;cursor:pointer;flex-shrink:0;
+  }
+  .visor-fotos[data-unica="1"] .visor-nav{visibility:hidden;}
   .modo-colocar-aviso{
     position:fixed;top:14px;left:50%;transform:translateX(-50%);
     background:var(--ocre);color:#fff;padding:8px 16px;border-radius:20px;
@@ -1350,6 +1389,14 @@
     <div class="form-row" id="reporte-fila-subtipo"><label>Tipo de problema</label><select id="rp-subtipo"></select></div>
     <div class="form-row"><label>Fecha</label><input type="date" id="rp-fecha"></div>
     <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="rp-obs" placeholder="Ej: cerca de la tranquera norte"></div>
+    <div class="form-row" id="rp-fotos-fila">
+      <label>Fotos (opcional, hasta 3)</label>
+      <button class="btn btn-secundario btn-full" type="button" id="rp-fotos-boton" style="width:100%;">📷 Agregar foto (hasta 3)</button>
+      <input type="file" id="rp-fotos" accept="image/*" capture="environment" multiple hidden>
+      <div id="rp-fotos-lista" class="rp-fotos-elegidas"></div>
+    </div>
+    <input type="file" id="rp-fotos-extra" accept="image/*" capture="environment" multiple hidden>
+    <input type="file" id="rp-foto-resolver" accept="image/*" capture="environment" hidden>
 <!-- @movil:start -->
     <button class="btn btn-agregar btn-full" id="rp-gps" style="width:100%;margin-bottom:6px;">📍 Usar mi ubicación GPS</button>
 <!-- @movil:end -->
@@ -1357,6 +1404,12 @@
     <div id="reporte-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="reporte-cerrar">Cerrar</button></div>
   </div>
+</div>
+<div id="visor-fotos" class="visor-fotos" style="display:none;" role="dialog" aria-modal="true" aria-label="Fotos del reporte">
+  <button type="button" class="visor-x" id="visor-cerrar" aria-label="Cerrar" title="Cerrar">✕</button>
+  <button type="button" class="visor-nav" id="visor-prev" aria-label="Foto anterior">‹</button>
+  <div class="visor-cuerpo"><div id="visor-imagen"></div><div id="visor-pie"></div></div>
+  <button type="button" class="visor-nav" id="visor-next" aria-label="Foto siguiente">›</button>
 </div>
 <!-- @pc:start -->
 <div id="modal-dibujar-potrero" class="modal-overlay" style="display:none;">
@@ -1784,6 +1837,16 @@ let _noGuardado = false, _avisoNoGuardadoCerrado = false;
    llamada a guardarEstado() de abajo. */
 let _reconstruyendo = false;
 // @pc:end
+/* Fotos de los reportes (24/10/2026): estado de la cola de fotos y de sus URLs. Va acá, antes de cargarEstado(), por la
+   misma razón que _reconstruyendo: actualizarEstadoSync() puede correr antes de la sección de reportes. */
+let _pendientesCache = [];      // copia en memoria de la cola de fotos de este establecimiento (para pintar sin esperar)
+let _fotosPendientesN = 0;      // cuántas fotos esperan (el indicador de sincronización es síncrono)
+const _urlsLocales = new Map(); // fotoId -> URL de una foto pendiente (createObjectURL)
+const _urlsFirmadas = new Map(); // ruta del bucket -> {url, vence}
+let _resolviendoId = null;      // reporte con el mini formulario de "Resuelto" abierto
+let _fotoResolver = null;       // {blob, url}: la foto del arreglo elegida en ese formulario
+let _fotoExtraPara = null;      // reporte al que se le agrega una foto desde su renglón
+let _fotosCrear = [];           // [{blob, url}]: fotos elegidas en el modal para el reporte nuevo
 let estado = cargarEstado();
 if(migrarClavesSinFirma(estado.potreros)) guardarEstado();
 
@@ -2439,7 +2502,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'envio_campo_ajeno', 'retorno_campo_ajeno', 'traslado_salida', 'traslado_entrada', 'movimiento_guia',
   'lluvia', 'lluvia_editada', 'lluvia_eliminada', 'evento_clima', 'evento_clima_editado', 'evento_clima_eliminado',
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
-  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'proximo_confirmado',
+  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
   'correccion'
 ]);
@@ -2642,6 +2705,24 @@ function aplicarEventoRemoto(row, potrerosSucios){
       crearMarcadorReporte(reporte);
       guardarEstado();
     }
+    return;
+  }
+
+  // 24/10/2026: foto de un reporte, ya subida al bucket fotos-reportes (el evento lleva solo la ruta). Idempotente por
+  // fotoId. Llega después de su reporte_creado (la cola sale en orden): si el reporte no está, se ignora. Vale también
+  // para un reporte ya resuelto (la foto del arreglo llega después de reporte_resuelto).
+  if(row.tipo === 'reporte_foto'){
+    const r = (estado.reportes||[]).find(x=>x.id===d.id);
+    if(!r || !fotoRemotaValida(d)) return;
+    r.fotos = r.fotos || [];
+    if(r.fotos.some(f=>f.fotoId===d.fotoId)) return;
+    r.fotos.push({fotoId: d.fotoId, path: d.path, momento: d.momento, fecha: d.fecha || null});
+    guardarEstado();
+// @pc:start
+    if(_reconstruyendo) return; // Verificar stock: el popup y la lista del mapa no se tocan
+// @pc:end
+    actualizarPopupReporte(r);
+    redibujarListaSiAbierta();
     return;
   }
 
@@ -3389,6 +3470,7 @@ async function sincronizar(mostrarToast){
     const esPrimeraSync = !estado.ultimaSincronizacion;
     const potrerosSucios = new Set();
     await vaciarColaSync();
+    await vaciarColaFotos(); // 24/10/2026: fotos de reportes pendientes (después de los movimientos, así reporte_foto sale detrás de su reporte)
     await vaciarColaSanidad();
     await vaciarColaStock();
     // 9/10/2026: altas de catálogos que quedaron sin señal (solo la PC las crea; no agrega ninguna consulta si no hay pendientes)
@@ -3825,6 +3907,7 @@ async function reintentarColas(){
   if(!navigator.onLine){ toast('Sin conexión — se reintenta solo cuando vuelva la señal'); return; }
   toast('Reintentando…');
   await vaciarColaSync();
+  await vaciarColaFotos();
   await vaciarColaSanidad();
   const t = contarTrabados();
   toast((t.sync || t.sanidad) ? 'Sigue trabado: Supabase lo vuelve a rechazar' : 'Listo, se mandó todo');
@@ -3848,20 +3931,23 @@ function descargarCopiaColas(){
 }
 function textoEstadoSyncOrdenada(){
   const nSync = (estado.colaSync||[]).length, nSan = (estado.colaSanidad||[]).length, nMae = (estado.colaMaestros||[]).length;
+  const nFotos = _fotosPendientesN; // 24/10/2026: fotos de reportes que todavía no llegaron a Storage
   const f = estado.fallos || {};
   const t = contarTrabados();
   if(t.sync || t.sanidad) return { texto: '⛔ ' + textoTrabados(t), color: '#a1402e', negrita: true };
   // la falla que cuenta es la de una cola que todavía tiene algo (otra pestaña pudo haberla vaciado)
-  const fallosVivos = [nSync && f.sync, nSan && f.sanidad, f.lectura].filter(Boolean);
+  const fallosVivos = [nSync && f.sync, nSan && f.sanidad, nFotos && f.fotos, f.lectura].filter(Boolean);
   const ultimoFallo = fallosVivos.sort((a, b)=> String(b.fecha).localeCompare(String(a.fecha)))[0];
-  const total = nSync + nSan + nMae;
+  const total = nSync + nSan + nMae + nFotos;
   if(total > 0){
     if(ultimoFallo && navigator.onLine) return { texto: `⚠ ${total} sin sincronizar · falló el último intento ${horaCorta(ultimoFallo.fecha)}`, color: '#8f5f12', negrita: true };
     const partes = [];
     if(nSync) partes.push(plural(nSync, 'movimiento', 'movimientos'));
     if(nSan) partes.push(plural(nSan, 'carga', 'cargas') + ' de Sanidad');
     if(nMae) partes.push(nMae + ' de catálogos');
-    return { texto: '⏳ ' + partes.join(' y ') + ' sin sincronizar', color: '#a1402e' };
+    const pendFotos = nFotos ? plural(nFotos, 'foto', 'fotos') + ' sin subir' : '';
+    const texto = [partes.length ? partes.join(' y ') + ' sin sincronizar' : '', pendFotos].filter(Boolean).join(' y ');
+    return { texto: '⏳ ' + texto, color: '#a1402e' };
   }
   if(f.lectura && navigator.onLine) return { texto: `⚠ Falló el último intento ${horaCorta(f.lectura.fecha)}`, color: '#8f5f12', negrita: true };
   return null;
@@ -3891,6 +3977,9 @@ function actualizarEstadoSync(estadoTexto, cantidad){
     if(ordenada.negrita) el.style.fontWeight = '700';
   } else if(pendientes>0){
     el.textContent = `⏳ ${pendientes} movimiento${pendientes===1?'':'s'} sin sincronizar`;
+    el.style.color = '#a1402e';
+  } else if(_fotosPendientesN>0){
+    el.textContent = `⏳ ${plural(_fotosPendientesN, 'foto', 'fotos')} sin subir`;
     el.style.color = '#a1402e';
   } else if(estado.ultimaSincronizacion){
     el.textContent = '✅ Sincronizado';
@@ -4983,26 +5072,356 @@ estado.puntos.forEach(p=> crearMarcadorPunto(p));
    Mismo mecanismo que PUNTOS de arriba (mismo pin en gota, mismo modo
    "tocar el mapa"), pero en `estado.reportes` -- son problemas puntuales
    que se resuelven (campo `resuelto`), no cosas permanentes del campo. */
-let modoColocarReporte = null; // {categoria, subtipo, obs, fecha}
+let modoColocarReporte = null; // {categoria, subtipo, obs, fecha, fotos}
 const reportesLayers = {}; // id -> marker
+let _marcadorVerTemporal = null; // marcador gris de un reporte resuelto (no tiene pin activo), ver verUbicacionEnMapa()
 
-function iconoReporte(reporte){
+function iconoReporte(reporte, resuelto){
   const cat = REPORTE_CATEGORIAS[reporte.categoria];
   const emoji = cat.subtipos[reporte.subtipo] || cat.icono;
+  const color = resuelto ? '#8c8c8c' : cat.color;
   return L.divIcon({
     className:'icono-punto',
-    html:`<div style="background:${cat.color};width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.35);border:2px solid #fff;"><span style="transform:rotate(45deg);font-size:13px;">${emoji}</span></div>`,
+    html:`<div style="background:${color};width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.35);border:2px solid #fff;"><span style="transform:rotate(45deg);font-size:13px;">${emoji}</span></div>`,
     iconSize:[26,26],
     iconAnchor:[13,26]
   });
+}
+
+/* ---------- FOTOS DE LOS REPORTES (24/10/2026, a pedido de Pedro) ----------
+   Una foto no entra en eventos_sync (todos los equipos bajan todo el registro) ni en localStorage (5 MB compartidos
+   por todas las apps del mismo origen). Va a Supabase Storage, bucket privado `fotos-reportes`, en la ruta
+   <establecimiento>/<reporteId>/<fotoId>.jpg, y el evento `reporte_foto` lleva solo esa ruta. Mientras no se subió, la
+   foto espera en IndexedDB (base potreros_fotos): sin señal no se pierde nada. Orden de despliegue: primero el SQL
+   (scripts/seguridad/fotos_reportes.sql), después este código. Test: tests/probar_fotos_reportes.js. */
+const FOTOS_BUCKET = 'fotos-reportes';
+const FOTOS_MAX_CREAR = 3;   // fotos al crear el reporte
+const FOTOS_MAX_REPORTE = 10; // fotos en total por reporte (incluidas las que todavía no se subieron)
+const FOTO_LADO_MAX = 1600, FOTO_CALIDAD = 0.72, FOTO_TAM_ORIGINAL_MAX = 1024 * 1024;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function rutaFotoReporte(reporteId, fotoId){ return `${ESTABLECIMIENTO}/${reporteId}/${fotoId}.jpg`; }
+
+/* Cola de fotos en IndexedDB. Un registro por foto, clave fotoId; lleva `establecimiento` porque todas las apps de
+   este origen comparten la misma base. Si el navegador no tiene IndexedDB (o no la deja abrir), guarda en memoria:
+   en ese caso una foto no sobrevive a cerrar la página, pero el resto de la app sigue andando. */
+const fotosPendientes = (function(){
+  const NOMBRE_DB = 'potreros_fotos', NOMBRE_STORE = 'fotos';
+  const enMemoria = new Map();
+  let dbPromesa = null;
+  function abrir(){
+    if(!dbPromesa){
+      dbPromesa = new Promise(ok => {
+        try{
+          if(typeof indexedDB === 'undefined' || !indexedDB){ ok(null); return; }
+          const req = indexedDB.open(NOMBRE_DB, 1);
+          req.onupgradeneeded = () => { if(!req.result.objectStoreNames.contains(NOMBRE_STORE)) req.result.createObjectStore(NOMBRE_STORE, {keyPath: 'fotoId'}); };
+          req.onsuccess = () => ok(req.result);
+          req.onerror = () => ok(null);
+          req.onblocked = () => ok(null);
+        }catch(e){ ok(null); }
+      });
+    }
+    return dbPromesa;
+  }
+  function operar(db, modo, fn){
+    return new Promise((ok, no) => {
+      const t = db.transaction(NOMBRE_STORE, modo);
+      const peticion = fn(t.objectStore(NOMBRE_STORE));
+      t.oncomplete = () => ok(peticion ? peticion.result : undefined);
+      t.onerror = () => no(t.error);
+      t.onabort = () => no(t.error || new Error('transaccion abortada'));
+    });
+  }
+  async function hacer(modo, fn, respaldo){
+    const db = await abrir();
+    if(db){
+      try{ return await operar(db, modo, fn); }
+      catch(e){ console.warn('IndexedDB de fotos falló, se guarda en memoria', e); }
+    }
+    return respaldo();
+  }
+  return {
+    async poner(rec){ await hacer('readwrite', st => st.put(rec), () => { enMemoria.set(rec.fotoId, rec); }); },
+    async listar(){
+      const todas = await hacer('readonly', st => st.getAll(), () => [...enMemoria.values()]);
+      return (todas || []).filter(r => r.establecimiento === ESTABLECIMIENTO).sort((a, b) => (a.creado || 0) - (b.creado || 0));
+    },
+    async leer(fotoId){ return (await hacer('readonly', st => st.get(fotoId), () => enMemoria.get(fotoId))) || null; },
+    async sacar(fotoId){ await hacer('readwrite', st => st.delete(fotoId), () => { enMemoria.delete(fotoId); }); }
+  };
+})();
+
+// Recarga la copia en memoria de la cola (y el número que lee el indicador de sincronización).
+async function refrescarFotosPendientes(){
+  _pendientesCache = await fotosPendientes.listar();
+  _fotosPendientesN = _pendientesCache.length;
+  actualizarEstadoSync();
+  // los popups se arman al crear el marcador, cuando la cola todavía no se leyó (al abrir la app): se rehacen con las fotos
+  (estado.reportes||[]).forEach(r => { if(reportesLayers[r.id]) actualizarPopupReporte(r); });
+}
+function liberarUrlLocal(fotoId){
+  const u = _urlsLocales.get(fotoId);
+  if(u){ try{ URL.revokeObjectURL(u); }catch(e){} _urlsLocales.delete(fotoId); }
+}
+function urlLocalFoto(fotoId){
+  if(_urlsLocales.has(fotoId)) return _urlsLocales.get(fotoId);
+  const rec = _pendientesCache.find(p => p.fotoId === fotoId);
+  if(!rec || !rec.blob) return null;
+  const u = URL.createObjectURL(rec.blob);
+  _urlsLocales.set(fotoId, u);
+  return u;
+}
+
+/* Achica la foto antes de guardarla: lado mayor 1600 px, JPEG 0,72 (queda entre 200 y 400 KB). Si el navegador no puede
+   (sin canvas o sin createImageBitmap) usa el original, pero solo si es JPEG de menos de 1 MB: el bucket no acepta otra
+   cosa. Si no sirve ninguno, tira el error y quien llama avisa. */
+async function comprimirFoto(file){
+  let bmp = null;
+  try{
+    if(typeof createImageBitmap === 'function'){
+      bmp = await createImageBitmap(file);
+      const k = Math.min(1, FOTO_LADO_MAX / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(bmp.width * k));
+      c.height = Math.max(1, Math.round(bmp.height * k));
+      const ctx = c.getContext('2d');
+      if(ctx){
+        ctx.drawImage(bmp, 0, 0, c.width, c.height);
+        const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', FOTO_CALIDAD));
+        if(blob) return blob;
+      }
+    }
+  }catch(e){ console.warn('No se pudo achicar la foto, se prueba con el original', e); }
+  finally{ if(bmp && bmp.close) bmp.close(); }
+  if(file.type === 'image/jpeg' && file.size < FOTO_TAM_ORIGINAL_MAX) return file;
+  throw new Error('foto no usable');
+}
+// Toma las fotos de un <input type=file> (hasta `maximo`), las achica y devuelve los blobs que sí se pudieron usar.
+async function fotosDesdeInput(input, maximo){
+  const archivos = Array.from(input.files || []);
+  input.value = '';
+  if(archivos.length > maximo) toast(maximo > 0 ? `Solo se toman ${maximo} foto${maximo === 1 ? '' : 's'} más` : 'Ya no entran más fotos');
+  const blobs = [];
+  for(const f of archivos.slice(0, Math.max(0, maximo))){
+    try{ blobs.push(await comprimirFoto(f)); }
+    catch(e){ toast('No se pudo usar esa foto, probá con otra (JPG)'); }
+  }
+  return blobs;
+}
+
+/* Pone una foto (ya achicada) en la cola y, si hay señal, intenta subirla ya. */
+async function encolarFotoReporte(reporteId, blob, momento){
+  try{
+    const rec = {fotoId: crypto.randomUUID(), reporteId, momento, fecha: fechaISOHoy(), establecimiento: ESTABLECIMIENTO, creado: Date.now(), blob};
+    await fotosPendientes.poner(rec);
+    await refrescarFotosPendientes();
+    const r = (estado.reportes||[]).find(x => x.id === reporteId);
+    if(r) actualizarPopupReporte(r);
+    redibujarListaSiAbierta();
+    vaciarColaFotos();
+    return rec.fotoId;
+  }catch(e){ console.warn('No se pudo guardar la foto del reporte', e); toast('No se pudo guardar la foto'); return null; }
+}
+
+/* Sube las fotos pendientes, de a una y la más vieja primero. Recién cuando Storage confirma (o ya estaba: 409), se manda
+   el evento reporte_foto y se saca de la cola. Un error corta la vuelta y queda registrado en estado.fallos.fotos. */
+function vaciarColaFotos(){ return vueltaDeCola('fotos', vaciarColaFotosUnaVuelta); }
+function fotoYaSubida(error){
+  const st = String((error && (error.statusCode || error.status)) || '');
+  const texto = String((error && error.error) || '') + ' ' + String((error && error.message) || '');
+  return st === '409' || /duplicate|already exists/i.test(texto);
+}
+async function vaciarColaFotosUnaVuelta(){
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine) return; // la-vuelta-test no tiene Supabase: las fotos se quedan en la cola
+  const pendientes = await fotosPendientes.listar();
+  for(const rec of pendientes){
+    const r = (estado.reportes||[]).find(x => x.id === rec.reporteId);
+    if(!r){ await fotosPendientes.sacar(rec.fotoId); liberarUrlLocal(rec.fotoId); continue; } // el reporte ya no está en este equipo
+    const path = rutaFotoReporte(rec.reporteId, rec.fotoId);
+    let error = null;
+    try{
+      ({error} = await client.storage.from(FOTOS_BUCKET).upload(path, rec.blob, {upsert: false, contentType: 'image/jpeg'}));
+    }catch(e){ error = e; }
+    // "ya existe": una subida anterior llegó y no se llegó a confirmar. Cuenta como subida, y no se manda el evento dos veces.
+    if(error && !fotoYaSubida(error)){
+      registrarFalloCola('fotos', error, Number(error.statusCode || error.status) || 0);
+      break;
+    }
+    limpiarFalloCola('fotos');
+    if(!(r.fotos||[]).some(f => f.fotoId === rec.fotoId)){
+      r.fotos = [...(r.fotos || []), {fotoId: rec.fotoId, path, momento: rec.momento, fecha: rec.fecha}];
+      enviarEvento('reporte_foto', ESTABLECIMIENTO, {id: r.id, fotoId: rec.fotoId, path, momento: rec.momento, fecha: rec.fecha});
+    }
+    guardarEstado();
+    await fotosPendientes.sacar(rec.fotoId);
+    liberarUrlLocal(rec.fotoId);
+    await refrescarFotosPendientes();
+    actualizarPopupReporte(r);
+    redibujarListaSiAbierta();
+  }
+  await refrescarFotosPendientes();
+}
+async function quitarFotosPendientesDeReporte(reporteId){
+  for(const p of _pendientesCache.filter(x => x.reporteId === reporteId)){
+    await fotosPendientes.sacar(p.fotoId);
+    liberarUrlLocal(p.fotoId);
+  }
+  await refrescarFotosPendientes();
+}
+
+/* Un reporte_foto que llega de otro equipo (o de este mismo) se acepta solo si la ruta es exactamente la que
+   corresponde a su id: así no entra nada que apunte a otro establecimiento ni con "../". */
+function fotoRemotaValida(d){
+  return typeof d.id === 'string' && /^rp_\w+$/.test(d.id)
+    && typeof d.fotoId === 'string' && UUID_RE.test(d.fotoId)
+    && (d.momento === 'reporte' || d.momento === 'resuelto')
+    && d.path === rutaFotoReporte(d.id, d.fotoId);
+}
+
+/* Las fotos de un reporte, al reportar primero y después las del arreglo. Una foto ya subida se cuenta una sola vez
+   aunque todavía esté en la cola (entre la subida y el borrado de la cola). */
+function fotosDeReporte(r){
+  const subidas = (r.fotos || []).map(f => ({fotoId: f.fotoId, path: f.path, momento: f.momento, fecha: f.fecha || null, pendiente: false}));
+  const vistas = new Set(subidas.map(f => f.fotoId));
+  const pendientes = _pendientesCache.filter(p => p.reporteId === r.id && !vistas.has(p.fotoId))
+    .map(p => ({fotoId: p.fotoId, path: null, momento: p.momento, fecha: p.fecha || null, pendiente: true}));
+  return subidas.concat(pendientes).sort((a, b) => (a.momento === 'resuelto') - (b.momento === 'resuelto'));
+}
+function thumbsFotosHTML(r){
+  return fotosDeReporte(r).map(f =>
+    `<span class="rp-thumb" role="button" tabindex="0" data-foto-thumb="${esc(f.fotoId)}" data-reporte="${esc(r.id)}" title="${f.momento === 'resuelto' ? 'Al resolver' : 'Al reportar'}">📷</span>`
+  ).join('');
+}
+function popupReporteHTML(r){
+  const fotos = fotosDeReporte(r).length ? `<div class="rp-fotos">${thumbsFotosHTML(r)}</div>` : '';
+  return `<strong>${esc(r.subtipo)}</strong><br>${esc(r.fecha)}${r.obs?('<br>'+esc(r.obs)):''}${fotos}`;
+}
+
+/* Pinta las miniaturas que están dentro de `raiz` (una fila de la lista o un popup). Las pendientes salen de la copia
+   local; las subidas piden su URL firmada en lote. Sin señal, la miniatura queda con 📷 y una nota. */
+function mostrarFotosEn(raiz){
+  if(!raiz || typeof raiz.querySelectorAll !== 'function') return;
+  const thumbs = Array.from(raiz.querySelectorAll('[data-foto-thumb]'));
+  thumbs.forEach(t => {
+    if(t.dataset.conVisor) return;
+    t.dataset.conVisor = '1';
+    const abrir = () => abrirVisorFotos(t.dataset.reporte, t.dataset.fotoThumb);
+    t.addEventListener('click', abrir);
+    t.addEventListener('keydown', e => { if(e.key === 'Enter') abrir(); });
+  });
+  const pares = thumbs.map(t => {
+    const r = (estado.reportes||[]).find(x => x.id === t.dataset.reporte);
+    return {t, item: r ? fotosDeReporte(r).find(f => f.fotoId === t.dataset.fotoThumb) : null};
+  }).filter(p => p.item);
+  pares.filter(p => p.item.pendiente).forEach(p => pintarMiniatura(p.t, urlLocalFoto(p.item.fotoId)));
+  const subidas = pares.filter(p => !p.item.pendiente);
+  if(!subidas.length) return;
+  firmarRutasFotos(subidas.map(p => p.item.path)).then(urls => {
+    subidas.forEach((p, i) => pintarMiniatura(p.t, urls[i]));
+  });
+}
+function pintarMiniatura(t, url){
+  if(!t.isConnected) return;
+  if(url){
+    t.innerHTML = '';
+    const img = document.createElement('img');
+    img.alt = 'Foto del reporte';
+    img.src = url;
+    t.appendChild(img);
+  } else {
+    t.textContent = '📷';
+    const cont = t.parentElement;
+    if(cont && !cont.querySelector('.rp-nota')) cont.insertAdjacentHTML('beforeend', '<span class="rp-nota">(se ven con señal)</span>');
+  }
+}
+// URLs firmadas (1 h) de fotos ya subidas, en lote y con cache por 50 min. null = no se pudo (sin señal, o no existe).
+const _urlsFirmadasVence = 50 * 60 * 1000;
+async function firmarRutasFotos(rutas){
+  const ahora = Date.now();
+  const vigente = p => _urlsFirmadas.has(p) && _urlsFirmadas.get(p).vence > Date.now();
+  const faltan = [...new Set(rutas)].filter(p => !(_urlsFirmadas.has(p) && _urlsFirmadas.get(p).vence > ahora));
+  const client = clienteSupabase();
+  if(faltan.length && client && navigator.onLine){
+    try{
+      const {data, error} = await client.storage.from(FOTOS_BUCKET).createSignedUrls(faltan, 3600);
+      if(!error) (data || []).forEach(x => { if(x && x.signedUrl && !x.error) _urlsFirmadas.set(x.path, {url: x.signedUrl, vence: ahora + _urlsFirmadasVence}); });
+    }catch(e){ console.warn('No se pudieron pedir las fotos', e); }
+  }
+  return rutas.map(p => vigente(p) ? _urlsFirmadas.get(p).url : null);
+}
+async function urlDeFoto(item){
+  if(item.pendiente) return urlLocalFoto(item.fotoId);
+  return (await firmarRutasFotos([item.path]))[0];
+}
+
+/* Visor a pantalla completa: las fotos de un reporte, con ‹ › si hay más de una. */
+let _visor = {reporteId: null, items: [], i: 0};
+function abrirVisorFotos(reporteId, fotoId){
+  const r = (estado.reportes||[]).find(x => x.id === reporteId);
+  if(!r) return;
+  const items = fotosDeReporte(r);
+  const i = items.findIndex(f => f.fotoId === fotoId);
+  if(i < 0) return;
+  _visor = {reporteId, items, i};
+  const ov = document.getElementById('visor-fotos');
+  ov.dataset.unica = items.length < 2 ? '1' : '';
+  ov.style.display = 'flex';
+  visorMostrar();
+}
+function cerrarVisorFotos(){
+  document.getElementById('visor-fotos').style.display = 'none';
+  _visor = {reporteId: null, items: [], i: 0};
+}
+function visorMover(delta){
+  if(!_visor.items.length) return;
+  _visor.i = (_visor.i + delta + _visor.items.length) % _visor.items.length;
+  visorMostrar();
+}
+async function visorMostrar(){
+  const item = _visor.items[_visor.i];
+  if(!item) return;
+  const cont = document.getElementById('visor-imagen');
+  cont.textContent = 'Cargando…';
+  document.getElementById('visor-pie').textContent = `${item.momento === 'resuelto' ? 'Al resolver' : 'Al reportar'}${item.fecha ? ' · ' + item.fecha : ''} · ${_visor.i + 1} de ${_visor.items.length}`;
+  const url = await urlDeFoto(item);
+  if(_visor.items[_visor.i] !== item) return; // se cambió de foto mientras llegaba
+  cont.innerHTML = '';
+  if(url){
+    const img = document.createElement('img');
+    img.alt = 'Foto del reporte';
+    img.src = url;
+    cont.appendChild(img);
+  } else {
+    cont.textContent = 'La foto se ve con señal';
+  }
+}
+document.getElementById('visor-cerrar').addEventListener('click', cerrarVisorFotos);
+document.getElementById('visor-prev').addEventListener('click', ()=> visorMover(-1));
+document.getElementById('visor-next').addEventListener('click', ()=> visorMover(1));
+document.addEventListener('keydown', e => {
+  if(document.getElementById('visor-fotos').style.display === 'none') return;
+  if(e.key === 'Escape') cerrarVisorFotos();
+  else if(e.key === 'ArrowLeft') visorMover(-1);
+  else if(e.key === 'ArrowRight') visorMover(1);
+});
+
+/* Vuelve a pintar el popup de un reporte (con sus fotos) si tiene marcador activo. */
+function actualizarPopupReporte(r){
+  const marker = reportesLayers[r.id];
+  if(!marker) return;
+  marker.setPopupContent(popupReporteHTML(r));
+  if(marker.isPopupOpen && marker.isPopupOpen()) mostrarFotosEn(marker.getPopup().getElement());
 }
 
 function crearMarcadorReporte(reporte){
 // @pc:start
   if(_reconstruyendo) return;
 // @pc:end
-  const marker = L.marker([reporte.lat, reporte.lon], {icon: iconoReporte(reporte)}).addTo(map);
-  marker.bindPopup(`<strong>${esc(reporte.subtipo)}</strong><br>${esc(reporte.fecha)}${reporte.obs?('<br>'+esc(reporte.obs)):''}`);
+  const marker = L.marker([reporte.lat, reporte.lon], {icon: iconoReporte(reporte, reporte.resuelto)}).addTo(map);
+  marker.bindPopup(popupReporteHTML(reporte));
+  marker.on('popupopen', e => mostrarFotosEn(e.popup && e.popup.getElement && e.popup.getElement()));
   reportesLayers[reporte.id] = marker;
 }
 
@@ -5011,7 +5430,7 @@ function guardarReporte(datos){
     id: 'rp_' + Date.now() + '_' + Math.floor(Math.random()*1000),
     categoria: datos.categoria, subtipo: datos.subtipo, obs: datos.obs||null,
     fecha: datos.fecha || fechaISOHoy(), lat: datos.lat, lon: datos.lon,
-    resuelto: false, fechaResuelto: null
+    resuelto: false, fechaResuelto: null, fotos: []
   };
   estado.reportes = estado.reportes || [];
   estado.reportes.push(reporte);
@@ -5019,6 +5438,8 @@ function guardarReporte(datos){
   guardarEstado();
   renderListaReportes(reporte.categoria);
   enviarEvento('reporte_creado', ESTABLECIMIENTO, {id: reporte.id, categoria: reporte.categoria, subtipo: reporte.subtipo, obs: reporte.obs, fecha: reporte.fecha, lat: reporte.lat, lon: reporte.lon});
+  // las fotos van después del reporte: reporte_creado queda primero en la cola, y cada reporte_foto sale detrás
+  (datos.fotos || []).forEach(blob => encolarFotoReporte(reporte.id, blob, 'reporte'));
   toast(`${reporte.subtipo} agregado al mapa`);
 }
 
@@ -5028,7 +5449,35 @@ function colocarReporteEn(latlng){
   ocultarAvisoModo();
 }
 
+/* "🗺 Ver en el mapa": cierra la ventana, centra el mapa en el reporte y abre su popup. Lo usan los reportes ahora;
+   queda genérica (lat, lon, marker, popupHtml, icono) para reusarla con aguadas e instalaciones. */
+function verUbicacionEnMapa(u){
+  if(_marcadorVerTemporal){ map.removeLayer(_marcadorVerTemporal); _marcadorVerTemporal = null; }
+  map.setView([u.lat, u.lon], 17);
+// @simple:start
+  const elMapa = document.getElementById('map');
+  if(elMapa && elMapa.scrollIntoView) elMapa.scrollIntoView({behavior: 'smooth', block: 'center'});
+// @simple:end
+  if(u.marker){ u.marker.openPopup(); return; }
+  // resuelto (no tiene pin activo): marcador gris temporal, que se quita al cerrar su popup o al ver otro
+  const temp = L.marker([u.lat, u.lon], {icon: u.icono}).addTo(map);
+  temp.bindPopup(u.popupHtml);
+  temp.on('popupopen', e => mostrarFotosEn(e.popup && e.popup.getElement && e.popup.getElement()));
+  temp.on('popupclose', ()=>{
+    if(_marcadorVerTemporal === temp){ map.removeLayer(temp); _marcadorVerTemporal = null; }
+  });
+  _marcadorVerTemporal = temp;
+  temp.openPopup();
+}
+function verReporteEnMapa(id){
+  const r = (estado.reportes||[]).find(x => x.id === id);
+  if(!r) return;
+  document.getElementById('modal-reporte').style.display = 'none';
+  verUbicacionEnMapa({lat: r.lat, lon: r.lon, marker: reportesLayers[id] || null, popupHtml: popupReporteHTML(r), icono: iconoReporte(r, r.resuelto)});
+}
+
 // recrear marcadores de reportes activos (los resueltos no se muestran en el mapa)
+refrescarFotosPendientes();
 (estado.reportes||[]).filter(r=>!r.resuelto).forEach(r=> crearMarcadorReporte(r));
 
 /* ======================= DIBUJAR POTRERO A MANO (solo PC) =======================
@@ -7906,46 +8355,136 @@ document.getElementById('input-puntos').addEventListener('change', (e)=>{
    un solo modal reconfigurado por categoría -- ver REPORTE_CATEGORIAS. */
 let modalReporteCategoria = null;
 
+// Vuelve a pintar la lista del modal, salvo que haya un formulario de "Resuelto" abierto (no se pisa lo que se está cargando).
+function redibujarListaSiAbierta(){
+  if(!modalReporteCategoria) return;
+  if(document.getElementById('modal-reporte').style.display !== 'flex') return;
+  if(_resolviendoId) return;
+  renderListaReportes(modalReporteCategoria);
+}
+
+function formResolverHTML(r){
+  return `
+    <div class="rp-form-resolver">
+      <div class="txt-sub">Si ya lo arreglaste, podés sumar una foto del arreglo (opcional): queda como "Al resolver".</div>
+      ${_fotoResolver ? `<div class="rp-fotos-elegidas"><span class="rp-foto-elegida"><img src="${esc(_fotoResolver.url)}" alt="Foto del arreglo"></span></div>` : ''}
+      <div class="acciones">
+        <button type="button" data-foto-resolver="${esc(r.id)}" style="color:#8a6d1f;">📷 ${_fotoResolver ? 'Cambiar foto' : 'Foto del arreglo'}</button>
+        <button type="button" data-confirmar-resuelto="${esc(r.id)}" style="color:#3f6b2f;">Confirmar resuelto</button>
+        <button type="button" data-cancelar-resuelto="${esc(r.id)}">Cancelar</button>
+      </div>
+    </div>`;
+}
+
 function renderListaReportes(categoria){
   const cont = document.getElementById('reporte-lista');
   const cat = REPORTE_CATEGORIAS[categoria];
   const todos = (estado.reportes||[]).filter(r=>r.categoria===categoria);
   const activos = todos.filter(r=>!r.resuelto);
   const resueltos = todos.filter(r=>r.resuelto);
-  const fila = (r)=>`
-    <div class="punto-item">
+  const fila = (r)=>{
+    const nFotos = fotosDeReporte(r).length;
+    return `
+    <div class="punto-item rp-item">
       <div class="info">
         <span class="icono">${esc(cat.subtipos[r.subtipo]||cat.icono)}</span>
         <span>${esc(r.subtipo)} <span class="txt-sub">${esc(r.fecha)}${r.obs?(' — '+esc(r.obs)):''}</span></span>
       </div>
       <div class="acciones">
+        <button data-ver="${esc(r.id)}" style="color:#1d4fa8;">🗺 Ver en el mapa</button>
+        <button data-foto-agregar="${esc(r.id)}" style="color:#8a6d1f;"${nFotos >= FOTOS_MAX_REPORTE ? ' disabled' : ''}>📷 Agregar foto</button>
         ${r.resuelto ? '' : `<button data-resolver="${esc(r.id)}" style="color:#3f6b2f;">✓ Resuelto</button>`}
         <button data-del="${esc(r.id)}">Eliminar</button>
       </div>
+      ${nFotos ? `<div class="rp-bloque"><div class="rp-fotos">${thumbsFotosHTML(r)}</div></div>` : ''}
+      ${_resolviendoId === r.id ? formResolverHTML(r) : ''}
     </div>`;
+  };
   let html = activos.length ? activos.map(fila).join('') : '<div class="puntos-vacio">Sin reportes activos.</div>';
   if(resueltos.length){
     html += `<details style="margin:10px 0 6px;"><summary style="font-size:13px;font-weight:600;cursor:pointer;">Resueltos (${resueltos.length})</summary><div style="margin-top:6px;">${resueltos.map(fila).join('')}</div></details>`;
   }
   cont.innerHTML = html;
+  const buscar = id => (estado.reportes||[]).find(x=>x.id===id);
+  cont.querySelectorAll('[data-ver]').forEach(btn=>{
+    btn.addEventListener('click', ()=> verReporteEnMapa(btn.dataset.ver));
+  });
+  cont.querySelectorAll('[data-foto-agregar]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const r = buscar(btn.dataset.fotoAgregar);
+      if(!r) return;
+      if(fotosDeReporte(r).length >= FOTOS_MAX_REPORTE){ toast(`Un reporte admite hasta ${FOTOS_MAX_REPORTE} fotos`); return; }
+      _fotoExtraPara = r.id;
+      document.getElementById('rp-fotos-extra').click();
+    });
+  });
   cont.querySelectorAll('[data-resolver]').forEach(btn=>{
-    btn.addEventListener('click', ()=> resolverReporte(btn.dataset.resolver, categoria));
+    btn.addEventListener('click', ()=> abrirFormResolver(btn.dataset.resolver, categoria));
+  });
+  cont.querySelectorAll('[data-foto-resolver]').forEach(btn=>{
+    btn.addEventListener('click', ()=> document.getElementById('rp-foto-resolver').click());
+  });
+  cont.querySelectorAll('[data-confirmar-resuelto]').forEach(btn=>{
+    btn.addEventListener('click', ()=> resolverReporte(btn.dataset.confirmarResuelto, categoria));
+  });
+  cont.querySelectorAll('[data-cancelar-resuelto]').forEach(btn=>{
+    btn.addEventListener('click', ()=> cerrarFormResolver(categoria));
   });
   cont.querySelectorAll('[data-del]').forEach(btn=>{
     btn.addEventListener('click', ()=> eliminarReporte(btn.dataset.del, categoria));
   });
+  mostrarFotosEn(cont);
+}
+
+function soltarFotosCrear(lista){
+  lista.forEach(f => { try{ URL.revokeObjectURL(f.url); }catch(e){} });
+  _fotosCrear = _fotosCrear.filter(f => !lista.includes(f));
+  renderFotosCrear();
+}
+function limpiarFotosCrear(){ soltarFotosCrear(_fotosCrear.slice()); }
+function renderFotosCrear(){
+  const cont = document.getElementById('rp-fotos-lista');
+  cont.innerHTML = _fotosCrear.map((f, i) =>
+    `<span class="rp-foto-elegida"><img src="${esc(f.url)}" alt="Foto ${i+1}"><button type="button" class="rp-quitar" data-quitar-foto="${i}" aria-label="Sacar esta foto" title="Sacar">✕</button></span>`
+  ).join('');
+  cont.querySelectorAll('[data-quitar-foto]').forEach(b=>{
+    b.addEventListener('click', ()=> soltarFotosCrear([_fotosCrear[Number(b.dataset.quitarFoto)]].filter(Boolean)));
+  });
+  document.getElementById('rp-fotos-boton').disabled = _fotosCrear.length >= FOTOS_MAX_CREAR;
+}
+
+function abrirFormResolver(id, categoria){
+  if(_fotoResolver){ try{ URL.revokeObjectURL(_fotoResolver.url); }catch(e){} }
+  _fotoResolver = null;
+  _resolviendoId = id;
+  renderListaReportes(categoria);
+}
+function cerrarFormResolver(categoria){
+  if(_fotoResolver){ try{ URL.revokeObjectURL(_fotoResolver.url); }catch(e){} }
+  _fotoResolver = null;
+  _resolviendoId = null;
+  renderListaReportes(categoria);
 }
 
 function resolverReporte(id, categoria){
   if(!confirm('¿Marcar este reporte como resuelto? Va a salir de la lista activa en todos los dispositivos, no se puede deshacer.')) return;
   const r = (estado.reportes||[]).find(x=>x.id===id);
   if(!r) return;
+  const foto = _resolviendoId === id ? _fotoResolver : null;
   r.resuelto = true;
   r.fechaResuelto = fechaISOHoy();
   if(reportesLayers[id]){ map.removeLayer(reportesLayers[id]); delete reportesLayers[id]; }
   guardarEstado();
   renderListaReportes(categoria);
   enviarEvento('reporte_resuelto', ESTABLECIMIENTO, {id, fecha: r.fechaResuelto});
+  // la foto del arreglo sale DESPUÉS del reporte_resuelto (la cola sale en orden); en los demás equipos se suma igual
+  _resolviendoId = null;
+  _fotoResolver = null;
+  if(foto){
+    try{ URL.revokeObjectURL(foto.url); }catch(e){}
+    encolarFotoReporte(id, foto.blob, 'resuelto');
+  }
+  renderListaReportes(categoria);
   toast('Marcado como resuelto');
 }
 
@@ -7953,7 +8492,9 @@ function eliminarReporte(id, categoria){
   if(!confirm('¿Eliminar este reporte? No se puede deshacer.')) return;
   estado.reportes = (estado.reportes||[]).filter(r=>r.id!==id);
   if(reportesLayers[id]){ map.removeLayer(reportesLayers[id]); delete reportesLayers[id]; }
+  if(_resolviendoId === id) _resolviendoId = null;
   guardarEstado();
+  quitarFotosPendientesDeReporte(id);
   renderListaReportes(categoria);
   enviarEvento('reporte_eliminado', ESTABLECIMIENTO, {id});
   toast('Reporte eliminado');
@@ -7977,6 +8518,8 @@ function abrirModalReporte(categoria){
   document.getElementById('rp-fecha').value = fechaISOHoy();
   document.getElementById('rp-fecha').max = fechaISOHoy();
   document.getElementById('rp-obs').value = '';
+  limpiarFotosCrear();
+  _resolviendoId = null;
   renderListaReportes(categoria);
   document.getElementById('modal-reporte').style.display = 'flex';
 }
@@ -7992,17 +8535,21 @@ document.getElementById('reporte-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-reporte').style.display = 'none';
 });
 document.getElementById('rp-mapa').addEventListener('click', ()=>{
+  const usadas = _fotosCrear.slice();
   modoColocarReporte = {
     categoria: modalReporteCategoria,
     subtipo: subtipoReporteSeleccionado(),
     obs: document.getElementById('rp-obs').value.trim(),
-    fecha: document.getElementById('rp-fecha').value || fechaISOHoy()
+    fecha: document.getElementById('rp-fecha').value || fechaISOHoy(),
+    fotos: usadas.map(f => f.blob)
   };
+  soltarFotosCrear(usadas); // las fotos van con el reporte, no quedan en el formulario
   document.getElementById('modal-reporte').style.display = 'none';
   mostrarAvisoModo();
 });
 <!-- @movil:start -->
 document.getElementById('rp-gps').addEventListener('click', ()=>{
+  const usadas = _fotosCrear.slice();
   const datos = {
     categoria: modalReporteCategoria,
     subtipo: subtipoReporteSeleccionado(),
@@ -8010,11 +8557,38 @@ document.getElementById('rp-gps').addEventListener('click', ()=>{
     fecha: document.getElementById('rp-fecha').value || fechaISOHoy()
   };
   capturarUbicacionActual((lat, lon)=>{
-    guardarReporte(Object.assign({}, datos, {lat, lon}));
+    guardarReporte(Object.assign({}, datos, {lat, lon, fotos: usadas.map(f => f.blob)}));
     document.getElementById('rp-obs').value = '';
+    soltarFotosCrear(usadas);
   });
 });
 <!-- @movil:end -->
+
+/* Fotos del reporte, en el modal (ver "FOTOS DE LOS REPORTES"). */
+document.getElementById('rp-fotos-boton').addEventListener('click', ()=>{
+  if(_fotosCrear.length >= FOTOS_MAX_CREAR){ toast(`Ya hay ${FOTOS_MAX_CREAR} fotos`); return; }
+  document.getElementById('rp-fotos').click();
+});
+document.getElementById('rp-fotos').addEventListener('change', async (e)=>{
+  const blobs = await fotosDesdeInput(e.target, FOTOS_MAX_CREAR - _fotosCrear.length);
+  blobs.forEach(b => _fotosCrear.push({blob: b, url: URL.createObjectURL(b)}));
+  renderFotosCrear();
+});
+document.getElementById('rp-fotos-extra').addEventListener('change', async (e)=>{
+  const id = _fotoExtraPara;
+  _fotoExtraPara = null;
+  const r = (estado.reportes||[]).find(x => x.id === id);
+  if(!r) return;
+  const blobs = await fotosDesdeInput(e.target, FOTOS_MAX_REPORTE - fotosDeReporte(r).length);
+  for(const b of blobs) await encolarFotoReporte(id, b, 'reporte');
+});
+document.getElementById('rp-foto-resolver').addEventListener('change', async (e)=>{
+  const blobs = await fotosDesdeInput(e.target, 1);
+  if(!blobs.length || _resolviendoId === null) return;
+  if(_fotoResolver){ try{ URL.revokeObjectURL(_fotoResolver.url); }catch(err){} }
+  _fotoResolver = {blob: blobs[0], url: URL.createObjectURL(blobs[0])};
+  renderListaReportes(modalReporteCategoria);
+});
 
 <!-- @completo:start -->
 /* ======================= ALERTAS Y UMBRALES (reglas, sin IA) ======================= */
