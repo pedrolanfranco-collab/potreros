@@ -249,6 +249,12 @@ jobs:
       - name: "Pasar traslados a Excel y a movimientos_dicose (automatico cada hora) -- Excel abierto no corre, avisos sin repetir, poda de respaldos"
         run: python3 scripts/dicose/probar_pasar_traslados_automatico.py
 
+      - name: "Hermes -- consultar stock (paginacion, potrero sin filas, categoria sin tildes, transporte con clave del campo) con red falsa"
+        run: python3 scripts/hermes/probar_consultar_stock.py
+
+      - name: "Hermes -- cargar eventos (simula por defecto, SI antes de escribir, stock insuficiente frena, 409 cuenta como cargado, eliminar no se hace dos veces) con red falsa"
+        run: python3 scripts/hermes/probar_cargar_evento.py
+
   # 9/10/2026 (auditoria, hallazgo 23): antes GitHub Pages publicaba desde la rama en paralelo con
   # las pruebas, y una version con una prueba rota llegaba igual a los celulares (CI fallo 7 de 115
   # veces). Ahora se publica desde aca, y solo si el job `jsdom` paso.
