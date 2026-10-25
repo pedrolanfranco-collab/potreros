@@ -776,6 +776,29 @@ Infraestructura y Capín Annoni aceptan hasta 3 fotos al crear, más fotos despu
 - **Ver**: miniaturas en la lista y en el popup; URLs firmadas (1 h) para las subidas, `URL.createObjectURL` para las pendientes; visor `#visor-fotos`. "🗺 Ver en el mapa" es `verReporteEnMapa()` → `verUbicacionEnMapa()` (genérica, para reusar con aguadas).
 - **Test**: `tests/probar_fotos_reportes.js` (corre en las 9 variantes, en el workflow). En jsdom solo se prueba la cola en memoria, no IndexedDB.
 
+### Hermes (agente de WhatsApp de Pedro) y `scripts/hermes/` (25/10/2026, a pedido de Pedro)
+
+Hermes corre en la PC de Pedro (`C:\Users\Pedro\AppData\Local\hermes`, `hermes gateway restart`). Su servidor MCP
+`supabase_potreros` usaba un token personal `sbp_` (da acceso a toda la cuenta de Supabase y vence), así que se lo
+reemplaza por dos scripts de Python que usan **solo la clave pública**:
+- `consultar_stock.py`: solo lectura de `stock_potreros` (`--potrero`, `--categoria`, `--json`). `--categoria` acepta
+  el nombre completo (trae solo esa) o parte (`vaquillonas` trae las 3 de vaquillona); un nombre que no coincide da
+  error (código 2), **nunca "0 animales"** (ese fue un bug real: un 0 por nombre mal escrito).
+- `cargar_evento.py` (`mover`, `nacimiento`, `muerte`, `eliminar`): inserta eventos en `eventos_sync` con
+  `dispositivo='hermes-script'`, `detalle.usuario='Hermes'`, `detalle.v='hermes-1.0'`. **Simula por defecto**;
+  `--aplicar` pide "SI" (`--si` solo tras el OK de Pedro). Valida potrero, categoría y stock. `eliminar` replica la
+  `correccion` que arma la app (`eventIdOriginal` + `reversar`).
+- **Se modifica con eventos, nunca editando `stock_potreros`**: esa tabla es una foto que publican las apps y el
+  stock real es la reproducción de `eventos_sync`. Los scripts validan contra la foto, que puede estar atrasada
+  (hasta ~20 min): un movimiento de vuelta o una anulación puede frenarse con "faltan N… hay 0" hasta que alguna app
+  sincronice; no saltear la validación.
+- Probado con un insert real: `mover` (ida y vuelta) y `eliminar`. **`nacimiento` y `muerte` solo con red falsa.**
+  Protocolo para Hermes (simular, mostrarle a Pedro, esperar su "sí") en `scripts/hermes/README.md`.
+- Pruebas con red falsa en el CI (`scripts/hermes/probar_*.py`). Auditar lo que cargó Hermes:
+  `select … from eventos_sync where dispositivo='hermes-script'`.
+- **Cierre de la Fase 4**: estos scripts leen y escriben con la clave pública, así que también necesitan
+  `CLAVE_CAMPO_<EST>` (de `~\.potreros\.env`); sumarlos a la lista de scripts a verificar antes de correr el cierre.
+
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
 RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este
