@@ -12802,7 +12802,12 @@ setInterval(()=>{ if(navigator.onLine) sincronizar(false); }, 3*60*1000);
    dispositivo nuevo, y la reconstruye sobre CARGA_INICIAL_SEED. Antes solo
    se borraba el estado y no el ID de dispositivo, así que la propia
    historia del dispositivo (la que sincronizar() descarta por venir de
-   "mi" ID) nunca volvía a aparecer -- el reset quedaba incompleto. */
+   "mi" ID) nunca volvía a aparecer -- el reset quedaba incompleto.
+   25/10/2026: también se borran los potreros guardados (POTREROS_NUEVOS_KEY). Si quedaban, el
+   potrero existía desde el arranque y la reconstrucción aplicaba los eventos anteriores a su
+   `potrero_creado`, que un equipo sin él descarta: el Piquete salía con el doble y OMBU en
+   negativo. Sin esa clave, `potrero_creado` los vuelve a crear en el orden de la historia
+   (Piquete y Plazoleta de La Vuelta, piquete de Pone Chico). */
 document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   const total = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
   const pendSync = (estado.colaSync||[]).length;
@@ -12820,6 +12825,7 @@ document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   if(!confirmar) return;
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   try{ localStorage.removeItem(DISPOSITIVO_KEY); }catch(e){}
+  try{ localStorage.removeItem(POTREROS_NUEVOS_KEY); }catch(e){}
   location.reload();
 });
 <!-- @completo:end -->
