@@ -30,6 +30,12 @@ Salida: por potrero, `categoría — firma: cantidad (UG)`, el total del potrero
 filas dice `0 animales (sin filas en stock_potreros)`. Sin tildes ni mayúsculas da igual en `--potrero` y
 `--categoria`.
 
+`--categoria` acepta el nombre completo (`"Vacas"` trae solo las vacas, no las de invernada) o una parte:
+`"vaquillonas"` trae las de 1-2 años, las de 2-3 años y la de invernada. Si lo que se escribe no coincide con
+ninguna categoría, el script sale con error y lista las que existen; **nunca** contesta `0 animales` por un
+nombre mal escrito (eso pasaba hasta el 25/10/2026). `cargar_evento.py`, en cambio, sigue pidiendo el nombre
+completo de la categoría, porque escribe.
+
 **Ojo:** `stock_potreros` es una **foto** que publican las apps cada vez que sincronizan. Si ningún equipo
 sincronizó después de un movimiento, la foto puede estar atrasada. No es el stock "verdadero".
 
