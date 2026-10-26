@@ -8,6 +8,8 @@ Verifica (Fase 5 de la auditoria, 10/10/2026):
   - el manifest tiene las filas y el sha256 de cada archivo, la clave usada y el origen de la lista;
   - si una tabla pierde mas del 10%, o desaparece, sale ALERTA (exit 2), por ntfy, y no se borra
     ningun backup viejo;
+  - stock_potreros (tabla foto) compara la suma de animales por establecimiento y no las filas:
+    juntar lotes no alerta, una baja real de animales si, y los *_test se ignoran;
   - sin clave privada hace el backup con la publica y la lista fija, pero sale con 1 y avisa;
   - si el OpenAPI falla cae a la lista fija y sale con 1;
   - el tema de ntfy no aparece en el log del backup.
@@ -171,6 +173,55 @@ codigo, salida = correr(destino5)
 man5 = json.load(open(os.path.join(destino5, B.carpetas_backup(destino5)[0], "manifest.json"), encoding="utf-8"))
 chequear("OpenAPI caido: usa la lista fija y sale con 1", codigo == 1 and man5["tablas_origen"] == "fija", (codigo, man5.get("tablas_origen")))
 openapi_ok["valor"] = True
+
+# -- 5b) tabla foto (stock_potreros): se compara la suma de animales, no las filas ---------------
+avisos.clear()
+
+
+def fila(est, cant, i):
+    return {"establecimiento": est, "potrero": f"p{i}", "clave": f"{est}{i}", "cantidad": cant}
+
+
+def archivar(dest, nuevo_nombre):
+    """Renombra el backup mas reciente: la corrida siguiente lo toma como 'el anterior'."""
+    os.rename(os.path.join(dest, B.carpetas_backup(dest)[-1]), os.path.join(dest, nuevo_nombre))
+
+
+datos["stock_potreros"] = ([fila("la_vuelta", 100, i) for i in range(3)] + [fila("maria_laura", 50, i) for i in range(2)]
+                           + [fila("la_vuelta_test", 10, 0)])
+destinoF = tempfile.mkdtemp()
+codigo, salida = correr(destinoF)
+chequear("foto: primera corrida sale con 0 y muestra animales por establecimiento",
+         codigo == 0 and "la_vuelta=300" in salida and "maria_laura=100" in salida, salida)
+manF = json.load(open(os.path.join(destinoF, B.carpetas_backup(destinoF)[0], "manifest.json"), encoding="utf-8"))
+chequear("foto: el manifest guarda los totales por establecimiento",
+         manF["tablas"]["stock_potreros"].get("totales") == {"la_vuelta": 300, "maria_laura": 100, "la_vuelta_test": 10},
+         manF["tablas"]["stock_potreros"])
+
+# juntar lotes: menos de la mitad de filas, mismos animales -> NO es alerta (el caso del 13/10 y 23/10)
+archivar(destinoF, "2026-01-01_0000")
+datos["stock_potreros"] = [fila("la_vuelta", 300, 0)] + [fila("maria_laura", 50, i) for i in range(2)] + [fila("la_vuelta_test", 10, 0)]
+codigo, salida = correr(destinoF)
+chequear("foto: baja de filas con los mismos animales NO alerta", codigo == 0 and "ALERTA" not in salida and not avisos, (codigo, salida, avisos))
+
+# desaparece el establecimiento de prueba: tampoco alerta
+archivar(destinoF, "2026-01-02_0000")
+datos["stock_potreros"] = [fila("la_vuelta", 300, 0)] + [fila("maria_laura", 50, i) for i in range(2)]
+codigo, salida = correr(destinoF)
+chequear("foto: sacar un establecimiento *_test NO alerta", codigo == 0 and not avisos, (codigo, salida, avisos))
+
+# animales que bajan mas del 10%: ALERTA, aunque el backup anterior sea del formato viejo (sin 'totales')
+archivar(destinoF, "2026-01-03_0000")
+ruta_man = os.path.join(destinoF, "2026-01-03_0000", "manifest.json")
+man_viejo = json.load(open(ruta_man, encoding="utf-8"))
+man_viejo["tablas"]["stock_potreros"].pop("totales", None)
+json.dump(man_viejo, open(ruta_man, "w", encoding="utf-8"))
+datos["stock_potreros"] = [fila("la_vuelta", 200, 0)] + [fila("maria_laura", 50, i) for i in range(2)]
+codigo, salida = correr(destinoF)
+chequear("foto: animales -33% en un establecimiento: ALERTA (exit 2)", codigo == 2 and "ALERTA" in salida, (codigo, salida))
+chequear("foto: el aviso dice establecimiento y animales, y no nombra al que no cayo",
+         len(avisos) == 1 and "stock_potreros (la_vuelta): 300 -> 200" in avisos[0]["message"]
+         and "maria_laura" not in avisos[0]["message"], avisos)
 
 # -- 6) clave publica puesta como privada --------------------------------------------------------
 import importlib

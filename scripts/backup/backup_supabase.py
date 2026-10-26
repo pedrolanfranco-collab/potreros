@@ -17,7 +17,10 @@ Sin clave privada hace el backup como antes (la llave publica y la lista fija de
 termina con codigo 1 y avisa: ese backup solo tiene lo que ve la app.
 
 Alerta (exit 2): si una tabla perdio mas del 10% de sus filas respecto del backup anterior,
-una tabla del backup anterior ya no existe, o eventos_sync quedo vacia. Es la senal de que
+una tabla del backup anterior ya no existe, o eventos_sync quedo vacia. Excepcion: las tablas
+"foto" (FOTOS, hoy stock_potreros) comparan la suma de animales por establecimiento y no las
+filas, porque sus filas suben y bajan con cada movimiento de potrero (falsa alarma 13/10 y 23/10);
+los establecimientos *_test se ignoran. Es la senal de que
 alguien borro datos -- el backup nuevo se guarda igual, y el anterior NO se pisa ni se borra
 (la limpieza de viejos nunca toca los 3 mas recientes).
 
@@ -77,6 +80,12 @@ VISTAS = {"movimientos_dicose_vigentes"}
 
 PAGINA = 1000
 UMBRAL_CAIDA = 0.10
+# Tablas que son una FOTO del estado actual (no un historial): una fila por potrero x categoria, y la
+# fila desaparece cuando el potrero queda vacio o se juntan lotes. Contar filas daba falsas alarmas
+# (112 -> 98 filas el 23/10 por movimientos de potreros enteros). Para estas se compara la SUMA de la
+# columna indicada, separada por establecimiento: tabla -> columna a sumar.
+FOTOS = {"stock_potreros": "cantidad"}
+SUFIJO_PRUEBA = "_test"   # establecimientos de prueba (la_vuelta_test): no disparan alerta
 PATRON_CARPETA = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{4}$")
 
 
@@ -214,6 +223,45 @@ def conteos_anteriores(destino, excluir):
         return {}
 
 
+def totales_por_establecimiento(filas, columna):
+    """{establecimiento: suma de la columna} de una tabla foto."""
+    tot = {}
+    for f in filas:
+        est = f.get("establecimiento") or "?"
+        try:
+            n = float(f.get(columna) or 0)
+        except (TypeError, ValueError):
+            n = 0
+        tot[est] = tot.get(est, 0) + n
+    return {k: int(round(v)) for k, v in tot.items()}
+
+
+def totales_anteriores(destino, excluir):
+    """{tabla: {establecimiento: total}} del backup anterior. Usa el manifest y, si ese backup es
+    de antes de este cambio (sin 'totales'), los recalcula desde el .json de la tabla."""
+    previas = [d for d in carpetas_backup(destino) if d != excluir]
+    if not previas:
+        return {}
+    carpeta = os.path.join(destino, previas[-1])
+    try:
+        with open(os.path.join(carpeta, "manifest.json"), encoding="utf-8") as f:
+            tablas_man = json.load(f).get("tablas", {})
+    except Exception:
+        tablas_man = {}
+    out = {}
+    for tabla, columna in FOTOS.items():
+        tot = (tablas_man.get(tabla) or {}).get("totales")
+        if tot is None:
+            try:
+                with open(os.path.join(carpeta, tabla + ".json"), encoding="utf-8") as f:
+                    tot = totales_por_establecimiento(json.load(f), columna)
+            except Exception:
+                tot = None
+        if tot:
+            out[tabla] = tot
+    return out
+
+
 def main(argv=None, tablas=None, base=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--destino", default=DESTINO_DEFECTO)
@@ -226,6 +274,7 @@ def main(argv=None, tablas=None, base=None):
     carpeta = os.path.join(args.destino, nombre)
     os.makedirs(carpeta, exist_ok=True)
     anteriores = conteos_anteriores(args.destino, nombre)
+    totales_antes = totales_anteriores(args.destino, nombre)
 
     errores, alertas = [], []
     clave_priv, problema = _clave_privada()
@@ -263,12 +312,25 @@ def main(argv=None, tablas=None, base=None):
         manifest["tablas"][tabla] = {"filas": len(filas), "sha256": sha256(ruta)}
         antes = anteriores.get(tabla)
         marca = ""
-        if antes and len(filas) < antes * (1 - UMBRAL_CAIDA):
+        extra = ""
+        if tabla in FOTOS:
+            # Tabla foto: las filas suben y bajan con los movimientos; se vigila la suma por establecimiento.
+            ahora_tot = totales_por_establecimiento(filas, FOTOS[tabla])
+            manifest["tablas"][tabla]["totales"] = ahora_tot
+            extra = ", " + ", ".join(f"{e}={n}" for e, n in sorted(ahora_tot.items()))
+            for est, antes_n in sorted((totales_antes.get(tabla) or {}).items()):
+                if est.endswith(SUFIJO_PRUEBA):
+                    continue
+                ahora_n = ahora_tot.get(est, 0)
+                if antes_n and ahora_n < antes_n * (1 - UMBRAL_CAIDA):
+                    alertas.append(f"{tabla} ({est}): {antes_n} -> {ahora_n} en {FOTOS[tabla]}")
+                    marca = "  <-- ALERTA: cayo mas del 10%"
+        elif antes and len(filas) < antes * (1 - UMBRAL_CAIDA):
             alertas.append(f"{tabla}: {antes} -> {len(filas)} filas")
             marca = "  <-- ALERTA: cayo mas del 10%"
         if tabla == "eventos_sync" and not filas:
             alertas.append("eventos_sync esta VACIA")
-        print(f"  {tabla}: {len(filas)} filas{marca}")
+        print(f"  {tabla}: {len(filas)} filas{extra}{marca}")
 
     # Una tabla que estaba en el backup anterior y ya no esta en la lista: se borro o se renombro.
     if origen in ("openapi", "indicada"):
