@@ -223,6 +223,21 @@ chequear("foto: el aviso dice establecimiento y animales, y no nombra al que no 
          len(avisos) == 1 and "stock_potreros (la_vuelta): 300 -> 200" in avisos[0]["message"]
          and "maria_laura" not in avisos[0]["message"], avisos)
 
+# -- 5c) tabla chica: perder 1 de 3 filas no alerta; quedar vacia si ----------------------------
+avisos.clear()
+datos["maestros_dicose"] = [{"n": i} for i in range(3)]
+destinoP = tempfile.mkdtemp()
+codigo, salida = correr(destinoP)
+archivar(destinoP, "2026-01-01_0000")
+datos["maestros_dicose"] = datos["maestros_dicose"][:2]
+codigo, salida = correr(destinoP)
+chequear("chica: 3 -> 2 filas NO alerta", codigo == 0 and "ALERTA" not in salida and not avisos, (codigo, salida, avisos))
+archivar(destinoP, "2026-01-02_0000")
+datos["maestros_dicose"] = []
+codigo, salida = correr(destinoP)
+chequear("chica: 2 -> 0 filas (vacia) si alerta", codigo == 2 and len(avisos) == 1 and "maestros_dicose: 2 -> 0" in avisos[0]["message"], (codigo, salida, avisos))
+datos["maestros_dicose"] = [{"n": i} for i in range(3)]
+
 # -- 6) clave publica puesta como privada --------------------------------------------------------
 import importlib
 os.environ["SUPABASE_SECRET_KEY"] = B.SUPA_KEY_PUBLICA

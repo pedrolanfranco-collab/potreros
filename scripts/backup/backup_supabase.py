@@ -20,7 +20,8 @@ Alerta (exit 2): si una tabla perdio mas del 10% de sus filas respecto del backu
 una tabla del backup anterior ya no existe, o eventos_sync quedo vacia. Excepcion: las tablas
 "foto" (FOTOS, hoy stock_potreros) comparan la suma de animales por establecimiento y no las
 filas, porque sus filas suben y bajan con cada movimiento de potrero (falsa alarma 13/10 y 23/10);
-los establecimientos *_test se ignoran. Es la senal de que
+los establecimientos *_test se ignoran. Las tablas con menos de 10 filas en el backup anterior solo
+alertan si quedan vacias (1 de 3 filas no es un borrado). Es la senal de que
 alguien borro datos -- el backup nuevo se guarda igual, y el anterior NO se pisa ni se borra
 (la limpieza de viejos nunca toca los 3 mas recientes).
 
@@ -86,6 +87,10 @@ UMBRAL_CAIDA = 0.10
 # columna indicada, separada por establecimiento: tabla -> columna a sumar.
 FOTOS = {"stock_potreros": "cantidad"}
 SUFIJO_PRUEBA = "_test"   # establecimientos de prueba (la_vuelta_test): no disparan alerta
+# Tablas chicas: perder 1 fila de 3 es -33% pero no es un borrado (falsa alarma 21/10, comparacion_catalogo
+# 3 -> 2). Con menos de este numero de filas en el backup anterior, la regla del 10% no aplica y solo
+# alerta si la tabla queda vacia.
+MIN_FILAS_PORCENTAJE = 10
 PATRON_CARPETA = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{4}$")
 
 
@@ -325,7 +330,7 @@ def main(argv=None, tablas=None, base=None):
                 if antes_n and ahora_n < antes_n * (1 - UMBRAL_CAIDA):
                     alertas.append(f"{tabla} ({est}): {antes_n} -> {ahora_n} en {FOTOS[tabla]}")
                     marca = "  <-- ALERTA: cayo mas del 10%"
-        elif antes and len(filas) < antes * (1 - UMBRAL_CAIDA):
+        elif antes and len(filas) < antes * (1 - UMBRAL_CAIDA) and (antes >= MIN_FILAS_PORCENTAJE or not filas):
             alertas.append(f"{tabla}: {antes} -> {len(filas)} filas")
             marca = "  <-- ALERTA: cayo mas del 10%"
         if tabla == "eventos_sync" and not filas:
