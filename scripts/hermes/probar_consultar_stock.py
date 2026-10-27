@@ -150,6 +150,30 @@ def prueba_categoria_sin_tildes():
     codigo, out, err = correr(["--potrero", "6", "--categoria", "terneros"], FakeStock(FILAS_LV))
     chequear("categoria sin filas en el potrero: 0 animales de esa categoria",
              "0 animales de Terneros (sin filas en stock_potreros)" in out, out)
+    # Bug real del 25/10/2026: '--categoria vaquillonas' decia '0 animales' porque exigia el nombre completo.
+    filas = FILAS_LV + [fila("8", "Vaquillonas 2-3 años", "", 4, 3.2), fila("8", "Vaquillona de invernada", "", 9, 9.0),
+                        fila("8", "Vacas de invernada", "", 2, 2.4)]
+    codigo, out, err = correr(["--categoria", "vaquillonas"], FakeStock(filas))
+    chequear("'vaquillonas' trae las de 1-2, las de 2-3 años y la de invernada",
+             "Vaquillonas 1-2 años — (sin firma): 1" in out and "Vaquillonas 2-3 años — (sin firma): 4" in out
+             and "Vaquillona de invernada — (sin firma): 9" in out, out)
+    chequear("'vaquillonas' no trae vacas ni terneros ni novillitos",
+             "Vacas" not in out and "Terneros" not in out and "Novillitos" not in out, out)
+    chequear("'vaquillonas' suma 14 animales", "TOTAL: 14 animales" in out, out)
+    codigo, out, err = correr(["--categoria", "vaquillonas 1-2"], FakeStock(filas))
+    chequear("'vaquillonas 1-2' trae solo las de 1-2 años",
+             "1-2 años" in out and "2-3 años" not in out and "TOTAL: 1 animal," in out, out)
+    codigo, out, err = correr(["--categoria", "VACAS"], FakeStock(filas))
+    chequear("un nombre completo trae solo esa categoria ('vacas' no arrastra 'Vacas de invernada')",
+             "Vacas — Pedro Lanfranco: 5" in out and "invernada" not in out, out)
+    codigo, out, err = correr(["--categoria", "vaquillona"], FakeStock(filas))
+    chequear("el singular tambien encuentra las vaquillonas", "Vaquillonas 1-2 años" in out, out)
+    codigo, out, err = correr(["--categoria", "dinosaurios"], FakeStock(FILAS_LV))
+    chequear("una categoria que no existe NO dice '0 animales': error con codigo 2 y la lista",
+             codigo == 2 and "no es ninguna categoria conocida" in err and "Terneros" in err and "0 animales" not in out,
+             (codigo, err, out))
+    codigo, out, err = correr(["--categoria", "va"], FakeStock(FILAS_LV))
+    chequear("una palabra de menos de 3 letras no arrastra categorias ('va' no es 'vacas')", codigo == 2, (codigo, out))
 
 
 def prueba_json_y_error():

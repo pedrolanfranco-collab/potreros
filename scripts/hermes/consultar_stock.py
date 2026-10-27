@@ -87,6 +87,29 @@ def canonico(lista, texto):
     return None
 
 
+def _palabra_coincide(buscada, nombre):
+    """Una palabra tipeada encuentra la del nombre si es la misma o una empieza con la otra
+    ('vaquillonas' encuentra 'vaquillona'); las palabras de menos de 3 letras tienen que ser iguales."""
+    if len(buscada) < 3 or len(nombre) < 3:
+        return buscada == nombre
+    return buscada.startswith(nombre) or nombre.startswith(buscada)
+
+
+def categorias_que_coinciden(texto, conocidas):
+    """Las categorias de `conocidas` a las que se refiere lo que tipeo la persona. Un nombre completo
+    (sin tildes ni mayusculas) encuentra solo esa; si no, cada palabra tipeada tiene que estar en el nombre
+    ('vaquillonas' encuentra 'Vaquillonas 1-2 años' y 'Vaquillonas 2-3 años'). [] si no es ninguna."""
+    buscado = normalizar(texto)
+    exactas = [c for c in conocidas if normalizar(c) == buscado]
+    if exactas:
+        return exactas[:1]
+    palabras = buscado.split()
+    if not palabras:
+        return []
+    return [c for c in conocidas
+            if all(any(_palabra_coincide(p, q) for q in normalizar(c).split()) for p in palabras)]
+
+
 def fmt_num(n):
     """Numero con coma decimal y sin ceros de cola: 0.6 -> '0,6', 2.0 -> '2'."""
     if n is None:
@@ -205,13 +228,17 @@ def orden_natural(nombre):
 
 
 def agrupar(filas, potrero=None, categoria=None, establecimiento="la_vuelta"):
-    """Filas -> lista de potreros con sus renglones y totales, filtradas como pidio la persona."""
+    """Filas -> lista de potreros con sus renglones y totales, filtradas como pidio la persona.
+    `categoria` es un nombre o una lista de nombres de categoria."""
     texto_sin = ESTABLECIMIENTOS[establecimiento]["texto_sin_dueno"]
+    if isinstance(categoria, str):
+        categoria = [categoria]
+    categorias_ok = None if categoria is None else {normalizar(c) for c in categoria}
     por_potrero = {}
     for f in filas:
         if potrero is not None and f["potrero"] != potrero:
             continue
-        if categoria is not None and normalizar(f["categoria"]) != normalizar(categoria):
+        if categorias_ok is not None and normalizar(f["categoria"]) not in categorias_ok:
             continue
         por_potrero.setdefault(f["potrero"], []).append(f)
     if potrero is not None and potrero not in por_potrero:
@@ -260,15 +287,17 @@ def imprimir_texto(establecimiento, grupos, categoria=None):
 
 
 def main(argv=None):
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except (AttributeError, ValueError):
-        pass
+    for flujo in (sys.stdout, sys.stderr):
+        try:
+            flujo.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
     ap = argparse.ArgumentParser(description="Stock actual por potrero (solo lectura, stock_potreros).")
     ap.add_argument("--establecimiento", default="la_vuelta", choices=sorted(ESTABLECIMIENTOS),
                     help="por defecto la_vuelta")
     ap.add_argument("--potrero", help="un solo potrero (sin tildes ni mayusculas da igual)")
-    ap.add_argument("--categoria", help="una sola categoria (sin tildes ni mayusculas da igual)")
+    ap.add_argument("--categoria", help="categoria: el nombre completo o parte ('vaquillonas' trae las de 1-2 y "
+                                        "2-3 años); sin tildes ni mayusculas da igual")
     ap.add_argument("--json", action="store_true", help="salida en JSON")
     args = ap.parse_args(argv)
 
@@ -276,16 +305,24 @@ def main(argv=None):
     potrero = None
     if args.potrero is not None:
         potrero = canonico(ESTABLECIMIENTOS[est]["potreros"], args.potrero) or args.potrero.strip()
-    categoria = None
-    if args.categoria is not None:
-        categoria = canonico(CATEGORIAS, args.categoria) or args.categoria.strip()
 
     try:
         filas = leer_stock(est)
     except RuntimeError as e:
         print("ERROR: %s." % e, file=sys.stderr)
         return 1
-    grupos = agrupar(filas, potrero=potrero, categoria=categoria, establecimiento=est)
+    categorias = None
+    if args.categoria is not None:
+        conocidas = list(CATEGORIAS) + sorted({f["categoria"] for f in filas
+                                               if f["categoria"] and f["categoria"] not in CATEGORIAS})
+        categorias = categorias_que_coinciden(args.categoria, conocidas)
+        if not categorias:
+            # Antes un nombre que no coincidia exacto devolvia "0 animales" como si no hubiera ninguno.
+            print("ERROR: \"%s\" no es ninguna categoria conocida. Categorias: %s."
+                  % (args.categoria.strip(), ", ".join(conocidas)), file=sys.stderr)
+            return 2
+    categoria = " / ".join(categorias) if categorias else None
+    grupos = agrupar(filas, potrero=potrero, categoria=categorias, establecimiento=est)
     if potrero is not None and potrero not in ESTABLECIMIENTOS[est]["potreros"] and not any(
             not g["sin_filas"] for g in grupos):
         print("Aviso: \"%s\" no esta en la lista de potreros de %s (¿nombre bien escrito?)."
