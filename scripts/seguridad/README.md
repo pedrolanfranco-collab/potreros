@@ -124,7 +124,8 @@ Fase 3, paso 4 (11/10/2026).
 > (`traslado_entrada`, `anular_traslado`) y las tablas que Pone Chico no usa (`sanidad_carga`, `sanidad_carga_maria_laura`,
 > `animales_caravana`, `maestros_dicose`) siguen exigiendo una clave **real**, así nadie se hace pasar por un campo abierto
 > para escribir en otro. `productos_catalogo` queda legible para todos (lista de referencia). Para ponerle clave a Pone Chico
-> más adelante: `claveCampo: true` en su config, cargar su clave y `delete from private.campos_abiertos where establecimiento = 'pone_chico';`.
+> más adelante: `claveCampo: true` en su config, cargar su clave y `delete from private.campos_abiertos where establecimiento = 'pone_chico';`
+> (**y no volver a correr `fase4_cierre.sql` después: reinserta `pone_chico`**; lo comprueba `probar_cierre.js`).
 > Su fila de `private.claves_campo` no hace falta mientras esté abierto: se saca con
 > `delete from private.claves_campo where establecimiento = 'pone_chico';`.
 
@@ -146,6 +147,17 @@ Después: correr el SQL (guarda las políticas de antes en `auditoria_politicas_
 `python scripts/seguridad/verificar_fase4.py --cierre` (sin clave todo cerrado salvo lo abierto a propósito —el stream de Pone Chico y `productos_catalogo`—, con la clave anda, incluidas `sanidad_ultimos` y `sanidad_proximos`),
 y probar a mano un movimiento y un traslado La Vuelta → María Laura. Para volver atrás:
 `fase4_cierre_deshacer.sql`.
+
+**Cómo se probó el SQL del cierre (21/10/2026).** `probar_cierre.js` lo corre, junto con su deshacer, contra un Postgres 16 real
+(PGlite, en WASM) con las tablas y políticas de hoy, el release 1 de verdad y claves de juguete, y prueba 68 cosas: lectura y escritura
+de `anon` sin clave, con clave mala y con la clave de cada campo; las excepciones de traslado; que `UPDATE`/`DELETE` de `eventos_sync`
+sigan imposibles; que `private.*` siga cerrado; que el cierre corra dos veces; qué pasa al sacar a Pone Chico de `campos_abiertos`; y
+que el deshacer deje políticas y permisos exactamente como estaban. **Encontró un error que habría frenado el cierre:** `= any ((select f()))`
+Postgres lo lee como "ANY de una subconsulta" y falla con `operator does not exist: text = text[]` (el script abortaba entero, sin dejar nada
+a medias); por eso las políticas llevan `= any ((select f())::text[])`. PGlite no es dependencia del repo (instrucciones en la cabecera de
+`probar_cierre.js`). Límite conocido de `verificar_fase4.py --cierre`: con la llave pública no distingue una tabla de Pone Chico **vacía** de
+una que quedó **cerrada** (hoy `stock_potreros`, `sanidad_carga_pone_chico`, `sanidad_ultimos` y `sanidad_proximos` de Pone Chico no tienen
+filas); eso lo cubre `probar_cierre.js`, no el verificador.
 
 Qué queda abierto aun con la clave, a propósito: quien tiene la clave de un campo puede escribir en
 su stream (la clave es una sola por campo, compartida con el empleado de Campo), y quien tiene la de
