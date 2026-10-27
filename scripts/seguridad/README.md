@@ -159,6 +159,11 @@ a medias); por eso las políticas llevan `= any ((select f())::text[])`. PGlite 
 una que quedó **cerrada** (hoy `stock_potreros`, `sanidad_carga_pone_chico`, `sanidad_ultimos` y `sanidad_proximos` de Pone Chico no tienen
 filas); eso lo cubre `probar_cierre.js`, no el verificador.
 
+**Ampliado el 27/10/2026:** el cierre también cubre `sanidad_proximos_hechos` (tablero, "Ya se hizo") y las políticas de `storage.objects` del
+bucket `fotos-reportes` (subir y ver solo dentro de la carpeta de un campo con clave válida o abierto; sin UPDATE ni DELETE). Frena si faltan la tabla
+(`scripts/sanidad/proximos_hechos.sql`) o el bucket (`fotos_reportes.sql`). `probar_cierre.js` ahora hace 78 verificaciones (con un `storage` de juguete)
+y se puso en rojo al mutar la política de fotos. No cubre `comprobantes`, `proveedores`, `cotizaciones`, `precios_vet` ni `alias_productos` (de otros proyectos).
+
 Qué queda abierto aun con la clave, a propósito: quien tiene la clave de un campo puede escribir en
 su stream (la clave es una sola por campo, compartida con el empleado de Campo), y quien tiene la de
 La Vuelta puede escribir el espejo de un traslado en el stream de María Laura (es lo que permite el
@@ -172,4 +177,4 @@ para `anon`, solo dentro de las carpetas `la_vuelta`, `maria_laura`, `pone_chico
 de publicar la app que sube fotos. **El cierre de la Fase 4 tiene que sumar este bucket**: en
 `fase4_cierre.sql` las políticas de `storage.objects` de `fotos-reportes` deben exigir
 `establecimientos_con_clave()` (y `establecimientos_permitidos()` para Pone Chico, que sigue abierto),
-igual que las de las tablas. Si se olvida, las fotos quedan legibles con la llave pública.
+igual que las de las tablas. (Hecho el 27/10/2026 en `fase4_cierre.sql`.)

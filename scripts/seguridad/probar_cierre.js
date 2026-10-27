@@ -40,6 +40,18 @@ create table public.productos_catalogo (producto text primary key, valor_dosis_m
 create table public.maestros_dicose (id bigserial primary key, tipo text, nombre text, dicose text);
 create table public.sanidad_ultimos (id bigserial primary key, establecimiento text);
 create table public.sanidad_proximos (id bigserial primary key, establecimiento text);
+create table public.sanidad_proximos_hechos (id bigserial primary key, establecimiento text not null, categoria text, sanidad text, fecha_prevista date, marcado_en timestamptz default now());
+create schema storage;
+create table storage.buckets (id text primary key, name text);
+insert into storage.buckets values ('fotos-reportes','fotos-reportes');
+create table storage.objects (id bigserial primary key, bucket_id text, name text);
+create function storage.foldername(name text) returns text[] language sql immutable as $f$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $f$;
+grant usage on schema storage to anon, authenticated;
+grant all on storage.objects to anon, authenticated;
+grant usage, select on all sequences in schema storage to anon, authenticated;
+alter table storage.objects enable row level security;
+create policy fotos_reportes_insert on storage.objects for insert to anon, authenticated with check (bucket_id = 'fotos-reportes' and (storage.foldername(name))[1] in ('la_vuelta', 'maria_laura', 'pone_chico'));
+create policy fotos_reportes_select on storage.objects for select to anon, authenticated using (bucket_id = 'fotos-reportes' and (storage.foldername(name))[1] in ('la_vuelta', 'maria_laura', 'pone_chico'));
 grant all on all tables in schema public to anon, authenticated;
 grant usage, select on all sequences in schema public to anon, authenticated;
 alter table public.eventos_sync enable row level security;
@@ -52,6 +64,10 @@ alter table public.productos_catalogo enable row level security;
 alter table public.maestros_dicose enable row level security;
 alter table public.sanidad_ultimos enable row level security;
 alter table public.sanidad_proximos enable row level security;
+alter table public.sanidad_proximos_hechos enable row level security;
+create policy sanidad_proximos_hechos_select on public.sanidad_proximos_hechos for select to anon using (true);
+create policy sanidad_proximos_hechos_insert on public.sanidad_proximos_hechos for insert to anon with check (true);
+create policy sanidad_proximos_hechos_delete on public.sanidad_proximos_hechos for delete to anon using (true);
 -- las politicas de hoy en produccion (consultadas el 21/10/2026)
 create policy animales_caravana_select_anon on public.animales_caravana for select to anon using (true);
 create policy eventos_sync_insert on public.eventos_sync for insert to anon with check (true);
@@ -89,6 +105,10 @@ insert into public.productos_catalogo values ('Ivomec', 1.5);
 insert into public.maestros_dicose (tipo, nombre, dicose) values ('comprador','Fulano','123');
 insert into public.sanidad_ultimos (establecimiento) values ('la_vuelta'),('maria_laura'),('pone_chico');
 insert into public.sanidad_proximos (establecimiento) values ('la_vuelta'),('maria_laura'),('pone_chico');
+insert into public.sanidad_proximos_hechos (establecimiento, categoria, sanidad, fecha_prevista) values
+  ('la_vuelta','Vacas','X','2026-01-01'),('maria_laura','Vacas','X','2026-01-01'),('pone_chico','Vacas','X','2026-01-01');
+insert into storage.objects (bucket_id, name) values
+  ('fotos-reportes','la_vuelta/r1/f1.jpg'),('fotos-reportes','maria_laura/r1/f1.jpg'),('fotos-reportes','pone_chico/r1/f1.jpg'),('otro','la_vuelta/r1/f1.jpg');
 `;
 
 // Corre `sql` como anon con la clave `campo` (o sin clave / con una mala). Devuelve {filas, error}.
@@ -114,7 +134,7 @@ async function main() {
   await db.exec(SEMILLA);
   await db.exec(fs.readFileSync(REPO + 'fase4_clave_campo.sql', 'utf8'));
   for (const [est, k] of Object.entries(KEYS)) await db.query('select private.cargar_clave($1,$2)', [est, k]);
-  const politicasAntes = (await db.query("select tablename, policyname, cmd from pg_policies where schemaname='public' order by 1,2,3")).rows;
+  const politicasAntes = (await db.query("select tablename, policyname, cmd from pg_policies where schemaname in ('public','storage') order by 1,2,3")).rows;
   const privAntes = (await db.query("select c.relname t, p.priv from pg_class c cross join (values ('SELECT'),('INSERT'),('UPDATE'),('DELETE')) p(priv) where c.relnamespace='public'::regnamespace and c.relkind='r' and has_table_privilege('anon', c.oid, p.priv) order by 1,2")).rows;
 
   console.log('Aplicando el cierre...');
@@ -227,6 +247,30 @@ async function main() {
     bloqueado(await comoAnon(db, LV, "insert into public.productos_catalogo values ('X', 1)")) &&
     bloqueado(await comoAnon(db, LV, "insert into public.animales_caravana values ('22222222','la_vuelta')")));
 
+  console.log('\nSANIDAD_PROXIMOS_HECHOS Y FOTOS');
+  const hs = await cuenta(null, 'sanidad_proximos_hechos'), hl = await cuenta(LV, 'sanidad_proximos_hechos'), hm = await cuenta(MALA, 'sanidad_proximos_hechos');
+  check('hechos: sin clave y con clave mala solo se ve pone_chico', hs.rows.length === 1 && hs.rows[0].establecimiento === 'pone_chico' && hm.rows.length === 1, JSON.stringify(hs.rows));
+  check('hechos: con la clave de La Vuelta ve La Vuelta + Pone Chico, no Maria Laura', hl.rows.map(r => r.establecimiento).sort().join() === 'la_vuelta,pone_chico', JSON.stringify(hl.rows));
+  const hins = (est) => `insert into public.sanidad_proximos_hechos (establecimiento, categoria, sanidad, fecha_prevista) values ('${est}','Toros','Y','2026-02-02')`;
+  check('hechos: marcar con la clave propia ok; sin clave o con la de otro campo NO; pone_chico sin clave ok',
+    !(await comoAnon(db, LV, hins('la_vuelta'))).error && bloqueado(await comoAnon(db, null, hins('la_vuelta'))) &&
+    bloqueado(await comoAnon(db, LV, hins('maria_laura'))) && !(await comoAnon(db, null, hins('pone_chico'))).error);
+  check('hechos: deshacer (delete) solo con la clave del campo', (await comoAnon(db, null, "delete from public.sanidad_proximos_hechos where establecimiento='la_vuelta' returning 1")).filas === 0 &&
+    (await comoAnon(db, LV, "delete from public.sanidad_proximos_hechos where establecimiento='la_vuelta' and categoria='Toros' returning 1")).filas === 1);
+  check('hechos: sin UPDATE ni con clave', (await comoAnon(db, LV, "update public.sanidad_proximos_hechos set sanidad='Z' where establecimiento='la_vuelta' returning 1")).filas === 0);
+  const fotos = async (clave) => (await comoAnon(db, clave, "select name from storage.objects where bucket_id='fotos-reportes'")).rows.map(r => r.name).sort().join();
+  check('fotos: sin clave solo ve las de pone_chico', await fotos(null) === 'pone_chico/r1/f1.jpg', await fotos(null));
+  check('fotos: con la clave de La Vuelta ve las suyas y las de pone_chico, no las de Maria Laura', await fotos(LV) === 'la_vuelta/r1/f1.jpg,pone_chico/r1/f1.jpg', await fotos(LV));
+  check('fotos: clave mala = sin clave', await fotos(MALA) === 'pone_chico/r1/f1.jpg', await fotos(MALA));
+  const sube = (ruta, bucket = 'fotos-reportes') => `insert into storage.objects (bucket_id, name) values ('${bucket}', '${ruta}')`;
+  check('fotos: subir a la carpeta propia con clave ok; sin clave o a la de otro campo NO; pone_chico sin clave ok; otro bucket NO',
+    !(await comoAnon(db, LV, sube('la_vuelta/r2/f.jpg'))).error && bloqueado(await comoAnon(db, null, sube('la_vuelta/r3/f.jpg'))) &&
+    bloqueado(await comoAnon(db, LV, sube('maria_laura/r3/f.jpg'))) && !(await comoAnon(db, null, sube('pone_chico/r3/f.jpg'))).error &&
+    bloqueado(await comoAnon(db, LV, sube('la_vuelta/r4/f.jpg', 'otro'))));
+  check('fotos: sin UPDATE ni DELETE aun con clave',
+    (await comoAnon(db, LV, "update storage.objects set name='la_vuelta/x.jpg' where name='la_vuelta/r1/f1.jpg' returning 1")).filas === 0 &&
+    (await comoAnon(db, LV, "delete from storage.objects where name='la_vuelta/r1/f1.jpg' returning 1")).filas === 0);
+
   console.log('\nFUNCIONES');
   const fn = await comoAnon(db, null, 'select public.establecimientos_permitidos() as a');
   check('establecimientos_permitidos() sin clave = {pone_chico}', !fn.error && JSON.stringify(fn.rows[0].a) === '["pone_chico"]', JSON.stringify(fn));
@@ -254,7 +298,7 @@ async function main() {
   if (deshacerSql) {
     console.log('\nDESHACER');
     await db.exec(deshacerSql);
-    const politicasDespues = (await db.query("select tablename, policyname, cmd from pg_policies where schemaname='public' order by 1,2,3")).rows;
+    const politicasDespues = (await db.query("select tablename, policyname, cmd from pg_policies where schemaname in ('public','storage') order by 1,2,3")).rows;
     const sinAuditoria = politicasDespues.filter(p => !p.tablename.startsWith('auditoria_'));
     check('las politicas vuelven a ser exactamente las de antes', JSON.stringify(sinAuditoria) === JSON.stringify(politicasAntes),
       JSON.stringify(sinAuditoria.length) + ' vs ' + politicasAntes.length);

@@ -30,7 +30,7 @@ begin
     where schemaname = 'public'
       and tablename in ('eventos_sync', 'stock_potreros', 'sanidad_carga', 'sanidad_carga_maria_laura',
                         'sanidad_carga_pone_chico', 'animales_caravana', 'productos_catalogo',
-                        'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos')
+                        'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos', 'sanidad_proximos_hechos')
       and roles && array['anon', 'public']::name[]
   loop
     execute format('drop policy %I on public.%I', r.policyname, r.tablename);
@@ -66,7 +66,8 @@ $$;
 revoke select, insert, update, delete on table
   public.eventos_sync, public.stock_potreros, public.sanidad_carga, public.sanidad_carga_maria_laura,
   public.sanidad_carga_pone_chico, public.animales_caravana, public.productos_catalogo,
-  public.maestros_dicose, public.sanidad_ultimos, public.sanidad_proximos
+  public.maestros_dicose, public.sanidad_ultimos, public.sanidad_proximos,
+  public.sanidad_proximos_hechos
 from anon;
 
 do $$
@@ -79,6 +80,16 @@ begin
 end
 $$;
 
+-- 5. Fotos: las politicas de antes del cierre (fotos_reportes.sql), abiertas a las carpetas de los 3 campos.
+drop policy if exists fotos_reportes_insert on storage.objects;
+create policy fotos_reportes_insert on storage.objects
+  for insert to anon, authenticated
+  with check (bucket_id = 'fotos-reportes' and (storage.foldername(name))[1] in ('la_vuelta', 'maria_laura', 'pone_chico'));
+drop policy if exists fotos_reportes_select on storage.objects;
+create policy fotos_reportes_select on storage.objects
+  for select to anon, authenticated
+  using (bucket_id = 'fotos-reportes' and (storage.foldername(name))[1] in ('la_vuelta', 'maria_laura', 'pone_chico'));
+
 -- 4. Fuera lo que agrego la version revisada del cierre (21/10/2026). Ya no hay politicas que las usen.
 drop function if exists public.establecimientos_permitidos();
 drop table if exists private.campos_abiertos;
@@ -88,7 +99,7 @@ from pg_policies
 where schemaname = 'public'
   and tablename in ('eventos_sync', 'stock_potreros', 'sanidad_carga', 'sanidad_carga_maria_laura',
                     'sanidad_carga_pone_chico', 'animales_caravana', 'productos_catalogo',
-                    'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos')
+                    'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos', 'sanidad_proximos_hechos')
 order by tablename, cmd;
 
 commit;

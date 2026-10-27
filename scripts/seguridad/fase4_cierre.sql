@@ -49,7 +49,7 @@
 -- Que hace (todo en UNA transaccion: si algo falla, no queda nada aplicado):
 --   0. Guarda las politicas actuales y los permisos de anon sobre estas tablas en
 --      `auditoria_politicas_antes_fase4` y `auditoria_privilegios_antes_fase4` (para poder deshacer).
---   1. Borra TODAS las politicas de `anon`/`public` de las 10 tablas de abajo (sin importar el nombre).
+--   1. Borra TODAS las politicas de `anon`/`public` de las 11 tablas de abajo (sin importar el nombre).
 --   2. Crea las nuevas, siempre `to anon`:
 --
 --        tabla                       leer                      escribir
@@ -70,6 +70,9 @@
 --        maestros_dicose             cualquier campo           INSERT con la clave de cualquier campo
 --        sanidad_ultimos             clave o campo abierto     nadie (la escribe la PC con la clave privada)
 --        sanidad_proximos            clave o campo abierto     nadie (la escribe la PC con la clave privada)
+--        sanidad_proximos_hechos     clave o campo abierto     INSERT y DELETE con la clave (tablero, "Ya se hizo"); sin UPDATE
+--        storage fotos-reportes      carpeta de un campo con      INSERT y SELECT dentro de <campo>/...; sin UPDATE ni DELETE
+--                                    clave o campo abierto
 --
 --   3. Ajusta los permisos de tabla de anon: donde conserva algo bajo politica, el permiso de tabla sigue
 --      (sin el permiso de tabla la politica no alcanza); sanidad_ultimos y sanidad_proximos quedan solo de lectura.
@@ -88,6 +91,12 @@ do $$
 begin
   if to_regprocedure('public.establecimientos_con_clave()') is null then
     raise exception 'Falta public.establecimientos_con_clave(): correr primero fase4_clave_campo.sql';
+  end if;
+  if to_regclass('public.sanidad_proximos_hechos') is null then
+    raise exception 'Falta public.sanidad_proximos_hechos: correr primero scripts/sanidad/proximos_hechos.sql';
+  end if;
+  if not exists (select 1 from storage.buckets where id = 'fotos-reportes') then
+    raise exception 'Falta el bucket fotos-reportes: correr primero scripts/seguridad/fotos_reportes.sql';
   end if;
   if not exists (select 1 from private.claves_campo) then
     raise exception 'private.claves_campo esta vacia: cargar las claves con private.cargar_clave antes del cierre';
@@ -140,7 +149,7 @@ from pg_policies p
 where p.schemaname = 'public'
   and p.tablename in ('eventos_sync', 'stock_potreros', 'sanidad_carga', 'sanidad_carga_maria_laura',
                       'sanidad_carga_pone_chico', 'animales_caravana', 'productos_catalogo',
-                      'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos')
+                      'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos', 'sanidad_proximos_hechos')
   and not exists (select 1 from public.auditoria_politicas_antes_fase4);
 
 create table if not exists public.auditoria_privilegios_antes_fase4 (
@@ -155,7 +164,7 @@ insert into public.auditoria_privilegios_antes_fase4 (tablename, privilegio)
 select t.tablename, g.privilegio
 from (values ('eventos_sync'), ('stock_potreros'), ('sanidad_carga'), ('sanidad_carga_maria_laura'),
              ('sanidad_carga_pone_chico'), ('animales_caravana'), ('productos_catalogo'),
-             ('maestros_dicose'), ('sanidad_ultimos'), ('sanidad_proximos')) as t(tablename)
+             ('maestros_dicose'), ('sanidad_ultimos'), ('sanidad_proximos'), ('sanidad_proximos_hechos')) as t(tablename)
 cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) as g(privilegio)
 where has_table_privilege('anon', format('public.%I', t.tablename)::regclass, g.privilegio)
   and not exists (select 1 from public.auditoria_privilegios_antes_fase4);
@@ -171,7 +180,7 @@ begin
     where schemaname = 'public'
       and tablename in ('eventos_sync', 'stock_potreros', 'sanidad_carga', 'sanidad_carga_maria_laura',
                         'sanidad_carga_pone_chico', 'animales_caravana', 'productos_catalogo',
-                        'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos')
+                        'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos', 'sanidad_proximos_hechos')
       and roles && array['anon', 'public']::name[]
   loop
     execute format('drop policy %I on public.%I', r.policyname, r.tablename);
@@ -262,6 +271,36 @@ create policy sanidad_proximos_select_clave on public.sanidad_proximos
   for select to anon
   using (establecimiento = any ((select public.establecimientos_permitidos())::text[]));
 
+-- sanidad_proximos_hechos (21/10/2026): tarjetas "Ya se hizo" del Tablero de Sanidad. Lee, marca (INSERT) y deshace (DELETE)
+-- con la clave del campo; sin UPDATE, como hoy.
+create policy sanidad_proximos_hechos_select_clave on public.sanidad_proximos_hechos
+  for select to anon
+  using (establecimiento = any ((select public.establecimientos_permitidos())::text[]));
+create policy sanidad_proximos_hechos_insert_clave on public.sanidad_proximos_hechos
+  for insert to anon
+  with check (establecimiento = any ((select public.establecimientos_permitidos())::text[]));
+create policy sanidad_proximos_hechos_delete_clave on public.sanidad_proximos_hechos
+  for delete to anon
+  using (establecimiento = any ((select public.establecimientos_permitidos())::text[]));
+
+-- Fotos de los reportes de campo (bucket privado `fotos-reportes`, ruta <establecimiento>/<reporteId>/<fotoId>.jpg):
+-- solo subir y ver dentro de la carpeta de un campo con clave valida (o abierto, Pone Chico). Sin UPDATE ni DELETE.
+-- Las originales estan en fotos_reportes.sql (el deshacer las vuelve a crear).
+drop policy if exists fotos_reportes_insert on storage.objects;
+create policy fotos_reportes_insert on storage.objects
+  for insert to anon, authenticated
+  with check (
+    bucket_id = 'fotos-reportes'
+    and (storage.foldername(name))[1] = any ((select public.establecimientos_permitidos())::text[])
+  );
+drop policy if exists fotos_reportes_select on storage.objects;
+create policy fotos_reportes_select on storage.objects
+  for select to anon, authenticated
+  using (
+    bucket_id = 'fotos-reportes'
+    and (storage.foldername(name))[1] = any ((select public.establecimientos_permitidos())::text[])
+  );
+
 -- 3. Permisos de tabla (anon). Hace falta politica Y permiso de tabla.
 grant select, insert on table public.eventos_sync to anon;
 grant select, insert, update, delete on table
@@ -271,6 +310,7 @@ to anon;
 grant select on table public.animales_caravana, public.productos_catalogo,
   public.sanidad_ultimos, public.sanidad_proximos to anon;
 grant select, insert on table public.maestros_dicose to anon;
+grant select, insert, delete on table public.sanidad_proximos_hechos to anon;
 
 -- 4. Resultado: que le queda permitido a anon en cada tabla (se ve al correr el script).
 select p.tablename as tabla,
@@ -279,7 +319,7 @@ from pg_policies p
 where p.schemaname = 'public'
   and p.tablename in ('eventos_sync', 'stock_potreros', 'sanidad_carga', 'sanidad_carga_maria_laura',
                       'sanidad_carga_pone_chico', 'animales_caravana', 'productos_catalogo',
-                      'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos')
+                      'maestros_dicose', 'sanidad_ultimos', 'sanidad_proximos', 'sanidad_proximos_hechos')
 group by p.tablename
 order by p.tablename;
 
