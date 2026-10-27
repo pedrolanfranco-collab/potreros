@@ -1,7 +1,8 @@
 /*
  * Tablero de Sanidad (16/10/2026): lee sanidad_proximos / sanidad_ultimos con un fetch falso y verifica
- * agrupación por urgencia, retiro, escape de HTML, cambio de establecimiento, copia sin señal y que
- * nunca escriba (solo GET), y la clave del campo (Fase 4): la manda en x-clave-campo, la comprueba con
+ * agrupación por urgencia, retiro, escape de HTML, cambio de establecimiento, copia sin señal, que al
+ * abrir solo lea (GET), el botón "Ya se hizo" (21/10/2026: única escritura, en sanidad_proximos_hechos)
+ * y la clave del campo (Fase 4): la manda en x-clave-campo, la comprueba con
  * verificar_clave (un fallo de red nunca es "clave mala"), no pisa la copia con una lectura vacía sin clave,
  * y Pone Chico no la usa.
  * Uso: node tests/probar_tablero_sanidad.js tablero-sanidad/index.html
@@ -23,9 +24,11 @@ async function abrir(respuestas, ls){
     beforeParse(win){
       for(const k in (ls || {})) win.localStorage.setItem(k, ls[k]);
       win.fetch = async (url, opt) => {
-        llamadas.push({ url, metodo: (opt && opt.method) || 'GET', headers: (opt && opt.headers) || {}, body: opt && opt.body });
-        const r = respuestas(url, opt);
+        const metodo = (opt && opt.method) || 'GET';
+        llamadas.push({ url, metodo, body: opt && opt.body, headers: (opt && opt.headers) || {} });
+        const r = respuestas(url, metodo, opt);
         if(r === 'caido') throw new Error('sin red');
+        if(r && r.status){ return { ok: r.status < 300, status: r.status, json: async () => JSON.parse(JSON.stringify(r.body == null ? [] : r.body)) }; }
         return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(r)) };   // copia: como un JSON recién leído
       };
     } });
@@ -34,7 +37,7 @@ async function abrir(respuestas, ls){
 }
 
 const PROX = [
-  { establecimiento: 'la_vuelta', categoria: 'Terneros', sanidad: 'Clostridiales', animales: 80, ultimo_producto: 'Bravoxin', ultimo_tratamiento: iso(-200), fecha_prevista: iso(-5), estado: 'Vencido', actualizado: new Date().toISOString() },
+  { establecimiento: 'la_vuelta', categoria: 'Terneros', sanidad: 'Clostridiales', animales: 80, ultimo_producto: 'Bravoxin', ultimo_tratamiento: iso(-200), fecha_prevista: iso(-5) + 'T00:00:00+00:00', estado: 'Vencido', actualizado: new Date().toISOString() },
   { establecimiento: 'la_vuelta', categoria: 'Vacas', sanidad: 'Aftosa', gen: 4, animales: 120, fecha_prevista: iso(10), estado: 'Próximo', actualizado: new Date().toISOString() },
   { establecimiento: 'la_vuelta', categoria: 'Novillos', sanidad: 'Garrapata', animales: 40, fecha_prevista: iso(60), actualizado: new Date().toISOString() }
 ];
@@ -65,6 +68,7 @@ const CARGAS = [
 ];
 const resp = url => {
   const vacio = url.includes('maria_laura');
+  if(url.includes('sanidad_proximos_hechos')) return [];
   if(url.includes('sanidad_proximos')) return vacio ? [] : PROX;
   if(url.includes('sanidad_ultimos')) return vacio ? [] : ULT;
   if(url.includes('sanidad_carga')) return vacio ? [] : CARGAS;
@@ -171,8 +175,63 @@ const resp = url => {
   const c = await abrir(url => url.includes('proximos') ? PROX.map(f => ({ ...f, actualizado: new Date(Date.now() - 30 * 3600e3).toISOString() })) : vieja);
   chequear('advierte que la PC no publica', /la PC no publica/.test(c.doc.getElementById('estado').textContent) && c.doc.getElementById('estado').className === 'mal');
 
+  console.log('"Ya se hizo" en un vencido (sanidad_proximos_hechos)');
+  chequear('al abrir lee la tabla de hechos del establecimiento', a.llamadas.some(l => l.url.includes('sanidad_proximos_hechos') && l.url.includes('establecimiento=eq.la_vuelta') && l.metodo === 'GET'));
+  const p0 = (await abrir(resp)).doc.getElementById('vista-prox');
+  chequear('el botón sale solo en el vencido', p0.querySelectorAll('[data-hecho]').length === 1 && p0.querySelector('.card.rojo [data-hecho]'));
+  /* marcar: confirmación en la página, POST, se oculta */
+  let hechosSrv = [];
+  const conHechos = (url, metodo, opt) => {
+    if(url.includes('sanidad_proximos_hechos')){
+      if(metodo === 'POST'){ const f = JSON.parse(opt.body); const h = { id: 7, marcado_en: new Date().toISOString(), ...f }; hechosSrv.push(h); return { status: 201, body: [h] }; }
+      if(metodo === 'DELETE'){ const id = /id=eq\.(\d+)/.exec(url)[1]; const antes = hechosSrv.length; hechosSrv = hechosSrv.filter(h => String(h.id) !== id); return { status: 200, body: antes > hechosSrv.length ? [{ id: +id }] : [] }; }
+      return hechosSrv;
+    }
+    return resp(url);
+  };
+  const m = await abrir(conHechos);
+  const vp = () => m.doc.getElementById('vista-prox');
+  vp().querySelector('[data-hecho]').click();
+  chequear('pide confirmar en la página (sin confirm())', /¿Ya se hizo\?/.test(vp().textContent) && vp().querySelector('[data-hecho-si]') && !m.llamadas.some(l => l.metodo !== 'GET'));
+  vp().querySelector('[data-hecho-no]').click();
+  chequear('Cancelar no escribe nada', !vp().querySelector('[data-hecho-si]') && !m.llamadas.some(l => l.metodo !== 'GET'));
+  vp().querySelector('[data-hecho]').click(); vp().querySelector('[data-hecho-si]').click();
+  await dormir(50);
+  const post = m.llamadas.find(l => l.metodo === 'POST');
+  const cuerpo = post ? JSON.parse(post.body) : {};
+  chequear('POST a sanidad_proximos_hechos con el vencimiento', post && post.url.includes('sanidad_proximos_hechos') && cuerpo.categoria === 'Terneros' && cuerpo.sanidad === 'Clostridiales' && cuerpo.fecha_prevista === iso(-5) && cuerpo.establecimiento === 'la_vuelta', JSON.stringify(cuerpo));
+  chequear('si ya estaba marcado no falla (ignore-duplicates)', post && /resolution=ignore-duplicates/.test(post.headers.Prefer) && post.url.includes('on_conflict='));
+  chequear('el vencido desaparece y el contador baja a 0', /<b>0<\/b><span>vencidos/.test(vp().innerHTML) && !vp().querySelector('.card.rojo'));
+  chequear('queda en "Marcados como hechos (1)" con Deshacer', /Marcados como hechos \(1\)/.test(vp().textContent) && vp().querySelector('[data-deshacer="7"]'));
+  chequear('solo escribió una vez y solo en esa tabla', m.llamadas.filter(l => l.metodo !== 'GET').length === 1);
+  /* otro equipo: lo ve oculto */
+  const otro = await abrir(conHechos);
+  chequear('otro equipo lo ve oculto', !otro.doc.querySelector('#vista-prox .card.rojo') && /Marcados como hechos \(1\)/.test(otro.doc.getElementById('vista-prox').textContent));
+  /* deshacer */
+  vp().querySelector('[data-deshacer]').click();
+  await dormir(50);
+  const del = m.llamadas.find(l => l.metodo === 'DELETE');
+  chequear('Deshacer borra por id', del && del.url.includes('sanidad_proximos_hechos?id=eq.7'));
+  chequear('el vencido vuelve', vp().querySelector('.card.rojo [data-hecho]') && /<b>1<\/b><span>vencidos/.test(vp().innerHTML));
+  /* un tratamiento nuevo cambia la fecha prevista: lo marcado ya no lo oculta */
+  hechosSrv = [{ id: 9, establecimiento: 'la_vuelta', categoria: 'terneros ', sanidad: 'Clostridiales', fecha_prevista: iso(-40), marcado_en: new Date().toISOString() }];
+  const n = await abrir(conHechos);
+  chequear('un hecho de otra fecha prevista no oculta el vencimiento nuevo', n.doc.querySelector('#vista-prox .card.rojo') && !/Marcados como hechos/.test(n.doc.getElementById('vista-prox').textContent));
+  hechosSrv = [{ id: 10, establecimiento: 'la_vuelta', categoria: 'terneros ', sanidad: 'clostridiales', fecha_prevista: iso(-5), marcado_en: new Date().toISOString() }];
+  const n2 = await abrir(conHechos);
+  chequear('compara categoría y sanidad sin mayúsculas ni espacios', !n2.doc.querySelector('#vista-prox .card.rojo'));
+  /* error al guardar */
+  const e1 = await abrir((url, metodo) => url.includes('sanidad_proximos_hechos') ? (metodo === 'POST' ? { status: 401, body: { message: 'permission denied' } } : []) : resp(url));
+  const ve = () => e1.doc.getElementById('vista-prox');
+  ve().querySelector('[data-hecho]').click(); ve().querySelector('[data-hecho-si]').click();
+  await dormir(50);
+  chequear('si no se puede guardar avisa y el vencido sigue', /No se pudo guardar \(HTTP 401\)/.test(ve().textContent) && ve().querySelector('.card.rojo'));
+  /* sin la tabla (SQL no corrido): todo como antes */
+  const s = await abrir((url) => url.includes('sanidad_proximos_hechos') ? { status: 404, body: { message: 'no existe' } } : resp(url));
+  chequear('sin la tabla no hay botón y se ven todos', !s.doc.querySelector('[data-hecho]') && /<b>1<\/b><span>vencidos/.test(s.doc.getElementById('vista-prox').innerHTML));
+
   console.log('Clave del campo (Fase 4): La Vuelta y María Laura la mandan, Pone Chico no');
-  const rpcOk = (url, opt) => url.includes('rpc/verificar_clave') ? true : resp(url);
+  const rpcOk = (url) => url.includes('rpc/verificar_clave') ? true : resp(url);
   const rpcMala = (url) => url.includes('rpc/verificar_clave') ? false : resp(url);
   const hdr = l => l.headers['x-clave-campo'];
 
@@ -189,7 +248,7 @@ const resp = url => {
   const rpc1 = k1.llamadas.filter(l => l.url.includes('rpc/verificar_clave'));
   chequear('con clave: la comprueba UNA vez con POST {est, clave}', rpc1.length === 1 && rpc1[0].metodo === 'POST' && JSON.parse(rpc1[0].body).est === 'la_vuelta' && JSON.parse(rpc1[0].body).clave === 'claveprueba1', JSON.stringify(rpc1.map(l => l.body)));
   chequear('con clave buena: no hay aviso', k1.doc.getElementById('clave-aviso').hidden);
-  chequear('el POST es solo la comprobación (nunca escribe tablas)', k1.llamadas.filter(l => l.metodo !== 'GET').every(l => l.url.includes('rpc/verificar_clave')));
+  chequear('al abrir el único POST es la comprobación (no escribe tablas)', k1.llamadas.filter(l => l.metodo !== 'GET').every(l => l.url.includes('rpc/verificar_clave')));
 
   // clave que el servidor rechaza
   const k2 = await abrir(rpcMala, { clave_campo_la_vuelta: 'claveprueba1' });
@@ -233,6 +292,12 @@ const resp = url => {
   // cambiar de campo en el mismo tablero cambia el aviso
   k0.doc.getElementById('estab').value = 'pone_chico'; k0.doc.getElementById('estab').dispatchEvent(new k0.win.Event('change')); await dormir(50);
   chequear('al pasar a Pone Chico el aviso de clave desaparece', k0.doc.getElementById('clave-aviso').hidden);
+
+  // "Ya se hizo" también lleva la clave del campo
+  const kh = await abrir((url, metodo, opt) => url.includes('rpc/verificar_clave') ? true : url.includes('sanidad_proximos_hechos') ? (metodo === 'POST' ? { status: 201, body: [{ id: 3, ...JSON.parse(opt.body) }] } : []) : resp(url), { clave_campo_la_vuelta: 'claveprueba1' });
+  kh.doc.querySelector('#vista-prox [data-hecho]').click(); kh.doc.querySelector('#vista-prox [data-hecho-si]').click(); await dormir(50);
+  const postK = kh.llamadas.find(l => l.metodo === 'POST' && l.url.includes('sanidad_proximos_hechos'));
+  chequear('"Ya se hizo" manda la clave del campo', postK && hdr(postK) === 'claveprueba1', postK && JSON.stringify(postK.headers));
 
   console.log(fallas ? '\n' + fallas + ' FALLAS' : '\nTODO OK');
   process.exit(fallas ? 1 : 0);
