@@ -810,14 +810,23 @@ reemplaza por dos scripts de Python que usan **solo la clave pública**:
 
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
-RLS está **activado** (`relrowsecurity = true`) en las 8 tablas de este
-proyecto. Ninguna política filtra por `establecimiento` a nivel de base de
-datos — ese filtro (`.eq('establecimiento', ...)`) es solo del lado del
-cliente; la key pública puede en teoría leer/escribir filas de cualquier
-establecimiento en las tablas compartidas. Aceptado a propósito dado el
-modelo de amenaza real (todos los usuarios son la misma familia con la
-misma key pública, no hay login) — documentado acá para que quede explícito,
-no implícito.
+RLS está **activado** (`relrowsecurity = true`) en las tablas de este proyecto.
+
+**Desde el 27/10/2026 (cierre de la Fase 4, ver más abajo) las tablas operativas ya NO están abiertas a la llave
+pública**: `anon` solo contesta si el pedido trae el encabezado `x-clave-campo` con la clave del establecimiento
+(`public.establecimientos_con_clave()`; `establecimientos_permitidos()` suma los campos abiertos a propósito, hoy
+solo `pone_chico`). La tabla de abajo muestra **qué operaciones permite la política una vez que hay clave** (las
+columnas de ✅/❌ son las de antes de la clave y siguen valiendo como "qué operaciones existen"). Excepciones: 
+`productos_catalogo` se lee sin clave (lista de referencia); el stream de Pone Chico (`eventos_sync`, `stock_potreros`,
+`sanidad_carga_pone_chico`, `sanidad_ultimos`, `sanidad_proximos`, `sanidad_proximos_hechos` y las fotos de su carpeta)
+sigue abierto; `movimientos_dicose` sigue sin ningún permiso para `anon`. Quedan fuera de esta auditoría, **legibles con
+la llave pública**, `comprobantes`, `proveedores`, `cotizaciones`, `precios_vet` y `alias_productos` (de los proyectos de
+Zureo/precios, no de los potreros). Quien tiene la clave de un campo puede escribir en su stream (una clave por campo,
+compartida con el empleado de Campo). Para ver el estado real: la consulta de `anon` de `scripts/seguridad/README.md`
+y `python scripts/seguridad/verificar_fase4.py --cierre`.
+
+(Antes del cierre: ninguna política filtraba por `establecimiento` y la llave pública podía leer/escribir filas de
+cualquier campo; se había aceptado dado el modelo de amenaza —misma familia, sin login— hasta la Fase 4.)
 
 | Tabla | SELECT | INSERT | UPDATE | DELETE |
 |---|---|---|---|---|
@@ -828,9 +837,9 @@ no implícito.
 | `sanidad_carga_pone_chico` | ✅ | ✅ | ✅ | ✅ *(7/10/2026)* |
 | `sanidad_ultimos` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2: `anon` solo lee; la escribe `actualizar_sanidad_supabase.py` con la clave privada)* |
 | `sanidad_proximos` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2: `anon` solo lee; la escribe `actualizar_sanidad_supabase.py` con la clave privada)* |
-| `animales_caravana` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2: `anon` solo lee; antes tenía una política "ALL". La escribe `publicar_animales.py` con la clave privada. Sigue legible con la llave pública hasta la Fase 4)* |
+| `animales_caravana` | ✅ | ❌ | ❌ | ❌ *(10/10/2026, Fase 2: `anon` solo lee; antes tenía una política "ALL". La escribe `publicar_animales.py` con la clave privada. Desde el cierre de la Fase 4 (27/10/2026) solo se lee con la clave del campo)* |
 | `stock_potreros` (16/9/2026) | ✅ | ✅ | ✅ | ✅ *(una sola política "ALL", igual criterio que `eventos_sync`)* |
-| `sanidad_proximos_hechos` (21/10/2026) | ✅ | ✅ | ❌ | ✅ *(tablero de Sanidad, "Ya se hizo"; solo oculta tarjetas. No está en `fase4_cierre.sql`: sumarla al cerrar)* |
+| `sanidad_proximos_hechos` (21/10/2026) | ✅ | ✅ | ❌ | ✅ *(tablero de Sanidad, "Ya se hizo"; solo oculta tarjetas; entró al cierre el 27/10/2026, SELECT/INSERT/DELETE con la clave del campo)* |
 | `maestros_dicose` (9/10/2026) | ✅ | ✅ | ❌ | ❌ *(dos políticas para `anon`: SELECT e INSERT, sin UPDATE ni DELETE; catálogos de compradores / comisionistas / clientes y proveedores. La app agrega con `upsert` + `ignoreDuplicates` (ON CONFLICT DO NOTHING). Actualizar o desactivar una entrada lo hace solo la clave privada)* |
 | `movimientos_dicose` (9/10/2026) | ❌ | ❌ | ❌ | ❌ *(`anon` sin ningún permiso: ni SELECT, INSERT ni UPDATE; lleva importes, descuentos y DICOSE de terceros. La lee y la llena solo el script de la PC con la clave privada. La vista `movimientos_dicose_vigentes` es `security_invoker = true`)* |
 
@@ -985,13 +994,19 @@ siguen abiertas.
   **Probado el 21/10/2026 contra un Postgres 16 real** (`scripts/seguridad/probar_cierre.js`, PGlite, 68 verificaciones, con el deshacer). Encontró que el SQL
   original **abortaba**: en una política, `= any ((select f()))` falla con `text = text[]` (Postgres lo lee como subconsulta); hay que escribir
   `= any ((select f())::text[])`. Y que **volver a correr `fase4_cierre.sql` reinserta `pone_chico` en `campos_abiertos`**: para ponerle clave, borrarlo y no re-ejecutar el cierre.
-- *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`, escritos y revisados, **no corridos**): las políticas
-  pasan a exigir `establecimientos_con_clave()`. **No correrlo hasta que `private.equipos_vistos` muestre todos los
-  equipos activos con `con_clave = true` y los scripts de la PC que usan la llave pública
-  (`pasar_traslados_a_excel.py`, `sanidad_puente.py`, `bajar_sanidad_de_potreros.py`,
-  `regenerar_stock_potreros_excel.py`, `vigilar_tareas_sanidad.py`) ya usen `SUPABASE_SECRET_KEY`**; el informe de
-  nacimientos (Playwright) necesita la clave en su `localStorage`. Pasos exactos en `scripts/seguridad/README.md`.
-  Cuando se corra, actualizar la tabla de arriba ("RLS real por tabla").
+- *Release 2, el cierre* (`fase4_cierre.sql` + `_deshacer.sql`): **CORRIDO el 27/10/2026** (por el conector Supabase, a pedido
+  de Pedro, en una transacción; respaldos en `auditoria_politicas_antes_fase4` y `auditoria_privilegios_antes_fase4`). Las
+  políticas pasaron a exigir `establecimientos_con_clave()`/`establecimientos_permitidos()` en las 11 tablas y en
+  `storage.objects` (bucket `fotos-reportes`, ampliado ese día; PR 27). Antes se comprobó: `private.equipos_vistos` sin
+  equipos reales activos con `con_clave = false`, los 5 scripts de la PC con `SUPABASE_SECRET_KEY` en `~/.potreros/.env`, el
+  informe de nacimientos con las claves y el tablero publicado mandando `x-clave-campo`. **Verificado después**:
+  `verificar_fase4.py --cierre` "Todo OK"; con la llave pública, sin clave 0 filas en `sanidad_carga`, `animales_caravana`,
+  `stock_potreros`, `sanidad_ultimos` y 401 en `movimientos_dicose`, con la clave de La Vuelta se lee; en una app real se
+  probó un traslado La Vuelta → María Laura y una foto de un reporte (subida a Storage + evento `reporte_foto`).
+  *Lección de la prueba de la foto*: la foto sale con el reporte solo si ya está elegida en el formulario antes de tocar
+  "ubicación actual"; el primer intento no la llevaba y no era un fallo del cierre.
+  Para volver atrás: `fase4_cierre_deshacer.sql` (reabre todo). **Pendiente**: rotar el token personal `sbp_` de Hermes
+  (ignora RLS), decidir las tablas de otros proyectos de arriba, y vigilar `equipos_vistos`/el cartel "trabados" unos días.
 
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del
