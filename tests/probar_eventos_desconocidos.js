@@ -191,8 +191,8 @@ async function probarArchivo(archivo){
     const sobran = [...conocidos].filter(t => !doc.has(t));
     chequear('todo tipo documentado en docs/eventos.md está en TIPOS_EVENTO_CONOCIDOS', faltan.length === 0, 'faltan: ' + faltan.join(', '));
     chequear('y no hay tipos de más (los dos se mantienen juntos)', sobran.length === 0, 'sobran: ' + sobran.join(', '));
-    const acc = ['eliminar', 'editar', 'anular_traslado', 'reclasificar', 'agregar_caravana', 'completar_datos', 'agregar_guia'];
-    chequear('ACCIONES_CORRECCION_CONOCIDAS tiene las 7 acciones', acc.every(a => acciones.has(a)) && acciones.size === acc.length, [...acciones].join(','));
+    const acc = ['eliminar', 'editar', 'anular_traslado', 'reclasificar', 'agregar_caravana', 'completar_datos', 'agregar_guia', 'vecino_eliminar'];
+    chequear('ACCIONES_CORRECCION_CONOCIDAS tiene las 8 acciones', acc.every(a => acciones.has(a)) && acciones.size === acc.length, [...acciones].join(','));
   }
 
   // --- un tipo futuro (con el establecimiento como "potrero", como lluvia) se guarda aparte

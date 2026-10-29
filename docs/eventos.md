@@ -145,11 +145,24 @@ Un `correccion` anula, edita o completa un evento anterior. El evento original *
 | `agregar_guia` | `{tipoOriginal, categoria, cantidad, dueno, guia, fechaOriginal, eventIdOriginal?}` | pone o borra la guía de una compra/venta |
 | `agregar_caravana` | `{tipoOriginal, casoId, categoria, cantidad, dueno, caravana, fechaOriginal, eventIdOriginal?}` | pone la caravana de una muerte |
 | `completar_datos` | `{tipoOriginal, categoria, cantidad, dueno, fin, precio, contraparte, fechaOriginal, eventIdOriginal?}` | agrega el detalle financiero a una compra/venta cargada rápido |
+| `vecino_eliminar` | `{tipoOriginal, historialId, fechaOriginal, reversar, eventIdOriginal?, casoId?, cantidad?}` | borra un evento de vecino (`vecino_paso`, `vecino_retorno`, `vecino_aparecido`, `vecino_perdida`, `vecino_muerte`): deshace el efecto de `reversar` (un `vecino_ajuste`, ver abajo) y tacha el renglón del potrero y el del vecino. Es **una acción nueva** (29/10/2026): las versiones que no la conocen la guardan en `estado.eventosDesconocidos` y la aplican cuando se actualizan, en vez de aplicar mal un `eliminar` antes de conocer el evento original. Para `vecino_perdida` y `vecino_muerte` el `potrero` del evento es el nombre del establecimiento (no hay potrero real). En `vecino_muerte` `tipoOriginal` cuenta en `calcularEstadisticasMuertes()` como un `eliminar` |
 | `anular_traslado` | `{tipoOriginal:'traslado_entrada', trasladoId, guia, fechaOriginal, origenEstablecimiento}` | **stream del destino**: anula la entrada de un traslado cuando se borra su salida. `origenEstablecimiento` (desde la Fase 4, 13/10/2026) es el id del campo que anula (`la_vuelta`, `maria_laura`, `pone_chico`; el mismo que `ESTABLECIMIENTO` en la app de origen): la política del cierre deja pasar este evento si el pedido trae la clave de ese campo. Los eventos anteriores no lo traen |
 
 `reversar` es un ajuste que la app sabe aplicar al revés. Sus `tipo` son: `sumar`, `restar`,
 `mover`, `mover_todo`, `mover_multi`, `traslado_salida_ajuste` (lleva `trasladoId`),
-`movimiento_guia_ajuste` (lleva `movId`), `envio_campo_ajeno_ajuste`, `retorno_campo_ajeno_ajuste`.
+`movimiento_guia_ajuste` (lleva `movId`), `envio_campo_ajeno_ajuste`, `retorno_campo_ajeno_ajuste`,
+y `vecino_ajuste` (29/10/2026, potrero virtual "Vecino"):
+
+`{tipo:'vecino_ajuste', vecino, categoria, dueno, cantidad, potrero, potreroDelta, vecinoDelta, grupoTernero?}`
+
+- `vecino` es el nombre del vecino tal como lo guarda el balde (se ubica por `claveVecino`: sin mayúsculas ni tildes).
+- `potrero` es el potrero real a ajustar, o `null` cuando el evento no toca potrero (aparecido, perdida, muerte).
+- `potreroDelta` se suma al stock del potrero (0 si no toca potrero) y `vecinoDelta` al del vecino; ambos con tope en 0.
+  Paso: `potreroDelta: +n, vecinoDelta: -n`. Retorno: `potreroDelta: -n, vecinoDelta: +n`. Aparecido: `vecinoDelta: -n`
+  (y el caso vuelve a pendiente). Perdida y muerte: `vecinoDelta: +n` (la muerte lleva `grupoTernero` si lo tenía).
+
+Las correcciones de `vecino_perdida` y `vecino_muerte` llevan el nombre del establecimiento en la columna `potrero`
+(no hay potrero real); las de paso, retorno y aparecido llevan el potrero del renglón.
 
 **Cómo se ubica el original.**
 
@@ -171,6 +184,11 @@ Un `correccion` anula, edita o completa un evento anterior. El evento original *
    `historialId`.
 
 `eventIdOriginal` es opcional: una corrección sin él es válida y se ubica por parecido.
+
+Una corrección de vecino (`vecino_eliminar`) siempre lleva `eventIdOriginal`. Si el original no se aplicó en el equipo
+(su potrero todavía no existe y el evento quedó estacionado), la corrección se estaciona detrás de él; si no está en
+ningún lado, no se aplica nada. Una corrección repetida no revierte el stock otra vez: si todos los renglones del
+original ya están tachados, se ignora.
 
 ## Clave del campo y eventos que cruzan de stream
 

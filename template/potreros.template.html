@@ -1965,6 +1965,14 @@ function claveVecino(nombre){
   return normalizarVecino(nombre).toLowerCase().replace(/ñ/g, '\u0001')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0001/g, 'ñ');
 }
+/* 29/10/2026 (revisión etapa 3): busca el balde de un vecino por claveVecino() SIN crearlo. El nombre que trae un evento
+   o un renglón puede tener otra grafía ("Fulano" vs "fulano"); indexar estado.vecinos[nombre] directo falla en ese caso. */
+function buscarVecino(nombre){
+  const clave = claveVecino(nombre);
+  if(!clave) return null;
+  const k = Object.keys(estado.vecinos || {}).find(x => claveVecino(x) === clave);
+  return k ? estado.vecinos[k] : null;
+}
 /* Devuelve el balde del vecino (lo crea si no existe). Si ya hay uno con el mismo claveVecino() usa ESE nombre, así
    nunca quedan dos baldes para la misma persona. Devuelve null si el nombre no sirve. */
 function obtenerVecino(nombre){
@@ -2564,7 +2572,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'correccion'
 ]);
 const ACCIONES_CORRECCION_CONOCIDAS = new Set([
-  'eliminar', 'editar', 'anular_traslado', 'reclasificar', 'agregar_caravana', 'completar_datos', 'agregar_guia'
+  'eliminar', 'editar', 'anular_traslado', 'reclasificar', 'agregar_caravana', 'completar_datos', 'agregar_guia', 'vecino_eliminar'
 ]);
 const TOPE_EVENTOS_DESCONOCIDOS = 500;
 function eventoEsDesconocido(row){
@@ -2671,9 +2679,22 @@ function aplicarEventoVecino(row, d, potrero, potrerosSucios){
 function aplicarCorreccionVecino(row, d){
   const idOriginal = (typeof d.eventIdOriginal === 'string' && d.eventIdOriginal) ? d.eventIdOriginal : null;
   const porId = renglonesPorEventId(idOriginal);
-  if(porId.length && !porId.some(h=> !h.eliminado)) return;
-  porId.forEach(h=>{ if(!h.eliminado){ h.eliminado = true; h.detalle += (d.accion === 'eliminar' ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)'); } });
+  if(!porId.length){
+    // el original no se aplicó acá: si está estacionado (su potrero no existe todavía), la corrección va detrás de él
+    // en la misma lista; si no está en ningún lado, no se aplica nada a ciegas
+    const pend = nombreListaPendiente(idOriginal);
+    if(pend) estacionarEvento(pend, row);
+    return;
+  }
+  if(!porId.some(h=> !h.eliminado)) return;
+  porId.forEach(h=>{ if(!h.eliminado){ h.eliminado = true; h.detalle += ((d.accion==='eliminar' || d.accion==='vecino_eliminar') ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)'); } });
   aplicarAjusteReversion(d.reversar, row.fecha_cliente || fechaHoy());
+}
+/* Nombre de la lista de pendientes (estado.pendientesPotrero) donde está estacionado el evento `eventId`, o null. */
+function nombreListaPendiente(eventId){
+  if(!eventId) return null;
+  const e = Object.entries(estado.pendientesPotrero || {}).find(([n, l]) => (l || []).some(r => r.event_id === eventId));
+  return e ? e[0] : null;
 }
 /* Ajuste inverso de un evento de vecino: `potreroDelta` sobre el potrero (si tiene) y `vecinoDelta` sobre el vecino.
    Topes en 0, igual que el resto de los ajustes. */
@@ -3009,7 +3030,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
 
   // 29/10/2026 (etapa 3): la corrección de un vecino que no toca potrero (perdida, muerte, aparecido) trae el
   // establecimiento en `potrero`: se despacha antes del guard, como vecino_perdida/muerte.
-  if(row.tipo === 'correccion' && d.reversar && d.reversar.tipo === 'vecino_ajuste' && !d.reversar.potrero){
+  if(row.tipo === 'correccion' && d.accion === 'vecino_eliminar' && d.reversar && d.reversar.tipo === 'vecino_ajuste' && !d.reversar.potrero){
     aplicarCorreccionVecino(row, d);
     return;
   }
@@ -3145,6 +3166,13 @@ function aplicarEventoRemoto(row, potrerosSucios){
     // viejo) o sin renglones con ese id (cargados antes de esta versión) sigue el parecido de siempre.
     const idOriginal = (typeof d.eventIdOriginal === 'string' && d.eventIdOriginal) ? d.eventIdOriginal : null;
     const porId = renglonesPorEventId(idOriginal);
+    // 29/10/2026 (revisión etapa 3): sin renglones del original no se revierte a ciegas: se estaciona detrás del original
+    // si está estacionado, y si no, no-op
+    if(d.reversar && d.reversar.tipo === 'vecino_ajuste' && !porId.length){
+      const pend = nombreListaPendiente(idOriginal);
+      if(pend) estacionarEvento(pend, row);
+      return;
+    }
     // 29/10/2026: un ajuste de vecino ya deshecho (todos sus renglones tachados) no se revierte otra vez
     if(d.reversar && d.reversar.tipo === 'vecino_ajuste' && porId.length && !porId.some(h=> !h.eliminado)) return;
     if(d.accion === 'anular_traslado'){
@@ -3315,7 +3343,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     };
     const tachar = (h)=>{
       h.eliminado = true;
-      h.detalle += (d.accion==='eliminar' ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)');
+      h.detalle += ((d.accion==='eliminar' || d.accion==='vecino_eliminar') ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)');
     };
     if(porId.length){
       // ubicado por event_id: se tachan los renglones vigentes de ESE evento (una o las dos puntas)
@@ -3392,7 +3420,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     aplicarAjusteReversion(d.reversar, fechaEvt);
     if(potrerosSucios && r){ [r.potrero, r.origen, r.destino].forEach(n=>{ if(n) potrerosSucios.add(n); }); }
     if(!marcado){
-      const texto = d.accion==='eliminar'
+      const texto = (d.accion==='eliminar' || d.accion==='vecino_eliminar')
         ? `Corrección (sincronizada): se eliminó un movimiento de ${d.tipoOriginal}`
         : `Corrección (sincronizada): se editó un movimiento de ${d.tipoOriginal}`;
 <!-- @pc:start -->
@@ -4736,7 +4764,7 @@ function borrarRenglonVecino(h, potreroHost){
   if(!e) return;
   const n = Number(e.cantidad) || 0;
   const key = claveAnimal(e.categoria, e.dueno);
-  const v = estado.vecinos && estado.vecinos[e.vecino];
+  const v = buscarVecino(e.vecino);
   if((h.tipo==='vecino_paso' || h.tipo==='vecino_aparecido') && (((v && v.animales[key]) || 0) < n)){
     toast(`No se puede borrar: ya no hay ${n} ${e.categoria} en el campo de ${e.vecino} (volvieron o se dieron por perdidos). Corregí eso primero.`);
     return;
@@ -4755,7 +4783,7 @@ function borrarRenglonVecino(h, potreroHost){
   mismos.forEach(x=>{ if(!x.eliminado){ x.eliminado = true; x.detalle = x.detalle + ' — ELIMINADO'; } });
   const potreroEv = (h.tipo==='vecino_perdida' || h.tipo==='vecino_muerte') ? ESTABLECIMIENTO : potreroHost;
   enviarEvento('correccion', potreroEv,
-    Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion: 'eliminar', reversar: ajuste, fechaOriginal: h.fecha},
+    Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion: 'vecino_eliminar', reversar: ajuste, fechaOriginal: h.fecha},
       conIdOriginal(h), h.casoId ? {casoId: h.casoId, cantidad: n} : {}),
     undefined, {eventId: crypto.randomUUID()});
   guardarEstado(); actualizarTodo();
@@ -4765,7 +4793,7 @@ function borrarRenglonVecino(h, potreroHost){
   toast('Movimiento eliminado y corregido');
 }
 function borrarRenglonVecinoDesdeVentana(nombre, id){
-  const v = estado.vecinos && estado.vecinos[nombre];
+  const v = buscarVecino(nombre);
   const h = v && (v.historial || []).find(x=> x.id === id);
   if(h) borrarRenglonVecino(h, h.potrero || null);
 }
@@ -7680,7 +7708,7 @@ async function calcularEstadisticasMuertes(){
     if(ev.tipo==='muerte' || ev.tipo==='muerte_desaparecido' || ev.tipo==='vecino_muerte'){
       acumularMes(ev.fecha_cliente, d.cantidad||0, CATEGORIA_ESPECIE[d.categoria]);
       acumularTerneros(ev.fecha_cliente, d.cantidad||0, d.categoria, d.grupoTernero);
-    } else if(ev.tipo==='correccion' && (d.accion==='eliminar' || d.accion==='editar') && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido' || d.tipoOriginal==='vecino_muerte') && d.reversar){
+    } else if(ev.tipo==='correccion' && (d.accion==='eliminar' || d.accion==='vecino_eliminar' || d.accion==='editar') && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido' || d.tipoOriginal==='vecino_muerte') && d.reversar){
       // 10/10/2026: tambien 'editar' (la PC la manda desde el 3/10): reversa igual
       // que borrar, y la muerte nueva entra aparte; antes la vieja seguia contando.
       acumularMes(d.fechaOriginal || ev.fecha_cliente, -((d.reversar.cantidad)||0), CATEGORIA_ESPECIE[d.reversar.categoria]);
@@ -12729,7 +12757,7 @@ async function calcularEstadisticasMuertes(){
     if(ev.tipo==='muerte' || ev.tipo==='muerte_desaparecido' || ev.tipo==='vecino_muerte'){
       acumularMes(ev.fecha_cliente, d.cantidad||0, CATEGORIA_ESPECIE[d.categoria]);
       acumularTerneros(ev.fecha_cliente, d.cantidad||0, d.categoria, d.grupoTernero);
-    } else if(ev.tipo==='correccion' && (d.accion==='eliminar' || d.accion==='editar') && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido' || d.tipoOriginal==='vecino_muerte') && d.reversar){
+    } else if(ev.tipo==='correccion' && (d.accion==='eliminar' || d.accion==='vecino_eliminar' || d.accion==='editar') && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido' || d.tipoOriginal==='vecino_muerte') && d.reversar){
       // 10/10/2026: tambien 'editar' (la PC la manda desde el 3/10): reversa igual
       // que borrar, y la muerte nueva entra aparte; antes la vieja seguia contando.
       acumularMes(d.fechaOriginal || ev.fecha_cliente, -((d.reversar.cantidad)||0), CATEGORIA_ESPECIE[d.reversar.categoria]);
