@@ -283,10 +283,11 @@ async function probarArchivo(archivo){
   const paso_ui = async (P, nombre, cat, cant) => {
     A.__sel(P); await dormir(10);
     click(A, doc.querySelector('[data-accion="vecino"]'));
-    doc.getElementById('f-dueno').value = dueno0;
+    const fila = doc.querySelector('#vec-filas .vec-fila');
+    fila.querySelector('[data-vp="dueno"]').value = dueno0;
     doc.getElementById('f-vecino').value = nombre;
-    doc.getElementById('f-cat').value = cat;
-    doc.getElementById('f-cant').value = String(cant);
+    fila.querySelector('[data-vp="cat"]').value = cat;
+    fila.querySelector('[data-vp="cant"]').value = String(cant);
     doc.getElementById('f-fecha').value = hoyF;
     click(A, doc.getElementById('f-confirmar'));
     await dormir(40);
@@ -321,6 +322,60 @@ async function probarArchivo(archivo){
     if(!b){ chequear(`hay 🗑 en ${tipo} de ${n}`, false); return; }
     click(A, b); await dormir(40);
   };
+
+  // (m) varias categorías en un mismo registro (30/10/2026): una fila por categoría, un evento por fila
+  console.log('  -- varias categorías juntas');
+  enRegistro('ingreso', P0, {categoria: 'Vacas', dueno: dueno0, cantidad: 6});
+  enRegistro('ingreso', P0, {categoria: 'Terneros', dueno: dueno0, cantidad: 6});
+  const pasoMulti = async (P, nombre, filas) => {
+    A.__sel(P); await dormir(10);
+    click(A, doc.querySelector('[data-accion="vecino"]'));
+    for(let i = 1; i < filas.length; i++) click(A, doc.getElementById('vec-agregar-fila'));
+    const fs = doc.querySelectorAll('#vec-filas .vec-fila');
+    filas.forEach(([cat, cant], i) => {
+      fs[i].querySelector('[data-vp="dueno"]').value = dueno0;
+      fs[i].querySelector('[data-vp="cat"]').value = cat;
+      fs[i].querySelector('[data-vp="cant"]').value = String(cant);
+    });
+    doc.getElementById('f-vecino').value = nombre;
+    doc.getElementById('f-fecha').value = hoyF;
+    click(A, doc.getElementById('f-confirmar'));
+    await dormir(40);
+  };
+  const volvioMulti = async (n, filas, potrero) => {
+    ventana();
+    click(A, tarjeta(n).querySelector('[data-vec-accion="volvio"]'));
+    const f = tarjeta(n).querySelector('.vec-form');
+    for(let i = 1; i < filas.length; i++) click(A, f.querySelector('[data-vec-agregar-fila]'));
+    const fs = f.querySelectorAll('.vec-fila');
+    filas.forEach(([cat, cant], i) => { cambiar(A, fs[i].querySelector('[data-vf="clave"]'), K(cat)); fs[i].querySelector('[data-vf="cant"]').value = String(cant); });
+    cambiar(A, f.querySelector('[data-vf="potrero"]'), potrero);
+    click(A, f.querySelector('[data-vec-confirmar="volvio"]'));
+    await dormir(40);
+  };
+  { const v0 = sv(P0, 'Vacas'), t0 = sv(P0, 'Terneros');
+    await pasoMulti(P0, 'Multi', [['Vacas', 2], ['Terneros', 3]]);
+    chequear('varias: el potrero resta las dos categorías', sv(P0, 'Vacas') === v0 - 2 && sv(P0, 'Terneros') === t0 - 3, `${sv(P0,'Vacas')}/${sv(P0,'Terneros')}`);
+    chequear('varias: el vecino suma las dos categorías', vAn('Multi', 'Vacas') === 2 && vAn('Multi', 'Terneros') === 3);
+    const evs = sA.filas.eventos_sync.filter(f => f.tipo === 'vecino_paso' && f.detalle.vecino === 'Multi');
+    chequear('varias: sale un vecino_paso por categoría, cada uno con su event_id', evs.length === 2 && evs[0].event_id !== evs[1].event_id && evs.every(e => e.fecha_cliente === evs[0].fecha_cliente), String(evs.length));
+    const antes = snap(A), nEv = sA.filas.eventos_sync.length;
+    await pasoMulti(P0, 'Multi', [['Vacas', sv(P0, 'Vacas')], ['Vacas', 1]]);
+    chequear('varias: dos filas de la misma categoría que juntas superan el stock no cambian nada', snap(A) === antes && sA.filas.eventos_sync.length === nEv);
+    const p1v = sv(P1, 'Vacas'), p1t = sv(P1, 'Terneros');
+    await volvioMulti('Multi', [['Vacas', 1], ['Terneros', 2]], P1);
+    chequear('varias: "Volvió" con dos categorías vuelve las dos al potrero', sv(P1, 'Vacas') === p1v + 1 && sv(P1, 'Terneros') === p1t + 2 && vAn('Multi', 'Vacas') === 1 && vAn('Multi', 'Terneros') === 1, `${vAn('Multi','Vacas')}/${vAn('Multi','Terneros')}`);
+    const antesV = snap(A), nEvV = sA.filas.eventos_sync.length;
+    await volvioMulti('Multi', [['Terneros', 1], ['Terneros', 1]], P1);
+    chequear('varias: "Volvió" con más de lo que hay en el vecino no cambia nada', snap(A) === antesV && sA.filas.eventos_sync.length === nEvV);
+    if(esPC){
+      A.__sel(P1); await dormir(10);
+      const el = [...doc.querySelectorAll('#historial .hist-item.vecino_retorno')].find(x => x.textContent.includes('Multi') && x.textContent.includes('Terneros'));
+      const b = el && el.querySelector('[data-hist-borrar]');
+      if(b){ click(A, b); await dormir(40); }
+      chequear('varias (PC): borrar la vuelta de Terneros deja la de Vacas', !!b && sv(P1, 'Terneros') === p1t && sv(P1, 'Vacas') === p1v + 1 && vAn('Multi', 'Terneros') === 3 && vAn('Multi', 'Vacas') === 1, `${sv(P1,'Terneros')} ${sv(P1,'Vacas')} ${vAn('Multi','Terneros')}`);
+    }
+  }
 
   // (a) "Al vecino" + bug "Fulano"/"fulano": borrar un renglón cuya grafía no coincide con el balde no bloquea
   enRegistro('desaparecido', P0, {categoria: 'Vacas', dueno: dueno0, cantidad: 2, obs: null, casoId: 'caso-ui'});

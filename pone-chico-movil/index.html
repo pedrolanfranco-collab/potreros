@@ -511,7 +511,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.13</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.14</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -992,7 +992,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.15","versionMovil":"2.13","simpleHabilitado":true,"versionMovilSimple":"1.53","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.16","versionMovil":"2.14","simpleHabilitado":true,"versionMovilSimple":"1.54","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1684,7 +1684,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'movil-2.13';
+const VERSION_APP = 'movil-2.14';
 /* `opciones` (opcional): {eventId} para fijar el id del evento, y {establecimiento}
    para escribirlo en el stream de OTRO establecimiento (traslados entre campos; la
    cola guarda el establecimiento destino junto con el evento). */
@@ -6108,41 +6108,51 @@ function mostrarFormulario(nombre, accion, prefill){
         <h3>Pasó al vecino desde ${esc(nombre)}</h3>
         <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Animales nuestros que ahora están en el campo de un vecino. Salen de acá y quedan en 🛠 Herramientas › 🏡 Vecinos, donde después se anota la vuelta, la pérdida o la muerte.</p>
         <div class="form-row"><label>Vecino</label><input type="text" id="f-vecino" list="dl-vecinos" maxlength="40" placeholder="Nombre del vecino"><datalist id="dl-vecinos">${listarVecinos().map(v=>`<option value="${esc(v)}"></option>`).join('')}</datalist></div>
-        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
-        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos()}</select></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
+        <div style="font-size:12px;color:var(--texto-suave);margin:4px 0;">Categoría · ${esc(CONFIG.duenoLabel)} · Cantidad · Caravana (opcional, mín. 8 dígitos)</div>
+        <div id="vec-filas">${filaPasoVecinoHTML()}</div>
+        <button type="button" class="btn btn-secundario btn-full" id="vec-agregar-fila" style="margin-bottom:8px;">＋ Otra categoría</button>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
-        <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="f-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
         <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: pasó por el alambrado del norte"></div>
         <div class="form-botones">
           <button class="btn btn-muerte" id="f-confirmar">Registrar</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
+    const filasVec = document.getElementById('vec-filas');
+    document.getElementById('vec-agregar-fila').addEventListener('click', ()=>{
+      filasVec.insertAdjacentHTML('beforeend', filaPasoVecinoHTML());
+      actualizarQuitarFilasVecino(filasVec);
+    });
+    filasVec.addEventListener('click', (e)=>{
+      if(e.target.classList.contains('vec-quitar')){ e.target.closest('.vec-fila').remove(); actualizarQuitarFilasVecino(filasVec); }
+    });
+    actualizarQuitarFilasVecino(filasVec);
     document.getElementById('f-confirmar').addEventListener('click', ()=>{
       const vecino = normalizarVecino(document.getElementById('f-vecino').value);
-      const cat = document.getElementById('f-cat').value;
-      const dueno = document.getElementById('f-dueno').value;
-      const cant = parseInt(document.getElementById('f-cant').value,10);
       const fechaISO = document.getElementById('f-fecha').value;
-      const caravanaRaw = document.getElementById('f-caravana').value.trim();
       const obs = document.getElementById('f-obs').value.trim();
-      // se valida TODO antes de tocar stock o mandar nada
+      const items = Array.from(filasVec.querySelectorAll('.vec-fila')).map(f=>({
+        categoria: f.querySelector('[data-vp="cat"]').value,
+        dueno: f.querySelector('[data-vp="dueno"]').value,
+        cantidad: parseInt(f.querySelector('[data-vp="cant"]').value, 10),
+        caravana: f.querySelector('[data-vp="caravana"]').value.trim()
+      }));
+      // se valida TODO (todas las filas) antes de tocar stock o mandar nada
       if(!vecino){ toast('Escribí el nombre del vecino'); return; }
-      if(caravanaRaw && !/^\d{8,}$/.test(caravanaRaw)){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
-      const a = estado.potreros[nombre].animales;
-      const key = claveAnimal(cat, dueno);
-      const disponibles = a[key] || 0;
-      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
-      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${nombre}`); return; }
+      if(items.some(it=> !it.cantidad || it.cantidad < 1)){ toast('Ingresá una cantidad válida en cada categoría'); return; }
+      if(items.some(it=> it.caravana && !/^\d{8,}$/.test(it.caravana))){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
+      const falta = faltanteFilasVecino(items, estado.potreros[nombre].animales);
+      if(falta){ toast(`Solo hay ${falta.hay} ${falta.categoria}${falta.dueno?' de '+falta.dueno:''} en ${nombre} y pedís ${falta.pide}`); return; }
       if(!fechaISO){ toast('Elegí una fecha'); return; }
       const fecha = fechaISOaDisplay(fechaISO);
-      const eventId = crypto.randomUUID();
-      const d = {vecino, categoria: cat, dueno, cantidad: cant, caravana: caravanaRaw || null, obs: obs || null};
-      aplicarVecinoLocal('vecino_paso', nombre, d, fechaISO, eventId);
-      enviarEvento('vecino_paso', nombre, d, fecha, {eventId});
+      items.forEach(it=>{
+        const eventId = crypto.randomUUID();
+        const d = {vecino, categoria: it.categoria, dueno: it.dueno, cantidad: it.cantidad, caravana: it.caravana || null, obs: obs || null};
+        aplicarVecinoLocal('vecino_paso', nombre, d, fechaISO, eventId);
+        enviarEvento('vecino_paso', nombre, d, fecha, {eventId});
+      });
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
-      toast(`Anotado: ${cant} ${cat} en el campo del vecino ${vecino}`);
+      toast(`Anotado: ${items.map(it=>`${it.cantidad} ${it.categoria}`).join(', ')} en el campo del vecino ${vecino}`);
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
@@ -7095,6 +7105,40 @@ function tarjetaVecinoHTML(nombre, conAcciones){
     ${historialVecinoHTML(v)}
   </div>`;
 }
+/* 30/10/2026: "Al vecino" y "Volvió" aceptan varias categorías en un mismo registro (mismo patrón de filas que Campo
+   ajeno). Cada fila sale como SU propio evento vecino_paso / vecino_retorno, con su eventId: el contrato de eventos, borrar
+   en la PC (🗑 por categoría) y Verificar stock no cambian. */
+function filaPasoVecinoHTML(){
+  return `<div class="form-row vec-fila" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+    <select data-vp="cat" style="flex:2;">${opcionesCategorias()}</select>
+    <select data-vp="dueno" style="flex:2;">${opcionesDuenos()}</select>
+    <input type="number" data-vp="cant" min="1" value="1" style="flex:1;min-width:56px;">
+    <input type="text" data-vp="caravana" placeholder="caravana" inputmode="numeric" style="flex:2;min-width:96px;">
+    <button type="button" class="vec-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+  </div>`;
+}
+function filaVolvioVecinoHTML(nombre){
+  const opciones = detalleAnimales(estado.vecinos[nombre].animales)
+    .map(x=>`<option value="${esc(claveAnimal(x.cat, x.dueno))}">${esc(x.cat)} · ${esc(textoFirma(x.dueno))} (hay ${x.cant})</option>`).join('');
+  return `<div class="form-row vec-fila" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+    <select data-vf="clave" style="flex:3;">${opciones}</select>
+    <input type="number" data-vf="cant" min="1" value="1" style="flex:1;min-width:56px;">
+    <button type="button" class="vec-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+  </div>`;
+}
+function actualizarQuitarFilasVecino(cont){
+  const filas = cont.querySelectorAll('.vec-fila');
+  filas.forEach(f=>{ const q = f.querySelector('.vec-quitar'); if(q) q.style.visibility = filas.length > 1 ? 'visible' : 'hidden'; });
+}
+/* Suma lo pedido por categoría||dueño (dos filas de la misma categoría cuentan juntas) y devuelve la primera que no alcanza. */
+function faltanteFilasVecino(items, animales){
+  const pide = {};
+  items.forEach(it=>{ const k = claveAnimal(it.categoria, it.dueno); pide[k] = (pide[k]||0) + it.cantidad; });
+  const k = Object.keys(pide).find(k=> pide[k] > (animales[k]||0));
+  if(!k) return null;
+  const {cat, dueno} = partesClave(k);
+  return {categoria: cat, dueno, hay: animales[k]||0, pide: pide[k]};
+}
 function formVecinoHTML(nombre, accion){
   const filas = detalleAnimales(estado.vecinos[nombre].animales);
   const opciones = filas.map(x=>`<option value="${esc(claveAnimal(x.cat, x.dueno))}">${esc(x.cat)} · ${esc(textoFirma(x.dueno))} (hay ${x.cant})</option>`).join('');
@@ -7105,6 +7149,14 @@ function formVecinoHTML(nombre, accion){
   if(accion==='muerte') extra = `<div class="form-row" data-vf-grupo-fila style="display:${esTerneros?'':'none'};"><label>Ternero</label><select data-vf="grupo">${opcionesGrupoTernero()}</select></div>
     <div class="form-row"><label>Caravana (opcional)</label><input type="text" data-vf="caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>`;
   const etiqueta = {volvio: 'Registrar vuelta', perdida: 'Dar por perdido', muerte: 'Registrar muerte'}[accion];
+  if(accion==='volvio') return `<div class="form-accion">
+    <div style="font-size:12px;color:var(--texto-suave);margin:4px 0;">Categoría · Cantidad</div>
+    <div class="vec-filas">${filaVolvioVecinoHTML(nombre)}</div>
+    <button type="button" class="btn btn-secundario btn-full" data-vec-agregar-fila="1" style="margin-bottom:8px;">＋ Otra categoría</button>
+    <div class="form-row"><label>Fecha</label><input type="date" data-vf="fecha" value="${hoy}" max="${hoy}"></div>
+    ${extra}
+    <div class="form-botones"><button class="btn btn-agregar" data-vec-confirmar="${accion}">${etiqueta}</button><button class="btn btn-secundario" data-vec-cancelar="1">Cancelar</button></div>
+  </div>`;
   return `<div class="form-accion">
     <div class="form-row"><label>Categoría</label><select data-vf="clave">${opciones}</select></div>
     <div class="form-row"><label>Cantidad</label><input type="number" data-vf="cant" min="1" value="1"></div>
@@ -7128,6 +7180,8 @@ function abrirFormVecino(card, accion){
   const f = card.querySelector('.vec-form');
   f.innerHTML = formVecinoHTML(card.dataset.vecNombre, accion);
   f.style.display = 'block';
+  const filas = f.querySelector('.vec-filas');
+  if(filas) actualizarQuitarFilasVecino(filas);
 }
 /* Confirma una acción de la tarjeta de un vecino: valida todo (cantidad contra el stock del vecino, potrero, caravana,
    grupo de terneros) ANTES de tocar nada, y después aplica y manda el evento con el mismo eventId. */
@@ -7149,12 +7203,24 @@ function confirmarAccionVecino(card, accion){
   const eventId = crypto.randomUUID();
   const d = {vecino: nombre, categoria: cat, dueno: dueno || null, cantidad: cant};
   if(accion==='volvio'){
+    // varias categorías: se valida TODO (suma por categoría contra el vecino) y sale un vecino_retorno por fila
+    const items = Array.from(f.querySelectorAll('.vec-fila')).map(fila=>{
+      const pc = partesClave(fila.querySelector('[data-vf="clave"]').value);
+      return {categoria: pc.cat, dueno: pc.dueno, cantidad: parseInt(fila.querySelector('[data-vf="cant"]').value, 10)};
+    });
+    if(items.some(it=> !it.cantidad || it.cantidad < 1)){ toast('Ingresá una cantidad válida en cada categoría'); return; }
+    const falta = faltanteFilasVecino(items, v.animales);
+    if(falta){ toast(`Solo hay ${falta.hay} ${falta.categoria}${falta.dueno?' de '+falta.dueno:''} en ${nombre} y pedís ${falta.pide}`); return; }
     const destino = campo('potrero').value;
     if(!destino || !estado.potreros[destino]){ toast('Elegí el potrero al que vuelve'); return; }
-    aplicarVecinoLocal('vecino_retorno', destino, d, fechaISO, eventId);
-    enviarEvento('vecino_retorno', destino, d, fecha, {eventId});
+    items.forEach(it=>{
+      const eventIdFila = crypto.randomUUID();
+      const df = {vecino: nombre, categoria: it.categoria, dueno: it.dueno || null, cantidad: it.cantidad};
+      aplicarVecinoLocal('vecino_retorno', destino, df, fechaISO, eventIdFila);
+      enviarEvento('vecino_retorno', destino, df, fecha, {eventId: eventIdFila});
+    });
     guardarEstado(); actualizarTodo(); publicarStockPotreros([destino]);
-    toast(`Volvieron ${cant} ${cat} de ${nombre} a ${destino}`);
+    toast(`Volvieron de ${nombre} a ${destino}: ${items.map(it=>`${it.cantidad} ${it.categoria}`).join(', ')}`);
   } else if(accion==='perdida'){
     if(!confirm(`¿Dar por perdido definitivamente: ${cant} ${cat}${dueno?' de '+dueno:''} que están en ${nombre}? No se puede deshacer.`)) return;
     aplicarVecinoLocal('vecino_perdida', ESTABLECIMIENTO, d, fechaISO, eventId);
@@ -7320,6 +7386,14 @@ const vecinosLista = document.getElementById('vecinos-lista');
 vecinosLista.addEventListener('click', (ev)=>{
   const borrar = ev.target.closest('[data-vec-borrar]');
   if(borrar){ borrarRenglonVecinoDesdeVentana(borrar.closest('.vec-tarjeta').dataset.vecNombre, borrar.dataset.vecBorrar); return; }
+  if(ev.target.closest('[data-vec-agregar-fila]')){
+    const card = ev.target.closest('.vec-tarjeta'), filas = card.querySelector('.vec-filas');
+    filas.insertAdjacentHTML('beforeend', filaVolvioVecinoHTML(card.dataset.vecNombre));
+    actualizarQuitarFilasVecino(filas); return;
+  }
+  if(ev.target.classList.contains('vec-quitar')){
+    const filas = ev.target.closest('.vec-filas'); ev.target.closest('.vec-fila').remove(); actualizarQuitarFilasVecino(filas); return;
+  }
   const abrir = ev.target.closest('[data-vec-accion]');
   const confirmar = ev.target.closest('[data-vec-confirmar]');
   const cancelar = ev.target.closest('[data-vec-cancelar]');
