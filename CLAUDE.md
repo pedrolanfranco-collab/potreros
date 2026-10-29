@@ -497,6 +497,27 @@ lado (se borra y se vuelve a cargar). Verificar stock (PC) compara también los 
 fila** con su `eventId`, así el contrato, el 🗑 por categoría y Verificar stock no cambian. Pérdida y Muerte siguen de a una. Test: `tests/probar_vecinos.js`
 (en el workflow, las 9 variantes; en Pone Chico crea dos potreros por `potrero_creado` para correr igual).
 
+### Instructivo de Campo (29/10/2026, a pedido de Pedro)
+
+Página fija con **todas** las funciones de la app Campo, para mandarle el link una vez a los empleados:
+`pedrolanfranco-collab.github.io/potreros/instructivo-campo/` (uno solo para los 3 campos; las diferencias van en una tabla). Es
+`instructivo-campo/index.html`, **a mano** como `tablero-sanidad/`: no pasa por `generar.js`, no tiene `sw.js` propio, ni librerías, ni
+red. La abre el botón **📖 Instructivo** de Herramientas (solo Campo: bloques `@simple` del template, `btn-instructivo`, `window.open`
+en otra pestaña). Sin señal: el `sw.js` de cada Campo la precarga (`'../instructivo-campo/'` en `PRECACHE_URLS`, a mano) pero **su
+alcance no cubre esa carpeta**, así que el botón, sin conexión, lee la copia de la caché y la abre como `blob:`.
+
+**Regla: todo cambio visible en Campo (un botón, un campo de formulario, una validación, un texto, un aviso) actualiza el instructivo y
+su "Novedades de esta versión" en el MISMO PR**, junto con las versiones de "Actualizado para" (`data-version`, tienen que ser
+`versionMovilSimple` de los 3 configs). Se lee el formulario real en el template antes de escribir un paso: nombres de botones exactos,
+con su emoji. Los botones que la app no muestra (`btn-puntos`, `btn-resync-puntos`: `display:none` en la móvil y en Campo) no van.
+
+`tests/probar_instructivo_campo.js` (en el workflow, sin argumentos) falla si: un botón de Campo (`id="btn-…"`, `data-accion`, y los de
+las ventanas Desaparecidos/Vecinos) no figura en la página con su emoji (`EXCEPCIONES` lleva el motivo de cada uno; un botón nuevo
+oculto en el HTML obliga a decidir); las versiones de la página no son las de los config o el encabezado de la app; hay un `href="#x"`
+sin su `id`; falta `btn-instructivo` en alguna Campo, aparece en la PC o la móvil completa, o falta el precache en un `sw.js` de Campo; o
+la página gana scripts, enlaces externos o red. También da por hecho la tabla "Según tu campo" (`claveCampo`, `caravanasHabilitado`,
+`duenoLabel` de cada config): si cambian, hay que actualizar la tabla.
+
 ### Editing paddock boundaries at runtime (`Importar KML/KMZ`)
 
 Since `POTREROS_GEO` is a fixed literal, boundary edits and new paddocks
