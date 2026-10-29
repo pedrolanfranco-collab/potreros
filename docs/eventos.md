@@ -22,7 +22,7 @@ Tabla `eventos_sync` (Supabase, proyecto `skkknfjpwcstefcroqjt`):
 | `establecimiento` | text | la app | el *stream*: `la_vuelta`, `maria_laura`, `pone_chico`. Cada app lee y escribe su stream; solo los traslados escriben en el del otro campo |
 | `dispositivo` | text | la app | id de este equipo (no es el nombre de la persona) |
 | `tipo` | text | la app | ver la tabla de tipos |
-| `potrero` | text | la app | nombre del potrero. Para eventos del establecimiento entero (lluvias, puntos, reportes) lleva el nombre del establecimiento |
+| `potrero` | text | la app | nombre del potrero. Para eventos del establecimiento entero (lluvias, puntos, reportes, y `vecino_perdida` / `vecino_muerte`, que no tienen potrero) lleva el nombre del establecimiento |
 | `detalle` | jsonb | la app | ver cada tipo. En las apps móviles lleva además `usuario` (texto libre, "quién soy"). Desde el paso 4 de la Fase 3 (11/10/2026) todas las apps agregan `v`: la variante y la versión que escribió el evento (`pc-3.67`, `movil-3.66`, `campo-1.47`), solo para diagnosticar; ningún lector la necesita y no forma parte del contrato de cada tipo |
 | `fecha_cliente` | text `dd/mm/aaaa` | la app | fecha **del hecho** (puede ser anterior a hoy). Nunca tiene hora |
 | `creado_en` | timestamptz | **servidor** | orden de aplicación y cursor de sincronización. Un trigger lo fuerza a `now()` aunque el cliente mande otro valor (Fase 2, 10/10/2026) |
@@ -69,6 +69,20 @@ Stock de un potrero (la app los aplica sumando o restando en `potreros[potrero].
 | `encontrado` | destino | `{categoria, dueno, cantidad, casoId}` | suma y cierra (parcial o total) el caso |
 | `perdida` | origen | `{categoria, dueno, cantidad, casoId}` | cierra el caso sin devolver stock |
 | `muerte_desaparecido` | origen | `{categoria, dueno, cantidad, caravana, casoId, lat?, lon?}` | cierra el caso como muerte |
+
+Potrero virtual "Vecino" (29/10/2026, a pedido de Pedro): animales nuestros que están en el campo de un vecino. NO es un
+potrero: no está en el mapa, no cuenta en dotación/UG ni en `stock_potreros`. `detalle.vecino` es el nombre del vecino
+(texto libre, máx. 40 caracteres; se compara sin mayúsculas ni tildes, así "fulano" y "Fulano" son el mismo vecino).
+Los que no tienen potrero real llevan el nombre del establecimiento en la columna `potrero` (como `lluvia`), y el
+receptor no lo usa:
+
+| `tipo` | `potrero` | `detalle` | Efecto |
+|---|---|---|---|
+| `vecino_paso` | origen | `{vecino, categoria, dueno, cantidad, caravana?, obs?}` | resta del potrero y suma al vecino |
+| `vecino_aparecido` | origen del caso | `{vecino, categoria, dueno, cantidad, casoId, caravana?, obs?}` | suma al vecino y **cierra** (parcial o total) el caso de desaparecido `casoId`; no toca el potrero (ya se había restado) |
+| `vecino_retorno` | destino | `{vecino, categoria, dueno, cantidad, obs?}` | suma al potrero y resta al vecino (tope 0) |
+| `vecino_perdida` | establecimiento (no se usa) | `{vecino, categoria, dueno, cantidad, obs?}` | resta del vecino (no vuelven); no toca ningún potrero |
+| `vecino_muerte` | establecimiento (no se usa) | `{vecino, categoria, dueno, cantidad, caravana?, grupoTernero?, obs?}` | resta del vecino y cuenta como muerte (`grupoTernero` como en `muerte`) |
 
 Movimientos entre dueños y entre campos (los lee `pasar_traslados_a_excel.py`):
 
@@ -133,11 +147,24 @@ Un `correccion` anula, edita o completa un evento anterior. El evento original *
 | `agregar_guia` | `{tipoOriginal, categoria, cantidad, dueno, guia, fechaOriginal, eventIdOriginal?}` | pone o borra la guía de una compra/venta |
 | `agregar_caravana` | `{tipoOriginal, casoId, categoria, cantidad, dueno, caravana, fechaOriginal, eventIdOriginal?}` | pone la caravana de una muerte |
 | `completar_datos` | `{tipoOriginal, categoria, cantidad, dueno, fin, precio, contraparte, fechaOriginal, eventIdOriginal?}` | agrega el detalle financiero a una compra/venta cargada rápido |
+| `vecino_eliminar` | `{tipoOriginal, historialId, fechaOriginal, reversar, eventIdOriginal?, casoId?, cantidad?}` | borra un evento de vecino (`vecino_paso`, `vecino_retorno`, `vecino_aparecido`, `vecino_perdida`, `vecino_muerte`): deshace el efecto de `reversar` (un `vecino_ajuste`, ver abajo) y tacha el renglón del potrero y el del vecino. Es **una acción nueva** (29/10/2026): las versiones que no la conocen la guardan en `estado.eventosDesconocidos` y la aplican cuando se actualizan, en vez de aplicar mal un `eliminar` antes de conocer el evento original. Para `vecino_perdida` y `vecino_muerte` el `potrero` del evento es el nombre del establecimiento (no hay potrero real). En `vecino_muerte` `tipoOriginal` cuenta en `calcularEstadisticasMuertes()` como un `eliminar` |
 | `anular_traslado` | `{tipoOriginal:'traslado_entrada', trasladoId, guia, fechaOriginal, origenEstablecimiento}` | **stream del destino**: anula la entrada de un traslado cuando se borra su salida. `origenEstablecimiento` (desde la Fase 4, 13/10/2026) es el id del campo que anula (`la_vuelta`, `maria_laura`, `pone_chico`; el mismo que `ESTABLECIMIENTO` en la app de origen): la política del cierre deja pasar este evento si el pedido trae la clave de ese campo. Los eventos anteriores no lo traen |
 
 `reversar` es un ajuste que la app sabe aplicar al revés. Sus `tipo` son: `sumar`, `restar`,
 `mover`, `mover_todo`, `mover_multi`, `traslado_salida_ajuste` (lleva `trasladoId`),
-`movimiento_guia_ajuste` (lleva `movId`), `envio_campo_ajeno_ajuste`, `retorno_campo_ajeno_ajuste`.
+`movimiento_guia_ajuste` (lleva `movId`), `envio_campo_ajeno_ajuste`, `retorno_campo_ajeno_ajuste`,
+y `vecino_ajuste` (29/10/2026, potrero virtual "Vecino"):
+
+`{tipo:'vecino_ajuste', vecino, categoria, dueno, cantidad, potrero, potreroDelta, vecinoDelta, grupoTernero?}`
+
+- `vecino` es el nombre del vecino tal como lo guarda el balde (se ubica por `claveVecino`: sin mayúsculas ni tildes).
+- `potrero` es el potrero real a ajustar, o `null` cuando el evento no toca potrero (aparecido, perdida, muerte).
+- `potreroDelta` se suma al stock del potrero (0 si no toca potrero) y `vecinoDelta` al del vecino; ambos con tope en 0.
+  Paso: `potreroDelta: +n, vecinoDelta: -n`. Retorno: `potreroDelta: -n, vecinoDelta: +n`. Aparecido: `vecinoDelta: -n`
+  (y el caso vuelve a pendiente). Perdida y muerte: `vecinoDelta: +n` (la muerte lleva `grupoTernero` si lo tenía).
+
+Las correcciones de `vecino_perdida` y `vecino_muerte` llevan el nombre del establecimiento en la columna `potrero`
+(no hay potrero real); las de paso, retorno y aparecido llevan el potrero del renglón.
 
 **Cómo se ubica el original.**
 
@@ -159,6 +186,11 @@ Un `correccion` anula, edita o completa un evento anterior. El evento original *
    `historialId`.
 
 `eventIdOriginal` es opcional: una corrección sin él es válida y se ubica por parecido.
+
+Una corrección de vecino (`vecino_eliminar`) siempre lleva `eventIdOriginal`. Si el original no se aplicó en el equipo
+(su potrero todavía no existe y el evento quedó estacionado), la corrección se estaciona detrás de él; si no está en
+ningún lado, no se aplica nada. Una corrección repetida no revierte el stock otra vez: si todos los renglones del
+original ya están tachados, se ignora.
 
 ## Clave del campo y eventos que cruzan de stream
 

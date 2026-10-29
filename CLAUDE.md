@@ -156,7 +156,7 @@ theme-color).
   editor modal. No GPS.
   **Caja "🛠 Herramientas" de la PC (10/10/2026, a pedido de Pedro)**: ordenada por funciones —
   Consultar / Mapa y potreros / Exportar y respaldo / Este dispositivo, en 2 columnas, 17 botones en vez de
-  26 (18 desde el 12/10/2026, con "🔍 Verificar stock" en Consultar; 19 desde el 13/10/2026, con "🔑 Clave del campo" en Este dispositivo)—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
+  26 (18 desde el 12/10/2026, con "🔍 Verificar stock" en Consultar; 19 desde el 13/10/2026, con "🔑 Clave del campo" en Este dispositivo; 20 desde el 29/10/2026, con "🏡 Vecinos" en Consultar)—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
   abren un sub-menú dentro de la misma caja (`data-sub` / `data-volver`, `mostrarSubmenuHerramientas()`).
   Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
   (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
@@ -355,7 +355,8 @@ Ver `tests/probar_idempotencia_reset.js`.
 `encontrado`, `movimiento`, `movimiento_multi`, `movimiento_todo`,
 `lluvia`, y (desde el 13/9/2026) `potrero_creado`,
 `potrero_limite_actualizado`, `potrero_limite_revertido`,
-`potrero_eliminado` — estos últimos cuatro sincronizan lo que hace
+`potrero_eliminado`, y (desde el 29/10/2026) `vecino_paso`, `vecino_aparecido`, `vecino_retorno`, `vecino_perdida`,
+`vecino_muerte` (ver "Vecinos"). Los cuatro de potreros sincronizan lo que hace
 "Importar KML/KMZ"/"Eliminar potrero" (antes 100% local, ver esa sección
 más abajo). Todos se manejan en `aplicarEventoRemoto()`; los que no
 requieren que el potrero ya exista localmente (`lluvia`,
@@ -471,6 +472,28 @@ filas — y el cálculo daba un número real pero equivocado (71 en vez de
 prueba armaba los datos con esa columna ya presente (`select=*`, o
 reconstruidos a mano) en vez de reproducir la consulta exacta — ver la
 memoria `verificar-select-exacto-no-reconstruir-datos.md`.
+
+### Vecinos (29/10/2026, a pedido de Pedro)
+
+Animales nuestros que están en el campo de un vecino: un potrero virtual "Vecino". No es un potrero: no está en
+`POTREROS_GEO` ni en `estado.potreros`, no sale en el mapa, no cuenta en UG ni en `stock_potreros`. Vive en
+`estado.vecinos = { "<Nombre>": {animales: {"cat||dueño": n}, historial: [...]} }` (`obtenerVecino()`, `buscarVecino()`
+por `claveVecino()`: "fulano" y "Fulano" son el mismo balde; `normalizarVecino()` tiene la misma limpieza que
+`limpiarTextoRemoto()`). `estadoInicial()` y `cargarEstado()` lo crean vacío.
+
+Eventos (`docs/eventos.md`): `vecino_paso` (sale del potrero, queda en el vecino), `vecino_aparecido` (cierra un
+desaparecido), `vecino_retorno` (vuelve a un potrero), `vecino_perdida` y `vecino_muerte` (sin potrero: llevan el
+establecimiento en `potrero`; la muerte cuenta en `calcularEstadisticasMuertes()`). Para corregirlos: `correccion` con
+`accion: 'vecino_eliminar'` y `reversar: {tipo:'vecino_ajuste', ...}` (acciones nuevas: las versiones viejas las
+guardan en `estado.eventosDesconocidos` hasta actualizarse). Un evento que llega antes que su potrero se estaciona como
+cualquier otro, y su corrección se estaciona detrás de él.
+
+UI: en todas las variantes, "🏡 Al vecino" en la ficha del potrero (al lado de ❓ Desaparecido), el botón
+"🏡 Vecinos" en Herramientas (móvil, Campo y PC › Consultar: ventana `#modal-vecinos`, con ↩ Volvió, ❌ Dar por perdido
+y 🪦 Muerte por vecino), "🏡 Apareció en vecino" en ❓ Desaparecidos y el aviso en 📊 Stock total donde existe.
+Borrar un registro de vecino (🗑) es solo PC: en el historial del potrero y en la ventana Vecinos; no hay ✏️ en ningún
+lado (se borra y se vuelve a cargar). Verificar stock (PC) compara también los vecinos. Test: `tests/probar_vecinos.js`
+(en el workflow, las 9 variantes; en Pone Chico crea dos potreros por `potrero_creado` para correr igual).
 
 ### Editing paddock boundaries at runtime (`Importar KML/KMZ`)
 
