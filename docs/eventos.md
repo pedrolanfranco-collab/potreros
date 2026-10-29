@@ -58,7 +58,7 @@ Stock de un potrero (la app los aplica sumando o restando en `potreros[potrero].
 |---|---|---|---|
 | `ingreso` | destino | `{categoria, dueno, cantidad}` | suma. Carga inicial y "agregar animales" |
 | `nacimiento` | potrero | `{categoria, dueno, cantidad, obs?}` | suma y cuenta como nacido de la temporada |
-| `muerte` | potrero | `{categoria, dueno, cantidad, obs?, caravana?, grupoTernero?}` | resta y cuenta como muerte (`grupoTernero`, solo en Terneros: `temporada` o `marcado`) |
+| `muerte` | potrero | `{categoria, dueno, cantidad, obs?, caravana?, grupoTernero?, lat?, lon?}` | resta y cuenta como muerte (`grupoTernero`, solo en Terneros: `temporada` o `marcado`; `lat`/`lon`, opcionales: dónde se encontró el animal, para "Ver en el mapa") |
 | `consumo` | potrero | `{categoria, dueno, cantidad, obs?}` | resta; animales faenados para consumo del establecimiento (ovinos y eventualmente un vacuno). NO cuenta como muerte; tiene su propio resumen por ejercicio 1/jul–30/jun |
 | `movimiento` | origen | `{categoria, dueno, cantidad, destino}` | resta en el origen, suma en `destino`. Lo genera el comando de voz |
 | `movimiento_multi` | origen | `{destino, items:[{categoria, categoriaDestino, dueno, duenoDestino?, cantidad}], obs?}` | varias categorías al mismo destino; con `destino` = el propio potrero es una recategorización o un cambio de dueño |
@@ -102,6 +102,8 @@ Registros del establecimiento (no tocan el stock):
 | `reporte_resuelto` | `{id, fecha}` |
 | `reporte_eliminado` | `{id}` |
 | `reporte_foto` | `{id, fotoId, path, momento, fecha}` (foto del reporte ya subida a Storage, bucket `fotos-reportes`; `path` = `<establecimiento>/<id>/<fotoId>.jpg`, `momento` = `reporte` o `resuelto`) |
+| `punto_foto` | `{id, fotoId, path, momento, fecha}` (foto de un punto —aguada, manga, corral, embarcadero…— ya subida al mismo bucket; `id` = id del punto `pt_…`, `momento` = `registro`) |
+| `muerte_foto` | `{id, fotoId, path, momento, fecha}` (foto de una muerte ya subida al mismo bucket; `id` = `event_id` del evento `muerte`, `momento` = `registro`) |
 | `proximo_confirmado` | `{id}` |
 
 Potreros:

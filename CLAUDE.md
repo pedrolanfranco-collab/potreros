@@ -785,6 +785,23 @@ Infraestructura y Capín Annoni aceptan hasta 3 fotos al crear, más fotos despu
 - **Ver**: miniaturas en la lista y en el popup; URLs firmadas (1 h) para las subidas, `URL.createObjectURL` para las pendientes; visor `#visor-fotos`. "🗺 Ver en el mapa" es `verReporteEnMapa()` → `verUbicacionEnMapa()` (genérica, para reusar con aguadas).
 - **Test**: `tests/probar_fotos_reportes.js` (corre en las 9 variantes, en el workflow). En jsdom solo se prueba la cola en memoria, no IndexedDB.
 
+**Fotos en Aguadas / instalaciones y en las muertes (29/10/2026, a pedido de Pedro).** Mismo bucket, misma cola y misma ruta
+`<establecimiento>/<id>/<fotoId>.jpg` (no hace falta SQL nuevo: la política del bucket ya cubre las 3 carpetas). Lo que puede tener fotos se registra en
+`TIPOS_FOTO` (`reporte`, `punto`, `muerte`): cada uno con su evento (`reporte_foto` / `punto_foto` / `muerte_foto`, `docs/eventos.md`), su validación de id
+(`rp_…`, `pt_…`, `event_id`) y `momento` (reportes: `reporte`/`resuelto`; punto y muerte: `registro`). `encolarFoto(tipo, id, blob, momento)` es la entrada;
+los registros de la cola de antes (sin `tipoFoto`, con el id en `reporteId`) se leen como de un reporte. **Un tipo nuevo con fotos = una entrada en `TIPOS_FOTO`
+y `MOMENTOS_FOTO`, su evento en los tres lugares y su `refrescar`.**
+- *Puntos* (Aguadas / instalaciones: Manga, Corral, Bretes, Embarcadero… son subtipos de "Instalación", no potreros): hasta 3 fotos al crearlo (`montarSelectorFotos`,
+  selector reutilizable), "📷 Agregar foto" y "🗺 Ver en el mapa" (`verPuntoEnMapa()` → `verUbicacionEnMapa()`) en cada renglón de la lista, tope 10.
+- *Muertes* (solo el evento `muerte`, no `muerte_desaparecido`): el formulario suma fotos y **lugar opcional** (GPS en el celular, o tocar el mapa: `modoColocarMuerte`).
+  El lugar viaja en el evento (`lat`/`lon`, 6 decimales) y queda en el renglón como `ubic` — **aparte de `extra`/`origDatos`**, que comparan las correcciones. Las fotos se
+  cuelgan del `eventId` del renglón (`h.fotos`). En el historial: miniaturas, 📷 y 🗺 (con lugar va ahí; sin lugar centra el potrero; oculta `#detalle`, que tapa el mapa).
+  Al **editar** una muerte (✏️ = deshacer + formulario nuevo) el lugar se precarga pero las fotos quedan en el renglón tachado.
+- **Lección (error real que encontró Chromium, no jsdom):** `estado.puntos.forEach(crearMarcadorPunto)` corría ANTES de `const TIPOS_FOTO` y, al reabrir la app con un punto
+  guardado, no cargaba nada (`Cannot access 'TIPOS_FOTO' before initialization`). Lo que corre al cargar y usa un `const` va DESPUÉS de su declaración;
+  `tests/probar_fotos_puntos_muertes.js` ahora reabre la app con el `localStorage` ya cargado (`levantar(archivo, servidor, almacen)`).
+- **Test**: `tests/probar_fotos_puntos_muertes.js` (9 variantes, en el workflow; verificado con 13 mutaciones, 12 en rojo: la que sobrevive es una defensa redundante).
+
 ### Hermes (agente de WhatsApp de Pedro) y `scripts/hermes/` (25/10/2026, a pedido de Pedro)
 
 Hermes corre en la PC de Pedro (`C:\Users\Pedro\AppData\Local\hermes`, `hermes gateway restart`). Su servidor MCP
