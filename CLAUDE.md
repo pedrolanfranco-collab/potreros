@@ -156,7 +156,7 @@ theme-color).
   editor modal. No GPS.
   **Caja "🛠 Herramientas" de la PC (10/10/2026, a pedido de Pedro)**: ordenada por funciones —
   Consultar / Mapa y potreros / Exportar y respaldo / Este dispositivo, en 2 columnas, 17 botones en vez de
-  26 (18 desde el 12/10/2026, con "🔍 Verificar stock" en Consultar; 19 desde el 13/10/2026, con "🔑 Clave del campo" en Este dispositivo; 20 desde el 29/10/2026, con "🏡 Vecinos" en Consultar)—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
+  26 (18 desde el 12/10/2026, con "🔍 Verificar stock" en Consultar; 19 desde el 13/10/2026, con "🔑 Clave del campo" en Este dispositivo; 20 desde el 29/10/2026, con "🏡 Vecinos" en Consultar; 21 desde el 30/10/2026, con "📖 Instructivo" en Este dispositivo)—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
   abren un sub-menú dentro de la misma caja (`data-sub` / `data-volver`, `mostrarSubmenuHerramientas()`).
   Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
   (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
@@ -497,26 +497,43 @@ lado (se borra y se vuelve a cargar). Verificar stock (PC) compara también los 
 fila** con su `eventId`, así el contrato, el 🗑 por categoría y Verificar stock no cambian. Pérdida y Muerte siguen de a una. Test: `tests/probar_vecinos.js`
 (en el workflow, las 9 variantes; en Pone Chico crea dos potreros por `potrero_creado` para correr igual).
 
-### Instructivo de Campo (29/10/2026, a pedido de Pedro)
+### Instructivos (Campo, móvil y PC) (29-30/10/2026, a pedido de Pedro)
 
-Página fija con **todas** las funciones de la app Campo, para mandarle el link una vez a los empleados:
-`pedrolanfranco-collab.github.io/potreros/instructivo-campo/` (uno solo para los 3 campos; las diferencias van en una tabla). Es
-`instructivo-campo/index.html`, **a mano** como `tablero-sanidad/`: no pasa por `generar.js`, no tiene `sw.js` propio, ni librerías, ni
-red. La abre el botón **📖 Instructivo** de Herramientas (solo Campo: bloques `@simple` del template, `btn-instructivo`, `window.open`
-en otra pestaña). Sin señal: el `sw.js` de cada Campo la precarga (`'../instructivo-campo/'` en `PRECACHE_URLS`, a mano) pero **su
-alcance no cubre esa carpeta**, así que el botón, sin conexión, lee la copia de la caché y la abre como `blob:`.
+Tres páginas fijas, una por tipo de app, con **todas** sus funciones, para mandarle el link una sola vez a quien las usa (uno solo para
+los 3 campos; las diferencias van en la tabla "Según tu campo" de cada una):
 
-**Regla: todo cambio visible en Campo (un botón, un campo de formulario, una validación, un texto, un aviso) actualiza el instructivo y
-su "Novedades de esta versión" en el MISMO PR**, junto con las versiones de "Actualizado para" (`data-version`, tienen que ser
-`versionMovilSimple` de los 3 configs). Se lee el formulario real en el template antes de escribir un paso: nombres de botones exactos,
-con su emoji. Los botones que la app no muestra (`btn-puntos`, `btn-resync-puntos`: `display:none` en la móvil y en Campo) no van.
+| Página | App | Link |
+|---|---|---|
+| `instructivo-campo/index.html` | Campo (`*-movil-campo/`, empleados) | `pedrolanfranco-collab.github.io/potreros/instructivo-campo/` |
+| `instructivo-movil/index.html` | móvil completa (`*-movil/`) | `pedrolanfranco-collab.github.io/potreros/instructivo-movil/` |
+| `instructivo-pc/index.html` | PC (`*-pc/`; se ordena como la caja 🛠 Herramientas: Consultar / Mapa y potreros / Exportar y respaldo / Este dispositivo) | `pedrolanfranco-collab.github.io/potreros/instructivo-pc/` |
 
-`tests/probar_instructivo_campo.js` (en el workflow, sin argumentos) falla si: un botón de Campo (`id="btn-…"`, `data-accion`, y los de
-las ventanas Desaparecidos/Vecinos) no figura en la página con su emoji (`EXCEPCIONES` lleva el motivo de cada uno; un botón nuevo
-oculto en el HTML obliga a decidir); las versiones de la página no son las de los config o el encabezado de la app; hay un `href="#x"`
-sin su `id`; falta `btn-instructivo` en alguna Campo, aparece en la PC o la móvil completa, o falta el precache en un `sw.js` de Campo; o
-la página gana scripts, enlaces externos o red. También da por hecho la tabla "Según tu campo" (`claveCampo`, `caravanasHabilitado`,
-`duenoLabel` de cada config): si cambian, hay que actualizar la tabla.
+Son **a mano** como `tablero-sanidad/`: no pasan por `generar.js`, no tienen `sw.js` propio, ni librerías, ni red (sin scripts, enlaces
+externos ni imágenes; con modo oscuro y un ancho de lectura acotado). Las abre el botón **📖 Instructivo** (`btn-instructivo`, siempre
+con `window.open` en otra pestaña): en Campo, en Herramientas (bloques `@simple`); en la móvil completa, en Herramientas (`@completo`
+dentro de `@movil`); en la PC, en Herramientas › Este dispositivo (`@pc`). Las tres usan **una sola función**, `abrirInstructivo(url)`, y
+cada variante solo dice qué carpeta abre. Sin señal: el `sw.js` de cada carpeta de app precarga SU página (`'../instructivo-campo/'`,
+`'../instructivo-movil/'` o `'../instructivo-pc/'` en `PRECACHE_URLS`, a mano) pero **su alcance no cubre esas carpetas**, así que el
+botón, sin conexión, lee la copia de la caché y la abre como `blob:` (los saltos del índice `#…` andan igual).
+
+**Regla: todo cambio visible en una app (un botón, un campo de formulario, una validación, un texto, un aviso) actualiza SU instructivo y
+su "Novedades de esta versión" en el MISMO PR**, junto con las versiones de "Actualizado para" (`data-version`: `versionMovilSimple` en
+Campo, `versionMovil` en la móvil completa, `versionPc` en la PC, de los 3 configs). Un cambio en código compartido toca más de una
+página. Se lee el formulario real en el template antes de escribir un paso: nombres de botones exactos, con su emoji. Los botones que la
+app no muestra (`btn-puntos` y `btn-resync-puntos`, `display:none` en la móvil y en Campo; las ventanas que cuelgan de ellos y los
+controles de "Dibujar potrero") no van: están en `excepciones` de la prueba, con su motivo.
+
+`tests/probar_instructivos.js` (en el workflow, sin argumentos; reemplaza a `probar_instructivo_campo.js`) falla si, en alguna de las
+tres páginas: un botón de sus 3 variantes (`id="btn-…"`, `data-accion`, `data-sub`, los de las ventanas Desaparecidos/Vecinos y todo
+botón con id o `data-*` cuyo texto lleva un emoji o una flecha) no figura en la página con su emoji (`excepciones` lleva el motivo de cada
+uno; un botón nuevo oculto en el HTML obliga a decidir, en `ocultoPorConfig`); las versiones de la página no son las de los config o el
+encabezado de la app; hay un `href="#x"` sin su `id`; falta `btn-instructivo` (en la PC, dentro de "Este dispositivo"), aparece en la
+app que no es o abre otra carpeta; falta el precache en un `sw.js` o hay uno de más; el botón no abre su carpeta en jsdom (con señal,
+y sin señal desde la caché como `blob:`); o la página gana scripts, enlaces externos o red. También da por hecha la tabla "Según tu
+campo" (`claveCampo`, `caravanasHabilitado`, `duenoLabel`, `duenoObligatorio`, `guiasHabilitado`, `dicoseHabilitado`,
+`trasladoHabilitado`, `pesadasHistorial`, `datosFaltantes`, `completarCsvBaston`, `usaExcelBridge`, `mapLabels`, `puntosSeed` de cada
+config): si cambian, hay que actualizar la tabla y la prueba. Antes de commitear un cambio de prueba, `node tests/sync-skill.js` (solo
+en la PC de Pedro).
 
 ### Editing paddock boundaries at runtime (`Importar KML/KMZ`)
 

@@ -86,7 +86,7 @@ const SUBMENUS = {
   backup:   ['btn-exportar-json', 'btn-importar-json']
 };
 const DIRECTOS = ['btn-stock', 'btn-sanidad', 'btn-lluvias', 'btn-desaparecidos', 'btn-alertas', 'btn-verificar-stock',
-  'btn-coeficientes', 'btn-sincronizar', 'btn-usuario', 'btn-clave-campo', 'btn-restablecer'];
+  'btn-coeficientes', 'btn-sincronizar', 'btn-usuario', 'btn-clave-campo', 'btn-instructivo', 'btn-restablecer'];
 
 async function probarPc(archivo){
   console.log('\n=== ' + archivo + ' ===');
@@ -102,7 +102,8 @@ async function probarPc(archivo){
   chequear('hay 4 grupos con título', menu.querySelectorAll('#hmenu-grupos .hg').length === 4 && menu.querySelectorAll('.hg-titulo').length >= 4);
   chequear('"Exportar MD" ya no existe', !doc.getElementById('btn-exportar-md'));
 
-  // botones a la vista (los 18 menos los ocultos por configuración)
+  // botones a la vista (los de siempre menos los ocultos por configuración; 21 desde el 30/10/2026 con "📖 Instructivo",
+  // sin contar "⚠ Datos faltantes", que solo está en La Vuelta)
   const enVista = Array.from(menu.querySelectorAll('button')).filter(b => visible(b));
   const grupos = enVista.filter(b => b.hasAttribute('data-sub'));
   chequear('5 botones de grupo en la vista principal', grupos.length === 5, grupos.length);
@@ -113,6 +114,9 @@ async function probarPc(archivo){
   chequear('los botones directos siguen a la vista', directos.every(id => doc.getElementById(id) && visible(doc.getElementById(id))),
     directos.filter(id => !doc.getElementById(id) || !visible(doc.getElementById(id))).join(','));
   chequear('"Restablecer" va aparte, ocupando las dos columnas', doc.getElementById('btn-restablecer').classList.contains('hg-ancho'));
+  // 30/10/2026: "📖 Instructivo" vive en el grupo "Este dispositivo" (junto a Sincronizar, Quién soy y Clave del campo)
+  const grupoDispositivo = Array.from(menu.querySelectorAll('#hmenu-grupos .hg')).find(g => g.querySelector('.hg-titulo').textContent.trim() === 'Este dispositivo');
+  chequear('"📖 Instructivo" está en el grupo "Este dispositivo"', !!grupoDispositivo && !!grupoDispositivo.querySelector('#btn-instructivo'));
 
   // cada sub-menú: abre con sus botones originales y "Volver" regresa sin cerrar la caja
   for(const [sub, ids] of Object.entries(SUBMENUS)){
