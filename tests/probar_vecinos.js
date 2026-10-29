@@ -175,7 +175,7 @@ async function probarArchivo(archivo){
 
   // Un evento "del registro": se aplica en A y queda en el servidor de A (lo que vería otro equipo al sincronizar).
   const enRegistro = (tipo, potrero, detalle, extra) => {
-    const row = Object.assign({tipo, potrero, event_id: crypto.randomUUID(), fecha_cliente: HOY, creado_en: '2026-10-01T10:00:00Z', dispositivo: 'otro-equipo', detalle}, extra || {});
+    const row = Object.assign({tipo, potrero, event_id: crypto.randomUUID(), fecha_cliente: HOY, creado_en: '2026-10-01T10:00:00Z', dispositivo: A.idDispositivo(), detalle}, extra || {});
     A.aplicarEventoRemoto(row, new Set());
     sA.filas.eventos_sync = sA.filas.eventos_sync || [];
     sA.filas.eventos_sync.push(Object.assign({establecimiento: ESTAB}, row));
@@ -261,6 +261,21 @@ async function probarArchivo(archivo){
   chequear('muerte: el vecino ya no tiene ese ternero', vAn('Fulano', 'Terneros') === 0);
   if(tieneMuertes) chequear('muerte: cuenta en las muertes de la temporada (terneros marcados +1)', (await muertesMarcado()) === mu0 + 1, `${mu0} -> ${await muertesMarcado()}`);
   else omitido('muertes: esta variante no tiene estadísticas de muertes');
+
+  // ---------- 5b. corrección de un evento que llegó antes que su potrero ----------
+  console.log('  -- correcciones de un evento estacionado');
+  { const ctx = '2026-10-29T15:00:00Z';
+    const orig = enRegistro('vecino_aparecido', 'Potrero Inexistente', {vecino: 'Pendiente Vecino', categoria: 'Vacas', dueno: dueno0, cantidad: 1, casoId: 'caso-x'}, {creado_en: ctx});
+    const listaP = () => (est().pendientesPotrero || {})['Potrero Inexistente'] || [];
+    chequear('el aparecido de un potrero que no existe queda estacionado', listaP().length === 1 && listaP()[0].event_id === orig.event_id);
+    enRegistro('correccion', ESTAB, {tipoOriginal: 'vecino_aparecido', accion: 'vecino_eliminar', fechaOriginal: HOY, eventIdOriginal: orig.event_id,
+      reversar: {tipo: 'vecino_ajuste', vecino: 'Pendiente Vecino', categoria: 'Vacas', dueno: dueno0, cantidad: 1, potrero: null, potreroDelta: 0, vecinoDelta: -1}}, {creado_en: ctx});
+    chequear('su corrección se estaciona detrás del original (misma lista)', listaP().length === 2 && listaP()[1].tipo === 'correccion');
+    chequear('sin aplicar nada a ciegas: el vecino sigue sin saldo', vAn('Pendiente Vecino', 'Vacas') === 0);
+    enRegistro('correccion', ESTAB, {tipoOriginal: 'vecino_aparecido', accion: 'vecino_eliminar', fechaOriginal: HOY, eventIdOriginal: crypto.randomUUID(),
+      reversar: {tipo: 'vecino_ajuste', vecino: 'Pendiente Vecino', categoria: 'Vacas', dueno: dueno0, cantidad: 1, potrero: null, potreroDelta: 0, vecinoDelta: -1}}, {creado_en: ctx});
+    chequear('una corrección de un original que no está en ningún lado es un no-op', listaP().length === 2 && vAn('Pendiente Vecino', 'Vacas') === 0);
+  }
 
   // ---------- 6. UI con clics ----------
   console.log('  -- la UI con clics');
@@ -353,8 +368,9 @@ async function probarArchivo(archivo){
 
   // (d) perdida desde Vecinos; (e) muerte de un ternero con grupo, contada en muertes; ambas se borran en PC
   await paso_ui(P0, 'Vecino UI', 'Vacas', 1);
+  const vbPerdida = vAn('Vecino UI', 'Vacas');
   await accionVec('Vecino UI', 'perdida', 'Vacas', 1);
-  chequear('UI "Dar por perdido": el vecino baja 1', vAn('Vecino UI', 'Vacas') === 0);
+  chequear('UI "Dar por perdido": el vecino baja 1', vAn('Vecino UI', 'Vacas') === vbPerdida - 1, `${vAn('Vecino UI','Vacas')} vs ${vbPerdida-1}`);
   if(esPC){
     await borrarVec('Vecino UI', 'vecino_perdida');
     chequear('borrar la pérdida: el vecino vuelve a 1', vAn('Vecino UI', 'Vacas') === 1);

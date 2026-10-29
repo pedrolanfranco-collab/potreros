@@ -95,6 +95,9 @@ jobs:
       - name: Desaparecido -- resta, caso abierto parcial/total, Encontrado a otro potrero, Perdida, sincronizado, borrar revierte
         run: node tests/probar_desaparecidos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
 
+      - name: "Vecinos (29/10/2026) -- potrero virtual Vecino: paso, aparecido, retorno, perdida y muerte; Al vecino, Apareci en vecino, ventana Vecinos; PC borra cada tipo (corrige stock, reabre caso, la muerte deja de contar), replica en otro equipo; Verificar stock; moviles sin botones de borrar"
+        run: node tests/probar_vecinos.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
       - name: Firma en La Vuelta -- migracion de claves sin firma, formularios opcionales, Dueno sigue obligatorio en Maria Laura/Pone Chico
         run: node tests/probar_firma_la_vuelta.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
 
