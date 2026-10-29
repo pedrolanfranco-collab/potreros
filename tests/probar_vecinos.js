@@ -415,9 +415,7 @@ async function probarArchivo(archivo){
   const rowsA = sA.filas.eventos_sync.slice();
   rowsA.forEach(f => B.aplicarEventoRemoto(mapRow(f), new Set()));
   rowsA.forEach(f => sB.filas.eventos_sync.push(Object.assign({}, f)));  // lo que vería el segundo equipo en el registro
-  require('fs').writeFileSync('/tmp/claude-0/-home-user/ff2ed965-bed8-5373-9579-22792fc8ca2e/scratchpad/p4/snapA.json', JSON.stringify(JSON.parse(snap(A)), null, 1));
-  require('fs').writeFileSync('/tmp/claude-0/-home-user/ff2ed965-bed8-5373-9579-22792fc8ca2e/scratchpad/p4/snapB.json', JSON.stringify(JSON.parse(snap(B)), null, 1));
-  chequear('réplica: el segundo equipo llega al mismo estado (stock, vecinos, casos)', snap(A) === snap(B), 'ver snapA.json / snapB.json');
+  chequear('réplica: el segundo equipo llega al mismo estado (stock, vecinos, casos)', snap(A) === snap(B));
   const antesRep = snap(B);
   rowsA.filter(f => f.tipo === 'correccion').forEach(f => B.aplicarEventoRemoto(mapRow(f), new Set()));
   chequear('corrección repetida: no revierte otra vez el stock', snap(B) === antesRep);

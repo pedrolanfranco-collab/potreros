@@ -156,7 +156,7 @@ theme-color).
   editor modal. No GPS.
   **Caja "🛠 Herramientas" de la PC (10/10/2026, a pedido de Pedro)**: ordenada por funciones —
   Consultar / Mapa y potreros / Exportar y respaldo / Este dispositivo, en 2 columnas, 17 botones en vez de
-  26 (18 desde el 12/10/2026, con "🔍 Verificar stock" en Consultar; 19 desde el 13/10/2026, con "🔑 Clave del campo" en Este dispositivo)—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
+  26 (18 desde el 12/10/2026, con "🔍 Verificar stock" en Consultar; 19 desde el 13/10/2026, con "🔑 Clave del campo" en Este dispositivo; 20 desde el 29/10/2026, con "🏡 Vecinos" en Consultar)—; "Agregar potrero" (Importar KML/KMZ, Dibujar), "Puntos", "Reportes de campo", "Exportar" y "Backup"
   abren un sub-menú dentro de la misma caja (`data-sub` / `data-volver`, `mostrarSubmenuHerramientas()`).
   Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
   (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
@@ -355,7 +355,8 @@ Ver `tests/probar_idempotencia_reset.js`.
 `encontrado`, `movimiento`, `movimiento_multi`, `movimiento_todo`,
 `lluvia`, y (desde el 13/9/2026) `potrero_creado`,
 `potrero_limite_actualizado`, `potrero_limite_revertido`,
-`potrero_eliminado` — estos últimos cuatro sincronizan lo que hace
+`potrero_eliminado`, y (desde el 29/10/2026) `vecino_paso`, `vecino_aparecido`, `vecino_retorno`, `vecino_perdida`,
+`vecino_muerte` (ver "Vecinos"). Los cuatro de potreros sincronizan lo que hace
 "Importar KML/KMZ"/"Eliminar potrero" (antes 100% local, ver esa sección
 más abajo). Todos se manejan en `aplicarEventoRemoto()`; los que no
 requieren que el potrero ya exista localmente (`lluvia`,
