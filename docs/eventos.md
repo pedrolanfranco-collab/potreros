@@ -68,7 +68,7 @@ Stock de un potrero (la app los aplica sumando o restando en `potreros[potrero].
 | `desaparecido` | origen | `{categoria, dueno, cantidad, obs, casoId}` | resta y abre un caso |
 | `encontrado` | destino | `{categoria, dueno, cantidad, casoId}` | suma y cierra (parcial o total) el caso |
 | `perdida` | origen | `{categoria, dueno, cantidad, casoId}` | cierra el caso sin devolver stock |
-| `muerte_desaparecido` | origen | `{categoria, dueno, cantidad, caravana, casoId}` | cierra el caso como muerte |
+| `muerte_desaparecido` | origen | `{categoria, dueno, cantidad, caravana, casoId, lat?, lon?}` | cierra el caso como muerte |
 
 Movimientos entre dueños y entre campos (los lee `pasar_traslados_a_excel.py`):
 
@@ -103,7 +103,7 @@ Registros del establecimiento (no tocan el stock):
 | `reporte_eliminado` | `{id}` |
 | `reporte_foto` | `{id, fotoId, path, momento, fecha}` (foto del reporte ya subida a Storage, bucket `fotos-reportes`; `path` = `<establecimiento>/<id>/<fotoId>.jpg`, `momento` = `reporte` o `resuelto`) |
 | `punto_foto` | `{id, fotoId, path, momento, fecha}` (foto de un punto —aguada, manga, corral, embarcadero…— ya subida al mismo bucket; `id` = id del punto `pt_…`, `momento` = `registro`) |
-| `muerte_foto` | `{id, fotoId, path, momento, fecha}` (foto de una muerte ya subida al mismo bucket; `id` = `event_id` del evento `muerte`, `momento` = `registro`) |
+| `muerte_foto` | `{id, fotoId, path, momento, fecha}` (foto de una muerte ya subida al mismo bucket; `id` = `event_id` del evento `muerte` o `muerte_desaparecido`, `momento` = `registro`) |
 | `proximo_confirmado` | `{id}` |
 
 Potreros:

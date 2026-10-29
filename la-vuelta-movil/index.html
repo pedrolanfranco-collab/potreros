@@ -2830,6 +2830,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     const entry = registrarHistorial(potrero, row.tipo, texto, undefined, undefined, fechaEvt, d.usuario);
     entry.origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, caravana: d.caravana||null};
     entry.casoId = d.casoId;
+    if(row.tipo === 'muerte_desaparecido' && Number.isFinite(d.lat) && Number.isFinite(d.lon)) entry.ubic = {lat: d.lat, lon: d.lon};
     return;
   }
 
@@ -3945,14 +3946,34 @@ function crearMarcadorPunto(punto){
 }
 /* Lugar donde se encontró un animal muerto (formulario de muerte): se toca el mapa o, en el celular, se usa el GPS. */
 function pintarUbicMuerte(){
-  const t = document.getElementById('f-ubic-txt');
-  if(!t) return;
-  t.textContent = _ubicMuerte ? `📍 Marcada: ${_ubicMuerte.lat.toFixed(5)}, ${_ubicMuerte.lon.toFixed(5)}` : 'Sin ubicación marcada';
-  const q = document.getElementById('f-ubic-quitar');
-  if(q) q.style.display = _ubicMuerte ? '' : 'none';
+  // los dos formularios (muerte: f-…, y "Dar muerte" de Desaparecidos: md-…) comparten el lugar elegido
+  ['f', 'md'].forEach(pre => {
+    const t = document.getElementById(pre + '-ubic-txt');
+    if(t) t.textContent = _ubicMuerte ? `📍 Marcada: ${_ubicMuerte.lat.toFixed(5)}, ${_ubicMuerte.lon.toFixed(5)}` : 'Sin ubicación marcada';
+    const q = document.getElementById(pre + '-ubic-quitar');
+    if(q) q.style.display = _ubicMuerte ? '' : 'none';
+  });
+}
+/* "Marcar en el mapa": el detalle del potrero y la ventana de Desaparecidos son capas a pantalla completa (en el celular tapan el
+   mapa), así que se ocultan mientras se toca el mapa y vuelven con el formulario como estaba. */
+let _overlayUbic = null; // {el, display}
+function iniciarMarcarUbicMuerte(idOverlay){
+  const el = document.getElementById(idOverlay);
+  if(el){ _overlayUbic = {el, display: el.style.display || 'flex'}; el.style.display = 'none'; }
+  modoColocarMuerte = true;
+  mostrarAvisoModo('📍 Tocá el mapa donde se encontró', cancelarMarcarUbicMuerte);
+}
+function restaurarOverlayUbic(){
+  if(_overlayUbic){ _overlayUbic.el.style.display = _overlayUbic.display; _overlayUbic = null; }
+}
+function cancelarMarcarUbicMuerte(){
+  modoColocarMuerte = false;
+  ocultarAvisoModo();
+  restaurarOverlayUbic();
 }
 function limpiarUbicMuerte(){
   _ubicMuerte = null;
+  _overlayUbic = null;
   if(modoColocarMuerte){ modoColocarMuerte = false; ocultarAvisoModo(); }
   if(_marcadorUbicMuerte){ map.removeLayer(_marcadorUbicMuerte); _marcadorUbicMuerte = null; }
 }
@@ -3965,6 +3986,7 @@ function ponerUbicMuerte(lat, lon){
 function colocarUbicMuerteEn(latlng){
   modoColocarMuerte = false;
   ocultarAvisoModo();
+  restaurarOverlayUbic();
   ponerUbicMuerte(latlng.lat, latlng.lng);
 }
 
@@ -4037,11 +4059,19 @@ function colocarPuntoEn(latlng){
   toast(`${punto.subtipo} agregado al mapa`);
 }
 
-function mostrarAvisoModo(){
+function mostrarAvisoModo(texto, alCancelar){
   ocultarAvisoModo();
   avisoModo = document.createElement('div');
   avisoModo.className = 'modo-colocar-aviso';
-  avisoModo.textContent = '📍 Tocá el mapa donde está ubicado';
+  avisoModo.textContent = texto || '📍 Tocá el mapa donde está ubicado';
+  if(alCancelar){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = '✕ Cancelar';
+    b.style.cssText = 'margin-left:10px;background:rgba(255,255,255,0.25);color:#fff;border:1px solid #fff;border-radius:12px;padding:2px 10px;font-size:12px;cursor:pointer;';
+    b.addEventListener('click', e => { e.stopPropagation(); alCancelar(); });
+    avisoModo.appendChild(b);
+  }
   document.body.appendChild(avisoModo);
 }
 function ocultarAvisoModo(){
@@ -4100,7 +4130,7 @@ const TIPOS_FOTO = {
     idDe: o => o.id, refrescar: o => { actualizarPopupReporte(o); redibujarListaSiAbierta(); }},
   punto: {evento: 'punto_foto', idOk: id => /^pt_\w+$/.test(id), buscar: id => (estado.puntos||[]).find(x => x.id === id) || null,
     idDe: o => o.id, refrescar: o => { actualizarPopupPunto(o); redibujarListaPuntosSiAbierta(); }},
-  muerte: {evento: 'muerte_foto', idOk: id => UUID_RE.test(id), buscar: id => renglonesPorEventId(id).find(h => h.tipo === 'muerte') || null,
+  muerte: {evento: 'muerte_foto', idOk: id => UUID_RE.test(id), buscar: id => renglonesPorEventId(id).find(h => h.tipo === 'muerte' || h.tipo === 'muerte_desaparecido') || null,
     idDe: o => o.eventId, refrescar: o => actualizarThumbsHistorial(o.eventId)}
 };
 function textoMomentoFoto(momento, tipo){
@@ -4817,11 +4847,11 @@ function renderDetalle(nombre){
           <span class="hist-acciones">
             ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo!=='retorno_campo_ajeno' && h.tipo!=='traslado_salida' && h.tipo!=='traslado_entrada' && h.tipo!=='movimiento_guia') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
             ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana">🏷️</button>` : ''}
-            ${h.tipo==='muerte' ? `<button class="hist-btn" data-hist-foto="${esc(h.id)}" title="Agregar foto">📷</button><button class="hist-btn" data-hist-mapa="${esc(h.id)}" title="Ver en el mapa">🗺</button>` : ''}
+            ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-foto="${esc(h.id)}" title="Agregar foto">📷</button><button class="hist-btn" data-hist-mapa="${esc(h.id)}" title="Ver en el mapa">🗺</button>` : ''}
             ${((CONFIG.dicoseHabilitado || CONFIG.guiasHabilitado) && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${esc(h.id)}" title="Agregar/editar guía">📄</button>` : ''}
             ${h.tipo!=='traslado_entrada' ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
           </span>` : ''}
-          ${(h.tipo==='muerte' && h.eventId) ? `<div class="rp-fotos" data-hist-fotos="${esc(h.eventId)}">${thumbsFotosHTML(h, 'muerte')}</div>` : ''}
+          ${((h.tipo==='muerte' || h.tipo==='muerte_desaparecido') && h.eventId) ? `<div class="rp-fotos" data-hist-fotos="${esc(h.eventId)}">${thumbsFotosHTML(h, 'muerte')}</div>` : ''}
         </div>
       `).join('') : '<div class="hist-vacio">Todavía no hay movimientos en este potrero.</div>'}
       </details>
@@ -5692,10 +5722,7 @@ function mostrarFormulario(nombre, accion, prefill){
     limpiarUbicMuerte();
     if(prefill && prefill._ubic && Number.isFinite(prefill._ubic.lat) && Number.isFinite(prefill._ubic.lon)) ponerUbicMuerte(prefill._ubic.lat, prefill._ubic.lon);
     pintarUbicMuerte();
-    document.getElementById('f-ubic-mapa').addEventListener('click', ()=>{
-      modoColocarMuerte = true;
-      mostrarAvisoModo();
-    });
+    document.getElementById('f-ubic-mapa').addEventListener('click', ()=> iniciarMarcarUbicMuerte('detalle'));
     document.getElementById('f-ubic-quitar').addEventListener('click', ()=>{ limpiarUbicMuerte(); pintarUbicMuerte(); });
     document.getElementById('f-ubic-gps').addEventListener('click', ()=>{
       capturarUbicacionActual((lat, lon)=>{ ponerUbicMuerte(lat, lon); map.setView([lat, lon], 17); });
@@ -6640,10 +6667,26 @@ function abrirFormularioMuerteDesaparecido(caso){
   cont.innerHTML = `
     <div class="form-row"><label>Cantidad muerta</label><input type="number" id="md-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
     <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="md-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
+    <div class="form-row"><label>Fotos (opcional, hasta 3)</label><div id="md-fotos"></div></div>
+    <div class="form-row"><label>Dónde se encontró (opcional)</label>
+      <div id="md-ubic-txt" class="rp-nota">Sin ubicación marcada</div>
+      <button class="btn btn-secundario btn-full" type="button" id="md-ubic-gps" style="width:100%;margin-top:4px;">📍 Usar mi ubicación</button>
+      <button class="btn btn-secundario btn-full" type="button" id="md-ubic-mapa" style="width:100%;margin-top:4px;">🗺 Marcar en el mapa</button>
+      <button class="btn btn-secundario btn-full" type="button" id="md-ubic-quitar" style="width:100%;margin-top:4px;display:none;">✕ Quitar ubicación</button>
+    </div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="md-confirmar">Confirmar muerte</button>
       <button class="btn btn-secundario" id="md-cancelar">Cancelar</button>
     </div>`;
+  // 29/10/2026: fotos y lugar opcionales, igual que la muerte directa
+  const selFotosDesap = montarSelectorFotos(document.getElementById('md-fotos'), FOTOS_MAX_CREAR);
+  limpiarUbicMuerte();
+  pintarUbicMuerte();
+  document.getElementById('md-ubic-mapa').addEventListener('click', ()=> iniciarMarcarUbicMuerte('modal-desaparecidos'));
+  document.getElementById('md-ubic-quitar').addEventListener('click', ()=>{ limpiarUbicMuerte(); pintarUbicMuerte(); });
+  document.getElementById('md-ubic-gps').addEventListener('click', ()=>{
+    capturarUbicacionActual((lat, lon)=>{ ponerUbicMuerte(lat, lon); });
+  });
   document.getElementById('md-confirmar').addEventListener('click', ()=>{
     const cant = parseInt(document.getElementById('md-cant').value,10);
     if(!cant || cant<1 || cant>caso.pendiente){ toast(`Ingresá una cantidad entre 1 y ${caso.pendiente}`); return; }
@@ -6659,12 +6702,21 @@ function abrirFormularioMuerteDesaparecido(caso){
       undefined, fecha);
     entry.casoId = caso.casoId;
     entry.eventId = crypto.randomUUID();
-    enviarEvento('muerte_desaparecido', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, caravana, casoId: caso.casoId}, fecha, {eventId: entry.eventId});
+    const ubic = _ubicMuerte ? {lat: Number(_ubicMuerte.lat.toFixed(6)), lon: Number(_ubicMuerte.lon.toFixed(6))} : null;
+    if(ubic) entry.ubic = ubic; // aparte de `extra`/`origDatos`, que comparan las correcciones
+    enviarEvento('muerte_desaparecido', caso.potreroOrigen, Object.assign({categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, caravana, casoId: caso.casoId}, ubic ? ubic : {}), fecha, {eventId: entry.eventId});
+    const fotosDesap = selFotosDesap.blobs();
+    selFotosDesap.limpiar();
+    limpiarUbicMuerte();
     guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
+    // las fotos van después de la muerte: el evento queda primero en la cola y cada muerte_foto sale detrás
+    fotosDesap.forEach(b => encolarFoto('muerte', entry.eventId, b, 'registro'));
     if(seleccionActual) renderDetalle(seleccionActual);
     toast(cant<caso.pendiente ? `Se confirmó la muerte de ${cant}, sigue el caso abierto por ${caso.pendiente-cant}` : 'Caso cerrado como muerte');
   });
   document.getElementById('md-cancelar').addEventListener('click', ()=>{
+    selFotosDesap.limpiar();
+    limpiarUbicMuerte();
     cont.style.display = 'none'; cont.innerHTML = '';
   });
 }

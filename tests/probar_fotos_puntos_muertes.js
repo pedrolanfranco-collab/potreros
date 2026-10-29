@@ -382,7 +382,14 @@ async function probarArchivo(archivo){
   }
   click(win, doc.getElementById('f-ubic-mapa'));
   chequear('"Marcar en el mapa" pide tocar el mapa', !!doc.querySelector('.modo-colocar-aviso'));
+  chequear('y oculta el detalle del potrero, que en el celular tapa el mapa', doc.getElementById('detalle').style.display === 'none');
+  chequear('el aviso trae un botón Cancelar', !!doc.querySelector('.modo-colocar-aviso button'));
+  click(win, doc.querySelector('.modo-colocar-aviso button'));
+  chequear('Cancelar devuelve el detalle con el formulario como estaba y quita el aviso',
+    doc.getElementById('detalle').style.display !== 'none' && !doc.querySelector('.modo-colocar-aviso') && doc.querySelectorAll('#f-fotos-muerte .rp-foto-elegida').length === 2);
+  click(win, doc.getElementById('f-ubic-mapa'));
   win.colocarUbicMuerteEn({ lat: -31.401234567, lng: -55.431234567 });
+  chequear('tocar el mapa devuelve el detalle del potrero', doc.getElementById('detalle').style.display !== 'none');
   chequear('tocar el mapa marca el lugar y quita el aviso', /Marcada: -31\.40123, -55\.43123/.test(doc.getElementById('f-ubic-txt').textContent) && !doc.querySelector('.modo-colocar-aviso'), doc.getElementById('f-ubic-txt').textContent);
   chequear('aparece "Quitar ubicación"', doc.getElementById('f-ubic-quitar').style.display !== 'none');
   click(win, doc.getElementById('f-confirmar'));
@@ -455,6 +462,65 @@ async function probarArchivo(archivo){
   const evO = filasDe('muerte').find(f => f.detalle.obs === 'Muerte sin señal');
   const fO = evO ? filasDe('muerte_foto').filter(f => f.detalle.id === evO.event_id) : [];
   chequear('al volver la señal sale la muerte y después su foto', !!evO && fO.length === 1 && servidor.filas.indexOf(fO[0]) > servidor.filas.indexOf(evO) && win.__fotosN() === 0);
+
+  // ---------- "Dar muerte" desde Desaparecidos: fotos y lugar ----------
+  win.mostrarFormulario(pot, 'desaparecido');
+  doc.getElementById('f-cat').value = 'Vacas';
+  doc.getElementById('f-cant').value = '3';
+  doc.getElementById('f-obs').value = 'Se fueron';
+  click(win, doc.getElementById('f-confirmar'));
+  await esperar(60);
+  const caso = win.listarCasosDesaparecidos().find(c => c.potreroOrigen === pot);
+  chequear('hay un caso de desaparecidos abierto por 3', !!caso && caso.pendiente === 3);
+  win.renderDesaparecidosLista();
+  doc.getElementById('modal-desaparecidos').style.display = 'flex';
+  win.abrirFormularioMuerteDesaparecido(caso);
+  chequear('"Dar muerte" tiene fotos y "dónde se encontró"', !!doc.querySelector('#md-fotos [data-sf-input]') && !!doc.getElementById('md-ubic-mapa') && !!doc.getElementById('md-ubic-txt'));
+  chequear('el botón de GPS solo está en el celular (también acá)', tieneGPS === !!doc.getElementById('md-ubic-gps'));
+  await elegirFotos(win, doc.querySelector('#md-fotos [data-sf-input]'), [foto(win, 'd1.jpg'), foto(win, 'd2.jpg')]);
+  chequear('muestra las 2 fotos elegidas', doc.querySelectorAll('#md-fotos .rp-foto-elegida').length === 2);
+  click(win, doc.getElementById('md-ubic-mapa'));
+  chequear('"Marcar en el mapa" oculta la ventana de Desaparecidos (tapa el mapa) y trae Cancelar',
+    doc.getElementById('modal-desaparecidos').style.display === 'none' && !!doc.querySelector('.modo-colocar-aviso button'));
+  click(win, doc.querySelector('.modo-colocar-aviso button'));
+  chequear('Cancelar devuelve la ventana con el formulario como estaba',
+    doc.getElementById('modal-desaparecidos').style.display === 'flex' && !doc.querySelector('.modo-colocar-aviso') && doc.querySelectorAll('#md-fotos .rp-foto-elegida').length === 2);
+  click(win, doc.getElementById('md-ubic-mapa'));
+  win.colocarUbicMuerteEn({ lat: -31.402, lng: -55.432 });
+  chequear('tocar el mapa devuelve la ventana y marca el lugar',
+    doc.getElementById('modal-desaparecidos').style.display === 'flex' && /Marcada: -31\.40200, -55\.43200/.test(doc.getElementById('md-ubic-txt').textContent), doc.getElementById('md-ubic-txt').textContent);
+  doc.getElementById('md-cant').value = '2';
+  click(win, doc.getElementById('md-confirmar'));
+  await esperar(100);
+  const evD = filasDe('muerte_desaparecido').find(f => f.detalle.casoId === caso.casoId);
+  chequear('el evento muerte_desaparecido sale con lat y lon', !!evD && evD.detalle.lat === -31.402 && evD.detalle.lon === -55.432, JSON.stringify(evD && evD.detalle));
+  const fotosD = evD ? filasDe('muerte_foto').filter(f => f.detalle.id === evD.event_id) : [];
+  chequear('salen 2 muerte_foto con id = event_id de la muerte, después de ella, con ruta exacta',
+    fotosD.length === 2 && fotosD.every(f => servidor.filas.indexOf(f) > servidor.filas.indexOf(evD) && f.detalle.path === `${est}/${evD.event_id}/${f.detalle.fotoId}.jpg`) && servidor.eventosSinFoto.length === 0, JSON.stringify(servidor.eventosSinFoto));
+  const hD = () => win.__est().potreros[pot].historial.find(h => h.eventId === (evD && evD.event_id));
+  chequear('el renglón guarda el lugar (ubic) y las 2 fotos', !!hD() && hD().tipo === 'muerte_desaparecido' && hD().ubic && hD().ubic.lat === -31.402 && (hD().fotos || []).length === 2);
+  chequear('el lugar no se mete en `extra` ni en origDatos', !('lat' in (hD().extra || {})) && !('lat' in (hD().origDatos || {})));
+  chequear('el formulario nuevo no hereda el lugar de la muerte anterior', (() => { win.mostrarFormulario(pot, 'muerte'); return /Sin ubicación marcada/.test(doc.getElementById('f-ubic-txt').textContent); })());
+  win.cerrarDetalle();
+  win.seleccionarPotrero(pot);
+  const hidD = hD().id;
+  chequear('el historial muestra sus 2 miniaturas y los botones 📷 y 🗺',
+    doc.querySelectorAll(`[data-hist-fotos="${evD.event_id}"] [data-foto-thumb][data-foto-tipo="muerte"]`).length === 2 && !!doc.querySelector(`[data-hist-foto="${hidD}"]`) && !!doc.querySelector(`[data-hist-mapa="${hidD}"]`));
+  log.length = 0;
+  click(win, doc.querySelector(`[data-hist-mapa="${hidD}"]`));
+  const svD = log.find(e => e[0] === 'setView');
+  chequear('🗺 lleva al lugar marcado (zoom 17) y abre su popup', !!svD && Math.abs(svD[1][0] + 31.402) < 1e-9 && svD[2] === 17 && log.some(e => e[0] === 'openPopup'));
+  click(win, doc.querySelector(`[data-hist-foto="${hidD}"]`));
+  await elegirFotos(win, doc.getElementById('rp-fotos-extra'), [foto(win, 'd3.jpg')]);
+  await esperar(100);
+  chequear('📷 suma una foto a esa muerte', (hD().fotos || []).length === 3 && filasDe('muerte_foto').filter(f => f.detalle.id === evD.event_id).length === 3);
+  // una muerte de desaparecido que viene de otro equipo trae su lugar y recibe fotos
+  const idDR = uuid();
+  remoto('muerte_desaparecido', { categoria: 'Vacas', dueno, cantidad: 1, caravana: null, casoId: 'caso_remoto', lat: -31.6, lon: -55.6 }, { potrero: pot, event_id: idDR });
+  const hDR = () => win.__est().potreros[pot].historial.find(h => h.eventId === idDR);
+  chequear('una muerte_desaparecido remota con lat/lon deja su lugar en el renglón', !!hDR() && hDR().ubic && hDR().ubic.lat === -31.6 && hDR().ubic.lon === -55.6);
+  remoto('muerte_foto', armar(idDR));
+  chequear('y recibe su muerte_foto', (hDR().fotos || []).length === 1);
 
   // ---------- receptor: una muerte de otro equipo con lugar, y su foto ----------
   const idR = uuid();

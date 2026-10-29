@@ -793,14 +793,15 @@ los registros de la cola de antes (sin `tipoFoto`, con el id en `reporteId`) se 
 y `MOMENTOS_FOTO`, su evento en los tres lugares y su `refrescar`.**
 - *Puntos* (Aguadas / instalaciones: Manga, Corral, Bretes, Embarcadero… son subtipos de "Instalación", no potreros): hasta 3 fotos al crearlo (`montarSelectorFotos`,
   selector reutilizable), "📷 Agregar foto" y "🗺 Ver en el mapa" (`verPuntoEnMapa()` → `verUbicacionEnMapa()`) en cada renglón de la lista, tope 10.
-- *Muertes* (solo el evento `muerte`, no `muerte_desaparecido`): el formulario suma fotos y **lugar opcional** (GPS en el celular, o tocar el mapa: `modoColocarMuerte`).
+- *Muertes* (el evento `muerte` y también `muerte_desaparecido`, o sea "Dar muerte" desde Desaparecidos: `abrirFormularioMuerteDesaparecido()`, ids `md-…`; los dos usan `muerte_foto` y el mismo `_ubicMuerte`): el formulario suma fotos y **lugar opcional** (GPS en el celular, o tocar el mapa: `modoColocarMuerte`).
+  **El detalle del potrero y la ventana de Desaparecidos son capas a pantalla completa que tapan el mapa** (en el celular): `iniciarMarcarUbicMuerte(idOverlay)` las oculta mientras se toca el mapa, con "✕ Cancelar" en el aviso (`mostrarAvisoModo(texto, alCancelar)`), y `colocarUbicMuerteEn()` / `cancelarMarcarUbicMuerte()` las devuelven con el formulario como estaba.
   El lugar viaja en el evento (`lat`/`lon`, 6 decimales) y queda en el renglón como `ubic` — **aparte de `extra`/`origDatos`**, que comparan las correcciones. Las fotos se
   cuelgan del `eventId` del renglón (`h.fotos`). En el historial: miniaturas, 📷 y 🗺 (con lugar va ahí; sin lugar centra el potrero; oculta `#detalle`, que tapa el mapa).
   Al **editar** una muerte (✏️ = deshacer + formulario nuevo) el lugar se precarga pero las fotos quedan en el renglón tachado.
 - **Lección (error real que encontró Chromium, no jsdom):** `estado.puntos.forEach(crearMarcadorPunto)` corría ANTES de `const TIPOS_FOTO` y, al reabrir la app con un punto
   guardado, no cargaba nada (`Cannot access 'TIPOS_FOTO' before initialization`). Lo que corre al cargar y usa un `const` va DESPUÉS de su declaración;
   `tests/probar_fotos_puntos_muertes.js` ahora reabre la app con el `localStorage` ya cargado (`levantar(archivo, servidor, almacen)`).
-- **Test**: `tests/probar_fotos_puntos_muertes.js` (9 variantes, en el workflow; verificado con 13 mutaciones, 12 en rojo: la que sobrevive es una defensa redundante).
+- **Test**: `tests/probar_fotos_puntos_muertes.js` (9 variantes, en el workflow; verificado con mutaciones: todas en rojo salvo el chequeo de id por tipo, que es una defensa redundante porque un id inexistente igual se ignora).
 
 ### Hermes (agente de WhatsApp de Pedro) y `scripts/hermes/` (25/10/2026, a pedido de Pedro)
 
