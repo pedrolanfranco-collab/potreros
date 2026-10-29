@@ -511,7 +511,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.14</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.15</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -584,6 +584,7 @@
       <button class="btn btn-json" id="btn-resync-puntos" style="display:none;">🔄 Resincronizar mis puntos</button>
       <button class="btn btn-json" id="btn-infraestructura">🔧 Infraestructura</button>
       <button class="btn btn-json" id="btn-capin-annoni">🌾 Capín Annoni</button>
+      <button class="btn btn-json" id="btn-instructivo">📖 Instructivo</button>
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
       <button class="btn btn-json" id="btn-clave-campo">🔑 Clave del campo</button>
       <input type="file" id="input-json" accept=".json">
@@ -992,7 +993,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.16","versionMovil":"2.14","simpleHabilitado":true,"versionMovilSimple":"1.55","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.17","versionMovil":"2.15","simpleHabilitado":true,"versionMovilSimple":"1.55","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1684,7 +1685,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'movil-2.14';
+const VERSION_APP = 'movil-2.15';
 /* `opciones` (opcional): {eventId} para fijar el id del evento, y {establecimiento}
    para escribirlo en el stream de OTRO establecimiento (traslados entre campos; la
    cola guarda el establecimiento destino junto con el evento). */
@@ -5326,6 +5327,31 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
 });
+/* 📖 Instructivo (29/10/2026 Campo; 30/10/2026 móvil completa y PC): una página fija por tipo de app (instructivo-campo/,
+   instructivo-movil/, instructivo-pc/; a mano, no generadas). Se abre en otra pestaña para no sacar a nadie de la app.
+   Ver CLAUDE.md "Instructivos (Campo, móvil y PC)".
+   Sin señal: el service worker de esta app NO controla esa carpeta (su alcance es solo la de la app), así que la
+   navegación directa no la sirve desde la caché aunque esté precargada en 'PRECACHE_URLS'. Por eso, sin conexión,
+   se lee la copia precargada y se abre como archivo temporal (blob:); los saltos del índice (#...) andan igual.
+   Una sola función para los tres: cada variante solo dice qué carpeta abre. */
+async function abrirInstructivo(url){
+  if(!navigator.onLine && window.caches){
+    try{
+      const copia = await caches.match(new URL(url, location.href).href, {ignoreSearch: true});
+      if(copia){
+        const blob = new Blob([await copia.arrayBuffer()], {type: 'text/html;charset=utf-8'});
+        const temporal = URL.createObjectURL(blob);
+        window.open(temporal, '_blank');
+        setTimeout(()=>{ try{ URL.revokeObjectURL(temporal); }catch(e){} }, 120000);
+        return;
+      }
+    }catch(e){}
+    toast('Sin señal: el instructivo todavía no se bajó a ' + ESTE_EQUIPO);
+    return;
+  }
+  window.open(url, '_blank');
+}
+document.getElementById('btn-instructivo').addEventListener('click', ()=> abrirInstructivo('../instructivo-movil/'));
 document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
   if(e.target.tagName !== 'BUTTON') return;
   // abrir un sub-menu o volver: la caja queda abierta

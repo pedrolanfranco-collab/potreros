@@ -187,8 +187,8 @@ jobs:
       - name: "Completar sanidad del baston (18/10/2026) -- el export de Datamars sale igual, con PRODUCTO/DOSIS/POTRERO del catalogo; nunca escribe"
         run: node tests/probar_completar_sanidad.js completar-sanidad/index.html
 
-      - name: "Instructivo de Campo (29/10/2026) -- la pagina nombra todos los botones de Campo, las versiones coinciden y el boton y la precarga estan"
-        run: node tests/probar_instructivo_campo.js
+      - name: "Instructivos de Campo, movil y PC (29-30/10/2026) -- cada pagina nombra todos los botones de su app, las versiones coinciden y el boton y la precarga estan solo donde corresponden"
+        run: node tests/probar_instructivos.js
 
       - name: "UG: las crias de la temporada no cuentan hasta que se destetan (11/10/2026) -- Terneros desde marzo, Corderos/as desde enero"
         run: node tests/probar_ug_temporada.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html

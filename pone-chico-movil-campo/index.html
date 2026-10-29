@@ -830,7 +830,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.16","versionMovil":"2.14","simpleHabilitado":true,"versionMovilSimple":"1.55","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.17","versionMovil":"2.15","simpleHabilitado":true,"versionMovilSimple":"1.55","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -5176,13 +5176,14 @@ document.getElementById('btn-modo-sol').addEventListener('click', ()=>{
   try{ localStorage.setItem(MODO_SOL_KEY, on ? '1' : '0'); }catch(e){}
   toast(on ? 'Modo sol activado' : 'Modo sol desactivado');
 });
-/* 📖 Instructivo (29/10/2026, Campo): página fija y única para los 3 campos (instructivo-campo/, a mano, no generada).
-   Se abre en otra pestaña para no sacar al empleado de la app. Ver CLAUDE.md "Instructivo de Campo".
+/* 📖 Instructivo (29/10/2026 Campo; 30/10/2026 móvil completa y PC): una página fija por tipo de app (instructivo-campo/,
+   instructivo-movil/, instructivo-pc/; a mano, no generadas). Se abre en otra pestaña para no sacar a nadie de la app.
+   Ver CLAUDE.md "Instructivos (Campo, móvil y PC)".
    Sin señal: el service worker de esta app NO controla esa carpeta (su alcance es solo la de la app), así que la
    navegación directa no la sirve desde la caché aunque esté precargada en 'PRECACHE_URLS'. Por eso, sin conexión,
-   se lee la copia precargada y se abre como archivo temporal (blob:); los saltos del índice (#...) andan igual. */
-document.getElementById('btn-instructivo').addEventListener('click', async ()=>{
-  const url = '../instructivo-campo/';
+   se lee la copia precargada y se abre como archivo temporal (blob:); los saltos del índice (#...) andan igual.
+   Una sola función para los tres: cada variante solo dice qué carpeta abre. */
+async function abrirInstructivo(url){
   if(!navigator.onLine && window.caches){
     try{
       const copia = await caches.match(new URL(url, location.href).href, {ignoreSearch: true});
@@ -5194,11 +5195,12 @@ document.getElementById('btn-instructivo').addEventListener('click', async ()=>{
         return;
       }
     }catch(e){}
-    toast('Sin señal: el instructivo todavía no se bajó a este celular');
+    toast('Sin señal: el instructivo todavía no se bajó a ' + ESTE_EQUIPO);
     return;
   }
   window.open(url, '_blank');
-});
+}
+document.getElementById('btn-instructivo').addEventListener('click', ()=> abrirInstructivo('../instructivo-campo/'));
 document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
   if(e.target.tagName !== 'BUTTON') return;
   // abrir un sub-menu o volver: la caja queda abierta

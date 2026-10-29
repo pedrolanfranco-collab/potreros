@@ -721,6 +721,9 @@
       <button class="btn btn-json" id="btn-modo-sol">☀ Modo sol: NO</button>
       <button class="btn btn-json" id="btn-instructivo">📖 Instructivo</button>
 <!-- @simple:end -->
+<!-- @completo:start -->
+      <button class="btn btn-json" id="btn-instructivo">📖 Instructivo</button>
+<!-- @completo:end -->
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
       <button class="btn btn-json" id="btn-clave-campo">🔑 Clave del campo</button>
 <!-- @movil:end -->
@@ -764,6 +767,7 @@
             <button class="btn btn-json" id="btn-sincronizar" style="color:#1d4fa8;">🔄 Sincronizar ahora</button>
             <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
             <button class="btn btn-json" id="btn-clave-campo">🔑 Clave del campo</button>
+            <button class="btn btn-json" id="btn-instructivo">📖 Instructivo</button>
             <button class="btn btn-json hg-ancho" id="btn-restablecer" style="color:var(--rojo-hacienda);">↺ Restablecer datos de fábrica</button>
           </div>
         </div>
@@ -6507,14 +6511,14 @@ document.getElementById('btn-modo-sol').addEventListener('click', ()=>{
   toast(on ? 'Modo sol activado' : 'Modo sol desactivado');
 });
 // @simple:end
-// @simple:start
-/* 📖 Instructivo (29/10/2026, Campo): página fija y única para los 3 campos (instructivo-campo/, a mano, no generada).
-   Se abre en otra pestaña para no sacar al empleado de la app. Ver CLAUDE.md "Instructivo de Campo".
+/* 📖 Instructivo (29/10/2026 Campo; 30/10/2026 móvil completa y PC): una página fija por tipo de app (instructivo-campo/,
+   instructivo-movil/, instructivo-pc/; a mano, no generadas). Se abre en otra pestaña para no sacar a nadie de la app.
+   Ver CLAUDE.md "Instructivos (Campo, móvil y PC)".
    Sin señal: el service worker de esta app NO controla esa carpeta (su alcance es solo la de la app), así que la
    navegación directa no la sirve desde la caché aunque esté precargada en 'PRECACHE_URLS'. Por eso, sin conexión,
-   se lee la copia precargada y se abre como archivo temporal (blob:); los saltos del índice (#...) andan igual. */
-document.getElementById('btn-instructivo').addEventListener('click', async ()=>{
-  const url = '../instructivo-campo/';
+   se lee la copia precargada y se abre como archivo temporal (blob:); los saltos del índice (#...) andan igual.
+   Una sola función para los tres: cada variante solo dice qué carpeta abre. */
+async function abrirInstructivo(url){
   if(!navigator.onLine && window.caches){
     try{
       const copia = await caches.match(new URL(url, location.href).href, {ignoreSearch: true});
@@ -6526,12 +6530,22 @@ document.getElementById('btn-instructivo').addEventListener('click', async ()=>{
         return;
       }
     }catch(e){}
-    toast('Sin señal: el instructivo todavía no se bajó a este celular');
+    toast('Sin señal: el instructivo todavía no se bajó a ' + ESTE_EQUIPO);
     return;
   }
   window.open(url, '_blank');
-});
+}
+// @simple:start
+document.getElementById('btn-instructivo').addEventListener('click', ()=> abrirInstructivo('../instructivo-campo/'));
 // @simple:end
+// @movil:start
+// @completo:start
+document.getElementById('btn-instructivo').addEventListener('click', ()=> abrirInstructivo('../instructivo-movil/'));
+// @completo:end
+// @movil:end
+// @pc:start
+document.getElementById('btn-instructivo').addEventListener('click', ()=> abrirInstructivo('../instructivo-pc/'));
+// @pc:end
 document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
   if(e.target.tagName !== 'BUTTON') return;
   // abrir un sub-menu o volver: la caja queda abierta
