@@ -2397,6 +2397,8 @@ function aplicarEventoVecino(row, d, potrero, potrerosSucios){
   const caravana = d.caravana || null;
   const obs = d.obs || null;
   const grupo = (row.tipo === 'vecino_muerte' && grupoTerneroValido(d.grupoTernero)) ? d.grupoTernero : null;
+  // 29/10/2026 (etapa 2, revisión): un renglón cargado en ESTE equipo (aplicarVecinoLocal) no dice "(sincronizado)"
+  const sufS = row._local ? '' : ' (sincronizado)';
 
   // Stock del potrero (solo paso y retorno: aparecido y perdida/muerte no lo tocan)
   if(row.tipo === 'vecino_paso' || row.tipo === 'vecino_retorno'){
@@ -2421,29 +2423,58 @@ function aplicarEventoVecino(row, d, potrero, potrerosSucios){
 
   // Renglón en el historial del potrero (no existe en perdida/muerte: no hay potrero)
   if(potrero){
-    const textoP = row.tipo === 'vecino_paso' ? `Al vecino ${vecino} (sincronizado): ${detalleTxt}`
-      : row.tipo === 'vecino_aparecido' ? `Apareció en el campo de ${vecino} (sincronizado): ${detalleTxt}`
-      : `Volvió del vecino ${vecino} (sincronizado): ${detalleTxt}`;
+    const textoP = row.tipo === 'vecino_paso' ? `Al vecino ${vecino}${sufS}: ${detalleTxt}`
+      : row.tipo === 'vecino_aparecido' ? `Apareció en el campo de ${vecino}${sufS}: ${detalleTxt}`
+      : `Volvió del vecino ${vecino}${sufS}: ${detalleTxt}`;
     const entryV = registrarHistorial(potrero, row.tipo, textoP, undefined, undefined, fechaEvt);
     entryV.origDatos = origDatos;
     if(row.tipo === 'vecino_aparecido') entryV.casoId = d.casoId; // cierra el caso (ver listarCasosDesaparecidos)
   }
 
   // Renglón en el balde del vecino (siempre; es lo que muestra la ventana Vecinos)
-  const textoV = row.tipo === 'vecino_paso' ? `Pasó desde ${potrero} (sincronizado): ${detalleTxt}`
-    : row.tipo === 'vecino_aparecido' ? `Apareció en su campo, desaparecido de ${potrero} (sincronizado): ${detalleTxt}`
-    : row.tipo === 'vecino_retorno' ? `Volvió a ${potrero} (sincronizado): ${detalleTxt}`
-    : row.tipo === 'vecino_perdida' ? `Pérdida confirmada (sincronizada): ${detalleTxt} (no vuelven)`
-    : `Muerte (sincronizada): ${detalleTxt}${grupoTxt} (no vuelven)`;
+  const textoV = row.tipo === 'vecino_paso' ? `Pasó desde ${potrero}${sufS}: ${detalleTxt}`
+    : row.tipo === 'vecino_aparecido' ? `Apareció en su campo, desaparecido de ${potrero}${sufS}: ${detalleTxt}`
+    : row.tipo === 'vecino_retorno' ? `Volvió a ${potrero}${sufS}: ${detalleTxt}`
+    : row.tipo === 'vecino_perdida' ? `Pérdida confirmada${sufS}: ${detalleTxt} (no vuelven)`
+    : `Muerte${sufS}: ${detalleTxt}${grupoTxt} (no vuelven)`;
   v.historial.unshift({id: generarIdHistorial(), eventId, fecha: fechaEvt, tipo: row.tipo, categoria: d.categoria, dueno: d.dueno||null,
-    cantidad, potrero: potrero || null, caravana, obs, grupoTernero: grupo, casoId: d.casoId || null, usuario: d.usuario || null, detalle: textoV});
+    cantidad, potrero: potrero || null, caravana, obs, grupoTernero: grupo, casoId: d.casoId || null, usuario: d.usuario || null, detalle: textoV,
+    origDatos: Object.assign({}, origDatos, {potrero: potrero || null})});
+}
+/* 29/10/2026 (etapa 3): corrección (borrar/editar) de un evento de vecino que NO toca potrero: perdida, muerte o aparecido.
+   Ubica los renglones por eventIdOriginal (en el potrero y en el vecino), los tacha y revierte el stock del vecino. Si
+   ya estaban todos tachados, no revierte otra vez (una corrección repetida no mueve el stock dos veces). */
+function aplicarCorreccionVecino(row, d){
+  const idOriginal = (typeof d.eventIdOriginal === 'string' && d.eventIdOriginal) ? d.eventIdOriginal : null;
+  const porId = renglonesPorEventId(idOriginal);
+  if(porId.length && !porId.some(h=> !h.eliminado)) return;
+  porId.forEach(h=>{ if(!h.eliminado){ h.eliminado = true; h.detalle += (d.accion === 'eliminar' ? ' — ELIMINADO' : ' — EDITADO (ver movimiento nuevo)'); } });
+  aplicarAjusteReversion(d.reversar, row.fecha_cliente || fechaHoy());
+}
+/* Ajuste inverso de un evento de vecino: `potreroDelta` sobre el potrero (si tiene) y `vecinoDelta` sobre el vecino.
+   Topes en 0, igual que el resto de los ajustes. */
+function aplicarAjusteVecino(ajuste, fecha){
+  const key = claveAnimal(ajuste.categoria, ajuste.dueno);
+  if(ajuste.potrero && ajuste.potreroDelta && estado.potreros[ajuste.potrero]){
+    const p = estado.potreros[ajuste.potrero];
+    const totalAntes = totalPotrero(ajuste.potrero);
+    p.animales[key] = Math.max(0, (p.animales[key]||0) + ajuste.potreroDelta);
+    registrarCambioOcupacion(ajuste.potrero, totalAntes, fecha);
+  }
+  if(ajuste.vecino && ajuste.vecinoDelta){
+    const v = obtenerVecino(ajuste.vecino);
+    if(v){
+      const quedan = Math.max(0, (v.animales[key]||0) + ajuste.vecinoDelta);
+      if(quedan > 0) v.animales[key] = quedan; else delete v.animales[key];
+    }
+  }
 }
 /* 29/10/2026: aplica en ESTE equipo el mismo evento que se manda a los demás, pasando por aplicarEventoRemoto(): una sola
    lógica para lo local y lo remoto (no pueden divergir). Después agrega `extra` al renglón del potrero, como los demás
    movimientos locales (la PC lo usa para editar y borrar). Se llama ANTES de enviarEvento(), con el mismo eventId. */
 function aplicarVecinoLocal(tipo, potrero, d, fechaISO, eventId){
   const dl = Object.assign({}, d);
-  aplicarEventoRemoto({tipo, potrero, event_id: eventId, fecha_cliente: fechaISOaDisplay(fechaISO), creado_en: null, detalle: dl}, new Set());
+  aplicarEventoRemoto({tipo, potrero, event_id: eventId, fecha_cliente: fechaISOaDisplay(fechaISO), creado_en: null, detalle: dl, _local: true}, new Set());
   const entry = ((estado.potreros[potrero] || {}).historial || []).find(h=> h.eventId === eventId);
   if(entry) entry.extra = Object.assign({potrero}, entry.origDatos || {}, {_fechaISO: fechaISO});
 }
@@ -2731,6 +2762,12 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
+  // 29/10/2026 (etapa 3): la corrección de un vecino que no toca potrero (perdida, muerte, aparecido) trae el
+  // establecimiento en `potrero`: se despacha antes del guard, como vecino_perdida/muerte.
+  if(row.tipo === 'correccion' && d.reversar && d.reversar.tipo === 'vecino_ajuste' && !d.reversar.potrero){
+    aplicarCorreccionVecino(row, d);
+    return;
+  }
   // 29/10/2026: vecino_perdida y vecino_muerte no tienen potrero real: se aplican antes del guard, como lluvia.
   if(row.tipo === 'vecino_perdida' || row.tipo === 'vecino_muerte'){
     aplicarEventoVecino(row, d, null, potrerosSucios);
@@ -2848,6 +2885,8 @@ function aplicarEventoRemoto(row, potrerosSucios){
     // viejo) o sin renglones con ese id (cargados antes de esta versión) sigue el parecido de siempre.
     const idOriginal = (typeof d.eventIdOriginal === 'string' && d.eventIdOriginal) ? d.eventIdOriginal : null;
     const porId = renglonesPorEventId(idOriginal);
+    // 29/10/2026: un ajuste de vecino ya deshecho (todos sus renglones tachados) no se revierte otra vez
+    if(d.reversar && d.reversar.tipo === 'vecino_ajuste' && porId.length && !porId.some(h=> !h.eliminado)) return;
     if(d.accion === 'anular_traslado'){
       // 7/10/2026: el establecimiento de ORIGEN borró una salida (🗑) y avisa acá
       // (es el único que puede anular, ver borrarHistorial). Se ubica la entrada
@@ -3061,7 +3100,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
       if(hDestino) tachar(hDestino);
       marcado = !!(hOrigen || hDestino);
     }
-    if(!marcado && d.casoId && (d.tipoOriginal==='perdida' || d.tipoOriginal==='muerte_desaparecido')){
+    if(!marcado && d.casoId && (d.tipoOriginal==='perdida' || d.tipoOriginal==='muerte_desaparecido' || d.tipoOriginal==='vecino_aparecido')){
       // el caso puede haberse resuelto en partes (varias entradas con el mismo casoId):
       // se tacha la de esa cantidad más cercana a la fecha original
       let mejorCaso = null, distCaso = Infinity;
@@ -3355,7 +3394,10 @@ function fotoStock(est){
   };
   const potreros = {};
   Object.keys(est.potreros || {}).forEach(nombre=>{ potreros[nombre] = nonulos(est.potreros[nombre].animales); });
-  return { potreros, campoAjeno: nonulos(est.campoAjeno && est.campoAjeno.animales), tieneCampoAjeno: !!est.campoAjeno };
+  // 29/10/2026 (etapa 3): los vecinos (por nombre, sin ceros), igual que el campo ajeno
+  const vecinos = {};
+  Object.keys(est.vecinos || {}).forEach(n=>{ const a = nonulos(est.vecinos[n] && est.vecinos[n].animales); if(Object.keys(a).length) vecinos[n] = a; });
+  return { potreros, campoAjeno: nonulos(est.campoAjeno && est.campoAjeno.animales), tieneCampoAjeno: !!est.campoAjeno, vecinos };
 }
 function reconstruirStockDesdeRegistro(filas){
   const estadoReal = estado;
@@ -3419,12 +3461,20 @@ function compararStock(local, reg){
     const lado = enPc && enReg ? null : (enPc ? 'pc' : 'registro');
     if(filas.length || lado) potreros.push({nombre, lado, filas});
   });
+  // 29/10/2026 (etapa 3): vecinos, uno por uno (en la tabla aparecen como "Vecino <nombre>")
+  const nombresVec = [...new Set([...Object.keys(local.vecinos || {}), ...Object.keys(reg.vecinos || {})])].sort(collator.compare);
+  const vecinosDif = [];
+  nombresVec.forEach(n=>{
+    const filas = filasDe((local.vecinos || {})[n] || {}, (reg.vecinos || {})[n] || {});
+    if(filas.length) vecinosDif.push({nombre: n, filas});
+  });
   return {
     totalPc: Object.values(local.potreros).reduce((s, a)=> s + suma(a), 0),
     totalReg: Object.values(reg.potreros).reduce((s, a)=> s + suma(a), 0),
     nPotreros: nombres.length, potreros,
     campoAjeno: { hay: local.tieneCampoAjeno || reg.tieneCampoAjeno || Object.keys(local.campoAjeno).length > 0 || Object.keys(reg.campoAjeno).length > 0,
-      filas: filasDe(local.campoAjeno, reg.campoAjeno) }
+      filas: filasDe(local.campoAjeno, reg.campoAjeno) },
+    vecinos: { hay: nombresVec.length > 0, lista: vecinosDif }
   };
 }
 const MENOS = '−';
@@ -3452,12 +3502,13 @@ function pintarVerificacion(cmp, meta){
   document.getElementById('vs-subtitulo').textContent = CONFIG.nombre + ' · rearmado desde ' + plural(meta.eventos, 'evento', 'eventos') + ', como un equipo recién instalado';
   const nDist = cmp.potreros.length;
   const nCampo = cmp.campoAjeno.filas.length;
-  const todoOk = nDist === 0 && nCampo === 0;
+  const nVec = cmp.vecinos.lista.length;
+  const todoOk = nDist === 0 && nCampo === 0 && nVec === 0;
   document.querySelector('#vs-card-pc .vs-num').textContent = textoCantidadVs(cmp.totalPc);
   document.querySelector('#vs-card-reg .vs-num').textContent = textoCantidadVs(cmp.totalReg);
   const cd = document.getElementById('vs-card-dif');
   cd.querySelector('.vs-num').textContent = nDist + ' de ' + cmp.nPotreros;
-  cd.querySelector('.vs-sub').textContent = todoOk ? 'Todo coincide' : (nDist ? 'no coinciden con el registro' : 'Campo ajeno distinto');
+  cd.querySelector('.vs-sub').textContent = todoOk ? 'Todo coincide' : (nDist ? 'no coinciden con el registro' : (nCampo ? 'Campo ajeno distinto' : 'Vecinos distintos'));
   cd.classList.toggle('vs-ok', todoOk);
   cd.classList.toggle('vs-aviso', !todoOk);
   let html = '';
@@ -3470,11 +3521,15 @@ function pintarVerificacion(cmp, meta){
   if(nCampo){
     html += '<tr class="vs-pot"><th colspan="4">Campo ajeno</th></tr>' + cmp.campoAjeno.filas.map(filaVs).join('');
   }
+  cmp.vecinos.lista.forEach(v=>{
+    html += '<tr class="vs-pot"><th colspan="4">Vecino: ' + esc(v.nombre) + '</th></tr>' + v.filas.map(filaVs).join('');
+  });
   document.querySelector('#vs-tabla tbody').innerHTML = html;
   document.getElementById('vs-tabla-caja').style.display = html ? '' : 'none';
   const notas = [];
   if(meta.deCola) notas.push('Se tuvieron en cuenta ' + plural(meta.deCola, 'movimiento', 'movimientos') + ' de esta PC sin subir.');
   if(cmp.campoAjeno.hay) notas.push(nCampo ? 'Campo ajeno: ' + plural(nCampo, 'categoría distinta', 'categorías distintas') + ' (ver la tabla).' : 'Campo ajeno coincide.');
+  if(cmp.vecinos.hay) notas.push(nVec ? 'Vecinos: ' + plural(nVec, 'vecino con diferencias', 'vecinos con diferencias') + ' (ver la tabla).' : 'Vecinos coinciden.');
   const iguales = cmp.nPotreros - nDist;
   if(nDist && iguales > 0) notas.push(iguales === 1 ? 'El otro potrero coincide.' : 'Los otros ' + iguales + ' potreros coinciden.');
   if(meta.desconocidos) notas.push(plural(meta.desconocidos, 'evento del registro es', 'eventos del registro son') + ' de un tipo que esta versión no conoce: no se pudo' + (meta.desconocidos === 1 ? '' : 'ieron') + ' contar. Actualizá la app.');
@@ -3482,7 +3537,7 @@ function pintarVerificacion(cmp, meta){
   notas.push('Solo compara: no cambia nada en esta PC ni en Supabase.');
   document.getElementById('vs-notas').innerHTML = notas.map(n => '<p>' + esc(n) + '</p>').join('');
   document.getElementById('vs-cuerpo').style.display = '';
-  document.getElementById('vs-csv').style.display = nDist || nCampo ? '' : 'none';
+  document.getElementById('vs-csv').style.display = nDist || nCampo || nVec ? '' : 'none';
 }
 function huellaLocalVs(){
   return JSON.stringify([estado.ultimaSincronizacion, (estado.colaSync || []).map(e => e && e.event_id)]);
@@ -3532,6 +3587,7 @@ function csvVerificarStock(cmp){
     p.filas.forEach(f => filas.push([p.nombre, f.cat, textoFirma(f.dueno), f.pc, f.reg, f.dif]));
   });
   cmp.campoAjeno.filas.forEach(f => filas.push(['(campo ajeno)', f.cat, textoFirma(f.dueno), f.pc, f.reg, f.dif]));
+  cmp.vecinos.lista.forEach(v => v.filas.forEach(f => filas.push(['(vecino ' + v.nombre + ')', f.cat, textoFirma(f.dueno), f.pc, f.reg, f.dif])));
   return '﻿' + filas.map(r => r.map(celdaCsvVs).join(';')).join('\r\n') + '\r\n';
 }
 document.getElementById('btn-verificar-stock').addEventListener('click', abrirVerificarStock);
@@ -4014,6 +4070,7 @@ function moverTitularidad(potrero, items, desde, hacia){
 }
 function aplicarAjusteReversion(ajuste, fecha){
   if(!ajuste) return;
+  if(ajuste.tipo==='vecino_ajuste'){ aplicarAjusteVecino(ajuste, fecha); return; }
   if(ajuste.tipo==='movimiento_guia_ajuste'){
     moverTitularidad(ajuste.potrero, ajuste.items, ajuste.hacia || '', ajuste.desde || '');
   } else if(ajuste.tipo==='sumar' || ajuste.tipo==='restar'){
@@ -4106,6 +4163,10 @@ function renglonesPorEventId(eventId){
   Object.keys(estado.potreros).forEach(nombre=>{
     ((estado.potreros[nombre] || {}).historial || []).forEach(h=>{ if(h.eventId === eventId) lista.push(h); });
   });
+  // 29/10/2026: y los renglones de los vecinos (un paso, un retorno o un aparecido deja uno en el vecino)
+  Object.keys(estado.vecinos || {}).forEach(nombre=>{
+    ((estado.vecinos[nombre] || {}).historial || []).forEach(h=>{ if(h.eventId === eventId) lista.push(h); });
+  });
   return lista;
 }
 /* La corrección lleva el event_id del renglón que corrige, solo si el renglón lo tiene (los de antes de esta
@@ -4162,7 +4223,7 @@ function quitarMovimientoCampoAjeno(tipoLista, potrero, items, fecha, eventId, s
    pendiente en otro. 6/10/2026: la corrección lleva el casoId y la cantidad, y
    el receptor tacha por ahí (ver aplicarEventoRemoto, rama 'correccion'). */
 function datosCorreccionDeCaso(h, datos){
-  return (h.tipo==='perdida' || h.tipo==='muerte_desaparecido') && h.casoId
+  return (h.tipo==='perdida' || h.tipo==='muerte_desaparecido' || h.tipo==='vecino_aparecido') && h.casoId
     ? {casoId: h.casoId, cantidad: datos && datos.cantidad} : {};
 }
 /* Resoluciones vigentes (encontrado / pérdida / muerte) de un caso de desaparecido.
@@ -4184,11 +4245,24 @@ function avisarSiTieneResoluciones(h){
   if(h.tipo!=='desaparecido') return false;
   const n = resolucionesVivasDeCaso(h.id).length;
   if(!n) return false;
-  toast(`Este desaparecido ya tiene ${n} resolución${n===1?'':'es'} cargada${n===1?'':'s'} (encontrado, pérdida o muerte): primero borrá ${n===1?'esa':'esas'}.`);
+  toast(`Este desaparecido ya tiene ${n} resolución${n===1?'':'es'} cargada${n===1?'':'s'} (encontrado, pérdida, muerte o apareció en un vecino): primero borrá ${n===1?'esa':'esas'}.`);
   return true;
 }
 function construirAjusteInverso(h, potreroHost){
   const e = datosHistorial(h, potreroHost); if(!e) return null;
+  // 29/10/2026 (etapa 3): deshacer un evento de vecino. paso: vuelve al potrero, sale del vecino; retorno: al revés;
+  // aparecido: el animal sale del vecino y el caso vuelve a pendiente (potrero null: no toca stock); perdida y muerte:
+  // vuelven al vecino (la muerte, con su grupo de terneros).
+  if(h.tipo==='vecino_paso' || h.tipo==='vecino_retorno' || h.tipo==='vecino_aparecido' || h.tipo==='vecino_perdida' || h.tipo==='vecino_muerte'){
+    const n = e.cantidad;
+    const base = {tipo:'vecino_ajuste', vecino: e.vecino, categoria: e.categoria, dueno: e.dueno || null, cantidad: n, potrero: null, potreroDelta: 0, vecinoDelta: 0};
+    if(h.tipo==='vecino_paso') return Object.assign(base, {potrero: e.potrero, potreroDelta: n, vecinoDelta: -n});
+    if(h.tipo==='vecino_retorno') return Object.assign(base, {potrero: e.potrero, potreroDelta: -n, vecinoDelta: n});
+    if(h.tipo==='vecino_aparecido') return Object.assign(base, {vecinoDelta: -n});
+    if(h.tipo==='vecino_perdida') return Object.assign(base, {vecinoDelta: n});
+    const grupo = grupoTerneroValido(e.grupoTernero);
+    return Object.assign(base, {vecinoDelta: n}, grupo ? {grupoTernero: grupo} : {});
+  }
   if(h.tipo==='ingreso' || h.tipo==='nacimiento' || h.tipo==='compra'){
     return {tipo:'restar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad};
   }
@@ -4297,10 +4371,54 @@ function enviarAnulacionTraslado(h, datos, idCorr){
      origenEstablecimiento: ESTABLECIMIENTO},
     undefined, {establecimiento: dest.establecimiento, eventId: uuidDerivado(idCorr, 'anular')});
 }
+/* 29/10/2026 (etapa 3, PC): borrar un renglón de vecino (desde el potrero o desde 🏡 Vecinos). Mismo camino que borrarHistorial:
+   confirm, ajuste inverso (construirAjusteInverso -> aplicarAjusteReversion), tachado (los renglones del potrero y del vecino
+   con el mismo eventId) y la corrección para los demás equipos. Bloquea si el animal ya no está en el vecino (paso,
+   aparecido) o en el potrero (retorno): hay que corregir eso primero. */
+function borrarRenglonVecino(h, potreroHost){
+  if(!h || h.eliminado) return;
+  const e = datosHistorial(h, potreroHost);
+  if(!e) return;
+  const n = Number(e.cantidad) || 0;
+  const key = claveAnimal(e.categoria, e.dueno);
+  const v = estado.vecinos && estado.vecinos[e.vecino];
+  if((h.tipo==='vecino_paso' || h.tipo==='vecino_aparecido') && (((v && v.animales[key]) || 0) < n)){
+    toast(`No se puede borrar: ya no hay ${n} ${e.categoria} en el campo de ${e.vecino} (volvieron o se dieron por perdidos). Corregí eso primero.`);
+    return;
+  }
+  const p = potreroHost && estado.potreros[potreroHost];
+  if(h.tipo==='vecino_retorno' && p && ((p.animales[key]||0) < n)){
+    toast(`No se puede borrar: en ${potreroHost} ya no hay ${n} ${e.categoria}. Corregí eso primero.`);
+    return;
+  }
+  if(!confirm('¿Seguro que querés borrar este movimiento? Ajusta la cantidad de animales en el potrero y en el vecino. No se puede deshacer.')) return;
+  const ajuste = construirAjusteInverso(h, potreroHost);
+  if(!ajuste) return;
+  aplicarAjusteReversion(ajuste, h.fecha);
+  const mismos = h.eventId ? renglonesPorEventId(h.eventId) : [];
+  if(!mismos.includes(h)) mismos.push(h);
+  mismos.forEach(x=>{ if(!x.eliminado){ x.eliminado = true; x.detalle = x.detalle + ' — ELIMINADO'; } });
+  const potreroEv = (h.tipo==='vecino_perdida' || h.tipo==='vecino_muerte') ? ESTABLECIMIENTO : potreroHost;
+  enviarEvento('correccion', potreroEv,
+    Object.assign({historialId: h.id, tipoOriginal: h.tipo, accion: 'eliminar', reversar: ajuste, fechaOriginal: h.fecha},
+      conIdOriginal(h), h.casoId ? {casoId: h.casoId, cantidad: n} : {}),
+    undefined, {eventId: crypto.randomUUID()});
+  guardarEstado(); actualizarTodo();
+  if(potreroHost) refrescarTrasCambioHistorial(potreroHost);
+  if(document.getElementById('modal-vecinos').style.display === 'flex') renderVecinosLista();
+  publicarStockPotreros([potreroHost, ajuste.potrero].filter(Boolean));
+  toast('Movimiento eliminado y corregido');
+}
+function borrarRenglonVecinoDesdeVentana(nombre, id){
+  const v = estado.vecinos && estado.vecinos[nombre];
+  const h = v && (v.historial || []).find(x=> x.id === id);
+  if(h) borrarRenglonVecino(h, h.potrero || null);
+}
 function borrarHistorial(id){
   const ub = ubicarHistorial(id);
   if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
   if(ub.entry.tipo==='traslado_entrada'){ toast('Un traslado recibido se anula desde el campo de origen.'); return; }
+  if(ub.entry.tipo.indexOf('vecino_')===0){ borrarRenglonVecino(ub.entry, ub.potrero); return; }
   if(avisarSiTieneResoluciones(ub.entry)) return;
   if(!confirm('¿Seguro que querés borrar este movimiento? Ajusta la cantidad de animales en el potrero correspondiente. No se puede deshacer.')) return;
   const h = ub.entry;
@@ -4445,6 +4563,7 @@ function editarHistorial(id){
   if(!ub || ub.entry.eliminado || !datosHistorial(ub.entry, ub.potrero)) return;
   if(ub.entry.tipo==='traslado_salida' || ub.entry.tipo==='traslado_entrada'){ toast('Un traslado no se edita: borralo (se anula en los dos campos) y volvé a cargarlo.'); return; }
   if(ub.entry.tipo==='movimiento_guia'){ toast('Una venta entre dueños no se edita: borrala y volvé a cargarla.'); return; }
+  if(ub.entry.tipo.indexOf('vecino_')===0){ toast('Para corregirlo, borralo y volvé a cargarlo.'); return; }
   if(avisarSiTieneResoluciones(ub.entry)) return;
   const h = ub.entry;
   const msgEditar = 'Esto va a deshacer el movimiento actual (ajusta la cantidad de animales) y abrir el formulario para volver a cargarlo corregido. Si cancelás el formulario, el movimiento original queda deshecho. ¿Continuar?';
@@ -5406,7 +5525,8 @@ function renderDetalle(nombre){
             ${(h.tipo!=='traslado_salida' && h.tipo!=='traslado_entrada' && h.tipo!=='movimiento_guia' && h.tipo!=='vecino_paso' && h.tipo!=='vecino_aparecido' && h.tipo!=='vecino_retorno') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
             ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana">🏷️</button>` : ''}
             ${((CONFIG.dicoseHabilitado || CONFIG.guiasHabilitado) && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${esc(h.id)}" title="Agregar/editar guía">📄</button>` : ''}
-            ${(h.tipo!=='traslado_entrada' && h.tipo!=='vecino_paso' && h.tipo!=='vecino_aparecido' && h.tipo!=='vecino_retorno') ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
+            ${(h.tipo!=='traslado_entrada' && h.tipo.indexOf('vecino_')!==0) ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
+            ${h.tipo.indexOf('vecino_')===0 ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
           </span>` : ''}
         </div>
       `).join('') : '<div class="hist-vacio">Todavía no hay movimientos en este potrero.</div>'}
@@ -6918,7 +7038,7 @@ async function calcularEstadisticasMuertes(){
       // 19/9/2026: 'muerte_desaparecido' (tercera resolución de un caso
       // Desaparecido) cuenta acá también, igual que 'muerte' directa.
       const res = await traerTodo(()=> client.from('eventos_sync').select('fecha_cliente,detalle,tipo')
-        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido','correccion'])
+        .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido','vecino_muerte','correccion'])
         .order('creado_en', {ascending:true}));
       if(!res.error){
         eventos = limpiarTextoRemoto(res.data||[]);
@@ -6961,15 +7081,15 @@ async function calcularEstadisticasMuertes(){
   };
   (eventos||[]).forEach(ev=>{
     const d = ev.detalle || {};
-    if(ev.tipo==='muerte' || ev.tipo==='muerte_desaparecido'){
+    if(ev.tipo==='muerte' || ev.tipo==='muerte_desaparecido' || ev.tipo==='vecino_muerte'){
       acumularMes(ev.fecha_cliente, d.cantidad||0, CATEGORIA_ESPECIE[d.categoria]);
       acumularTerneros(ev.fecha_cliente, d.cantidad||0, d.categoria, d.grupoTernero);
-    } else if(ev.tipo==='correccion' && (d.accion==='eliminar' || d.accion==='editar') && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido') && d.reversar){
+    } else if(ev.tipo==='correccion' && (d.accion==='eliminar' || d.accion==='editar') && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido' || d.tipoOriginal==='vecino_muerte') && d.reversar){
       // 10/10/2026: tambien 'editar' (la PC la manda desde el 3/10): reversa igual
       // que borrar, y la muerte nueva entra aparte; antes la vieja seguia contando.
       acumularMes(d.fechaOriginal || ev.fecha_cliente, -((d.reversar.cantidad)||0), CATEGORIA_ESPECIE[d.reversar.categoria]);
       acumularTerneros(d.fechaOriginal || ev.fecha_cliente, -((d.reversar.cantidad)||0), d.reversar.categoria, d.reversar.grupoTernero);
-    } else if(ev.tipo==='correccion' && d.accion==='reclasificar' && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido')){
+    } else if(ev.tipo==='correccion' && d.accion==='reclasificar' && (d.tipoOriginal==='muerte' || d.tipoOriginal==='muerte_desaparecido' || d.tipoOriginal==='vecino_muerte')){
       // 19/9/2026: reclasificación sin `reversar` -- no fue una muerte real
       // (ej. un ajuste de conteo cargado como Muerte) pero el stock que
       // generó ya está bien como está, así que no hay nada que revertir:
@@ -8333,7 +8453,9 @@ function totalAnimalesVecino(v){
 function historialVecinoHTML(v){
   const lista = v.historial || [];
   return `<details class="historial-det historial-det-lista"><summary>Historial (${lista.length})</summary>${lista.length
-    ? lista.map(h=>`<div class="hist-item ${esc(h.tipo)}"><span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}</div>`).join('')
+    ? lista.map(h=>`<div class="hist-item ${esc(h.tipo)}${h.eliminado?' eliminado':''}"><span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}
+        ${h.eliminado ? '' : `<button class="hist-btn" data-vec-borrar="${esc(h.id)}" title="Borrar">🗑</button>`}
+      </div>`).join('')
     : '<div class="hist-vacio">Todavía no hay movimientos con este vecino.</div>'}</details>`;
 }
 function tarjetaVecinoHTML(nombre, conAcciones){
@@ -8550,7 +8672,7 @@ async function cargarTablaMuertes(filtroDueno, forzarRed){
   }
   cont.innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Cargando…</p>';
   const res = await traerTodo(()=> client.from('eventos_sync').select('detalle,fecha_cliente,tipo')
-    .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido'])
+    .eq('establecimiento', ESTABLECIMIENTO).in('tipo', ['muerte','muerte_desaparecido','vecino_muerte'])
     .order('creado_en', {ascending:true}));
   if(res.error){
     if(muertesUltimosEventos){ renderTablaMuertesFilas(filtroDueno); return; }
@@ -8577,6 +8699,8 @@ document.getElementById('vecinos-cerrar').addEventListener('click', ()=>{
 });
 const vecinosLista = document.getElementById('vecinos-lista');
 vecinosLista.addEventListener('click', (ev)=>{
+  const borrar = ev.target.closest('[data-vec-borrar]');
+  if(borrar){ borrarRenglonVecinoDesdeVentana(borrar.closest('.vec-tarjeta').dataset.vecNombre, borrar.dataset.vecBorrar); return; }
   const abrir = ev.target.closest('[data-vec-accion]');
   const confirmar = ev.target.closest('[data-vec-confirmar]');
   const cancelar = ev.target.closest('[data-vec-cancelar]');
