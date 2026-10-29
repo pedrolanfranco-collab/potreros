@@ -44,6 +44,10 @@ function tiposDelTemplate(){
     u = /\?\s*'([a-z_]+)'\s*:\s*'([a-z_]+)'$/.exec(arg);      // cond ? 'a' : 'b'
     if(u){ tipos.add(u[1]); tipos.add(u[2]); }
   }
+  // 29/10/2026: los eventos de fotos (reporte_foto, punto_foto, muerte_foto) salen por enviarEvento(T.evento, …) y el tipo
+  // vive en el registro TIPOS_FOTO (`evento: '…'`), no en la llamada.
+  const reg = /\bevento:\s*'([a-z_]+)'/g;
+  while((m = reg.exec(t))) tipos.add(m[1]);
   return tipos;
 }
 function tiposDocumentados(){

@@ -491,6 +491,8 @@
     width:20px;height:20px;font-size:12px;line-height:20px;cursor:pointer;padding:0;
   }
   .rp-nota{font-size:11px;color:var(--texto-suave);font-style:italic;}
+  .rp-fotos:empty{display:none;}
+  .hist-item .rp-fotos{clear:both;}
   .rp-form-resolver{
     flex-basis:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--crema);
     display:flex;flex-direction:column;gap:6px;
@@ -540,7 +542,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.14 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.15 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1199,6 +1201,7 @@
     <div class="form-row"><label>Tipo</label><select id="np-tipo"></select></div>
     <div class="form-row"><label>Subtipo</label><select id="np-subtipo"></select></div>
     <div class="form-row"><label>Nombre (opcional)</label><input type="text" id="np-nombre" placeholder="Ej: Represa grande"></div>
+    <div class="form-row"><label>Fotos (opcional, hasta 3)</label><div id="np-fotos"></div></div>
     <button class="btn btn-agregar btn-full" id="np-colocar" style="width:100%;margin-bottom:6px;">📍 Elegir ubicación en el mapa</button>
     <button class="btn btn-kmz btn-full" id="np-importar" style="width:100%;margin-bottom:6px;">⬆ Importar de archivo (KML/KMZ/GPX)</button>
     <button class="btn btn-json btn-full" id="np-cargar-seed" style="width:100%;margin-bottom:10px;">📥 Cargar bebederos y llaves de referencia</button>
@@ -1254,7 +1257,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.14","versionMovil":"2.12","simpleHabilitado":true,"versionMovilSimple":"1.52","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.15","versionMovil":"2.13","simpleHabilitado":true,"versionMovilSimple":"1.53","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Fase 3, paso 5 (12/10/2026, "Verificar stock", solo PC): los potreros TAL COMO VIENEN EN EL ARCHIVO. POTREROS_GEO es este
@@ -1661,7 +1664,10 @@ const _urlsLocales = new Map(); // fotoId -> URL de una foto pendiente (createOb
 const _urlsFirmadas = new Map(); // ruta del bucket -> {url, vence}
 let _resolviendoId = null;      // reporte con el mini formulario de "Resuelto" abierto
 let _fotoResolver = null;       // {blob, url}: la foto del arreglo elegida en ese formulario
-let _fotoExtraPara = null;      // reporte al que se le agrega una foto desde su renglón
+let _fotoExtraPara = null;      // {tipo, id}: reporte, punto o muerte al que se le agrega una foto desde su renglón
+let _ubicMuerte = null;         // {lat, lon}: dónde se encontró el animal, elegido en el formulario de muerte
+let modoColocarMuerte = false;  // true mientras se toca el mapa para marcar esa ubicación
+let _marcadorUbicMuerte = null; // pin provisional de esa ubicación
 let _fotosCrear = [];           // [{blob, url}]: fotos elegidas en el modal para el reporte nuevo
 let estado = cargarEstado();
 if(migrarClavesSinFirma(estado.potreros)) guardarEstado();
@@ -1953,7 +1959,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-2.14';
+const VERSION_APP = 'pc-2.15';
 /* `opciones` (opcional): {eventId} para fijar el id del evento, y {establecimiento}
    para escribirlo en el stream de OTRO establecimiento (traslados entre campos; la
    cola guarda el establecimiento destino junto con el evento). */
@@ -2347,7 +2353,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'envio_campo_ajeno', 'retorno_campo_ajeno', 'traslado_salida', 'traslado_entrada', 'movimiento_guia',
   'lluvia', 'lluvia_editada', 'lluvia_eliminada', 'evento_clima', 'evento_clima_editado', 'evento_clima_eliminado',
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
-  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'proximo_confirmado',
+  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
   'vecino_paso', 'vecino_aparecido', 'vecino_retorno', 'vecino_perdida', 'vecino_muerte',
   'correccion'
@@ -2670,6 +2676,20 @@ function aplicarEventoRemoto(row, potrerosSucios){
   // 24/10/2026: foto de un reporte, ya subida al bucket fotos-reportes (el evento lleva solo la ruta). Idempotente por
   // fotoId. Llega después de su reporte_creado (la cola sale en orden): si el reporte no está, se ignora. Vale también
   // para un reporte ya resuelto (la foto del arreglo llega después de reporte_resuelto).
+  // 29/10/2026: foto de un punto (aguada / instalación) o de una muerte, ya subida al bucket. Mismo criterio que reporte_foto.
+  if(row.tipo === 'punto_foto' || row.tipo === 'muerte_foto'){
+    const tf = row.tipo === 'punto_foto' ? 'punto' : 'muerte';
+    const o = fotoRemotaValida(d, tf) ? TIPOS_FOTO[tf].buscar(d.id) : null;
+    if(!o) return;
+    o.fotos = o.fotos || [];
+    if(o.fotos.some(f=>f.fotoId===d.fotoId)) return;
+    o.fotos.push({fotoId: d.fotoId, path: d.path, momento: d.momento, fecha: d.fecha || null});
+    guardarEstado();
+    if(_reconstruyendo) return; // Verificar stock: el popup y las listas del mapa no se tocan
+    TIPOS_FOTO[tf].refrescar(o);
+    return;
+  }
+
   if(row.tipo === 'reporte_foto'){
     const r = (estado.reportes||[]).find(x=>x.id===d.id);
     if(!r || !fotoRemotaValida(d)) return;
@@ -3297,6 +3317,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     const entry = registrarHistorial(potrero, row.tipo, texto, undefined, undefined, fechaEvt);
     entry.origDatos = {categoria: d.categoria, cantidad: d.cantidad, dueno: d.dueno||null, caravana: d.caravana||null};
     entry.casoId = d.casoId;
+    if(row.tipo === 'muerte_desaparecido' && Number.isFinite(d.lat) && Number.isFinite(d.lon)) entry.ubic = {lat: d.lat, lon: d.lon};
     return;
   }
 
@@ -3329,7 +3350,10 @@ function aplicarEventoRemoto(row, potrerosSucios){
     origDatosGenerico.grupoTernero = d.grupoTernero;
     detalleTxt += ` (${textoGrupoTernero(d.grupoTernero)})`;
   }
-  registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt).origDatos = origDatosGenerico;
+  const entradaGenerica = registrarHistorial(potrero, row.tipo, `${row.tipo} (sincronizado): ${detalleTxt}`, undefined, undefined, fechaEvt);
+  entradaGenerica.origDatos = origDatosGenerico;
+  // 29/10/2026: lugar donde se encontró el animal (opcional); queda aparte de origDatos, que comparan las correcciones
+  if(row.tipo==='muerte' && Number.isFinite(d.lat) && Number.isFinite(d.lon)) entradaGenerica.ubic = {lat: d.lat, lon: d.lon};
 
   if(row.tipo==='compra' || row.tipo==='venta'){
     estado.transacciones = estado.transacciones || [];
@@ -4583,6 +4607,7 @@ function abrirFormularioEdicion(h, datos, potreroHost, transaccion){
         }
       }
     }
+    if(h.tipo==='muerte' && h.ubic) prefill._ubic = h.ubic;
     mostrarFormulario(base, ACCION_POR_TIPO_HIST[h.tipo], prefill);
   }
 }
@@ -4769,6 +4794,7 @@ function dibujarPotrero(p){
     // o "dibujar potrero" eso agregaba el mismo punto/vértice dos veces.
     if(modoColocarPunto){ L.DomEvent.stopPropagation(e); colocarPuntoEn(e.latlng); return; }
     if(modoColocarReporte){ L.DomEvent.stopPropagation(e); colocarReporteEn(e.latlng); return; }
+    if(modoColocarMuerte){ L.DomEvent.stopPropagation(e); colocarUbicMuerteEn(e.latlng); return; }
     if(modoDibujarPotrero){ L.DomEvent.stopPropagation(e); agregarVerticeDibujo(e.latlng); return; }
     poly.setPopupContent(popupContenidoPotrero(p.nombre));
     poly.openPopup(e.latlng);
@@ -4819,8 +4845,100 @@ function iconoPunto(tipo){
 function crearMarcadorPunto(punto){
   if(_reconstruyendo) return;
   const marker = L.marker([punto.lat, punto.lon], {icon: iconoPunto(punto.tipo)}).addTo(map);
-  marker.bindPopup(`<strong>${esc(punto.nombre || punto.subtipo)}</strong><br>${esc(punto.subtipo)}`);
+  marker.bindPopup(popupPuntoHTML(punto));
+  marker.on('popupopen', e => mostrarFotosEn(e.popup && e.popup.getElement && e.popup.getElement()));
   puntosLayers[punto.id] = marker;
+}
+/* Lugar donde se encontró un animal muerto (formulario de muerte): se toca el mapa o, en el celular, se usa el GPS. */
+function pintarUbicMuerte(){
+  // los dos formularios (muerte: f-…, y "Dar muerte" de Desaparecidos: md-…) comparten el lugar elegido
+  ['f', 'md'].forEach(pre => {
+    const t = document.getElementById(pre + '-ubic-txt');
+    if(t) t.textContent = _ubicMuerte ? `📍 Marcada: ${_ubicMuerte.lat.toFixed(5)}, ${_ubicMuerte.lon.toFixed(5)}` : 'Sin ubicación marcada';
+    const q = document.getElementById(pre + '-ubic-quitar');
+    if(q) q.style.display = _ubicMuerte ? '' : 'none';
+  });
+}
+/* "Marcar en el mapa": el detalle del potrero y la ventana de Desaparecidos son capas a pantalla completa (en el celular tapan el
+   mapa), así que se ocultan mientras se toca el mapa y vuelven con el formulario como estaba. */
+let _overlayUbic = null; // {el, display}
+function iniciarMarcarUbicMuerte(idOverlay){
+  const el = document.getElementById(idOverlay);
+  if(el){ _overlayUbic = {el, display: el.style.display || 'flex'}; el.style.display = 'none'; }
+  modoColocarMuerte = true;
+  mostrarAvisoModo('📍 Tocá el mapa donde se encontró', cancelarMarcarUbicMuerte);
+}
+function restaurarOverlayUbic(){
+  if(_overlayUbic){ _overlayUbic.el.style.display = _overlayUbic.display; _overlayUbic = null; }
+}
+function cancelarMarcarUbicMuerte(){
+  modoColocarMuerte = false;
+  ocultarAvisoModo();
+  restaurarOverlayUbic();
+}
+function limpiarUbicMuerte(){
+  _ubicMuerte = null;
+  _overlayUbic = null;
+  if(modoColocarMuerte){ modoColocarMuerte = false; ocultarAvisoModo(); }
+  if(_marcadorUbicMuerte){ map.removeLayer(_marcadorUbicMuerte); _marcadorUbicMuerte = null; }
+}
+function ponerUbicMuerte(lat, lon){
+  if(_marcadorUbicMuerte){ map.removeLayer(_marcadorUbicMuerte); _marcadorUbicMuerte = null; }
+  _ubicMuerte = {lat, lon};
+  _marcadorUbicMuerte = L.circleMarker([lat, lon], {radius: 8, color: '#a1402e', weight: 3, fillColor: '#fff', fillOpacity: 0.9}).addTo(map);
+  pintarUbicMuerte();
+}
+function colocarUbicMuerteEn(latlng){
+  modoColocarMuerte = false;
+  ocultarAvisoModo();
+  restaurarOverlayUbic();
+  ponerUbicMuerte(latlng.lat, latlng.lng);
+}
+
+/* Vuelve a pintar el popup de un punto (con sus fotos). */
+function actualizarPopupPunto(p){
+  const marker = puntosLayers[p.id];
+  if(!marker) return;
+  marker.setPopupContent(popupPuntoHTML(p));
+  if(marker.isPopupOpen && marker.isPopupOpen()) mostrarFotosEn(marker.getPopup().getElement());
+}
+function redibujarListaPuntosSiAbierta(){
+  const m = document.getElementById('modal-puntos');
+  if(m && m.style.display === 'flex') renderListaPuntos();
+}
+/* Muerte en el historial de un potrero: pone sus miniaturas al día sin volver a armar todo el detalle (que borraría un
+   formulario abierto). */
+function actualizarThumbsHistorial(eventId){
+  const cont = Array.from(document.querySelectorAll('[data-hist-fotos]')).find(el => el.dataset.histFotos === eventId);
+  if(!cont) return;
+  const h = TIPOS_FOTO.muerte.buscar(eventId);
+  if(!h) return;
+  cont.innerHTML = thumbsFotosHTML(h, 'muerte');
+  mostrarFotosEn(cont);
+}
+function popupMuerteHTML(h){
+  const fotos = fotosDe(h, 'muerte').length ? `<div class="rp-fotos">${thumbsFotosHTML(h, 'muerte')}</div>` : '';
+  return `<strong>Muerte</strong><br>${esc(h.fecha)} — ${esc(h.detalle)}${fotos}`;
+}
+/* "🗺" de una muerte: va al lugar marcado; si no lo marcaron, centra el potrero donde murió. */
+function verMuerteEnMapa(h, nombre){
+  // el detalle del potrero es una capa a pantalla completa arriba del mapa: se oculta para que se vea adónde se fue
+  document.getElementById('detalle').style.display = 'none';
+  if(h.ubic && Number.isFinite(h.ubic.lat) && Number.isFinite(h.ubic.lon)){
+    verUbicacionEnMapa({lat: h.ubic.lat, lon: h.ubic.lon, marker: null, popupHtml: popupMuerteHTML(h),
+      icono: L.divIcon({className: 'icono-punto', html: '<div style="background:#a1402e;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.35);border:2px solid #fff;"><span style="transform:rotate(45deg);font-size:13px;">🪦</span></div>', iconSize: [26, 26], iconAnchor: [13, 26]})});
+    return;
+  }
+  const item = poligonos[nombre];
+  if(item && item.layer && item.layer.getBounds) map.fitBounds(item.layer.getBounds(), {maxZoom: 17});
+  toast('Esta muerte no tiene lugar marcado: se centró el potrero');
+}
+/* "🗺 Ver en el mapa" de un punto (aguada, manga, corral, embarcadero…): cierra la ventana, centra el mapa y abre su popup. */
+function verPuntoEnMapa(id){
+  const p = (estado.puntos||[]).find(x => x.id === id);
+  if(!p) return;
+  document.getElementById('modal-puntos').style.display = 'none';
+  verUbicacionEnMapa({lat: p.lat, lon: p.lon, marker: puntosLayers[id] || null, popupHtml: popupPuntoHTML(p), icono: iconoPunto(p.tipo)});
 }
 
 function colocarPuntoEn(latlng){
@@ -4830,23 +4948,35 @@ function colocarPuntoEn(latlng){
     subtipo: modoColocarPunto.subtipo,
     nombre: modoColocarPunto.nombre,
     lat: latlng.lat,
-    lon: latlng.lng
+    lon: latlng.lng,
+    fotos: []
   };
+  const fotosNuevas = modoColocarPunto.fotos || [];
   estado.puntos.push(punto);
   crearMarcadorPunto(punto);
   guardarEstado();
   renderListaPuntos();
   enviarEvento('punto_creado', ESTABLECIMIENTO, {id: punto.id, tipo: punto.tipo, subtipo: punto.subtipo, nombre: punto.nombre, lat: punto.lat, lon: punto.lon});
+  // las fotos van después del punto: punto_creado queda primero en la cola y cada punto_foto sale detrás
+  fotosNuevas.forEach(b => encolarFoto('punto', punto.id, b, 'registro'));
   modoColocarPunto = null;
   ocultarAvisoModo();
   toast(`${punto.subtipo} agregado al mapa`);
 }
 
-function mostrarAvisoModo(){
+function mostrarAvisoModo(texto, alCancelar){
   ocultarAvisoModo();
   avisoModo = document.createElement('div');
   avisoModo.className = 'modo-colocar-aviso';
-  avisoModo.textContent = '📍 Tocá el mapa donde está ubicado';
+  avisoModo.textContent = texto || '📍 Tocá el mapa donde está ubicado';
+  if(alCancelar){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = '✕ Cancelar';
+    b.style.cssText = 'margin-left:10px;background:rgba(255,255,255,0.25);color:#fff;border:1px solid #fff;border-radius:12px;padding:2px 10px;font-size:12px;cursor:pointer;';
+    b.addEventListener('click', e => { e.stopPropagation(); alCancelar(); });
+    avisoModo.appendChild(b);
+  }
   document.body.appendChild(avisoModo);
 }
 function ocultarAvisoModo(){
@@ -4856,11 +4986,10 @@ function ocultarAvisoModo(){
 map.on('click', (e)=>{
   if(modoColocarPunto) colocarPuntoEn(e.latlng);
   else if(modoColocarReporte) colocarReporteEn(e.latlng);
+  else if(modoColocarMuerte) colocarUbicMuerteEn(e.latlng);
   else if(modoDibujarPotrero) agregarVerticeDibujo(e.latlng);
 });
 
-// recrear marcadores de puntos guardados
-estado.puntos.forEach(p=> crearMarcadorPunto(p));
 
 /* ======================= REPORTES DE CAMPO (Infraestructura / Capín Annoni) =======================
    Mismo mecanismo que PUNTOS de arriba (mismo pin en gota, mismo modo
@@ -4895,6 +5024,24 @@ const FOTO_LADO_MAX = 1600, FOTO_CALIDAD = 0.72, FOTO_TAM_ORIGINAL_MAX = 1024 * 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function rutaFotoReporte(reporteId, fotoId){ return `${ESTABLECIMIENTO}/${reporteId}/${fotoId}.jpg`; }
+
+/* 29/10/2026: las fotos las pueden tener tres cosas -- un reporte de campo, un punto (aguada / instalación: manga, corral,
+   embarcadero…) y una muerte del historial de un potrero--. Misma cola, mismo bucket y misma ruta <establecimiento>/<id>/<fotoId>.jpg,
+   con un evento por tipo (reporte_foto / punto_foto / muerte_foto) que lleva solo la ruta. Para una muerte el id es el event_id del
+   evento `muerte` (el renglón del historial lo guarda en `eventId`). */
+const MOMENTOS_FOTO = {reporte: ['reporte', 'resuelto'], punto: ['registro'], muerte: ['registro']};
+const TIPOS_FOTO = {
+  reporte: {evento: 'reporte_foto', idOk: id => /^rp_\w+$/.test(id), buscar: id => (estado.reportes||[]).find(x => x.id === id) || null,
+    idDe: o => o.id, refrescar: o => { actualizarPopupReporte(o); redibujarListaSiAbierta(); }},
+  punto: {evento: 'punto_foto', idOk: id => /^pt_\w+$/.test(id), buscar: id => (estado.puntos||[]).find(x => x.id === id) || null,
+    idDe: o => o.id, refrescar: o => { actualizarPopupPunto(o); redibujarListaPuntosSiAbierta(); }},
+  muerte: {evento: 'muerte_foto', idOk: id => UUID_RE.test(id), buscar: id => renglonesPorEventId(id).find(h => h.tipo === 'muerte' || h.tipo === 'muerte_desaparecido') || null,
+    idDe: o => o.eventId, refrescar: o => actualizarThumbsHistorial(o.eventId)}
+};
+function textoMomentoFoto(momento, tipo){
+  if(!tipo || tipo === 'reporte') return momento === 'resuelto' ? 'Al resolver' : 'Al reportar';
+  return 'Foto';
+}
 
 /* Cola de fotos en IndexedDB. Un registro por foto, clave fotoId; lleva `establecimiento` porque todas las apps de
    este origen comparten la misma base. Si el navegador no tiene IndexedDB (o no la deja abrir), guarda en memoria:
@@ -4953,6 +5100,7 @@ async function refrescarFotosPendientes(){
   actualizarEstadoSync();
   // los popups se arman al crear el marcador, cuando la cola todavía no se leyó (al abrir la app): se rehacen con las fotos
   (estado.reportes||[]).forEach(r => { if(reportesLayers[r.id]) actualizarPopupReporte(r); });
+  (estado.puntos||[]).forEach(p => { if(puntosLayers[p.id]) actualizarPopupPunto(p); });
 }
 function liberarUrlLocal(fotoId){
   const u = _urlsLocales.get(fotoId);
@@ -5004,19 +5152,59 @@ async function fotosDesdeInput(input, maximo){
   return blobs;
 }
 
-/* Pone una foto (ya achicada) en la cola y, si hay señal, intenta subirla ya. */
-async function encolarFotoReporte(reporteId, blob, momento){
+/* Botón "📷 Agregar foto" con miniaturas y ✕ para sacar, para los formularios que crean algo con fotos (un punto, una muerte).
+   `sel.blobs()` devuelve las fotos elegidas (ya achicadas) y `sel.limpiar()` suelta las miniaturas. Misma idea que las fotos
+   del formulario de reportes, que tiene su propio marcado. */
+function montarSelectorFotos(cont, maximo){
+  const sel = {lista: [], maximo};
+  cont.innerHTML = `
+    <button class="btn btn-secundario btn-full" type="button" data-sf-boton style="width:100%;">📷 Agregar foto (hasta ${maximo})</button>
+    <input type="file" accept="image/*" capture="environment" multiple hidden data-sf-input>
+    <div class="rp-fotos-elegidas" data-sf-lista></div>`;
+  const boton = cont.querySelector('[data-sf-boton]'), input = cont.querySelector('[data-sf-input]'), lista = cont.querySelector('[data-sf-lista]');
+  const pintar = ()=>{
+    lista.innerHTML = sel.lista.map((f, i) =>
+      `<span class="rp-foto-elegida"><img src="${esc(f.url)}" alt="Foto ${i+1}"><button type="button" class="rp-quitar" data-sf-quitar="${i}" aria-label="Sacar esta foto" title="Sacar">✕</button></span>`).join('');
+    lista.querySelectorAll('[data-sf-quitar]').forEach(b => b.addEventListener('click', ()=>{
+      const f = sel.lista[Number(b.dataset.sfQuitar)];
+      if(f){ try{ URL.revokeObjectURL(f.url); }catch(e){} sel.lista = sel.lista.filter(x => x !== f); pintar(); }
+    }));
+    boton.disabled = sel.lista.length >= maximo;
+  };
+  boton.addEventListener('click', ()=>{
+    if(sel.lista.length >= maximo){ toast(`Ya hay ${maximo} fotos`); return; }
+    input.click();
+  });
+  input.addEventListener('change', async ()=>{
+    const blobs = await fotosDesdeInput(input, maximo - sel.lista.length);
+    blobs.forEach(b => sel.lista.push({blob: b, url: URL.createObjectURL(b)}));
+    pintar();
+  });
+  sel.blobs = ()=> sel.lista.map(f => f.blob);
+  sel.limpiar = ()=>{
+    sel.lista.forEach(f => { try{ URL.revokeObjectURL(f.url); }catch(e){} });
+    sel.lista = [];
+    pintar();
+  };
+  pintar();
+  return sel;
+}
+
+/* Pone una foto (ya achicada) en la cola y, si hay señal, intenta subirla ya. `tipoFoto` es reporte, punto o muerte;
+   el registro guarda el id de su dueño en `reporteId` (nombre de cuando solo había reportes: las fotos que ya esperan en
+   IndexedDB lo traen así y sin `tipoFoto`, que se lee como "reporte"). */
+async function encolarFoto(tipoFoto, duenoId, blob, momento){
   try{
-    const rec = {fotoId: crypto.randomUUID(), reporteId, momento, fecha: fechaISOHoy(), establecimiento: ESTABLECIMIENTO, creado: Date.now(), blob};
+    const rec = {fotoId: crypto.randomUUID(), reporteId: duenoId, tipoFoto, momento, fecha: fechaISOHoy(), establecimiento: ESTABLECIMIENTO, creado: Date.now(), blob};
     await fotosPendientes.poner(rec);
     await refrescarFotosPendientes();
-    const r = (estado.reportes||[]).find(x => x.id === reporteId);
-    if(r) actualizarPopupReporte(r);
-    redibujarListaSiAbierta();
+    const o = TIPOS_FOTO[tipoFoto].buscar(duenoId);
+    if(o) TIPOS_FOTO[tipoFoto].refrescar(o);
     vaciarColaFotos();
     return rec.fotoId;
-  }catch(e){ console.warn('No se pudo guardar la foto del reporte', e); toast('No se pudo guardar la foto'); return null; }
+  }catch(e){ console.warn('No se pudo guardar la foto', e); toast('No se pudo guardar la foto'); return null; }
 }
+function encolarFotoReporte(reporteId, blob, momento){ return encolarFoto('reporte', reporteId, blob, momento); }
 
 /* Sube las fotos pendientes, de a una y la más vieja primero. Recién cuando Storage confirma (o ya estaba: 409), se manda
    el evento reporte_foto y se saca de la cola. Un error corta la vuelta y queda registrado en estado.fallos.fotos. */
@@ -5031,8 +5219,9 @@ async function vaciarColaFotosUnaVuelta(){
   if(!client || !navigator.onLine) return; // la-vuelta-test no tiene Supabase: las fotos se quedan en la cola
   const pendientes = await fotosPendientes.listar();
   for(const rec of pendientes){
-    const r = (estado.reportes||[]).find(x => x.id === rec.reporteId);
-    if(!r){ await fotosPendientes.sacar(rec.fotoId); liberarUrlLocal(rec.fotoId); continue; } // el reporte ya no está en este equipo
+    const T = TIPOS_FOTO[rec.tipoFoto || 'reporte'];
+    const r = T ? T.buscar(rec.reporteId) : null;
+    if(!r){ await fotosPendientes.sacar(rec.fotoId); liberarUrlLocal(rec.fotoId); continue; } // el reporte, punto o muerte ya no está en este equipo
     const path = rutaFotoReporte(rec.reporteId, rec.fotoId);
     let error = null;
     try{
@@ -5046,14 +5235,13 @@ async function vaciarColaFotosUnaVuelta(){
     limpiarFalloCola('fotos');
     if(!(r.fotos||[]).some(f => f.fotoId === rec.fotoId)){
       r.fotos = [...(r.fotos || []), {fotoId: rec.fotoId, path, momento: rec.momento, fecha: rec.fecha}];
-      enviarEvento('reporte_foto', ESTABLECIMIENTO, {id: r.id, fotoId: rec.fotoId, path, momento: rec.momento, fecha: rec.fecha});
+      enviarEvento(T.evento, ESTABLECIMIENTO, {id: rec.reporteId, fotoId: rec.fotoId, path, momento: rec.momento, fecha: rec.fecha});
     }
     guardarEstado();
     await fotosPendientes.sacar(rec.fotoId);
     liberarUrlLocal(rec.fotoId);
     await refrescarFotosPendientes();
-    actualizarPopupReporte(r);
-    redibujarListaSiAbierta();
+    T.refrescar(r);
   }
   await refrescarFotosPendientes();
 }
@@ -5065,32 +5253,42 @@ async function quitarFotosPendientesDeReporte(reporteId){
   await refrescarFotosPendientes();
 }
 
-/* Un reporte_foto que llega de otro equipo (o de este mismo) se acepta solo si la ruta es exactamente la que
-   corresponde a su id: así no entra nada que apunte a otro establecimiento ni con "../". */
-function fotoRemotaValida(d){
-  return typeof d.id === 'string' && /^rp_\w+$/.test(d.id)
+/* Un reporte_foto / punto_foto / muerte_foto que llega de otro equipo (o de este mismo) se acepta solo si la ruta es exactamente
+   la que corresponde a su id: así no entra nada que apunte a otro establecimiento ni con "../". */
+function fotoRemotaValida(d, tipo){
+  const tf = tipo || 'reporte';
+  const T = TIPOS_FOTO[tf];
+  return !!T && typeof d.id === 'string' && T.idOk(d.id)
     && typeof d.fotoId === 'string' && UUID_RE.test(d.fotoId)
-    && (d.momento === 'reporte' || d.momento === 'resuelto')
+    && MOMENTOS_FOTO[tf].indexOf(d.momento) >= 0
     && d.path === rutaFotoReporte(d.id, d.fotoId);
 }
 
-/* Las fotos de un reporte, al reportar primero y después las del arreglo. Una foto ya subida se cuenta una sola vez
-   aunque todavía esté en la cola (entre la subida y el borrado de la cola). */
-function fotosDeReporte(r){
-  const subidas = (r.fotos || []).map(f => ({fotoId: f.fotoId, path: f.path, momento: f.momento, fecha: f.fecha || null, pendiente: false}));
+/* Las fotos de un reporte, punto o muerte, al reportar primero y después las del arreglo. Una foto ya subida se cuenta una
+   sola vez aunque todavía esté en la cola (entre la subida y el borrado de la cola). */
+function fotosDe(o, tipo){
+  const id = TIPOS_FOTO[tipo].idDe(o);
+  const subidas = (o.fotos || []).map(f => ({fotoId: f.fotoId, path: f.path, momento: f.momento, fecha: f.fecha || null, pendiente: false}));
   const vistas = new Set(subidas.map(f => f.fotoId));
-  const pendientes = _pendientesCache.filter(p => p.reporteId === r.id && !vistas.has(p.fotoId))
-    .map(p => ({fotoId: p.fotoId, path: null, momento: p.momento, fecha: p.fecha || null, pendiente: true}));
+  const pendientes = id ? _pendientesCache.filter(p => p.reporteId === id && !vistas.has(p.fotoId))
+    .map(p => ({fotoId: p.fotoId, path: null, momento: p.momento, fecha: p.fecha || null, pendiente: true})) : [];
   return subidas.concat(pendientes).sort((a, b) => (a.momento === 'resuelto') - (b.momento === 'resuelto'));
 }
-function thumbsFotosHTML(r){
-  return fotosDeReporte(r).map(f =>
-    `<span class="rp-thumb" role="button" tabindex="0" data-foto-thumb="${esc(f.fotoId)}" data-reporte="${esc(r.id)}" title="${f.momento === 'resuelto' ? 'Al resolver' : 'Al reportar'}">📷</span>`
+function fotosDeReporte(r){ return fotosDe(r, 'reporte'); }
+function thumbsFotosHTML(o, tipo){
+  const tf = tipo || 'reporte';
+  const id = TIPOS_FOTO[tf].idDe(o);
+  return fotosDe(o, tf).map(f =>
+    `<span class="rp-thumb" role="button" tabindex="0" data-foto-thumb="${esc(f.fotoId)}" data-foto-tipo="${tf}" data-dueno="${esc(id)}"${tf === 'reporte' ? ` data-reporte="${esc(id)}"` : ''} title="${textoMomentoFoto(f.momento, tf)}">📷</span>`
   ).join('');
 }
 function popupReporteHTML(r){
-  const fotos = fotosDeReporte(r).length ? `<div class="rp-fotos">${thumbsFotosHTML(r)}</div>` : '';
+  const fotos = fotosDeReporte(r).length ? `<div class="rp-fotos">${thumbsFotosHTML(r, 'reporte')}</div>` : '';
   return `<strong>${esc(r.subtipo)}</strong><br>${esc(r.fecha)}${r.obs?('<br>'+esc(r.obs)):''}${fotos}`;
+}
+function popupPuntoHTML(p){
+  const fotos = fotosDe(p, 'punto').length ? `<div class="rp-fotos">${thumbsFotosHTML(p, 'punto')}</div>` : '';
+  return `<strong>${esc(p.nombre || p.subtipo)}</strong><br>${esc(p.subtipo)}${fotos}`;
 }
 
 /* Pinta las miniaturas que están dentro de `raiz` (una fila de la lista o un popup). Las pendientes salen de la copia
@@ -5101,13 +5299,14 @@ function mostrarFotosEn(raiz){
   thumbs.forEach(t => {
     if(t.dataset.conVisor) return;
     t.dataset.conVisor = '1';
-    const abrir = () => abrirVisorFotos(t.dataset.reporte, t.dataset.fotoThumb);
+    const abrir = () => abrirVisorFotos(t.dataset.fotoTipo || 'reporte', t.dataset.dueno || t.dataset.reporte, t.dataset.fotoThumb);
     t.addEventListener('click', abrir);
     t.addEventListener('keydown', e => { if(e.key === 'Enter') abrir(); });
   });
   const pares = thumbs.map(t => {
-    const r = (estado.reportes||[]).find(x => x.id === t.dataset.reporte);
-    return {t, item: r ? fotosDeReporte(r).find(f => f.fotoId === t.dataset.fotoThumb) : null};
+    const tf = t.dataset.fotoTipo || 'reporte';
+    const o = TIPOS_FOTO[tf].buscar(t.dataset.dueno || t.dataset.reporte);
+    return {t, item: o ? fotosDe(o, tf).find(f => f.fotoId === t.dataset.fotoThumb) : null};
   }).filter(p => p.item);
   pares.filter(p => p.item.pendiente).forEach(p => pintarMiniatura(p.t, urlLocalFoto(p.item.fotoId)));
   const subidas = pares.filter(p => !p.item.pendiente);
@@ -5151,14 +5350,14 @@ async function urlDeFoto(item){
 }
 
 /* Visor a pantalla completa: las fotos de un reporte, con ‹ › si hay más de una. */
-let _visor = {reporteId: null, items: [], i: 0};
-function abrirVisorFotos(reporteId, fotoId){
-  const r = (estado.reportes||[]).find(x => x.id === reporteId);
-  if(!r) return;
-  const items = fotosDeReporte(r);
+let _visor = {tipo: null, reporteId: null, items: [], i: 0};
+function abrirVisorFotos(tipo, duenoId, fotoId){
+  const o = TIPOS_FOTO[tipo].buscar(duenoId);
+  if(!o) return;
+  const items = fotosDe(o, tipo);
   const i = items.findIndex(f => f.fotoId === fotoId);
   if(i < 0) return;
-  _visor = {reporteId, items, i};
+  _visor = {tipo, reporteId: duenoId, items, i};
   const ov = document.getElementById('visor-fotos');
   ov.dataset.unica = items.length < 2 ? '1' : '';
   ov.style.display = 'flex';
@@ -5166,7 +5365,7 @@ function abrirVisorFotos(reporteId, fotoId){
 }
 function cerrarVisorFotos(){
   document.getElementById('visor-fotos').style.display = 'none';
-  _visor = {reporteId: null, items: [], i: 0};
+  _visor = {tipo: null, reporteId: null, items: [], i: 0};
 }
 function visorMover(delta){
   if(!_visor.items.length) return;
@@ -5178,7 +5377,7 @@ async function visorMostrar(){
   if(!item) return;
   const cont = document.getElementById('visor-imagen');
   cont.textContent = 'Cargando…';
-  document.getElementById('visor-pie').textContent = `${item.momento === 'resuelto' ? 'Al resolver' : 'Al reportar'}${item.fecha ? ' · ' + item.fecha : ''} · ${_visor.i + 1} de ${_visor.items.length}`;
+  document.getElementById('visor-pie').textContent = `${textoMomentoFoto(item.momento, _visor.tipo)}${item.fecha ? ' · ' + item.fecha : ''} · ${_visor.i + 1} de ${_visor.items.length}`;
   const url = await urlDeFoto(item);
   if(_visor.items[_visor.i] !== item) return; // se cambió de foto mientras llegaba
   cont.innerHTML = '';
@@ -5266,6 +5465,10 @@ function verReporteEnMapa(id){
 
 // recrear marcadores de reportes activos (los resueltos no se muestran en el mapa)
 refrescarFotosPendientes();
+// recrear marcadores de puntos guardados. Va ACÁ y no junto a los puntos: su popup arma las miniaturas con TIPOS_FOTO (const, de la sección
+// de fotos de arriba), que tiene que estar inicializado; antes de eso, abrir la app con un punto guardado fallaba con "Cannot access 'TIPOS_FOTO'
+// before initialization" y no cargaba nada.
+estado.puntos.forEach(p=> crearMarcadorPunto(p));
 (estado.reportes||[]).filter(r=>!r.resuelto).forEach(r=> crearMarcadorReporte(r));
 
 /* ======================= DIBUJAR POTRERO A MANO (solo PC) =======================
@@ -5547,15 +5750,17 @@ function renderDetalle(nombre){
       <details class="historial-det"${historialAbierto?' open':''}><summary>Historial (${historialVisible.length})</summary>
       ${historialVisible.length ? historialVisible.slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || (b.id||'').localeCompare(a.id||'')).slice(0,15).map(h=>`
         <div class="hist-item ${esc(h.tipo)}${h.eliminado?' eliminado':''}">
-          <span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}
+          <span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}${h.ubic ? ' <span title="Tiene ubicación en el mapa">📍</span>' : ''}
           ${(h.id && (h.extra || h.origDatos) && !h.eliminado) ? `
           <span class="hist-acciones">
             ${(h.tipo!=='traslado_salida' && h.tipo!=='traslado_entrada' && h.tipo!=='movimiento_guia' && h.tipo!=='vecino_paso' && h.tipo!=='vecino_aparecido' && h.tipo!=='vecino_retorno') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
             ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana">🏷️</button>` : ''}
+            ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-foto="${esc(h.id)}" title="Agregar foto">📷</button><button class="hist-btn" data-hist-mapa="${esc(h.id)}" title="Ver en el mapa">🗺</button>` : ''}
             ${((CONFIG.dicoseHabilitado || CONFIG.guiasHabilitado) && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${esc(h.id)}" title="Agregar/editar guía">📄</button>` : ''}
             ${(h.tipo!=='traslado_entrada' && h.tipo.indexOf('vecino_')!==0) ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
             ${h.tipo.indexOf('vecino_')===0 ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
           </span>` : ''}
+          ${((h.tipo==='muerte' || h.tipo==='muerte_desaparecido') && h.eventId) ? `<div class="rp-fotos" data-hist-fotos="${esc(h.eventId)}">${thumbsFotosHTML(h, 'muerte')}</div>` : ''}
         </div>
       `).join('') : '<div class="hist-vacio">Todavía no hay movimientos en este potrero.</div>'}
       </details>
@@ -5573,6 +5778,25 @@ function renderDetalle(nombre){
   det.querySelectorAll('[data-hist-editar]').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarHistorial(btn.dataset.histEditar); });
   });
+  det.querySelectorAll('[data-hist-foto]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const h = (estado.potreros[nombre].historial||[]).find(x => x.id === btn.dataset.histFoto);
+      if(!h) return;
+      if(!h.eventId){ toast('Esta muerte es de una versión vieja de la app y no admite fotos'); return; }
+      if(fotosDe(h, 'muerte').length >= FOTOS_MAX_REPORTE){ toast(`Una muerte admite hasta ${FOTOS_MAX_REPORTE} fotos`); return; }
+      _fotoExtraPara = {tipo: 'muerte', id: h.eventId};
+      document.getElementById('rp-fotos-extra').click();
+    });
+  });
+  det.querySelectorAll('[data-hist-mapa]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const h = (estado.potreros[nombre].historial||[]).find(x => x.id === btn.dataset.histMapa);
+      if(h) verMuerteEnMapa(h, nombre);
+    });
+  });
+  mostrarFotosEn(det);
   det.querySelectorAll('[data-hist-caravana]').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); agregarCaravanaMuerte(btn.dataset.histCaravana); });
   });
@@ -5654,6 +5878,7 @@ async function eliminarPotrero(nombre){
 function cerrarDetalle(){
   document.getElementById('detalle').style.display = 'none';
   seleccionActual = null;
+  limpiarUbicMuerte();
   refrescarColoresMapa();
   renderLista(document.getElementById('buscador').value);
 }
@@ -6402,6 +6627,12 @@ function mostrarFormulario(nombre, accion, prefill){
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Causa (opcional)</label><input type="text" id="f-obs" placeholder="Ej: empantanado, enfermedad..." value="${esc(prefill&&prefill.obs?prefill.obs:'')}"></div>
         <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="f-caravana" placeholder="mín. 8 dígitos" inputmode="numeric" value="${esc(prefill&&prefill.caravana?prefill.caravana:'')}"></div>
+        <div class="form-row"><label>Fotos (opcional, hasta 3)</label><div id="f-fotos-muerte"></div></div>
+        <div class="form-row"><label>Dónde se encontró (opcional)</label>
+          <div id="f-ubic-txt" class="rp-nota">Sin ubicación marcada</div>
+          <button class="btn btn-secundario btn-full" type="button" id="f-ubic-mapa" style="width:100%;margin-top:4px;">🗺 Marcar en el mapa</button>
+          <button class="btn btn-secundario btn-full" type="button" id="f-ubic-quitar" style="width:100%;margin-top:4px;display:none;">✕ Quitar ubicación</button>
+        </div>
         <div class="form-botones">
           <button class="btn btn-muerte" id="f-confirmar">${prefill?'Guardar corrección':'Registrar muerte'}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -6412,6 +6643,13 @@ function mostrarFormulario(nombre, accion, prefill){
     };
     document.getElementById('f-cat').addEventListener('change', mostrarGrupoTernero);
     mostrarGrupoTernero();
+    // 29/10/2026: fotos y lugar donde se encontró el animal (opcionales); ver "FOTOS DE LOS REPORTES"
+    const selFotosMuerte = montarSelectorFotos(document.getElementById('f-fotos-muerte'), FOTOS_MAX_CREAR);
+    limpiarUbicMuerte();
+    if(prefill && prefill._ubic && Number.isFinite(prefill._ubic.lat) && Number.isFinite(prefill._ubic.lon)) ponerUbicMuerte(prefill._ubic.lat, prefill._ubic.lon);
+    pintarUbicMuerte();
+    document.getElementById('f-ubic-mapa').addEventListener('click', ()=> iniciarMarcarUbicMuerte('detalle'));
+    document.getElementById('f-ubic-quitar').addEventListener('click', ()=>{ limpiarUbicMuerte(); pintarUbicMuerte(); });
     document.getElementById('f-confirmar').addEventListener('click', ()=>{
       const cat = document.getElementById('f-cat').value;
       const dueno = document.getElementById('f-dueno').value;
@@ -6436,9 +6674,18 @@ function mostrarFormulario(nombre, accion, prefill){
       const caravanaTxt = caravana ? ` — caravana ${caravana}` : '';
       const grupoTxt = grupoTernero ? ` (${textoGrupoTernero(grupoTernero)})` : '';
       const eventId = crypto.randomUUID();
-      registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat}${grupoTxt}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}${caravanaTxt}`, Object.assign({potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana, _fechaISO: fechaISO}, grupoTernero ? {grupoTernero} : {}), undefined, fecha).eventId = eventId;
-      enviarEvento('muerte', nombre, Object.assign({categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana}, grupoTernero ? {grupoTernero} : {}), fecha, {eventId});
+      // el lugar no va en `extra` (lo comparan las correcciones): queda aparte, en `ubic`
+      const ubic = _ubicMuerte ? {lat: Number(_ubicMuerte.lat.toFixed(6)), lon: Number(_ubicMuerte.lon.toFixed(6))} : null;
+      const entradaMuerte = registrarHistorial(nombre, 'muerte', `Muerte: -${cant} ${cat}${grupoTxt}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}${caravanaTxt}`, Object.assign({potrero: nombre, categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana, _fechaISO: fechaISO}, grupoTernero ? {grupoTernero} : {}), undefined, fecha);
+      entradaMuerte.eventId = eventId;
+      if(ubic) entradaMuerte.ubic = ubic;
+      enviarEvento('muerte', nombre, Object.assign({categoria: cat, dueno, cantidad: cant, obs: obs||null, caravana}, grupoTernero ? {grupoTernero} : {}, ubic ? ubic : {}), fecha, {eventId});
+      const fotosMuerte = selFotosMuerte.blobs();
+      selFotosMuerte.limpiar();
+      limpiarUbicMuerte();
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
+      // las fotos van después de la muerte: el evento `muerte` queda primero en la cola y cada muerte_foto sale detrás
+      fotosMuerte.forEach(b => encolarFoto('muerte', eventId, b, 'registro'));
       toast(`Muerte registrada en ${nombre}`);
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
@@ -8008,31 +8255,54 @@ function renderListaPuntos(){
     cont.innerHTML = '<div class="puntos-vacio">Todavía no agregaste aguadas ni instalaciones.</div>';
     return;
   }
-  cont.innerHTML = estado.puntos.map(p=>`
-    <div class="punto-item">
+  cont.innerHTML = estado.puntos.map(p=>{
+    const nFotos = fotosDe(p, 'punto').length;
+    return `
+    <div class="punto-item rp-item">
       <div class="info">
         <span class="icono">${esc((TIPOS_PUNTO[p.tipo]||{}).icono||'📍')}</span>
         <span>${esc(p.nombre || p.subtipo)} <span class="txt-sub">(${esc(p.subtipo)})</span></span>
       </div>
-      <button data-del="${esc(p.id)}">Eliminar</button>
-    </div>
-  `).join('');
+      <div class="acciones">
+        <button data-ver-punto="${esc(p.id)}" style="color:#1d4fa8;">🗺 Ver en el mapa</button>
+        <button data-foto-punto="${esc(p.id)}" style="color:#8a6d1f;"${nFotos >= FOTOS_MAX_REPORTE ? ' disabled' : ''}>📷 Agregar foto</button>
+        <button data-del="${esc(p.id)}">Eliminar</button>
+      </div>
+      ${nFotos ? `<div class="rp-bloque"><div class="rp-fotos">${thumbsFotosHTML(p, 'punto')}</div></div>` : ''}
+    </div>`;
+  }).join('');
+  cont.querySelectorAll('[data-ver-punto]').forEach(btn=>{
+    btn.addEventListener('click', ()=> verPuntoEnMapa(btn.dataset.verPunto));
+  });
+  cont.querySelectorAll('[data-foto-punto]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const p = (estado.puntos||[]).find(x => x.id === btn.dataset.fotoPunto);
+      if(!p) return;
+      if(fotosDe(p, 'punto').length >= FOTOS_MAX_REPORTE){ toast(`Un punto admite hasta ${FOTOS_MAX_REPORTE} fotos`); return; }
+      _fotoExtraPara = {tipo: 'punto', id: p.id};
+      document.getElementById('rp-fotos-extra').click();
+    });
+  });
   cont.querySelectorAll('[data-del]').forEach(btn=>{
     btn.addEventListener('click', ()=> eliminarPunto(btn.dataset.del));
   });
+  mostrarFotosEn(cont);
 }
 function eliminarPunto(id){
   estado.puntos = estado.puntos.filter(p=>p.id!==id);
   if(puntosLayers[id]){ map.removeLayer(puntosLayers[id]); delete puntosLayers[id]; }
   guardarEstado();
+  quitarFotosPendientesDeReporte(id);
   renderListaPuntos();
   enviarEvento('punto_eliminado', ESTABLECIMIENTO, {id});
   toast('Punto eliminado');
 }
 
+let _selFotosPunto = null;
 document.getElementById('btn-puntos').addEventListener('click', ()=>{
   poblarSelectTipo();
   poblarSelectSubtipo();
+  _selFotosPunto = montarSelectorFotos(document.getElementById('np-fotos'), FOTOS_MAX_CREAR);
   renderListaPuntos();
   document.getElementById('modal-puntos').style.display = 'flex';
 });
@@ -8060,7 +8330,9 @@ document.getElementById('np-colocar').addEventListener('click', ()=>{
   const tipo = document.getElementById('np-tipo').value;
   const subtipo = document.getElementById('np-subtipo').value;
   const nombre = document.getElementById('np-nombre').value.trim();
-  modoColocarPunto = {tipo, subtipo, nombre};
+  const fotos = _selFotosPunto ? _selFotosPunto.blobs() : [];
+  if(_selFotosPunto) _selFotosPunto.limpiar(); // las fotos van con el punto, no quedan en el formulario
+  modoColocarPunto = {tipo, subtipo, nombre, fotos};
   document.getElementById('modal-puntos').style.display = 'none';
   mostrarAvisoModo();
 });
@@ -8168,7 +8440,7 @@ function renderListaReportes(categoria){
       const r = buscar(btn.dataset.fotoAgregar);
       if(!r) return;
       if(fotosDeReporte(r).length >= FOTOS_MAX_REPORTE){ toast(`Un reporte admite hasta ${FOTOS_MAX_REPORTE} fotos`); return; }
-      _fotoExtraPara = r.id;
+      _fotoExtraPara = {tipo: 'reporte', id: r.id};
       document.getElementById('rp-fotos-extra').click();
     });
   });
@@ -8313,12 +8585,13 @@ document.getElementById('rp-fotos').addEventListener('change', async (e)=>{
   renderFotosCrear();
 });
 document.getElementById('rp-fotos-extra').addEventListener('change', async (e)=>{
-  const id = _fotoExtraPara;
+  const para = _fotoExtraPara;
   _fotoExtraPara = null;
-  const r = (estado.reportes||[]).find(x => x.id === id);
-  if(!r) return;
-  const blobs = await fotosDesdeInput(e.target, FOTOS_MAX_REPORTE - fotosDeReporte(r).length);
-  for(const b of blobs) await encolarFotoReporte(id, b, 'reporte');
+  if(!para || !TIPOS_FOTO[para.tipo]) return;
+  const o = TIPOS_FOTO[para.tipo].buscar(para.id);
+  if(!o) return;
+  const blobs = await fotosDesdeInput(e.target, FOTOS_MAX_REPORTE - fotosDe(o, para.tipo).length);
+  for(const b of blobs) await encolarFoto(para.tipo, para.id, b, para.tipo === 'reporte' ? 'reporte' : 'registro');
 });
 document.getElementById('rp-foto-resolver').addEventListener('change', async (e)=>{
   const blobs = await fotosDesdeInput(e.target, 1);
@@ -8446,10 +8719,22 @@ function abrirFormularioMuerteDesaparecido(caso){
   cont.innerHTML = `
     <div class="form-row"><label>Cantidad muerta</label><input type="number" id="md-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
     <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="md-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
+    <div class="form-row"><label>Fotos (opcional, hasta 3)</label><div id="md-fotos"></div></div>
+    <div class="form-row"><label>Dónde se encontró (opcional)</label>
+      <div id="md-ubic-txt" class="rp-nota">Sin ubicación marcada</div>
+      <button class="btn btn-secundario btn-full" type="button" id="md-ubic-mapa" style="width:100%;margin-top:4px;">🗺 Marcar en el mapa</button>
+      <button class="btn btn-secundario btn-full" type="button" id="md-ubic-quitar" style="width:100%;margin-top:4px;display:none;">✕ Quitar ubicación</button>
+    </div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="md-confirmar">Confirmar muerte</button>
       <button class="btn btn-secundario" id="md-cancelar">Cancelar</button>
     </div>`;
+  // 29/10/2026: fotos y lugar opcionales, igual que la muerte directa
+  const selFotosDesap = montarSelectorFotos(document.getElementById('md-fotos'), FOTOS_MAX_CREAR);
+  limpiarUbicMuerte();
+  pintarUbicMuerte();
+  document.getElementById('md-ubic-mapa').addEventListener('click', ()=> iniciarMarcarUbicMuerte('modal-desaparecidos'));
+  document.getElementById('md-ubic-quitar').addEventListener('click', ()=>{ limpiarUbicMuerte(); pintarUbicMuerte(); });
   document.getElementById('md-confirmar').addEventListener('click', ()=>{
     const cant = parseInt(document.getElementById('md-cant').value,10);
     if(!cant || cant<1 || cant>caso.pendiente){ toast(`Ingresá una cantidad entre 1 y ${caso.pendiente}`); return; }
@@ -8465,12 +8750,21 @@ function abrirFormularioMuerteDesaparecido(caso){
       undefined, fecha);
     entry.casoId = caso.casoId;
     entry.eventId = crypto.randomUUID();
-    enviarEvento('muerte_desaparecido', caso.potreroOrigen, {categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, caravana, casoId: caso.casoId}, fecha, {eventId: entry.eventId});
+    const ubic = _ubicMuerte ? {lat: Number(_ubicMuerte.lat.toFixed(6)), lon: Number(_ubicMuerte.lon.toFixed(6))} : null;
+    if(ubic) entry.ubic = ubic; // aparte de `extra`/`origDatos`, que comparan las correcciones
+    enviarEvento('muerte_desaparecido', caso.potreroOrigen, Object.assign({categoria: caso.categoria, dueno: caso.dueno, cantidad: cant, caravana, casoId: caso.casoId}, ubic ? ubic : {}), fecha, {eventId: entry.eventId});
+    const fotosDesap = selFotosDesap.blobs();
+    selFotosDesap.limpiar();
+    limpiarUbicMuerte();
     guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
+    // las fotos van después de la muerte: el evento queda primero en la cola y cada muerte_foto sale detrás
+    fotosDesap.forEach(b => encolarFoto('muerte', entry.eventId, b, 'registro'));
     if(seleccionActual) renderDetalle(seleccionActual);
     toast(cant<caso.pendiente ? `Se confirmó la muerte de ${cant}, sigue el caso abierto por ${caso.pendiente-cant}` : 'Caso cerrado como muerte');
   });
   document.getElementById('md-cancelar').addEventListener('click', ()=>{
+    selFotosDesap.limpiar();
+    limpiarUbicMuerte();
     cont.style.display = 'none'; cont.innerHTML = '';
   });
 }
