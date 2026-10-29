@@ -492,7 +492,9 @@ UI: en todas las variantes, "🏡 Al vecino" en la ficha del potrero (al lado de
 "🏡 Vecinos" en Herramientas (móvil, Campo y PC › Consultar: ventana `#modal-vecinos`, con ↩ Volvió, ❌ Dar por perdido
 y 🪦 Muerte por vecino), "🏡 Apareció en vecino" en ❓ Desaparecidos y el aviso en 📊 Stock total donde existe.
 Borrar un registro de vecino (🗑) es solo PC: en el historial del potrero y en la ventana Vecinos; no hay ✏️ en ningún
-lado (se borra y se vuelve a cargar). Verificar stock (PC) compara también los vecinos. Test: `tests/probar_vecinos.js`
+lado (se borra y se vuelve a cargar). Verificar stock (PC) compara también los vecinos. **Varias categorías (30/10/2026):** "Al vecino" y "↩ Volvió" tienen filas (`filaPasoVecinoHTML()` /
+`filaVolvioVecinoHTML()`, "＋ Otra categoría"); se valida todo junto (`faltanteFilasVecino()` suma por `categoría||dueño`) y sale **un evento por
+fila** con su `eventId`, así el contrato, el 🗑 por categoría y Verificar stock no cambian. Pérdida y Muerte siguen de a una. Test: `tests/probar_vecinos.js`
 (en el workflow, las 9 variantes; en Pone Chico crea dos potreros por `potrero_creado` para correr igual).
 
 ### Editing paddock boundaries at runtime (`Importar KML/KMZ`)
