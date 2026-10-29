@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>Instructivo de Campo</title>
+<style>
+  :root{
+    --fondo:#f6f2e4;
+    --papel:#ffffff;
+    --texto:#1d2316;
+    --suave:#4b5240;
+    --linea:#c9c19f;
+    --verde:#2f5a1f;
+    --verde-fondo:#e6efd6;
+    --ocre:#8f5f12;
+    --ocre-fondo:#fbefd3;
+    --rojo:#a1402e;
+    --rojo-fondo:#fbe6e0;
+    --boton-fondo:#eee7cf;
+    --boton-borde:#8a8060;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --fondo:#14170f;
+      --papel:#1e2317;
+      --texto:#eef0e4;
+      --suave:#bfc5ae;
+      --linea:#465038;
+      --verde:#a9d58b;
+      --verde-fondo:#24331a;
+      --ocre:#e9c06a;
+      --ocre-fondo:#352b12;
+      --rojo:#f0a090;
+      --rojo-fondo:#3a1e19;
+      --boton-fondo:#2b3220;
+      --boton-borde:#7f8a69;
+    }
+  }
+  :root[data-theme="dark"]{
+    --fondo:#14170f;--papel:#1e2317;--texto:#eef0e4;--suave:#bfc5ae;--linea:#465038;
+    --verde:#a9d58b;--verde-fondo:#24331a;--ocre:#e9c06a;--ocre-fondo:#352b12;
+    --rojo:#f0a090;--rojo-fondo:#3a1e19;--boton-fondo:#2b3220;--boton-borde:#7f8a69;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--fondo);color:var(--texto);
+    font:17px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  .pagina{max-width:42rem;margin:0 auto;padding:0 16px 56px;}
+  header{padding:22px 0 6px;}
+  h1{font-size:26px;line-height:1.2;margin:0 0 6px;}
+  h2{font-size:22px;line-height:1.25;margin:34px 0 10px;padding-top:6px;border-top:3px solid var(--linea);scroll-margin-top:12px;}
+  h3{font-size:19px;line-height:1.3;margin:26px 0 6px;scroll-margin-top:12px;}
+  p{margin:8px 0;}
+  ul,ol{margin:8px 0;padding-left:1.4em;}
+  li{margin:5px 0;}
+  a{color:var(--verde);font-weight:600;}
+  .sub{color:var(--suave);margin:0;}
+  .caja{background:var(--papel);border:2px solid var(--linea);border-radius:12px;padding:12px 14px;margin:14px 0;}
+  .caja h2{border:0;margin:0 0 6px;padding:0;font-size:19px;}
+  .caja.novedades{border-color:var(--verde);background:var(--verde-fondo);}
+  .caja.aviso{border-color:var(--ocre);background:var(--ocre-fondo);}
+  .caja.peligro{border-color:var(--rojo);background:var(--rojo-fondo);}
+  .caja p:first-child,.caja ul:first-child{margin-top:0;}
+  .caja p:last-child,.caja ul:last-child{margin-bottom:0;}
+  .versiones{list-style:none;padding:0;margin:6px 0 0;}
+  .versiones li{margin:3px 0;}
+  .ver{font-weight:700;font-variant-numeric:tabular-nums;}
+  /* un botón de la app, escrito igual que se ve en el celular */
+  .b{display:inline-block;background:var(--boton-fondo);border:2px solid var(--boton-borde);border-radius:9px;
+     padding:0 8px;margin:1px 0;font-weight:700;line-height:1.5;}
+  .indice{list-style:none;padding:0;margin:8px 0;}
+  .indice > li{margin:6px 0;}
+  .indice a{display:inline-block;padding:4px 0;}
+  .indice ul{list-style:none;padding-left:16px;margin:2px 0 6px;}
+  .indice ul a{font-weight:500;}
+  .para{color:var(--suave);font-style:italic;margin:2px 0 6px;}
+  .fn{margin-bottom:6px;}
+  .nota{color:var(--suave);}
+  .campo{display:inline-block;font-weight:700;color:var(--ocre);}
+  ol.pasos{padding-left:1.5em;}
+  ol.pasos li::marker{font-weight:700;}
+  table{border-collapse:collapse;width:100%;margin:8px 0;}
+  th,td{border:1px solid var(--linea);padding:6px 8px;text-align:left;vertical-align:top;}
+  th{background:var(--boton-fondo);}
+  .arriba{display:inline-block;margin-top:10px;font-size:15px;}
+  @media (min-width:640px){ body{font-size:18px;} }
+</style>
+</head>
+<body>
+<div class="pagina">
+
+<header id="inicio">
+  <h1>Instructivo de la app Campo</h1>
+  <p class="sub">Para quien trabaja en el campo: qué se carga, cómo, y qué hacer si algo sale mal. Sirve para La Vuelta, María Laura y Pone Chico.</p>
+</header>
+
+<div class="caja">
+  <h2>Actualizado para</h2>
+  <ul class="versiones">
+    <li><b>La Vuelta</b>: Campo <span class="ver" data-version="la-vuelta">1.54</span></li>
+    <li><b>María Laura</b>: Campo <span class="ver" data-version="maria-laura">1.54</span></li>
+    <li><b>Pone Chico</b>: Campo <span class="ver" data-version="pone-chico">1.55</span></li>
+  </ul>
+  <p class="nota">La versión de tu celular está arriba, debajo del nombre del campo (por ejemplo <b>v1.54</b>). Si tu número es más viejo, abrí la app con señal y esperá un momento: se actualiza sola.</p>
+</div>
+
+<div class="caja novedades" id="novedades">
+  <h2>Novedades de esta versión</h2>
+  <ul>
+    <li><b>🏡 Vecinos</b>: <span class="b">🏡 Al vecino</span> y <span class="b">↩ Volvió</span> aceptan <b>varias categorías</b> en un solo registro.</li>
+    <li><b>Muertes</b>: en <span class="b">✕ Muerte</span> y en <span class="b">🪦 Dar muerte</span> (dentro de ❓ Desaparecidos) podés sacar <b>hasta 3 fotos</b> y marcar <b>dónde se encontró</b> el animal.</li>
+    <li><b>📖 Instructivo</b>: este botón nuevo en 🛠 Herramientas abre esta página.</li>
+  </ul>
+</div>
+
+<nav aria-label="Índice">
+  <h2 style="border:0;margin-bottom:0;">Índice</h2>
+  <ul class="indice">
+    <li><a href="#campos">Según tu campo</a></li>
+    <li><a href="#empezar">1. Empezar</a>
+      <ul>
+        <li><a href="#abrir">Abrir y actualizar la app</a></li>
+        <li><a href="#quien-soy">👤 Quién soy</a></li>
+        <li><a href="#clave">🔑 Clave del campo</a></li>
+        <li><a href="#sol-mapa">☀ Modo sol, 🛰 Satelital y 📍 Mi ubicación</a></li>
+      </ul>
+    </li>
+    <li><a href="#mapa">2. El mapa y la ficha del potrero</a></li>
+    <li><a href="#cargar">3. Lo que se carga en un potrero</a>
+      <ul>
+        <li><a href="#agregar">＋ Agregar animales</a></li>
+        <li><a href="#mover">⇄ Mover una categoría</a></li>
+        <li><a href="#mover-todo">⇄⇄ Mover TODO el potrero</a></li>
+        <li><a href="#nacimiento">🐄 Nacimiento</a></li>
+        <li><a href="#muerte">✕ Muerte</a></li>
+        <li><a href="#desaparecido">❓ Desaparecido</a></li>
+        <li><a href="#al-vecino">🏡 Al vecino</a></li>
+      </ul>
+    </li>
+    <li><a href="#herramientas">4. Herramientas</a>
+      <ul>
+        <li><a href="#sanidad">🏥 Sanidad</a></li>
+        <li><a href="#lluvias">🌧 Lluvias</a></li>
+        <li><a href="#desaparecidos">❓ Desaparecidos</a></li>
+        <li><a href="#vecinos">🏡 Vecinos</a></li>
+        <li><a href="#caravana">🔎 Buscar caravana</a></li>
+        <li><a href="#reportes">🔧 Infraestructura y 🌾 Capín Annoni</a></li>
+        <li><a href="#sincronizar">🔄 Sincronizar ahora</a></li>
+        <li><a href="#instructivo">📖 Instructivo</a></li>
+      </ul>
+    </li>
+    <li><a href="#sin-senal">5. Sin señal</a></li>
+    <li><a href="#errores">6. Si te equivocaste</a></li>
+  </ul>
+</nav>
+
+<h2 id="campos">Según tu campo</h2>
+<table>
+  <tr><th></th><th>La Vuelta</th><th>María Laura</th><th>Pone Chico</th></tr>
+  <tr><td>El dueño se llama</td><td><b>Firma</b>. Se puede dejar “(sin firma)”.</td><td><b>Dueño</b>. Hay que elegir uno.</td><td><b>Dueño</b>. Hay que elegir uno.</td></tr>
+  <tr><td>🔑 Clave del campo</td><td>Sí</td><td>Sí</td><td><b>No se usa</b></td></tr>
+  <tr><td>🔎 Buscar caravana</td><td>Sí</td><td>Sí</td><td><b>No está</b></td></tr>
+</table>
+<p class="nota">Todo lo demás es igual en los tres campos. En las explicaciones, donde dice “dueño” en La Vuelta es la “firma”.</p>
+
+<h2 id="empezar">1. Empezar</h2>
+
+<div class="fn" id="abrir">
+  <h3>Abrir y actualizar la app</h3>
+  <p class="para">Para qué sirve: tener siempre la última versión.</p>
+  <ul>
+    <li>Abrila desde el ícono de tu pantalla de inicio.</li>
+    <li>Cuando hay una versión nueva, la app se actualiza sola al abrirla con señal. Si estás cargando algo, espera a que termines.</li>
+    <li>Con o sin señal la app abre y se puede cargar. Ver <a href="#sin-senal">5. Sin señal</a>.</li>
+  </ul>
+</div>
+
+<div class="fn" id="quien-soy">
+  <h3>👤 Quién soy</h3>
+  <p class="para">Para qué sirve: que cada movimiento lleve tu nombre y se sepa quién cargó qué.</p>
+  <ol class="pasos">
+    <li>La primera vez que abrís la app en un celular aparece <b>“👤 ¿Quién sos?”</b>.</li>
+    <li>Escribí tu nombre y tocá <span class="b">Guardar</span>.</li>
+  </ol>
+  <p>El nombre queda guardado en ese celular. Para cambiarlo: <span class="b">🛠 Herramientas</span> y después <span class="b">👤 Quién soy</span>. Si el celular lo usa otra persona, cambiá el nombre antes de cargar.</p>
+</div>
+
+<div class="fn" id="clave">
+  <h3>🔑 Clave del campo</h3>
+  <p class="para">Para qué sirve: sin la clave, lo que cargás no se puede sincronizar. <span class="campo">No se usa en Pone Chico.</span></p>
+  <ol class="pasos">
+    <li>Unos segundos después de abrir la app aparece la ventana <b>“🔑 Clave del campo”</b>. También la abrís con <span class="b">🛠 Herramientas</span> y <span class="b">🔑 Clave del campo</span>.</li>
+    <li>Escribí la clave de tu campo. Si no la tenés, pedísela a Pedro.</li>
+    <li>Tocá <span class="b">Guardar</span>. Hace falta señal para que la compruebe.</li>
+  </ol>
+  <ul>
+    <li>La clave tiene letras (sin tildes ni ñ) y números, sin espacios, y al menos 8 caracteres.</li>
+    <li>Se pide una sola vez por celular. <span class="b">Más tarde</span> cierra la ventana hasta la próxima vez que abras la app.</li>
+    <li>Abajo, junto al estado de sincronización, puede salir <b>“🔑 Falta la clave del campo · tocá para cargarla”</b> o <b>“🔑 La clave guardada ya no sirve · tocá para cambiarla”</b>. Tocá ese aviso y cargá la clave.</li>
+    <li>Si dice que “No se pudo comprobar la clave ahora (sin conexión)”, no es que esté mal: probá de nuevo cuando tengas señal.</li>
+  </ul>
+</div>
+
+<div class="fn" id="sol-mapa">
+  <h3>☀ Modo sol, 🛰 Satelital y 📍 Mi ubicación</h3>
+  <ul>
+    <li><b><span class="b">☀ Modo sol: NO</span></b> (en 🛠 Herramientas): al tocarlo pasa a <b>“☀ Modo sol: SÍ”</b> y la pantalla se ve con más contraste, para leer con el sol de frente. Tocalo de nuevo para volver. Queda recordado en el celular.</li>
+    <li><b><span class="b">🛰 Satelital: ON</span></b> (botón arriba a la derecha del mapa): prende o apaga la imagen de satélite del mapa. Hace falta señal para ver la imagen.</li>
+    <li><b><span class="b">📍 Mi ubicación</span></b> (debajo del anterior): la primera vez el celular te pide permiso de ubicación. Marca un punto azul donde estás y un cartel dice <b>“📍 Estás en [potrero]”</b> o <b>“📍 Fuera de los potreros”</b>. Mientras está prendido el botón dice <b>“📍 GPS: ON”</b>; tocalo para apagarlo.</li>
+  </ul>
+</div>
+
+<h2 id="mapa">2. El mapa y la ficha del potrero</h2>
+<p class="para">Para qué sirve: ver cuántos animales hay en cada potrero y entrar a cargar.</p>
+<ol class="pasos">
+  <li>Tocá un potrero en el mapa, o buscalo en la lista (hay un buscador: “Buscar potrero…”).</li>
+  <li>Se abre la ficha: el <b>total de animales</b> en grande, la tabla por categoría y los botones de carga.</li>
+</ol>
+<ul>
+  <li><span class="b">👤 Ver por dueño</span>: abre una ventana con cada categoría, su dueño (o firma) y la cantidad.</li>
+  <li><b>Historial (N)</b>: está plegado. Tocalo para abrirlo. Muestra los últimos movimientos del potrero con la fecha y, al final, el nombre de quien los cargó. Si un renglón tiene 📍 es que se marcó una ubicación en el mapa.</li>
+  <li>Si hay animales desaparecidos de ese potrero, arriba sale un aviso naranja con la palabra <b>resolver</b>: tocala para ir a <a href="#desaparecidos">❓ Desaparecidos</a>.</li>
+  <li>Para cerrar la ficha, tocá la <b>✕</b> de arriba a la derecha.</li>
+</ul>
+
+<h2 id="cargar">3. Lo que se carga en un potrero</h2>
+<p>Primero abrí la ficha del potrero (ver arriba). Todos los formularios tienen <b>Fecha</b> (viene la de hoy, y no se puede poner una futura) y un botón <span class="b">Cancelar</span>. Al confirmar, lo cargado se guarda en el celular y se manda solo; si no hay señal, sale cuando vuelva.</p>
+<p>Si algo falta o está mal, la app avisa con un mensaje corto abajo y <b>no guarda nada</b>: corregí y volvé a tocar el botón.</p>
+
+<div class="fn" id="agregar">
+  <h3>＋ Agregar animales</h3>
+  <p class="para">Para qué sirve: cargar el <b>stock inicial</b> de un potrero vacío. No es para cargar nacimientos ni movimientos.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">＋ Agregar animales</span>.</li>
+    <li>Elegí la <b>categoría</b>.</li>
+    <li>Escribí de quién son (en el campo “Dueño/procedencia (obligatorio)”). No se puede dejar vacío.</li>
+    <li>Poné la <b>cantidad</b>.</li>
+    <li>Si hay más categorías, tocá <span class="b">+ Agregar otra categoría</span> y repetí. La <b>✕</b> de la fila la saca.</li>
+    <li>Revisá la fecha y tocá <span class="b">Agregar</span>.</li>
+  </ol>
+  <div class="caja aviso">
+    <p><b>Si el potrero ya tiene animales</b>, la app avisa: <i>“＋ Agregar animales es para cargar el stock inicial de un potrero vacío… para sumar más adelante preferí 🐄 Nacimiento, o ⇄ Mover si vienen de otro potrero.”</i> Hay dos botones: <span class="b">Agregar igual</span> (sigue con el formulario) y <span class="b">Cancelar</span>. Pensalo antes de tocar “Agregar igual”: sumar animales de más desarma el stock.</p>
+  </div>
+</div>
+
+<div class="fn" id="mover">
+  <h3>⇄ Mover una categoría</h3>
+  <p class="para">Para qué sirve: pasar una o varias categorías a otro potrero, o cambiarles la categoría o el dueño.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">⇄ Mover una categoría</span>.</li>
+    <li>En <b>Potrero destino</b> elegí adónde van.</li>
+    <li>En “Categorías a mover” <b>tildá</b> las que movés y, al lado, poné <b>cuántos</b> de cada una (viene cargado todo lo que hay).</li>
+    <li>Si querés cambiarles la categoría o el dueño al mismo tiempo, usá <b>Categoría destino (opcional)</b> y <b>Dueño destino (opcional)</b>. Dejados en blanco, cada categoría mantiene lo suyo.</li>
+    <li>Si hace falta, escribí una nota en <b>Notas (opcional)</b>.</li>
+    <li>Tocá <span class="b">Mover</span>.</li>
+  </ol>
+  <ul>
+    <li><b>Recategorizar sin mover</b>: en Potrero destino elegí la primera opción, “(sin mover — recategorizar en…)”, y elegí una categoría o un dueño destino.</li>
+    <li>Si pedís más animales de los que hay, la app pregunta <i>“Vas a dejar saldo negativo… ¿Continuar de todos modos?”</i>. Leé los números antes de aceptar.</li>
+    <li>Si el potrero está vacío dice “No hay animales en [potrero] para mover.”</li>
+  </ul>
+</div>
+
+<div class="fn" id="mover-todo">
+  <h3>⇄⇄ Mover TODO el potrero</h3>
+  <p class="para">Para qué sirve: pasar todo el rodeo de un potrero a otro, de una vez.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">⇄⇄ Mover TODO el potrero</span>. Arriba del formulario figura cuántos animales se van a mover y de qué categorías.</li>
+    <li>Elegí el <b>Potrero destino</b>.</li>
+    <li>Revisá la fecha y tocá <span class="b">Mover todo (N)</span>.</li>
+  </ol>
+  <p class="nota">No pide otra confirmación: antes de tocar el botón, fijate bien el potrero destino.</p>
+</div>
+
+<div class="fn" id="nacimiento">
+  <h3>🐄 Nacimiento</h3>
+  <p class="para">Para qué sirve: anotar crías nacidas en el potrero.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">🐄 Nacimiento</span>.</li>
+    <li>Elegí la <b>Categoría de la cría</b> (Terneros o Corderos/as).</li>
+    <li>Elegí el <b>Dueño (de la madre)</b> (en La Vuelta, <b>Firma</b>).</li>
+    <li>Poné la <b>cantidad</b> y, si querés, una observación.</li>
+    <li>Tocá <span class="b">Registrar nacimiento</span>.</li>
+  </ol>
+</div>
+
+<div class="fn" id="muerte">
+  <h3>✕ Muerte</h3>
+  <p class="para">Para qué sirve: dar de baja animales que murieron en el potrero.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">✕ Muerte</span>.</li>
+    <li>Elegí la <b>categoría</b> y el <b>dueño</b> (en La Vuelta, <b>Firma</b>).</li>
+    <li><b>Si es de Terneros</b>, aparece una lista “Ternero”: elegí <b>“De temporada (nacido a marcación)”</b> o <b>“Marcado”</b>. Es obligatorio: sin elegir no guarda.</li>
+    <li>Poné la <b>cantidad</b>. No puede ser más de lo que hay (“Solo hay N…”).</li>
+    <li>Opcional: <b>Causa</b>, y <b>Caravana</b> (mínimo 8 números).</li>
+    <li>Opcional: <span class="b">📷 Agregar foto (hasta 3)</span>.</li>
+    <li>Opcional, <b>“Dónde se encontró”</b>:
+      <ul>
+        <li><span class="b">📍 Usar mi ubicación</span>: toma el lugar donde estás parado.</li>
+        <li><span class="b">🗺 Marcar en el mapa</span>: la ficha se esconde, tocá el mapa donde se encontró y vuelve el formulario. Si te arrepentís, <span class="b">✕ Cancelar</span> en el aviso de arriba.</li>
+        <li><span class="b">✕ Quitar ubicación</span>: borra lo marcado.</li>
+      </ul>
+    </li>
+    <li>Tocá <span class="b">Registrar muerte</span>.</li>
+  </ol>
+  <p class="nota">Después, en el historial de ese renglón, hay tres botones chicos: 🏷️ (agregar o cambiar la caravana), 📷 (agregar una foto) y 🗺 (ver el lugar en el mapa).</p>
+</div>
+
+<div class="fn" id="desaparecido">
+  <h3>❓ Desaparecido</h3>
+  <p class="para">Para qué sirve: un animal salió del potrero y no sabés dónde está (cruzó a otro campo, por ejemplo). Se resta del potrero y queda pendiente en <a href="#desaparecidos">❓ Desaparecidos</a> hasta que aparezca o se dé por perdido.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">❓ Desaparecido</span>.</li>
+    <li>Elegí <b>categoría</b> y <b>dueño</b> (en La Vuelta, <b>Firma</b>), y poné la <b>cantidad</b> (no más de lo que hay).</li>
+    <li>Si querés, escribí una observación (por ejemplo, “cerca del vecino Fulano”).</li>
+    <li>Tocá <span class="b">Registrar desaparición</span>.</li>
+  </ol>
+</div>
+
+<div class="fn" id="al-vecino">
+  <h3>🏡 Al vecino</h3>
+  <p class="para">Para qué sirve: nuestros animales pasaron al campo de un vecino. Salen del potrero y quedan anotados en <a href="#vecinos">🏡 Vecinos</a>.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">🏡 Al vecino</span>.</li>
+    <li>Escribí el <b>nombre del vecino</b>. Si ya lo usaste antes, la app te lo sugiere (“Fulano” y “fulano” son el mismo).</li>
+    <li>En cada fila elegí <b>categoría</b>, <b>dueño</b> (en La Vuelta, <b>Firma</b>) y <b>cantidad</b>. La caravana es opcional (mínimo 8 números).</li>
+    <li>Para otra categoría, tocá <span class="b">＋ Otra categoría</span>. La <b>✕</b> de la fila la saca.</li>
+    <li>Revisá la fecha, escribí una observación si querés y tocá <span class="b">Registrar</span>.</li>
+  </ol>
+  <p class="nota">Se controla todo antes de guardar: si en una fila pedís más de lo que hay, no se guarda ninguna.</p>
+</div>
+
+<h2 id="herramientas">4. Herramientas</h2>
+<p>Se abren con el botón <span class="b">🛠 Herramientas</span>, abajo a la derecha.</p>
+
+<div class="fn" id="sanidad">
+  <h3>🏥 Sanidad</h3>
+  <p class="para">Para qué sirve: anotar tratamientos (vacunas, antiparasitarios…) y ver cuáles animales siguen en período de espera.</p>
+  <p>Hay dos formas de cargar:</p>
+  <ul>
+    <li><span class="b">+ Cargar tratamiento (grupal)</span>: para un lote de animales.</li>
+    <li><span class="b">+ Cargar tratamiento (individual)</span>: para un solo animal, con su caravana.</li>
+  </ul>
+  <ol class="pasos">
+    <li>Elegí una de las dos. Se abre el formulario.</li>
+    <li>Completá <b>Fecha</b>, <b>Categoría</b>, <b>Potrero</b> y <b>Cantidad</b>. En María Laura y Pone Chico también va el <b>Dueño</b>.</li>
+    <li><b>Individual</b>: la cantidad queda en 1 y se pide la <b>Caravana</b> (8 dígitos). Si el animal no tiene, tildá <b>“Este animal no tiene caravana”</b>.</li>
+    <li><b>Gen (opcional)</b>: el último número del año en que nacieron (2025 = 5).</li>
+    <li>Elegí el <b>Producto 1</b> de la lista (si no está, “Otro (escribir)…”) y la <b>Dosis 1</b>. El producto 2 y la dosis 2 son opcionales.</li>
+    <li>Tocá <span class="b">Guardar</span>. Sale “Tratamiento cargado”.</li>
+  </ol>
+  <ul>
+    <li>Sin producto, sin dosis o sin caravana (ni el tilde de “no tiene”) no guarda y avisa.</li>
+    <li>En el individual, al escribir la caravana la app busca de qué animal es y lo muestra: si está <b>NO APTO</b> hasta una fecha o <b>YA NO ESTÁ EN EL CAMPO</b>, lo avisa en la línea de abajo. <b>Avisa pero deja guardar</b>: revisá que el número esté bien. Sin señal avisa que no pudo verificarla, y en un campo sin padrón como Pone Chico dice que no está en el padrón; en los dos casos se guarda igual.</li>
+  </ul>
+  <p>Más abajo, la misma ventana tiene tres listas plegadas: <b>Últimos tratamientos</b>, <b>🚫 No aptos</b> (animales que todavía no pueden ir a faena) y <b>🔁 Próximos tratamientos (garrapaticidas)</b>. En esta última, <span class="b">✓ Hecho, ya se trató</span> saca el aviso de la lista en todos los celulares (pide confirmar y no se puede deshacer). Las listas necesitan señal; sin señal se ve lo último que se bajó.</p>
+</div>
+
+<div class="fn" id="lluvias">
+  <h3>🌧 Lluvias</h3>
+  <p class="para">Para qué sirve: anotar los milímetros que llovieron.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">🌧 Lluvias</span>.</li>
+    <li>Elegí la <b>Fecha</b> y escribí los <b>Milímetros</b>.</li>
+    <li>Tocá <span class="b">Cargar lluvia</span>.</li>
+  </ol>
+  <p>Abajo ves el acumulado por mes y año, y el <b>Historial de lluvias</b> (plegado, las últimas 20). Desde Campo una lluvia cargada no se corrige: mirá <a href="#errores">6. Si te equivocaste</a>.</p>
+</div>
+
+<div class="fn" id="desaparecidos">
+  <h3>❓ Desaparecidos</h3>
+  <p class="para">Para qué sirve: cerrar los casos de animales que se anotaron como desaparecidos. Cada caso muestra cuántos faltan, de qué categoría y desde cuándo. Encontrado, Dar muerte y Apareció en vecino permiten cerrar solo una parte: si aparecen 2 de 5, el caso sigue abierto por los otros 3. Dar por perdido cierra todo lo que falta.</p>
+  <ul>
+    <li><span class="b">✅ Encontrado</span>: aparecieron. Poné la cantidad, elegí el potrero al que vuelven y la fecha, y tocá <span class="b">Confirmar</span>.</li>
+    <li><span class="b">❌ Dar por perdido</span>: no van a volver. Pide confirmar y <b>no se puede deshacer</b>.</li>
+    <li><span class="b">🪦 Dar muerte</span>: se confirmó que murieron. Poné la cantidad muerta y, si querés, caravana (mínimo 8 números), hasta 3 fotos y “Dónde se encontró” (📍 Usar mi ubicación, 🗺 Marcar en el mapa). Tocá <span class="b">Confirmar muerte</span>; pide confirmar y no se puede deshacer.</li>
+    <li><span class="b">🏡 Apareció en vecino</span>: están en el campo de un vecino. Poné cantidad, nombre del vecino, fecha y caravana (opcional) y tocá <span class="b">Confirmar</span>. Pasan a <a href="#vecinos">🏡 Vecinos</a>.</li>
+  </ul>
+  <p>Al final de la ventana hay <b>“🪦 Ver registro de muertes por categoría”</b>: una tabla con las muertes del campo, que se puede filtrar por dueño. Necesita señal.</p>
+</div>
+
+<div class="fn" id="vecinos">
+  <h3>🏡 Vecinos</h3>
+  <p class="para">Para qué sirve: ver qué animales nuestros están en el campo de cada vecino. No cuentan en ningún potrero. Cada vecino aparece con sus animales y su historial (plegado).</p>
+  <ul>
+    <li><span class="b">↩ Volvió</span>: elegí cada categoría y cuántos volvieron (con <span class="b">＋ Otra categoría</span> sumás más), la fecha y el <b>Potrero al que vuelve</b>. Tocá <span class="b">Registrar vuelta</span>.</li>
+    <li><span class="b">❌ Dar por perdido</span>: elegí categoría, cantidad y fecha, y tocá <span class="b">Dar por perdido</span>. Pide confirmar y no se puede deshacer.</li>
+    <li><span class="b">🪦 Muerte</span>: elegí categoría, cantidad y fecha. Si es de Terneros, elegí “De temporada” o “Marcado”. La caravana es opcional. Tocá <span class="b">Registrar muerte</span>.</li>
+  </ul>
+  <p class="nota">No se puede devolver ni dar por perdido más de lo que el vecino tiene anotado.</p>
+</div>
+
+<div class="fn" id="caravana">
+  <h3>🔎 Buscar caravana</h3>
+  <p class="para">Para qué sirve: saber de qué animal es una caravana y, sobre todo, si está en período de espera. <span class="campo">Solo en La Vuelta y María Laura.</span> Necesita señal.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">🔎 Buscar caravana</span>.</li>
+    <li>Escribí el número visual de la caravana (los 8 dígitos) y tocá <span class="b">Buscar</span>.</li>
+  </ol>
+  <p>Aparece la ficha del animal con uno de estos carteles:</p>
+  <ul>
+    <li><b>✅ APTO</b>: sin período de espera pendiente.</li>
+    <li><b>⛔ NO APTO</b>: no puede ir a faena hasta la fecha que dice.</li>
+    <li><b>⚠️ SIN CONFIRMAR</b>: no se sabe si está apto. No lo mandes a faena sin chequear.</li>
+    <li><b>📤 YA NO ESTÁ EN EL CAMPO</b>: salió o está dado de baja. Revisá que el número esté bien.</li>
+  </ul>
+  <p>Si dice que la caravana no está en el padrón, puede ser un animal que nunca pasó por la manga o un número mal escrito.</p>
+</div>
+
+<div class="fn" id="reportes">
+  <h3>🔧 Infraestructura y 🌾 Capín Annoni</h3>
+  <p class="para">Para qué sirve: marcar en el mapa un problema (un caño, un bebedero o un alambrado roto) o un foco de capín annoni, para encontrarlo después.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">🔧 Infraestructura</span> o <span class="b">🌾 Capín Annoni</span>.</li>
+    <li>En Infraestructura elegí el <b>Tipo de problema</b> (Caño roto, Bebedero roto, Alambrado roto u Otro).</li>
+    <li>Revisá la <b>Fecha</b> y, si querés, escribí una observación (por ejemplo, “cerca de la tranquera norte”).</li>
+    <li>Opcional: <span class="b">📷 Agregar foto (hasta 3)</span>.</li>
+    <li>Marcá el lugar de una de las dos formas:
+      <ul>
+        <li><span class="b">📍 Usar mi ubicación GPS</span>: guarda el lugar donde estás.</li>
+        <li><span class="b">🗺 Marcar en el mapa</span>: la ventana se cierra, tocá el mapa donde está el problema.</li>
+      </ul>
+    </li>
+  </ol>
+  <p>En la lista de la misma ventana, cada reporte tiene:</p>
+  <ul>
+    <li><span class="b">🗺 Ver en el mapa</span>.</li>
+    <li><span class="b">📷 Agregar foto</span> (hasta 10 fotos por reporte).</li>
+    <li><span class="b">✓ Resuelto</span>: cuando ya se arregló. Podés sumar una foto del arreglo (<b>“Foto del arreglo”</b>) y tocar <b>“Confirmar resuelto”</b>. Sale de la lista en todos los celulares y no se puede deshacer. Los resueltos quedan en “Resueltos (N)”.</li>
+    <li><span class="b">Eliminar</span>: borra el reporte. Pide confirmar.</li>
+  </ul>
+</div>
+
+<div class="fn" id="sincronizar">
+  <h3>🔄 Sincronizar ahora</h3>
+  <p class="para">Para qué sirve: mandar lo que cargaste y traer lo que cargaron los demás, sin esperar.</p>
+  <p>Tocá <span class="b">🔄 Sincronizar ahora</span>. La app lo hace sola cada 3 minutos y cuando vuelve la señal, así que casi nunca hace falta. Sin señal avisa “Sin conexión — no se puede sincronizar ahora”. Si trae movimientos de otros celulares, lo dice: “Sincronizado: N movimientos de otro dispositivo”.</p>
+</div>
+
+<div class="fn" id="instructivo">
+  <h3>📖 Instructivo</h3>
+  <p class="para">Para qué sirve: abrir esta página desde la app. Se abre en otra pestaña; para volver a la app, cerrala. Una vez que la app se actualizó con señal, el instructivo también abre sin señal.</p>
+</div>
+
+<h2 id="sin-senal">5. Sin señal</h2>
+<p class="para">Para qué sirve: saber qué pasa con lo que cargás cuando no hay internet, y qué quiere decir cada aviso.</p>
+<ul>
+  <li><b>Cargá normalmente.</b> Todo se guarda en el celular y sale solo cuando vuelva la señal. <b>No lo cargues dos veces</b> por miedo a que no se mandó.</li>
+  <li>Con señal, arriba dice <b>“🟢 En línea”</b>. Sin señal dice <b>“⚪ Sin conexión — los datos se siguen guardando en este dispositivo”</b>.</li>
+  <li>Sin señal no se ven las imágenes del mapa satelital, y no andan <a href="#caravana">🔎 Buscar caravana</a> ni el registro de muertes. Lo demás anda.</li>
+</ul>
+<p>Abajo, en el pie, la app muestra cómo viene el envío:</p>
+<table>
+  <tr><th>Dice</th><th>Qué quiere decir</th></tr>
+  <tr><td><b>✅ Sincronizado</b></td><td>Todo lo tuyo ya llegó.</td></tr>
+  <tr><td><b>⏳ N movimientos sin sincronizar</b></td><td>Están guardados en el celular y esperan que haya señal. No hace falta hacer nada. También puede decir cuántas cargas de Sanidad esperan.</td></tr>
+  <tr><td><b>⏳ N fotos sin subir</b></td><td>Las fotos esperan señal. Salen solas, después de lo que cargaste.</td></tr>
+  <tr><td><b>⚠ N sin sincronizar · falló el último intento hh:mm</b></td><td>Hubo señal pero falló el envío. Se reintenta solo; no hay que hacer nada.</td></tr>
+  <tr><td><b>⛔ N movimientos trabados</b></td><td>Algo rechaza lo que se manda. No se pierde nada: está guardado en el celular. Mirá abajo.</td></tr>
+  <tr><td><b>🔄 Sincronizando…</b> o <b>🔄 Poniéndose al día… N eventos</b></td><td>Está trayendo datos. En un celular nuevo la primera vez tarda más. Esperá.</td></tr>
+</table>
+<div class="caja peligro">
+  <p><b>Si sale el cartel rojo “⛔ movimientos trabados”</b>: puede ser la clave del campo (en ese caso el cartel lo dice: revisá <a href="#clave">🔑 Clave del campo</a>).</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">↻ Reintentar</span>. Si se arregló, dice “Listo, se mandó todo”.</li>
+    <li>Si sigue trabado, tocá <span class="b">⬇ Descargar copia</span> y mandale ese archivo a Pedro por WhatsApp, con una captura del cartel.</li>
+  </ol>
+</div>
+
+<h2 id="errores">6. Si te equivocaste</h2>
+<p class="para">Para qué sirve: saber qué se puede arreglar desde el celular y qué hay que avisar.</p>
+<p>Abrí el potrero y el <b>Historial</b>. Los renglones que cargaste <b>desde este celular</b> tienen botones:</p>
+<ul>
+  <li><span class="b">🗑</span> <b>Borrar</b>: la app pregunta “¿Seguro que querés borrar este movimiento?”. Si aceptás, los animales vuelven a como estaban y el renglón queda tachado como “ELIMINADO”. No se puede deshacer.</li>
+  <li><span class="b">✏️</span> <b>Editar</b>: deshace el movimiento y abre el formulario con los datos para corregirlos. Si cancelás el formulario, el movimiento original queda deshecho; ojo.</li>
+</ul>
+<p>Qué se puede y qué no:</p>
+<ul>
+  <li><b>Movimientos</b> (⇄ y ⇄⇄), <b>encontrados</b> y <b>pérdidas</b>: solo 🗑. Para corregirlos, borralos y volvé a cargarlos.</li>
+  <li><b>Ingresos, nacimientos, muertes y desaparecidos</b>: 🗑 y ✏️. En una muerte, además, 🏷️ cambia la caravana.</li>
+  <li><b>Lo que cargó otra persona u otro celular</b> no tiene botones.</li>
+  <li>Un <b>desaparecido que ya tiene resoluciones</b> (encontrado, perdido, muerte) no se puede borrar hasta borrar esas.</li>
+  <li><b>Reportes</b> de Infraestructura o Capín: <span class="b">Eliminar</span>, en su lista.</li>
+</ul>
+<div class="caja aviso">
+  <p><b>Esto no se arregla desde Campo: avisale a Pedro qué cargaste mal</b> (potrero, fecha y qué era):</p>
+  <ul>
+    <li>Un <b>tratamiento de Sanidad</b>.</li>
+    <li>Una <b>lluvia</b>.</li>
+    <li>Lo cargado en <b>🏡 Al vecino</b> o dentro de <b>🏡 Vecinos</b>.</li>
+  </ul>
+</div>
+<p><b>No “compenses” un error cargando algo al revés</b> (por ejemplo, un nacimiento extra para tapar una muerte de más): deja el historial mentiroso. Mejor avisá.</p>
+
+<p><a class="arriba" href="#inicio">↑ Volver arriba</a></p>
+</div>
+</body>
+</html>

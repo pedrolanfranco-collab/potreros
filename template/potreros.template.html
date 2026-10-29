@@ -719,6 +719,7 @@
       <button class="btn btn-json" id="btn-capin-annoni">🌾 Capín Annoni</button>
 <!-- @simple:start -->
       <button class="btn btn-json" id="btn-modo-sol">☀ Modo sol: NO</button>
+      <button class="btn btn-json" id="btn-instructivo">📖 Instructivo</button>
 <!-- @simple:end -->
       <button class="btn btn-json" id="btn-usuario">👤 Quién soy</button>
       <button class="btn btn-json" id="btn-clave-campo">🔑 Clave del campo</button>
@@ -6504,6 +6505,31 @@ document.getElementById('btn-modo-sol').addEventListener('click', ()=>{
   aplicarModoSol(on);
   try{ localStorage.setItem(MODO_SOL_KEY, on ? '1' : '0'); }catch(e){}
   toast(on ? 'Modo sol activado' : 'Modo sol desactivado');
+});
+// @simple:end
+// @simple:start
+/* 📖 Instructivo (29/10/2026, Campo): página fija y única para los 3 campos (instructivo-campo/, a mano, no generada).
+   Se abre en otra pestaña para no sacar al empleado de la app. Ver CLAUDE.md "Instructivo de Campo".
+   Sin señal: el service worker de esta app NO controla esa carpeta (su alcance es solo la de la app), así que la
+   navegación directa no la sirve desde la caché aunque esté precargada en 'PRECACHE_URLS'. Por eso, sin conexión,
+   se lee la copia precargada y se abre como archivo temporal (blob:); los saltos del índice (#...) andan igual. */
+document.getElementById('btn-instructivo').addEventListener('click', async ()=>{
+  const url = '../instructivo-campo/';
+  if(!navigator.onLine && window.caches){
+    try{
+      const copia = await caches.match(new URL(url, location.href).href, {ignoreSearch: true});
+      if(copia){
+        const blob = new Blob([await copia.arrayBuffer()], {type: 'text/html;charset=utf-8'});
+        const temporal = URL.createObjectURL(blob);
+        window.open(temporal, '_blank');
+        setTimeout(()=>{ try{ URL.revokeObjectURL(temporal); }catch(e){} }, 120000);
+        return;
+      }
+    }catch(e){}
+    toast('Sin señal: el instructivo todavía no se bajó a este celular');
+    return;
+  }
+  window.open(url, '_blank');
 });
 // @simple:end
 document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
