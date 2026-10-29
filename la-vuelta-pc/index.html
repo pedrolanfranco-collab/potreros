@@ -1678,7 +1678,8 @@ function estadoInicial(){
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     maestros: {comprador: [], comisionista: [], contraparte: []}, colaMaestros: [],
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
-    ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0
+    ovejasEncarneradasTemporada: CONFIG.ovejasEncarneradasTemporada || 0,
+    vecinos: {} // 29/10/2026: potrero virtual "Vecino" (ver VECINOS, después de cargarEstado)
   };
 }
 
@@ -1730,10 +1731,47 @@ function cargarEstado(){
       if(parsed.ultimaSincronizacion===undefined) parsed.ultimaSincronizacion = null;
       if(parsed.vacasPrenadasTemporada===undefined) parsed.vacasPrenadasTemporada = CONFIG.vacasPrenadasTemporada || 0;
       if(parsed.ovejasEncarneradasTemporada===undefined) parsed.ovejasEncarneradasTemporada = CONFIG.ovejasEncarneradasTemporada || 0;
+      // 29/10/2026: un estado guardado antes del potrero virtual "Vecino" no tiene el campo: se crea vacío.
+      if(!parsed.vecinos || typeof parsed.vecinos !== 'object') parsed.vecinos = {};
       return parsed;
     }
   }catch(e){ console.warn("No se pudo leer el estado guardado", e); }
   return estadoInicial();
+}
+
+/* ===== VECINOS (29/10/2026, a pedido de Pedro): potrero virtual "Vecino" =====
+   Animales nuestros que están en el campo de un vecino (se pasaron, o se perdieron allá). NO es un potrero: no está en
+   POTREROS_GEO ni en estado.potreros, no sale en el mapa, no cuenta en dotación/UG ni en stock_potreros. Es como "campo
+   ajeno" pero con un balde por vecino: estado.vecinos = { "<Nombre>": {animales: {"cat||dueño": n}, historial: [...]} }.
+   El nombre se compara sin mayúsculas ni tildes (claveVecino): "fulano" y "Fulano" son el mismo vecino, y queda la
+   primera grafía que llegó. */
+function normalizarVecino(nombre){
+  const n = String(nombre == null ? '' : nombre).normalize('NFC').replace(/\s+/g, ' ').trim().slice(0, 40).trim();
+  return n.toLowerCase() === '__proto__' ? '' : n; // un nombre así rompería el objeto estado.vecinos
+}
+/* Sin tildes y en minúsculas, para comparar. La ñ se conserva ("Peña" no es "Pena"). */
+function claveVecino(nombre){
+  return normalizarVecino(nombre).toLowerCase().replace(/ñ/g, '\u0001')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\u0001/g, 'ñ');
+}
+/* Devuelve el balde del vecino (lo crea si no existe). Si ya hay uno con el mismo claveVecino() usa ESE nombre, así
+   nunca quedan dos baldes para la misma persona. Devuelve null si el nombre no sirve. */
+function obtenerVecino(nombre){
+  const n = normalizarVecino(nombre);
+  if(!n) return null;
+  estado.vecinos = estado.vecinos || {};
+  const clave = claveVecino(n);
+  const existente = Object.keys(estado.vecinos).find(k => claveVecino(k) === clave);
+  const nombreFinal = existente || n;
+  if(!Object.prototype.hasOwnProperty.call(estado.vecinos, nombreFinal)) estado.vecinos[nombreFinal] = {animales: {}, historial: []};
+  const v = estado.vecinos[nombreFinal];
+  v.animales = v.animales || {};
+  v.historial = v.historial || [];
+  return v;
+}
+/* Nombres de los vecinos con algún renglón, ordenados (para la lista de sugerencias y la ventana Vecinos). */
+function listarVecinos(){
+  return Object.keys((estado && estado.vecinos) || {}).sort((a, b)=> a.localeCompare(b, 'es'));
 }
 
 /* 9/10/2026 (auditoría, hallazgo 10): si el navegador no deja guardar (memoria llena,
@@ -2291,6 +2329,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
   'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
+  'vecino_paso', 'vecino_aparecido', 'vecino_retorno', 'vecino_perdida', 'vecino_muerte',
   'correccion'
 ]);
 const ACCIONES_CORRECCION_CONOCIDAS = new Set([
@@ -2324,6 +2363,68 @@ function aplicarDesconocidosYaConocidos(potrerosSucios){
   estado.eventosDesconocidos = lista.filter(r=> eventoEsDesconocido(r));
   aplicables.forEach(r=> aplicarEventoRemoto(r, potrerosSucios));
   return aplicables.length;
+}
+/* 29/10/2026 (a pedido de Pedro): aplica uno de los 5 eventos del potrero virtual "Vecino" (ver VECINOS, más arriba).
+   Idempotente por event_id: si el balde del vecino ya tiene un renglón con ese evento, no toca nada (ni stock ni historial).
+   Stock: vecino_paso resta del potrero de origen y suma al vecino; vecino_retorno suma al potrero y resta al vecino (tope 0);
+   vecino_aparecido NO toca el potrero (el desaparecido ya lo había restado) pero suma al vecino y cierra el caso (renglón con
+   casoId en el potrero de origen, como "encontrado"); vecino_perdida y vecino_muerte solo restan del vecino (la muerte
+   cuenta como muerte en las estadísticas). En perdida/muerte `potrero` es null: en eventos_sync lleva el nombre del
+   establecimiento (como lluvia), y acá no se usa. Renglón en el potrero (paso, aparecido, retorno) con origDatos y casoId;
+   renglón en estado.vecinos[n].historial SIEMPRE. */
+function aplicarEventoVecino(row, d, potrero, potrerosSucios){
+  const vecino = normalizarVecino(d.vecino);
+  const cantidad = Number(d.cantidad);
+  if(!vecino || !(cantidad > 0) || typeof d.categoria !== 'string' || !d.categoria) return;
+  const v = obtenerVecino(vecino);
+  if(!v) return;
+  const eventId = (typeof row.event_id === 'string' && row.event_id) ? row.event_id : null;
+  if(eventId && v.historial.some(h=> h.eventId === eventId)) return; // ya aplicado (idempotente)
+  const fechaEvt = row.fecha_cliente || fechaHoy();
+  const key = claveAnimal(d.categoria, d.dueno);
+  const caravana = d.caravana || null;
+  const obs = d.obs || null;
+  const grupo = (row.tipo === 'vecino_muerte' && grupoTerneroValido(d.grupoTernero)) ? d.grupoTernero : null;
+
+  // Stock del potrero (solo paso y retorno: aparecido y perdida/muerte no lo tocan)
+  if(row.tipo === 'vecino_paso' || row.tipo === 'vecino_retorno'){
+    const a = estado.potreros[potrero].animales;
+    const totalAntes = totalPotrero(potrero);
+    if(row.tipo === 'vecino_paso') a[key] = Math.max(0, (a[key]||0) - cantidad);
+    else a[key] = (a[key]||0) + cantidad;
+    registrarCambioOcupacion(potrero, totalAntes, fechaEvt);
+    if(potrerosSucios) potrerosSucios.add(potrero);
+  }
+
+  // Stock del vecino: sube en paso y aparecido; baja (tope 0) en retorno, pérdida y muerte
+  if(row.tipo === 'vecino_paso' || row.tipo === 'vecino_aparecido') v.animales[key] = (v.animales[key]||0) + cantidad;
+  else {
+    const quedan = Math.max(0, (v.animales[key]||0) - cantidad);
+    if(quedan > 0) v.animales[key] = quedan; else delete v.animales[key];
+  }
+
+  const detalleTxt = `${cantidad} ${d.categoria}${d.dueno?' de '+d.dueno:''}${caravana?' — caravana '+caravana:''}${obs?' ('+obs+')':''}`;
+  const grupoTxt = grupo ? ` (${textoGrupoTernero(grupo)})` : '';
+  const origDatos = {vecino, categoria: d.categoria, cantidad, dueno: d.dueno||null, caravana, obs, grupoTernero: grupo};
+
+  // Renglón en el historial del potrero (no existe en perdida/muerte: no hay potrero)
+  if(potrero){
+    const textoP = row.tipo === 'vecino_paso' ? `Al vecino ${vecino} (sincronizado): ${detalleTxt}`
+      : row.tipo === 'vecino_aparecido' ? `Apareció en el campo de ${vecino} (sincronizado): ${detalleTxt}`
+      : `Volvió del vecino ${vecino} (sincronizado): ${detalleTxt}`;
+    const entryV = registrarHistorial(potrero, row.tipo, textoP, undefined, undefined, fechaEvt);
+    entryV.origDatos = origDatos;
+    if(row.tipo === 'vecino_aparecido') entryV.casoId = d.casoId; // cierra el caso (ver listarCasosDesaparecidos)
+  }
+
+  // Renglón en el balde del vecino (siempre; es lo que muestra la ventana Vecinos)
+  const textoV = row.tipo === 'vecino_paso' ? `Pasó desde ${potrero} (sincronizado): ${detalleTxt}`
+    : row.tipo === 'vecino_aparecido' ? `Apareció en su campo, desaparecido de ${potrero} (sincronizado): ${detalleTxt}`
+    : row.tipo === 'vecino_retorno' ? `Volvió a ${potrero} (sincronizado): ${detalleTxt}`
+    : row.tipo === 'vecino_perdida' ? `Pérdida confirmada (sincronizada): ${detalleTxt} (no vuelven)`
+    : `Muerte (sincronizada): ${detalleTxt}${grupoTxt} (no vuelven)`;
+  v.historial.unshift({id: generarIdHistorial(), eventId, fecha: fechaEvt, tipo: row.tipo, categoria: d.categoria, dueno: d.dueno||null,
+    cantidad, potrero: potrero || null, caravana, obs, grupoTernero: grupo, casoId: d.casoId || null, usuario: d.usuario || null, detalle: textoV});
 }
 function aplicarEventoRemoto(row, potrerosSucios){
   const eventIdPrevio = _eventIdRemoto;
@@ -2609,11 +2710,24 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
+  // 29/10/2026: vecino_perdida y vecino_muerte no tienen potrero real: se aplican antes del guard, como lluvia.
+  if(row.tipo === 'vecino_perdida' || row.tipo === 'vecino_muerte'){
+    aplicarEventoVecino(row, d, null, potrerosSucios);
+    return;
+  }
+
   if(!potrero || !estado.potreros[potrero]){
     if(potrero && debeEstacionar(row)) estacionarEvento(potrero, row);
     return;
   }
   const fechaEvt = row.fecha_cliente || fechaHoy();
+
+  // 29/10/2026: vecino_paso, vecino_aparecido y vecino_retorno SÍ necesitan el potrero (el de origen o destino): van
+  // después del guard, así un potrero que este equipo todavía no conoce los estaciona como cualquier otro evento.
+  if(row.tipo === 'vecino_paso' || row.tipo === 'vecino_aparecido' || row.tipo === 'vecino_retorno'){
+    aplicarEventoVecino(row, d, potrero, potrerosSucios);
+    return;
+  }
 
   if(row.tipo === 'envio_campo_ajeno' || row.tipo === 'retorno_campo_ajeno'){
     // 22/9/2026 (DICOSE, solo La Vuelta): "potrero" acá es un potrero REAL
@@ -3829,7 +3943,8 @@ function listarCasosDesaparecidos(){
     let resuelto = 0;
     POTREROS_GEO.forEach(p=>{
       (estado.potreros[p.nombre].historial||[]).forEach(h=>{
-        if((h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido') && h.casoId===caso.casoId && !h.eliminado){
+        // 29/10/2026: "vecino_aparecido" (el animal apareció en el campo de un vecino) también resuelve el caso.
+      if((h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido' || h.tipo==='vecino_aparecido') && h.casoId===caso.casoId && !h.eliminado){
           const datos = h.extra || h.origDatos || {};
           resuelto += datos.cantidad || 0;
         }
@@ -4038,7 +4153,8 @@ function resolucionesVivasDeCaso(casoId){
   const lista = [];
   POTREROS_GEO.forEach(p=>{
     (estado.potreros[p.nombre].historial||[]).forEach(h=>{
-      if((h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido') && h.casoId===casoId && !h.eliminado) lista.push(h);
+      // 29/10/2026: "vecino_aparecido" cuenta como resolución (ver aplicarEventoVecino).
+      if((h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido' || h.tipo==='vecino_aparecido') && h.casoId===casoId && !h.eliminado) lista.push(h);
     });
   });
   return lista;

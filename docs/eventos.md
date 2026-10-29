@@ -22,7 +22,7 @@ Tabla `eventos_sync` (Supabase, proyecto `skkknfjpwcstefcroqjt`):
 | `establecimiento` | text | la app | el *stream*: `la_vuelta`, `maria_laura`, `pone_chico`. Cada app lee y escribe su stream; solo los traslados escriben en el del otro campo |
 | `dispositivo` | text | la app | id de este equipo (no es el nombre de la persona) |
 | `tipo` | text | la app | ver la tabla de tipos |
-| `potrero` | text | la app | nombre del potrero. Para eventos del establecimiento entero (lluvias, puntos, reportes) lleva el nombre del establecimiento |
+| `potrero` | text | la app | nombre del potrero. Para eventos del establecimiento entero (lluvias, puntos, reportes, y `vecino_perdida` / `vecino_muerte`, que no tienen potrero) lleva el nombre del establecimiento |
 | `detalle` | jsonb | la app | ver cada tipo. En las apps móviles lleva además `usuario` (texto libre, "quién soy"). Desde el paso 4 de la Fase 3 (11/10/2026) todas las apps agregan `v`: la variante y la versión que escribió el evento (`pc-3.67`, `movil-3.66`, `campo-1.47`), solo para diagnosticar; ningún lector la necesita y no forma parte del contrato de cada tipo |
 | `fecha_cliente` | text `dd/mm/aaaa` | la app | fecha **del hecho** (puede ser anterior a hoy). Nunca tiene hora |
 | `creado_en` | timestamptz | **servidor** | orden de aplicación y cursor de sincronización. Un trigger lo fuerza a `now()` aunque el cliente mande otro valor (Fase 2, 10/10/2026) |
@@ -69,6 +69,20 @@ Stock de un potrero (la app los aplica sumando o restando en `potreros[potrero].
 | `encontrado` | destino | `{categoria, dueno, cantidad, casoId}` | suma y cierra (parcial o total) el caso |
 | `perdida` | origen | `{categoria, dueno, cantidad, casoId}` | cierra el caso sin devolver stock |
 | `muerte_desaparecido` | origen | `{categoria, dueno, cantidad, caravana, casoId}` | cierra el caso como muerte |
+
+Potrero virtual "Vecino" (29/10/2026, a pedido de Pedro): animales nuestros que están en el campo de un vecino. NO es un
+potrero: no está en el mapa, no cuenta en dotación/UG ni en `stock_potreros`. `detalle.vecino` es el nombre del vecino
+(texto libre, máx. 40 caracteres; se compara sin mayúsculas ni tildes, así "fulano" y "Fulano" son el mismo vecino).
+Los que no tienen potrero real llevan el nombre del establecimiento en la columna `potrero` (como `lluvia`), y el
+receptor no lo usa:
+
+| `tipo` | `potrero` | `detalle` | Efecto |
+|---|---|---|---|
+| `vecino_paso` | origen | `{vecino, categoria, dueno, cantidad, caravana?, obs?}` | resta del potrero y suma al vecino |
+| `vecino_aparecido` | origen del caso | `{vecino, categoria, dueno, cantidad, casoId, caravana?, obs?}` | suma al vecino y **cierra** (parcial o total) el caso de desaparecido `casoId`; no toca el potrero (ya se había restado) |
+| `vecino_retorno` | destino | `{vecino, categoria, dueno, cantidad, obs?}` | suma al potrero y resta al vecino (tope 0) |
+| `vecino_perdida` | establecimiento (no se usa) | `{vecino, categoria, dueno, cantidad, obs?}` | resta del vecino (no vuelven); no toca ningún potrero |
+| `vecino_muerte` | establecimiento (no se usa) | `{vecino, categoria, dueno, cantidad, caravana?, grupoTernero?, obs?}` | resta del vecino y cuenta como muerte (`grupoTernero` como en `muerte`) |
 
 Movimientos entre dueños y entre campos (los lee `pasar_traslados_a_excel.py`):
 
