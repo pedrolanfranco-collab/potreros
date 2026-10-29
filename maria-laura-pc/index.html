@@ -603,6 +603,7 @@
             <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
             <button class="btn btn-json" id="btn-guias" style="display:none;">📑 Movimientos DICOSE</button>
             <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
+            <button class="btn btn-json" id="btn-vecinos">🏡 Vecinos</button>
             <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
             <button class="btn btn-json" id="btn-pesadas" style="display:none;">⚖️ Pesadas</button>
             <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
@@ -705,7 +706,7 @@
   <div class="modal-box">
     <h3>❓ Desaparecidos</h3>
     <button class="btn-cerrar-x" id="desaparecidos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
-    <p class="modal-info">Animales que salieron del potrero sin que sepas dónde están (cruzaron a otro campo, etc.) — resolvé acá cuando aparezcan, dalos por perdidos si no vuelven, o confirmá la muerte si corresponde.</p>
+    <p class="modal-info">Animales que salieron del potrero sin que sepas dónde están (cruzaron a otro campo, etc.) — resolvé acá cuando aparezcan (en su campo o en el de un vecino: 🏡), dalos por perdidos si no vuelven, o confirmá la muerte si corresponde.</p>
     <div id="desaparecidos-lista"></div>
     <details style="margin-top:14px;">
       <summary style="font-size:12.5px;color:var(--texto-suave);cursor:pointer;">🪦 Ver registro de muertes por categoría</summary>
@@ -713,6 +714,15 @@
       <div id="muertes-tabla"></div>
     </details>
     <div class="form-botones"><button class="btn btn-secundario" id="desaparecidos-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-vecinos" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🏡 Vecinos</h3>
+    <button class="btn-cerrar-x" id="vecinos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Animales nuestros que están en el campo de un vecino. No están en ningún potrero: no cuentan en la dotación ni en el stock de los potreros.</p>
+    <div id="vecinos-lista"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="vecinos-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="modal-sanidad" class="modal-overlay" style="display:none;">
@@ -862,6 +872,7 @@
     <p class="modal-info">Categorías, animales por potrero, nacimientos y muertes de la temporada.</p>
     <div id="stock-resumen" style="font-size:12.5px;color:var(--texto-suave);margin-bottom:10px;"></div>
     <div id="stock-desaparecidos-aviso"></div>
+    <div id="stock-vecinos-aviso"></div>
     <div id="stock-tabs" style="display:flex;gap:4px;margin-bottom:12px;">
       <button data-tab="0" class="stock-tab-btn">Categorías</button>
       <button data-tab="1" class="stock-tab-btn">Potreros</button>
@@ -1744,13 +1755,16 @@ function cargarEstado(){
    El nombre se compara sin mayúsculas ni tildes (claveVecino): "fulano" y "Fulano" son el mismo vecino, y queda la
    primera grafía que llegó. */
 function normalizarVecino(nombre){
-  const n = String(nombre == null ? '' : nombre).normalize('NFC').replace(/\s+/g, ' ').trim().slice(0, 40).trim();
+  // Misma limpieza que limpiarTextoRemoto() (sin < > ni comillas dobles/backtick): así el nombre local y el que llega
+  // de otro equipo quedan iguales. Es idempotente.
+  const n = String(nombre == null ? '' : nombre).replace(/[<>]/g, '').replace(/["`]/g, "'")
+    .normalize('NFC').replace(/\s+/g, ' ').trim().slice(0, 40).trim();
   return n.toLowerCase() === '__proto__' ? '' : n; // un nombre así rompería el objeto estado.vecinos
 }
 /* Sin tildes y en minúsculas, para comparar. La ñ se conserva ("Peña" no es "Pena"). */
 function claveVecino(nombre){
   return normalizarVecino(nombre).toLowerCase().replace(/ñ/g, '\u0001')
-    .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\u0001/g, 'ñ');
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0001/g, 'ñ');
 }
 /* Devuelve el balde del vecino (lo crea si no existe). Si ya hay uno con el mismo claveVecino() usa ESE nombre, así
    nunca quedan dos baldes para la misma persona. Devuelve null si el nombre no sirve. */
@@ -2423,6 +2437,15 @@ function aplicarEventoVecino(row, d, potrero, potrerosSucios){
     : `Muerte (sincronizada): ${detalleTxt}${grupoTxt} (no vuelven)`;
   v.historial.unshift({id: generarIdHistorial(), eventId, fecha: fechaEvt, tipo: row.tipo, categoria: d.categoria, dueno: d.dueno||null,
     cantidad, potrero: potrero || null, caravana, obs, grupoTernero: grupo, casoId: d.casoId || null, usuario: d.usuario || null, detalle: textoV});
+}
+/* 29/10/2026: aplica en ESTE equipo el mismo evento que se manda a los demás, pasando por aplicarEventoRemoto(): una sola
+   lógica para lo local y lo remoto (no pueden divergir). Después agrega `extra` al renglón del potrero, como los demás
+   movimientos locales (la PC lo usa para editar y borrar). Se llama ANTES de enviarEvento(), con el mismo eventId. */
+function aplicarVecinoLocal(tipo, potrero, d, fechaISO, eventId){
+  const dl = Object.assign({}, d);
+  aplicarEventoRemoto({tipo, potrero, event_id: eventId, fecha_cliente: fechaISOaDisplay(fechaISO), creado_en: null, detalle: dl}, new Set());
+  const entry = ((estado.potreros[potrero] || {}).historial || []).find(h=> h.eventId === eventId);
+  if(entry) entry.extra = Object.assign({potrero}, entry.origDatos || {}, {_fechaISO: fechaISO});
 }
 function aplicarEventoRemoto(row, potrerosSucios){
   const eventIdPrevio = _eventIdRemoto;
@@ -3942,7 +3965,7 @@ function listarCasosDesaparecidos(){
     POTREROS_GEO.forEach(p=>{
       (estado.potreros[p.nombre].historial||[]).forEach(h=>{
         // 29/10/2026: "vecino_aparecido" (el animal apareció en el campo de un vecino) también resuelve el caso.
-      if((h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido' || h.tipo==='vecino_aparecido') && h.casoId===caso.casoId && !h.eliminado){
+        if((h.tipo==='encontrado' || h.tipo==='perdida' || h.tipo==='muerte_desaparecido' || h.tipo==='vecino_aparecido') && h.casoId===caso.casoId && !h.eliminado){
           const datos = h.extra || h.origDatos || {};
           resuelto += datos.cantidad || 0;
         }
@@ -5365,6 +5388,7 @@ function renderDetalle(nombre){
       <button class="btn btn-nacimiento" data-accion="nacimiento">🐄 Nacimiento</button>
       <button class="btn btn-muerte" data-accion="muerte">✕ Muerte</button>
       <button class="btn btn-muerte" data-accion="desaparecido">❓ Desaparecido</button>
+      <button class="btn btn-muerte" data-accion="vecino">🏡 Al vecino</button>
       ${CONFIG.guiasHabilitado ? '' : `<button class="btn btn-compraventa btn-full" data-accion="compraventa">💰 Compra / Venta</button>`}
       <button class="btn btn-mover btn-full" data-accion="mover-todo" style="filter:brightness(0.9);">⇄⇄ Mover TODO el potrero</button>
     </div>
@@ -5379,10 +5403,10 @@ function renderDetalle(nombre){
           <span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}
           ${(h.id && (h.extra || h.origDatos) && !h.eliminado) ? `
           <span class="hist-acciones">
-            ${(h.tipo!=='traslado_salida' && h.tipo!=='traslado_entrada' && h.tipo!=='movimiento_guia') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
+            ${(h.tipo!=='traslado_salida' && h.tipo!=='traslado_entrada' && h.tipo!=='movimiento_guia' && h.tipo!=='vecino_paso' && h.tipo!=='vecino_aparecido' && h.tipo!=='vecino_retorno') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
             ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana">🏷️</button>` : ''}
             ${((CONFIG.dicoseHabilitado || CONFIG.guiasHabilitado) && (h.tipo==='compra' || h.tipo==='venta')) ? `<button class="hist-btn" data-hist-guia="${esc(h.id)}" title="Agregar/editar guía">📄</button>` : ''}
-            ${h.tipo!=='traslado_entrada' ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
+            ${(h.tipo!=='traslado_entrada' && h.tipo!=='vecino_paso' && h.tipo!=='vecino_aparecido' && h.tipo!=='vecino_retorno') ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
           </span>` : ''}
         </div>
       `).join('') : '<div class="hist-vacio">Todavía no hay movimientos en este potrero.</div>'}
@@ -5530,6 +5554,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['voz-cerrar-x', 'voz-cerrar'],
   ['alertas-cerrar-x', 'alertas-cerrar'],
   ['desaparecidos-cerrar-x', 'desaparecidos-cerrar'],
+  ['vecinos-cerrar-x', 'vecinos-cerrar'],
   ['sanidad-cerrar-x', 'sanidad-cerrar'],
   ['lluvias-cerrar-x', 'lluvias-cerrar'],
   ['stock-cerrar-x', 'stock-cerrar'],
@@ -6311,6 +6336,52 @@ function mostrarFormulario(nombre, accion, prefill){
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
+
+  // 29/10/2026: 🏡 Al vecino -- animales nuestros que pasaron al campo de un vecino (sale del potrero, queda en el vecino)
+  if(accion==='vecino'){
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Pasó al vecino desde ${esc(nombre)}</h3>
+        <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Animales nuestros que ahora están en el campo de un vecino. Salen de acá y quedan en 🛠 Herramientas › 🏡 Vecinos, donde después se anota la vuelta, la pérdida o la muerte.</p>
+        <div class="form-row"><label>Vecino</label><input type="text" id="f-vecino" list="dl-vecinos" maxlength="40" placeholder="Nombre del vecino"><datalist id="dl-vecinos">${listarVecinos().map(v=>`<option value="${esc(v)}"></option>`).join('')}</datalist></div>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias()}</select></div>
+        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos()}</select></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="1"></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="f-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
+        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: pasó por el alambrado del norte"></div>
+        <div class="form-botones">
+          <button class="btn btn-muerte" id="f-confirmar">Registrar</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const vecino = normalizarVecino(document.getElementById('f-vecino').value);
+      const cat = document.getElementById('f-cat').value;
+      const dueno = document.getElementById('f-dueno').value;
+      const cant = parseInt(document.getElementById('f-cant').value,10);
+      const fechaISO = document.getElementById('f-fecha').value;
+      const caravanaRaw = document.getElementById('f-caravana').value.trim();
+      const obs = document.getElementById('f-obs').value.trim();
+      // se valida TODO antes de tocar stock o mandar nada
+      if(!vecino){ toast('Escribí el nombre del vecino'); return; }
+      if(caravanaRaw && !/^\d{8,}$/.test(caravanaRaw)){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
+      const a = estado.potreros[nombre].animales;
+      const key = claveAnimal(cat, dueno);
+      const disponibles = a[key] || 0;
+      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${nombre}`); return; }
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      const fecha = fechaISOaDisplay(fechaISO);
+      const eventId = crypto.randomUUID();
+      const d = {vecino, categoria: cat, dueno, cantidad: cant, caravana: caravanaRaw || null, obs: obs || null};
+      aplicarVecinoLocal('vecino_paso', nombre, d, fechaISO, eventId);
+      enviarEvento('vecino_paso', nombre, d, fecha, {eventId});
+      guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre]);
+      toast(`Anotado: ${cant} ${cat} en el campo del vecino ${vecino}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
 }
 
 /* ======================= RESUMEN GENERAL ======================= */
@@ -7022,6 +7093,22 @@ async function cargarStock(){
     });
   } else {
     avisoDesap.innerHTML = '';
+  }
+  // 29/10/2026: animales en campos vecinos. No suman a los totales ni a la UG; el aviso abre 🏡 Vecinos.
+  const avisoVec = document.getElementById('stock-vecinos-aviso');
+  const enVecinos = listarVecinos().map(n=>({n, t: totalAnimalesVecino(estado.vecinos[n])})).filter(x=> x.t > 0);
+  if(avisoVec){
+    if(enVecinos.length){
+      const totalVec = enVecinos.reduce((s,x)=> s + x.t, 0);
+      avisoVec.innerHTML = `<div style="background:#eaf2f8;border-left:3px solid #3f6b8f;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#1f4566;cursor:pointer;">
+        🏡 En campos vecinos: ${totalVec} animal${totalVec===1?'':'es'} (${enVecinos.map(x=>`${esc(x.n)} ${x.t}`).join(', ')}). <span style="text-decoration:underline;">Ver</span>
+      </div>`;
+      avisoVec.querySelector('div').addEventListener('click', ()=>{
+        document.getElementById('modal-stock').style.display = 'none';
+        renderVecinosLista();
+        document.getElementById('modal-vecinos').style.display = 'flex';
+      });
+    } else avisoVec.innerHTML = '';
   }
 
   const totalesPorCategoria = {};
@@ -8155,6 +8242,7 @@ function renderDesaparecidosLista(){
         <button class="btn btn-agregar" data-encontrado="${esc(c.casoId)}">✅ Encontrado</button>
         <button class="btn btn-secundario" data-perdido="${esc(c.casoId)}" style="color:var(--rojo-hacienda);">❌ Dar por perdido</button>
         <button class="btn btn-secundario" data-muerte-desap="${esc(c.casoId)}" style="color:var(--rojo-hacienda);">🪦 Dar muerte</button>
+        <button class="btn btn-secundario" data-vecino-desap="${esc(c.casoId)}">🏡 Apareció en vecino</button>
       </div>
       <div id="form-resolver-${esc(c.casoId)}" style="display:none;margin-top:8px;"></div>
     </div>
@@ -8178,6 +8266,12 @@ function renderDesaparecidosLista(){
       guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
       if(seleccionActual) renderDetalle(seleccionActual);
       toast('Caso cerrado como pérdida');
+    });
+  });
+  cont.querySelectorAll('[data-vecino-desap]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const caso = casos.find(c=>c.casoId===btn.dataset.vecinoDesap);
+      if(caso) abrirFormularioVecinoDesap(caso);
     });
   });
   cont.querySelectorAll('[data-muerte-desap]').forEach(btn=>{
@@ -8229,6 +8323,150 @@ function abrirFormularioMuerteDesaparecido(caso){
     toast(cant<caso.pendiente ? `Se confirmó la muerte de ${cant}, sigue el caso abierto por ${caso.pendiente-cant}` : 'Caso cerrado como muerte');
   });
   document.getElementById('md-cancelar').addEventListener('click', ()=>{
+    cont.style.display = 'none'; cont.innerHTML = '';
+  });
+}
+/* ===== 🏡 Vecinos: ventana (Herramientas) y registro desde Desaparecidos (29/10/2026, a pedido de Pedro) ===== */
+function totalAnimalesVecino(v){
+  return v ? Object.values(v.animales || {}).reduce((s,n)=> s + (n||0), 0) : 0;
+}
+function historialVecinoHTML(v){
+  const lista = v.historial || [];
+  return `<details class="historial-det historial-det-lista"><summary>Historial (${lista.length})</summary>${lista.length
+    ? lista.map(h=>`<div class="hist-item ${esc(h.tipo)}"><span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}</div>`).join('')
+    : '<div class="hist-vacio">Todavía no hay movimientos con este vecino.</div>'}</details>`;
+}
+function tarjetaVecinoHTML(nombre, conAcciones){
+  const v = estado.vecinos[nombre];
+  const filas = detalleAnimales(v.animales);
+  const total = totalAnimalesVecino(v);
+  return `<div class="potrero-card vec-tarjeta" data-vec-nombre="${esc(nombre)}">
+    <div class="nombre">🏡 ${esc(nombre)}</div>
+    <div style="font-size:12.5px;color:var(--texto-suave);margin-top:4px;">${filas.length
+      ? filas.map(x=>`${x.cant} ${esc(x.cat)} · ${esc(textoFirma(x.dueno))}`).join('<br>') + ` — total ${total}`
+      : 'Sin animales en este campo'}</div>
+    ${conAcciones ? `<div class="form-botones" style="margin-top:8px;">
+      <button class="btn btn-agregar" data-vec-accion="volvio">↩ Volvió</button>
+      <button class="btn btn-secundario" data-vec-accion="perdida" style="color:var(--rojo-hacienda);">❌ Dar por perdido</button>
+      <button class="btn btn-secundario" data-vec-accion="muerte" style="color:var(--rojo-hacienda);">🪦 Muerte</button>
+    </div>
+    <div class="vec-form" style="display:none;margin-top:8px;"></div>` : ''}
+    ${historialVecinoHTML(v)}
+  </div>`;
+}
+function formVecinoHTML(nombre, accion){
+  const filas = detalleAnimales(estado.vecinos[nombre].animales);
+  const opciones = filas.map(x=>`<option value="${esc(claveAnimal(x.cat, x.dueno))}">${esc(x.cat)} · ${esc(textoFirma(x.dueno))} (hay ${x.cant})</option>`).join('');
+  const esTerneros = !!(filas.length && filas[0].cat === 'Terneros');
+  const hoy = fechaISOHoy();
+  let extra = '';
+  if(accion==='volvio') extra = `<div class="form-row"><label>Potrero al que vuelve</label><select data-vf="potrero"><option value="">Elegí…</option>${opcionesPotreros()}</select></div>`;
+  if(accion==='muerte') extra = `<div class="form-row" data-vf-grupo-fila style="display:${esTerneros?'':'none'};"><label>Ternero</label><select data-vf="grupo">${opcionesGrupoTernero()}</select></div>
+    <div class="form-row"><label>Caravana (opcional)</label><input type="text" data-vf="caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>`;
+  const etiqueta = {volvio: 'Registrar vuelta', perdida: 'Dar por perdido', muerte: 'Registrar muerte'}[accion];
+  return `<div class="form-accion">
+    <div class="form-row"><label>Categoría</label><select data-vf="clave">${opciones}</select></div>
+    <div class="form-row"><label>Cantidad</label><input type="number" data-vf="cant" min="1" value="1"></div>
+    <div class="form-row"><label>Fecha</label><input type="date" data-vf="fecha" value="${hoy}" max="${hoy}"></div>
+    ${extra}
+    <div class="form-botones"><button class="btn btn-agregar" data-vec-confirmar="${accion}">${etiqueta}</button><button class="btn btn-secundario" data-vec-cancelar="1">Cancelar</button></div>
+  </div>`;
+}
+function renderVecinosLista(){
+  const cont = document.getElementById('vecinos-lista');
+  const nombres = listarVecinos();
+  if(!nombres.length){ cont.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Sin animales en campos vecinos.</p>'; return; }
+  const conStock = nombres.filter(n=> totalAnimalesVecino(estado.vecinos[n]) > 0);
+  const sinStock = nombres.filter(n=> !(totalAnimalesVecino(estado.vecinos[n]) > 0));
+  let html = conStock.length ? conStock.map(n=> tarjetaVecinoHTML(n, true)).join('')
+    : '<p style="font-size:13px;color:var(--texto-suave);">Sin animales en campos vecinos.</p>';
+  if(sinStock.length) html += `<details class="historial-det historial-det-lista" style="margin-top:10px;"><summary>Vecinos sin animales (${sinStock.length})</summary>${sinStock.map(n=> tarjetaVecinoHTML(n, false)).join('')}</details>`;
+  cont.innerHTML = html;
+}
+function abrirFormVecino(card, accion){
+  const f = card.querySelector('.vec-form');
+  f.innerHTML = formVecinoHTML(card.dataset.vecNombre, accion);
+  f.style.display = 'block';
+}
+/* Confirma una acción de la tarjeta de un vecino: valida todo (cantidad contra el stock del vecino, potrero, caravana,
+   grupo de terneros) ANTES de tocar nada, y después aplica y manda el evento con el mismo eventId. */
+function confirmarAccionVecino(card, accion){
+  const nombre = card.dataset.vecNombre;
+  const v = estado.vecinos[nombre];
+  const f = card.querySelector('.vec-form');
+  if(!v || !f) return;
+  const campo = sel => f.querySelector(`[data-vf="${sel}"]`);
+  const clave = campo('clave').value;
+  const {cat, dueno} = partesClave(clave);
+  const cant = parseInt(campo('cant').value, 10);
+  const fechaISO = campo('fecha').value;
+  const disponibles = v.animales[clave] || 0;
+  if(!cant || cant < 1){ toast('Ingresá una cantidad válida'); return; }
+  if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${nombre}`); return; }
+  if(!fechaISO){ toast('Elegí una fecha'); return; }
+  const fecha = fechaISOaDisplay(fechaISO);
+  const eventId = crypto.randomUUID();
+  const d = {vecino: nombre, categoria: cat, dueno: dueno || null, cantidad: cant};
+  if(accion==='volvio'){
+    const destino = campo('potrero').value;
+    if(!destino || !estado.potreros[destino]){ toast('Elegí el potrero al que vuelve'); return; }
+    aplicarVecinoLocal('vecino_retorno', destino, d, fechaISO, eventId);
+    enviarEvento('vecino_retorno', destino, d, fecha, {eventId});
+    guardarEstado(); actualizarTodo(); publicarStockPotreros([destino]);
+    toast(`Volvieron ${cant} ${cat} de ${nombre} a ${destino}`);
+  } else if(accion==='perdida'){
+    if(!confirm(`¿Dar por perdido definitivamente: ${cant} ${cat}${dueno?' de '+dueno:''} que están en ${nombre}? No se puede deshacer.`)) return;
+    aplicarVecinoLocal('vecino_perdida', ESTABLECIMIENTO, d, fechaISO, eventId);
+    enviarEvento('vecino_perdida', ESTABLECIMIENTO, d, fecha, {eventId});
+    guardarEstado(); actualizarTodo();
+    toast(`Pérdida registrada (${nombre})`);
+  } else if(accion==='muerte'){
+    const caravanaRaw = campo('caravana').value.trim();
+    if(caravanaRaw && !/^\d{8,}$/.test(caravanaRaw)){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
+    const grupo = cat==='Terneros' ? grupoTerneroValido(campo('grupo').value) : null;
+    if(cat==='Terneros' && !grupo){ toast('Elegí si el ternero es de temporada o marcado'); return; }
+    const dm = Object.assign({}, d, {caravana: caravanaRaw || null}, grupo ? {grupoTernero: grupo} : {});
+    aplicarVecinoLocal('vecino_muerte', ESTABLECIMIENTO, dm, fechaISO, eventId);
+    enviarEvento('vecino_muerte', ESTABLECIMIENTO, dm, fecha, {eventId});
+    guardarEstado(); actualizarTodo();
+    toast(`Muerte registrada (${nombre})`);
+  }
+  renderVecinosLista();
+}
+/* "Apareció en vecino" (Desaparecidos): cierra (parcial o total) el caso y el animal pasa a la cuenta del vecino. No toca
+   el potrero de origen: ya se le había restado al declarar la desaparición. */
+function abrirFormularioVecinoDesap(caso){
+  const cont = document.getElementById(`form-resolver-${caso.casoId}`);
+  cont.style.display = 'block';
+  cont.innerHTML = `
+    <p style="font-size:12px;color:var(--texto-suave);margin:0 0 6px 0;">Apareció en el campo de un vecino: cierra el caso y el animal queda en la cuenta de ese vecino (🏡 Vecinos).</p>
+    <div class="form-row"><label>Cantidad encontrada en el vecino</label><input type="number" id="fv-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
+    <div class="form-row"><label>Vecino</label><input type="text" id="fv-vecino" list="dl-vecinos-desap" maxlength="40" placeholder="Nombre del vecino"><datalist id="dl-vecinos-desap">${listarVecinos().map(v=>`<option value="${esc(v)}"></option>`).join('')}</datalist></div>
+    <div class="form-row"><label>Fecha</label><input type="date" id="fv-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+    <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="fv-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="fv-confirmar">Confirmar</button>
+      <button class="btn btn-secundario" id="fv-cancelar">Cancelar</button>
+    </div>`;
+  document.getElementById('fv-confirmar').addEventListener('click', ()=>{
+    const vecino = normalizarVecino(document.getElementById('fv-vecino').value);
+    const cant = parseInt(document.getElementById('fv-cant').value,10);
+    const fechaISO = document.getElementById('fv-fecha').value;
+    const caravanaRaw = document.getElementById('fv-caravana').value.trim();
+    if(!vecino){ toast('Escribí el nombre del vecino'); return; }
+    if(!cant || cant<1 || cant>caso.pendiente){ toast(`Ingresá una cantidad entre 1 y ${caso.pendiente}`); return; }
+    if(caravanaRaw && !/^\d{8,}$/.test(caravanaRaw)){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
+    if(!fechaISO){ toast('Elegí una fecha'); return; }
+    const fecha = fechaISOaDisplay(fechaISO);
+    const eventId = crypto.randomUUID();
+    const d = {vecino, categoria: caso.categoria, dueno: caso.dueno || null, cantidad: cant, casoId: caso.casoId, caravana: caravanaRaw || null, obs: null};
+    aplicarVecinoLocal('vecino_aparecido', caso.potreroOrigen, d, fechaISO, eventId);
+    enviarEvento('vecino_aparecido', caso.potreroOrigen, d, fecha, {eventId});
+    guardarEstado(); actualizarTodo(); renderDesaparecidosLista();
+    if(seleccionActual) renderDetalle(seleccionActual);
+    toast(`${cant} ${caso.categoria} anotado${cant===1?'':'s'} en el campo de ${vecino}`);
+  });
+  document.getElementById('fv-cancelar').addEventListener('click', ()=>{
     cont.style.display = 'none'; cont.innerHTML = '';
   });
 }
@@ -8327,6 +8565,30 @@ document.getElementById('btn-desaparecidos').addEventListener('click', ()=>{
   const selDueno = document.getElementById('muertes-filtro-dueno');
   selDueno.innerHTML = '<option value="">Todos</option>' + opcionesDuenos();
   document.getElementById('modal-desaparecidos').style.display = 'flex';
+});
+// 29/10/2026: ventana 🏡 Vecinos. Los clics de las tarjetas van por delegación porque la lista se redibuja con innerHTML.
+const btnVecinos = document.getElementById('btn-vecinos');
+if(btnVecinos) btnVecinos.addEventListener('click', ()=>{
+  renderVecinosLista();
+  document.getElementById('modal-vecinos').style.display = 'flex';
+});
+document.getElementById('vecinos-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-vecinos').style.display = 'none';
+});
+const vecinosLista = document.getElementById('vecinos-lista');
+vecinosLista.addEventListener('click', (ev)=>{
+  const abrir = ev.target.closest('[data-vec-accion]');
+  const confirmar = ev.target.closest('[data-vec-confirmar]');
+  const cancelar = ev.target.closest('[data-vec-cancelar]');
+  if(abrir) abrirFormVecino(abrir.closest('.vec-tarjeta'), abrir.dataset.vecAccion);
+  else if(confirmar) confirmarAccionVecino(confirmar.closest('.vec-tarjeta'), confirmar.dataset.vecConfirmar);
+  else if(cancelar){ const f = cancelar.closest('.vec-form'); f.style.display = 'none'; f.innerHTML = ''; }
+});
+vecinosLista.addEventListener('change', (ev)=>{
+  if(ev.target.dataset && ev.target.dataset.vf === 'clave'){
+    const grupo = ev.target.closest('.vec-form').querySelector('[data-vf-grupo-fila]');
+    if(grupo) grupo.style.display = partesClave(ev.target.value).cat === 'Terneros' ? '' : 'none';
+  }
 });
 document.getElementById('desaparecidos-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-desaparecidos').style.display = 'none';
