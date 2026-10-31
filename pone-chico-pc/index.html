@@ -1108,6 +1108,7 @@
     <h3>🔎 Buscar caravana</h3>
     <button class="btn-cerrar-x" id="caravana-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Escribí el número visual de la caravana (los 8 dígitos) para ver de qué animal se trata y si está en período de espera.</p>
+    <p class="modal-info" id="cv-copia" style="display:none;"></p>
     <div class="form-row">
       <label>Caravana</label>
       <input type="tel" id="cv-numero" inputmode="numeric" placeholder="Ej: 57179343" maxlength="15">
@@ -1961,6 +1962,9 @@ function uuidDerivado(base, sufijo){
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
 const VERSION_APP = 'pc-2.17';
+/* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
+   "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
+const PADRON_OFFLINE = false;
 /* `opciones` (opcional): {eventId} para fijar el id del evento, y {establecimiento}
    para escribirlo en el stream de OTRO establecimiento (traslados entre campos; la
    cola guarda el establecimiento destino junto con el evento). */
@@ -2038,13 +2042,14 @@ function vueltaDeCola(nombre, unaVuelta){
    le agrega `id` como desempate (en producción hay eventos con el mismo creado_en hasta el microsegundo, y
    sin un orden total una fila en el borde de una página se perdería o se repetiría). Si una página falla
    devuelve ese error y nada de lo anterior: el que llama no aplica la mitad. `alLote(n)` avisa cuántas
-   filas lleva. Sin CONFIG.colaOrdenada hace una sola consulta, como antes. */
+   filas lleva. Sin CONFIG.colaOrdenada hace una sola consulta, como antes.
+   `desempate` (31/10/2026): otra columna única cuando la tabla no tiene `id` (animales_caravana: id8). */
 const TAM_PAGINA = 1000;
-async function traerTodo(armar, alLote){
+async function traerTodo(armar, alLote, desempate){
   if(!CONFIG.colaOrdenada) return await armar();
   const data = [];
   for(let desde = 0; ; desde += TAM_PAGINA){
-    const res = await armar().order('id', {ascending:true}).range(desde, desde + TAM_PAGINA - 1);
+    const res = await armar().order(desempate || 'id', {ascending:true}).range(desde, desde + TAM_PAGINA - 1);
     if(res.error) return res;
     const lote = res.data || [];
     data.push(...lote);
@@ -3422,6 +3427,9 @@ async function sincronizar(mostrarToast){
       if(mostrarToast) toast(`Sincronizado: ${cambios} movimiento${cambios===1?'':'s'} de otro dispositivo`);
     }
     await publicarStockPotreros(esPrimeraSync ? Object.keys(estado.potreros) : [...potrerosSucios]);
+    // 31/10/2026: copia del padrón para Buscar caravana sin señal (La Vuelta, móvil y Campo). En segundo plano: no se
+    // espera, no frena el indicador y nunca falla (actualizarPadronLocal atrapa todo). Diferencias cada 30 min como mucho.
+    if(PADRON_OFFLINE) actualizarPadronLocal();
   }catch(e){
     console.warn('Error al sincronizar', e);
     if(CONFIG.colaOrdenada) registrarFalloCola('lectura', e, 0);
@@ -9947,17 +9955,168 @@ function normalizarCaravana(txt){
   return d.slice(-8).padStart(8,'0');   // el EID trae 15, el visual 8
 }
 
+/* ---------- PADRÓN SIN SEÑAL (31/10/2026, CONFIG.padronOffline: La Vuelta, móvil y Campo) ----------
+   Copia del padrón (animales_caravana de este establecimiento) en IndexedDB, base `potreros_padron` (aparte de
+   `potreros_fotos`: subirle la versión a esa dejaría a la cola de fotos sin poder abrirla). Un solo registro por
+   establecimiento: {establecimiento, dispositivo, animales:{id8: fila}, n, maxLectura, completaEn, actualizadoEn}.
+   Se baja desde sincronizar(): entera la primera vez y una vez por día; si no, diferencias (ultima_lectura >=) cada 30 min.
+   Vale solo para el ID de dispositivo que la bajó. Sin IndexedDB queda en memoria, como la cola de fotos.
+   Si la ficha empieza a mostrar una columna nueva, agregarla a PADRON_COLUMNAS. Detalle en CLAUDE.md. */
+const PADRON_COLUMNAS = 'id8,sexo,categoria,gen,propietario,potrero,estado_carencia,fecha_apto,producto_carencia,proximo_tratamiento,ultimo_peso,peso_fecha,ultima_lectura,estado_vida,baja_motivo,baja_fecha,baja_guia,pesadas,ganancia_diaria,rodeo,rodeo_fecha,nota,nota_fecha';
+const PADRON_CADA_MS = 30 * 60 * 1000;          // diferencias: cada media hora como mucho
+const PADRON_COMPLETA_MS = 24 * 60 * 60 * 1000; // bajada entera: una vez por día
+const PADRON_VIEJO_DIAS = 7;                    // desde ahí la ficha avisa que la copia es vieja
+const PADRON_ESPERA_MS = 6000;                  // con copia, si Supabase no contesta en 6 s se usa la copia
+const padronLocal = (function(){
+  const NOMBRE_DB = 'potreros_padron', NOMBRE_STORE = 'padron';
+  const enMemoria = new Map();
+  let dbPromesa = null;
+  function abrir(){
+    if(!dbPromesa){
+      dbPromesa = new Promise(ok => {
+        try{
+          if(typeof indexedDB === 'undefined' || !indexedDB){ ok(null); return; }
+          const req = indexedDB.open(NOMBRE_DB, 1);
+          req.onupgradeneeded = () => { if(!req.result.objectStoreNames.contains(NOMBRE_STORE)) req.result.createObjectStore(NOMBRE_STORE, {keyPath: 'establecimiento'}); };
+          req.onsuccess = () => ok(req.result);
+          req.onerror = () => ok(null);
+          req.onblocked = () => ok(null);
+        }catch(e){ ok(null); }
+      });
+    }
+    return dbPromesa;
+  }
+  function operar(db, modo, fn){
+    return new Promise((ok, no) => {
+      const t = db.transaction(NOMBRE_STORE, modo);
+      const peticion = fn(t.objectStore(NOMBRE_STORE));
+      t.oncomplete = () => ok(peticion ? peticion.result : undefined);
+      t.onerror = () => no(t.error);
+      t.onabort = () => no(t.error || new Error('transaccion abortada'));
+    });
+  }
+  async function hacer(modo, fn, respaldo){
+    const db = await abrir();
+    if(db){
+      try{ return await operar(db, modo, fn); }
+      catch(e){ console.warn('IndexedDB del padrón falló, se usa la memoria', e); }
+    }
+    return respaldo();
+  }
+  async function borrar(){ await hacer('readwrite', st => st.delete(ESTABLECIMIENTO), () => { enMemoria.delete(ESTABLECIMIENTO); }); }
+  return {
+    async leer(){
+      const rec = (await hacer('readonly', st => st.get(ESTABLECIMIENTO), () => enMemoria.get(ESTABLECIMIENTO))) || null;
+      if(!rec || !rec.animales) return null;
+      if(rec.dispositivo !== idDispositivo()){ await borrar(); return null; } // después de "Restablecer" (ID nuevo)
+      return rec;
+    },
+    async guardar(rec){ await hacer('readwrite', st => st.put(rec), () => { enMemoria.set(rec.establecimiento, rec); }); },
+    borrar
+  };
+})();
+/* Nunca rechaza: devuelve la copia, o null si no se pudo. */
+let _actualizandoPadron = null;
+function actualizarPadronLocal(){
+  if(!PADRON_OFFLINE) return Promise.resolve(null);
+  if(_actualizandoPadron) return _actualizandoPadron;
+  const client = clienteSupabase();
+  if(!client || !navigator.onLine) return Promise.resolve(null);
+  if(CLAVE_CAMPO_ACTIVA && (!claveCampoGuardada() || _claveGuardadaMala)) return Promise.resolve(null);
+  _actualizandoPadron = (async ()=>{
+    try{
+      // el primer await cede el turno: el finally corre DESPUÉS de que _actualizandoPadron quedó asignada
+      const previo = await padronLocal.leer();
+      const ahora = Date.now();
+      const completa = !previo || !previo.maxLectura || !(ahora - Date.parse(previo.completaEn) < PADRON_COMPLETA_MS);
+      if(!completa && ahora - Date.parse(previo.actualizadoEn) < PADRON_CADA_MS) return previo;
+      const desde = completa ? null : previo.maxLectura;
+      const res = await traerTodo(()=>{
+        let q = client.from(TABLA_CARAVANAS).select(PADRON_COLUMNAS).eq('establecimiento', ESTABLECIMIENTO);
+        if(desde) q = q.gte('ultima_lectura', desde);
+        return q;
+      }, null, 'id8');
+      if(!res || res.error || !Array.isArray(res.data)) return previo;
+      const filas = limpiarTextoRemoto(res.data);
+      if(completa && !filas.length && previo && previo.n > 0) return previo; // vacío = clave mala / RLS: no se pisa
+      const animales = completa ? {} : Object.assign({}, previo.animales);
+      filas.forEach(f=>{ if(f && /^\d{8}$/.test(String(f.id8 || ''))) animales[f.id8] = f; });
+      let maxLectura = null;
+      Object.values(animales).forEach(f=>{
+        const l = f.ultima_lectura ? String(f.ultima_lectura).slice(0, 10) : '';
+        if(l && (!maxLectura || l > maxLectura)) maxLectura = l;
+      });
+      const iso = new Date().toISOString();
+      const rec = { establecimiento: ESTABLECIMIENTO, dispositivo: idDispositivo(), animales, n: Object.keys(animales).length,
+        maxLectura, completaEn: completa ? iso : previo.completaEn, actualizadoEn: iso };
+      await padronLocal.guardar(rec);
+      return rec;
+    }catch(e){
+      console.warn('No se pudo actualizar la copia del padrón', e);
+      return null;
+    }finally{
+      _actualizandoPadron = null;
+    }
+  })();
+  return _actualizandoPadron;
+}
+function textoFechaCopia(iso){
+  const d = new Date(iso);
+  if(isNaN(d)) return '?';
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${horaCorta(iso)}`;
+}
+function diasDeCopia(iso){
+  const t = Date.parse(iso);
+  return isNaN(t) ? null : Math.floor((Date.now() - t) / 86400000);
+}
+function avisoCopiaPadronHTML(r){
+  const dias = diasDeCopia(r.fechaCache);
+  const vieja = dias != null && dias >= PADRON_VIEJO_DIAS;
+  return `<p class="modal-info" style="color:${vieja ? 'var(--rojo-hacienda)' : '#8f5f12'};font-weight:600;">📴 Sin señal: datos del padrón al ${esc(textoFechaCopia(r.fechaCache))}`
+    + (vieja ? `. ⚠ La copia tiene ${dias} días: puede haber tratamientos o bajas que no figuran. Confirmá con señal antes de mandar a faena.` : '')
+    + '</p>';
+}
+async function buscarEnPadronLocal(id8, motivo){
+  const copia = await padronLocal.leer();
+  if(!copia) return {error: motivo};
+  return {animal: copia.animales[id8] || null, deCache: true, fechaCache: copia.actualizadoEn};
+}
+async function mostrarEstadoCopiaPadron(){
+  const el = document.getElementById('cv-copia');
+  if(!el) return;
+  if(!PADRON_OFFLINE){ el.style.display = 'none'; return; }
+  const copia = await padronLocal.leer();
+  el.style.display = '';
+  el.textContent = copia
+    ? `📦 Copia para usar sin señal: ${copia.n} caravanas, datos al ${textoFechaCopia(copia.actualizadoEn)}.`
+    : 'Todavía no hay copia del padrón en este celular: abrí la app con señal (y con la clave del campo) para que se baje sola.';
+}
+
 async function buscarCaravana(id8){
   const client = clienteSupabase();
+  // 31/10/2026 (CONFIG.padronOffline): sin señal va directo a la copia del celular, si la hay
+  if(PADRON_OFFLINE && (!client || !navigator.onLine)) return await buscarEnPadronLocal(id8, client ? 'sin señal' : 'sin conexión');
   if(!client) return {error:'sin conexión'};
-  try{
-    const res = await client.from(TABLA_CARAVANAS).select('*')
-      .eq('establecimiento', ESTABLECIMIENTO).eq('id8', id8).limit(1);
-    if(res.error) return {error: res.error.message || 'error de consulta'};
-    return {animal: limpiarTextoRemoto((res.data && res.data[0]) || null)};
-  }catch(e){
-    return {error:'sin señal'};
-  }
+  const consulta = (async ()=>{
+    try{
+      const res = await client.from(TABLA_CARAVANAS).select('*')
+        .eq('establecimiento', ESTABLECIMIENTO).eq('id8', id8).limit(1);
+      if(res.error) return {error: res.error.message || 'error de consulta'};
+      return {animal: limpiarTextoRemoto((res.data && res.data[0]) || null)};
+    }catch(e){
+      return {error:'sin señal'};
+    }
+  })();
+  if(!PADRON_OFFLINE) return await consulta;
+  const copia = await padronLocal.leer();
+  if(!copia) return await consulta;   // sin copia: igual que siempre
+  // con copia: si la consulta falla o no contesta en PADRON_ESPERA_MS (señal que "está" pero no anda), se usa la copia
+  let reloj = null;
+  const r = await Promise.race([consulta, new Promise(ok => { reloj = setTimeout(() => ok({error:'sin respuesta'}), PADRON_ESPERA_MS); })]);
+  clearTimeout(reloj);
+  if(!r.error) return r;
+  return {animal: copia.animales[id8] || null, deCache: true, fechaCache: copia.actualizadoEn};
 }
 
 /* La carencia, resuelta con la fecha de HOY del celular (1/10/2026).
@@ -10138,11 +10297,15 @@ async function ejecutarBusquedaCaravana(){
     caja.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">No se pudo consultar (${esc(r.error)}). Necesitás señal para buscar una caravana.</p>`;
     return;
   }
+  // 31/10/2026: si vino de la copia del celular, arriba de todo dice de qué fecha son los datos
+  const avisoCopia = r.deCache ? avisoCopiaPadronHTML(r) : '';
   if(!r.animal){
-    caja.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Puede ser un animal que nunca pasó por la manga, o un número mal tipeado.</p>`;
+    caja.innerHTML = avisoCopia + (r.deCache
+      ? `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en la copia del padrón de este celular. Puede ser un animal que todavía no bajó a la copia, uno que nunca pasó por la manga, o un número mal tipeado. Con señal se puede volver a buscar.</p>`
+      : `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Puede ser un animal que nunca pasó por la manga, o un número mal tipeado.</p>`);
     return;
   }
-  caja.innerHTML = fichaCaravanaHTML(r.animal);
+  caja.innerHTML = avisoCopia + fichaCaravanaHTML(r.animal);
 }
 
 if(CONFIG.caravanasHabilitado){
@@ -10152,6 +10315,7 @@ if(CONFIG.caravanasHabilitado){
     bc.addEventListener('click', ()=>{
       document.getElementById('cv-numero').value = '';
       document.getElementById('cv-resultado').innerHTML = '';
+      mostrarEstadoCopiaPadron().catch(()=>{});
       document.getElementById('modal-caravana').style.display = 'flex';
     });
   }
@@ -10354,10 +10518,13 @@ scc.addEventListener('change', async ()=>{
   if(!id8){ quien.innerHTML = ''; return; }
   quien.innerHTML = '<p class="modal-info">Buscando…</p>';
   const r = await buscarCaravana(id8);
+  const deCopia = r.deCache ? ` <span style="color:#8f5f12;">(sin señal: padrón del ${esc(textoFechaCopia(r.fechaCache))})</span>` : '';
   if(r.error){
     quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">Sin señal para verificar la caravana ${id8}. Se va a guardar igual.</p>`;
   }else if(!r.animal){
-    quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
+    quien.innerHTML = r.deCache
+      ? `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en la copia del padrón de este celular. Revisá el número.${deCopia}</p>`
+      : `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
   }else{
     const a = r.animal;
     const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
@@ -10373,14 +10540,14 @@ scc.addEventListener('change', async ()=>{
        una carga con un número a revisar. Mismo criterio que "no está en el
        padrón", acá al lado, que también deja guardar. */
     if(a.estado_vida && a.estado_vida !== 'ACTIVO'){
-      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">📤 <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — <b>YA NO ESTÁ EN EL CAMPO</b> (${esc(resumenBaja(a))}). Revisá el número.</p>`;
+      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">📤 <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — <b>YA NO ESTÁ EN EL CAMPO</b> (${esc(resumenBaja(a))}). Revisá el número.${deCopia}</p>`;
       return;
     }
     // Por carenciaHoy() y no por a.estado_carencia: si el plazo venció entre
     // la última corrida de la PC y hoy, el padrón todavía lo trae NO APTO.
     const aviso = carenciaHoy(a).estado === 'NO APTO'
       ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${esc(a.fecha_apto||'?')}</b>` : '';
-    quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${esc(id8)}</b>: ${esc(partes.join(', '))}${aviso}</p>`;
+    quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${esc(id8)}</b>: ${esc(partes.join(', '))}${aviso}${deCopia}</p>`;
   }
 });
 /* Confirmación explícita de "no tiene caravana": deja constancia
@@ -12447,6 +12614,9 @@ document.getElementById('btn-restablecer').addEventListener('click', ()=>{
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   try{ localStorage.removeItem(DISPOSITIVO_KEY); }catch(e){}
   try{ localStorage.removeItem(POTREROS_NUEVOS_KEY); }catch(e){}
+  // 31/10/2026: también la copia del padrón (IndexedDB). No se espera: aunque no termine antes de recargar, la copia queda
+  // atada al ID de dispositivo recién borrado y padronLocal.leer() la descarta.
+  if(PADRON_OFFLINE){ try{ padronLocal.borrar().catch(()=>{}); }catch(e){} }
   location.reload();
 });
 

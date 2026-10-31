@@ -56,9 +56,9 @@ const PAGINAS = [
     ocultoPorConfig: { 'btn-caravana': 'caravanasHabilitado' },
     /* lo que la tabla "Según tu campo" de esta página da por hecho */
     esperado: {
-      'la-vuelta':   { claveCampo: true,  caravanasHabilitado: true,  duenoLabel: 'Firma' },
-      'maria-laura': { claveCampo: true,  caravanasHabilitado: true,  duenoLabel: 'Dueño' },
-      'pone-chico':  { claveCampo: false, caravanasHabilitado: false, duenoLabel: 'Dueño' },
+      'la-vuelta':   { claveCampo: true,  caravanasHabilitado: true,  duenoLabel: 'Firma', padronOffline: true },
+      'maria-laura': { claveCampo: true,  caravanasHabilitado: true,  duenoLabel: 'Dueño', padronOffline: false },
+      'pone-chico':  { claveCampo: false, caravanasHabilitado: false, duenoLabel: 'Dueño', padronOffline: false },
     },
   },
   {
@@ -68,9 +68,9 @@ const PAGINAS = [
     excepciones: SOLO_PC,
     ocultoPorConfig: { 'btn-caravana': 'caravanasHabilitado', 'btn-guias': 'guiasHabilitado', 'btn-pesadas': 'pesadasHistorial', 'btn-voz': 'siempre' },
     esperado: {
-      'la-vuelta':   { claveCampo: true,  caravanasHabilitado: true,  duenoLabel: 'Firma',  duenoObligatorio: false, guiasHabilitado: true,  dicoseHabilitado: true,  trasladoHabilitado: true,  pesadasHistorial: true,  usaExcelBridge: true,  mapLabels: false },
-      'maria-laura': { claveCampo: true,  caravanasHabilitado: true,  duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: true,  dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, usaExcelBridge: false, mapLabels: true },
-      'pone-chico':  { claveCampo: false, caravanasHabilitado: false, duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: false, dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, usaExcelBridge: false, mapLabels: true },
+      'la-vuelta':   { claveCampo: true,  caravanasHabilitado: true,  duenoLabel: 'Firma',  duenoObligatorio: false, guiasHabilitado: true,  dicoseHabilitado: true,  trasladoHabilitado: true,  pesadasHistorial: true,  usaExcelBridge: true,  mapLabels: false, padronOffline: true },
+      'maria-laura': { claveCampo: true,  caravanasHabilitado: true,  duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: true,  dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, usaExcelBridge: false, mapLabels: true, padronOffline: false },
+      'pone-chico':  { claveCampo: false, caravanasHabilitado: false, duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: false, dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, usaExcelBridge: false, mapLabels: true, padronOffline: false },
     },
   },
   {

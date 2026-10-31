@@ -531,7 +531,7 @@ encabezado de la app; hay un `href="#x"` sin su `id`; falta `btn-instructivo` (e
 app que no es o abre otra carpeta; falta el precache en un `sw.js` o hay uno de más; el botón no abre su carpeta en jsdom (con señal,
 y sin señal desde la caché como `blob:`); o la página gana scripts, enlaces externos o red. También da por hecha la tabla "Según tu
 campo" (`claveCampo`, `caravanasHabilitado`, `duenoLabel`, `duenoObligatorio`, `guiasHabilitado`, `dicoseHabilitado`,
-`trasladoHabilitado`, `pesadasHistorial`, `datosFaltantes`, `completarCsvBaston`, `usaExcelBridge`, `mapLabels`, `puntosSeed` de cada
+`trasladoHabilitado`, `pesadasHistorial`, `datosFaltantes`, `completarCsvBaston`, `usaExcelBridge`, `mapLabels`, `puntosSeed`, `padronOffline` de cada
 config): si cambian, hay que actualizar la tabla y la prueba. Antes de commitear un cambio de prueba, `node tests/sync-skill.js` (solo
 en la PC de Pedro).
 
@@ -680,6 +680,21 @@ solo lee; `buscarCaravana()` pide `select('*')`, así que la ficha los toma sola
 apenas existan las columnas (`supabase_rodeo_nota.sql`, que corre Pedro **antes**
 de publicar: sin las columnas la PC publica sin esos campos y la ficha queda
 como estaba). Sin dato la fila no aparece. Test: `tests/probar_ficha_rodeo_nota.js`.
+
+### Padrón sin señal (31/10/2026, a pedido de Pedro, `CONFIG.padronOffline`, solo La Vuelta móvil y Campo)
+
+"🔎 Buscar caravana" sin señal usa una copia del padrón guardada en el celular. La copia es la base IndexedDB `potreros_padron`
+(aparte de `potreros_fotos`: subirle la versión para agregar un store dejaría a la cola de fotos sin poder abrirla), con **un solo
+registro por establecimiento** `{establecimiento, dispositivo, animales:{id8: fila}, n, maxLectura, completaEn, actualizadoEn}`
+(guardarlo entero es atómico). Se actualiza desde `sincronizar()` en segundo plano: entera una vez por día (así entran las bajas y
+los cambios de carencia sin lectura nueva) y, si no, diferencias cada 30 min con `gte('ultima_lectura', maxLectura)` (`>=`: es una
+fecha sin hora). Paginado con `traerTodo(..., 'id8')`, porque `animales_caravana` no tiene `id`. Una bajada completa **vacía** no
+pisa una copia con datos (RLS contesta 200 vacío con la clave mala), y sin clave del campo ni se intenta. Con señal la búsqueda sigue
+igual; si el pedido falla o no contesta en 6 s, usa la copia y dice `📴 Sin señal: datos del padrón al …` (7 días o más, en rojo).
+Vale solo para el ID de dispositivo que la bajó: "Restablecer datos de fábrica" borra ese ID y la copia. No va a localStorage ni a
+`estado`, así que no sale en el Backup JSON. **Columnas:** la copia usa `PADRON_COLUMNAS`; si la ficha empieza a mostrar una columna
+nueva, agregarla ahí también (`tests/probar_padron_offline.js` compara la ficha desde la copia con la de la fila completa). Test:
+`tests/probar_padron_offline.js` (en el workflow). En jsdom solo se prueba el respaldo en memoria, no IndexedDB real.
 
 ### Datos faltantes (13/10/2026, a pedido de Pedro, solo PC de La Vuelta, `CONFIG.datosFaltantes`)
 
