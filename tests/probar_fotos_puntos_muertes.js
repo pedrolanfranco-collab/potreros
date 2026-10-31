@@ -241,6 +241,9 @@ async function probarArchivo(archivo){
     return d;
   };
 
+  chequear('el botón "📍 Aguadas / instalaciones" no está oculto (la PC lo tiene en su sub-menú; la móvil y Campo, en Herramientas)',
+    !!doc.getElementById('btn-puntos') && doc.getElementById('btn-puntos').style.display !== 'none');
+
   // =========================== PUNTOS (aguadas / instalaciones) ===========================
   // ---------- 1. Crear una manga con 2 fotos: punto_creado primero, las fotos se suben, después punto_foto ----------
   click(win, doc.getElementById('btn-puntos'));
