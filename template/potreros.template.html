@@ -83,6 +83,8 @@
   #main{flex:1;display:flex;min-height:0;}
   #map{flex:1;min-width:0;position:relative;background:#dce3d1;}
   .satelital-off{background:var(--tierra) !important;}
+  /* Capas de Aguadas / Instalaciones apagadas (31/10/2026): gris para que se note que no se ven */
+  .capa-off{background:#8c8c8c !important;}
   #sidebar{
     width:380px;
     min-width:320px;
@@ -646,6 +648,8 @@
   <div id="main">
     <div id="map">
       <button id="btn-satelital" style="position:absolute;top:14px;right:14px;z-index:800;background:var(--verde-monte);color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🛰 Satelital: ON</button>
+      <button id="btn-capa-agua" style="position:absolute;top:92px;left:10px;z-index:800;background:#3f6b8f;color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">💧 Aguadas: ON</button>
+      <button id="btn-capa-instalacion" style="position:absolute;top:132px;left:10px;z-index:800;background:#7a5236;color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🚧 Instalaciones: ON</button>
 <!-- @movil:start -->
       <button id="btn-gps" style="position:absolute;top:58px;right:14px;z-index:800;background:#2a6bd6;color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍 Mi ubicación</button>
       <div id="gps-info" style="display:none;position:absolute;top:102px;right:14px;z-index:800;background:#fff;border-radius:8px;padding:8px 12px;font-size:12px;max-width:190px;box-shadow:0 2px 8px rgba(0,0,0,0.3);color:var(--texto);line-height:1.4;"></div>
@@ -5354,6 +5358,56 @@ let modoColocarPunto = null; // {tipo, subtipo, nombre}
 const puntosLayers = {}; // id -> marker
 let avisoModo = null;
 
+/* Capas de Aguadas e Instalaciones (31/10/2026, a pedido de Pedro): se prenden y apagan con los botones de la izquierda del mapa.
+   La elección se recuerda por equipo y por campo (`<ESTABLECIMIENTO>_capas_puntos`, fuera de `estado`: no va al Backup ni a
+   Supabase). Por defecto, todo ON. No se usa L.layerGroup: cada marcador se agrega o se saca del mapa a mano (ver CLAUDE.md). */
+const CAPAS_PUNTOS_KEY = ESTABLECIMIENTO + '_capas_puntos';
+const CAPAS_PUNTO = {
+  agua: {boton: 'btn-capa-agua', etiqueta: '💧 Aguadas'},
+  instalacion: {boton: 'btn-capa-instalacion', etiqueta: '🚧 Instalaciones'}
+};
+function leerCapasPuntos(){
+  const capas = {agua: true, instalacion: true};
+  try{
+    const guardadas = JSON.parse(localStorage.getItem(CAPAS_PUNTOS_KEY) || 'null');
+    if(guardadas && typeof guardadas === 'object'){
+      Object.keys(CAPAS_PUNTO).forEach(t => { if(typeof guardadas[t] === 'boolean') capas[t] = guardadas[t]; });
+    }
+  }catch(e){ /* si el guardado está corrupto o no hay localStorage, todo queda prendido */ }
+  return capas;
+}
+let capasPuntos = leerCapasPuntos();
+function capaPuntoVisible(tipo){ return capasPuntos[tipo] !== false; }
+function actualizarBotonesCapas(){
+  Object.keys(CAPAS_PUNTO).forEach(t => {
+    const btn = document.getElementById(CAPAS_PUNTO[t].boton);
+    if(!btn) return;
+    const visible = capaPuntoVisible(t);
+    btn.textContent = CAPAS_PUNTO[t].etiqueta + (visible ? ': ON' : ': OFF');
+    btn.classList.toggle('capa-off', !visible);
+  });
+}
+/* Prende o apaga la capa de un tipo: agrega o saca del mapa cada marcador de ese tipo. Los que quedan fuera siguen guardados
+   en puntosLayers, así se prenden después sin volver a crearlos. */
+function ponerCapaPuntos(tipo, visible){
+  capasPuntos[tipo] = !!visible;
+  try{ localStorage.setItem(CAPAS_PUNTOS_KEY, JSON.stringify(capasPuntos)); }catch(e){}
+  (estado.puntos||[]).filter(p => p.tipo === tipo).forEach(p => {
+    const m = puntosLayers[p.id];
+    if(!m) return;
+    if(visible && !map.hasLayer(m)) m.addTo(map);
+    if(!visible && map.hasLayer(m)) map.removeLayer(m);
+  });
+  actualizarBotonesCapas();
+}
+/* Un punto que se carga en ESTE equipo con su capa apagada: se prende la capa para que se vea lo que se acaba de cargar.
+   Devuelve las etiquetas de las capas que prendió (para decirlo en el aviso). Un punto que llega de otro equipo no pasa por acá. */
+function prenderCapasSiApagadas(tipos){
+  const prendidas = [...new Set(tipos)].filter(t => !capaPuntoVisible(t));
+  prendidas.forEach(t => ponerCapaPuntos(t, true));
+  return prendidas.map(t => CAPAS_PUNTO[t].etiqueta);
+}
+
 function iconoPunto(tipo){
   const t = TIPOS_PUNTO[tipo];
   return L.divIcon({
@@ -5368,11 +5422,22 @@ function crearMarcadorPunto(punto){
 // @pc:start
   if(_reconstruyendo) return;
 // @pc:end
-  const marker = L.marker([punto.lat, punto.lon], {icon: iconoPunto(punto.tipo)}).addTo(map);
+  const marker = L.marker([punto.lat, punto.lon], {icon: iconoPunto(punto.tipo)});
   marker.bindPopup(popupPuntoHTML(punto));
   marker.on('popupopen', e => mostrarFotosEn(e.popup && e.popup.getElement && e.popup.getElement()));
+  // con su capa apagada el marcador queda guardado en puntosLayers pero fuera del mapa (ver ponerCapaPuntos)
+  if(capaPuntoVisible(punto.tipo)) marker.addTo(map);
   puntosLayers[punto.id] = marker;
 }
+/* Los dos botones de capas, a la izquierda del mapa. stopPropagation: el clic no tiene que llegar al mapa (si no, con el modo
+   "tocar el mapa" activo colocaría un punto debajo del botón). */
+Object.keys(CAPAS_PUNTO).forEach(t => {
+  document.getElementById(CAPAS_PUNTO[t].boton).addEventListener('click', e => {
+    e.stopPropagation();
+    ponerCapaPuntos(t, !capaPuntoVisible(t));
+  });
+});
+actualizarBotonesCapas();
 /* Lugar donde se encontró un animal muerto (formulario de muerte): se toca el mapa o, en el celular, se usa el GPS. */
 function pintarUbicMuerte(){
   // los dos formularios (muerte: f-…, y "Dar muerte" de Desaparecidos: md-…) comparten el lugar elegido
@@ -5462,7 +5527,10 @@ function verPuntoEnMapa(id){
   const p = (estado.puntos||[]).find(x => x.id === id);
   if(!p) return;
   document.getElementById('modal-puntos').style.display = 'none';
-  verUbicacionEnMapa({lat: p.lat, lon: p.lon, marker: puntosLayers[id] || null, popupHtml: popupPuntoHTML(p), icono: iconoPunto(p.tipo)});
+  // con la capa apagada su marcador no está en el mapa: se muestra uno temporal y la capa NO se prende
+  const apagada = !capaPuntoVisible(p.tipo);
+  verUbicacionEnMapa({lat: p.lat, lon: p.lon, marker: apagada ? null : (puntosLayers[id] || null), popupHtml: popupPuntoHTML(p), icono: iconoPunto(p.tipo)});
+  if(apagada) toast(`La capa ${CAPAS_PUNTO[p.tipo].etiqueta} está apagada: se muestra solo este punto`);
 }
 
 function colocarPuntoEn(latlng){
@@ -5478,6 +5546,7 @@ function colocarPuntoEn(latlng){
   const fotosNuevas = modoColocarPunto.fotos || [];
   estado.puntos.push(punto);
   crearMarcadorPunto(punto);
+  const capasPrendidas = prenderCapasSiApagadas([punto.tipo]);
   guardarEstado();
   renderListaPuntos();
   enviarEvento('punto_creado', ESTABLECIMIENTO, {id: punto.id, tipo: punto.tipo, subtipo: punto.subtipo, nombre: punto.nombre, lat: punto.lat, lon: punto.lon});
@@ -5485,7 +5554,7 @@ function colocarPuntoEn(latlng){
   fotosNuevas.forEach(b => encolarFoto('punto', punto.id, b, 'registro'));
   modoColocarPunto = null;
   ocultarAvisoModo();
-  toast(`${punto.subtipo} agregado al mapa`);
+  toast(`${punto.subtipo} agregado al mapa` + (capasPrendidas.length ? ` · se prendió la capa ${capasPrendidas.join(', ')}` : ''));
 }
 
 function mostrarAvisoModo(texto, alCancelar){
@@ -8678,9 +8747,10 @@ async function importarPuntosArchivo(archivo){
     enviarEvento('punto_creado', ESTABLECIMIENTO, {id: punto.id, tipo: punto.tipo, subtipo: punto.subtipo, nombre: punto.nombre, lat: punto.lat, lon: punto.lon});
     agregados++;
   });
+  const capasPrendidas = agregados ? prenderCapasSiApagadas([tipo]) : [];
   guardarEstado();
   renderListaPuntos();
-  toast(`${agregados} punto${agregados===1?'':'s'} importado${agregados===1?'':'s'}` + (saltados ? ` (${saltados} ya existían)` : ''));
+  toast(`${agregados} punto${agregados===1?'':'s'} importado${agregados===1?'':'s'}` + (saltados ? ` (${saltados} ya existían)` : '') + (capasPrendidas.length ? ` · se prendió la capa ${capasPrendidas.join(', ')}` : ''));
 }
 
 <!-- @pc:start -->
@@ -9021,7 +9091,7 @@ document.getElementById('np-colocar').addEventListener('click', ()=>{
   mostrarAvisoModo();
 });
 document.getElementById('np-cargar-seed').addEventListener('click', ()=>{
-  var agregados = 0, saltados = 0;
+  var agregados = 0, saltados = 0, tiposCargados = [];
   PUNTOS_SEED.forEach(function(seed){
     var yaExiste = estado.puntos.some(function(p){
       return Math.abs(p.lat-seed.lat)<0.00005 && Math.abs(p.lon-seed.lon)<0.00005;
@@ -9037,13 +9107,15 @@ document.getElementById('np-cargar-seed').addEventListener('click', ()=>{
     };
     estado.puntos.push(punto);
     crearMarcadorPunto(punto);
+    tiposCargados.push(punto.tipo);
     enviarEvento('punto_creado', ESTABLECIMIENTO, {id: punto.id, tipo: punto.tipo, subtipo: punto.subtipo, nombre: punto.nombre, lat: punto.lat, lon: punto.lon});
     agregados++;
   });
+  const capasPrendidas = prenderCapasSiApagadas(tiposCargados);
   guardarEstado();
   renderListaPuntos();
   document.getElementById('np-cargar-seed').textContent = '✅ Cargados';
-  toast(agregados + ' puntos cargados' + (saltados ? ` (${saltados} ya existían)` : ''));
+  toast(agregados + ' puntos cargados' + (saltados ? ` (${saltados} ya existían)` : '') + (capasPrendidas.length ? ` · se prendió la capa ${capasPrendidas.join(', ')}` : ''));
 });
 document.getElementById('np-importar').addEventListener('click', ()=>{
   document.getElementById('input-puntos').click();

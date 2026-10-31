@@ -881,6 +881,8 @@ y `MOMENTOS_FOTO`, su evento en los tres lugares y su `refrescar`.**
   `tests/probar_fotos_puntos_muertes.js` ahora reabre la app con el `localStorage` ya cargado (`levantar(archivo, servidor, almacen)`).
 - **Test**: `tests/probar_fotos_puntos_muertes.js` (9 variantes, en el workflow; verificado con mutaciones: todas en rojo salvo el chequeo de id por tipo, que es una defensa redundante porque un id inexistente igual se ignora).
 
+**Capas de Aguadas e Instalaciones (31/10/2026, a pedido de Pedro).** Los puntos de `TIPOS_PUNTO` se prenden y apagan con dos botones a la izquierda del mapa, debajo del zoom: `#btn-capa-agua` ("💧 Aguadas: ON/OFF") y `#btn-capa-instalacion` ("🚧 Instalaciones: ON/OFF"), en las 9 variantes (fuera de bloques `@`). La elección se guarda en `localStorage['<ESTABLECIMIENTO>_capas_puntos']` = `{"agua":true,"instalacion":true}` (por equipo y por campo, fuera de `estado`: no va al Backup ni a Supabase; por defecto todo ON). No se usa `L.layerGroup`: los stubs de Leaflet de las pruebas no lo tienen, así que cada marcador queda guardado en `puntosLayers[id]` y se agrega o se saca del mapa con `ponerCapaPuntos()` (`crearMarcadorPunto` solo lo agrega si su capa está visible). Un punto que llega de otro equipo no prende la capa; uno cargado acá con su capa apagada sí (`prenderCapasSiApagadas()`), y "🗺 Ver en el mapa" de un punto apagado muestra solo ese punto con un marcador temporal, sin prender la capa. Test: `tests/probar_capas_puntos.js` (en el workflow, las 9 variantes).
+
 ### Hermes (agente de WhatsApp de Pedro) y `scripts/hermes/` (25/10/2026, a pedido de Pedro)
 
 Hermes corre en la PC de Pedro (`C:\Users\Pedro\AppData\Local\hermes`, `hermes gateway restart`). Su servidor MCP
