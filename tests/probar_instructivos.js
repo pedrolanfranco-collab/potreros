@@ -38,11 +38,7 @@ const cfgs = Object.fromEntries(CAMPOS.map(c => [c, require(path.join(raiz, 'tem
    muestra; `encabezado(v)` = el texto exacto del encabezado de la app con ese número. */
 /* Lo que está en el código de Campo y de la móvil completa pero no se puede alcanzar desde la pantalla (solo la PC lo ve). */
 const SOLO_PC = {
-  'btn-puntos': 'Está en la lista de Herramientas con display:none y ningún código lo muestra en la móvil ni en Campo (solo la PC lo ve).',
-  'btn-resync-puntos': 'Igual que btn-puntos: oculto con display:none en la móvil y en Campo, solo lo ve la PC.',
-  'np-colocar': 'Botón de la ventana de Aguadas / instalaciones, que solo se abre con btn-puntos (oculto en la móvil y en Campo): solo la PC la ve.',
-  'np-importar': 'Botón de la ventana de Aguadas / instalaciones, que solo se abre con btn-puntos (oculto en la móvil y en Campo): solo la PC la ve.',
-  'np-cargar-seed': 'Botón de la ventana de Aguadas / instalaciones, que solo se abre con btn-puntos (oculto en la móvil y en Campo): solo la PC la ve.',
+  'btn-resync-puntos': 'Está en la lista de Herramientas con display:none y ningún código lo muestra en la móvil ni en Campo (solo la PC lo ve; 📍 Aguadas / instalaciones sí se ve desde el 31/10/2026).',
   'db-deshacer': 'Control de "Dibujar potrero", que solo se inicia desde btn-dibujar-potrero (solo la PC): en la móvil y en Campo el código está pero no hay cómo llegar.',
   'db-terminar': 'Control de "Dibujar potrero", que solo se inicia desde btn-dibujar-potrero (solo la PC): en la móvil y en Campo el código está pero no hay cómo llegar.',
   'db-cancelar': 'Control de "Dibujar potrero", que solo se inicia desde btn-dibujar-potrero (solo la PC): en la móvil y en Campo el código está pero no hay cómo llegar.',

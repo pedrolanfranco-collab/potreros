@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">3.77</span></li>
-    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">3.44</span></li>
-    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">2.15</span></li>
+    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">3.78</span></li>
+    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">3.45</span></li>
+    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">2.16</span></li>
   </ul>
   <p class="nota">La versión de tu celular está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.76</b>). Si tu número es más viejo, abrí la app con señal y esperá un momento: se actualiza sola.</p>
 </div>
@@ -123,6 +123,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>📍 Aguadas / instalaciones</b>: ahora está en 🛠 Herramientas. Marcá aguadas, mangas, corrales o el embarcadero en el mapa, con <b>hasta 3 fotos</b>, y mirá cada punto con <span class="b">🗺 Ver en el mapa</span>.</li>
       <li><b>🔎 Buscar caravana sin señal</b> <span class="campo">(solo La Vuelta)</span>: el celular guarda una copia del padrón y, sin señal, la búsqueda la usa y dice <b>“📴 Sin señal: datos del padrón al …”</b>. Si la copia tiene 7 días o más, lo avisa en rojo.</li>
     <li><b>🏡 Vecinos</b>: <span class="b">🏡 Al vecino</span> y <span class="b">↩ Volvió</span> aceptan <b>varias categorías</b> en un solo registro.</li>
     <li><b>Muertes</b>: en <span class="b">✕ Muerte</span> y en <span class="b">🪦 Dar muerte</span> (dentro de ❓ Desaparecidos) podés sacar <b>hasta 3 fotos</b> y marcar <b>dónde se encontró</b> el animal.</li>
@@ -170,6 +171,7 @@
         <li><a href="#backup">⬇ Hacer backup y ⬆ Importar backup</a></li>
         <li><a href="#sincronizar">🔄 Sincronizar ahora</a></li>
         <li><a href="#restablecer">↺ Restablecer datos de fábrica</a></li>
+        <li><a href="#puntos">📍 Aguadas / instalaciones</a></li>
         <li><a href="#reportes">🔧 Infraestructura y 🌾 Capín Annoni</a></li>
         <li><a href="#instructivo">📖 Instructivo</a></li>
       </ul>
@@ -562,6 +564,30 @@
   </div>
 </div>
 
+<div class="fn" id="puntos">
+  <h3>📍 Aguadas / instalaciones</h3>
+  <p class="para">Para qué sirve: marcar en el mapa las aguadas y las instalaciones del campo (bebederos, tanques, mangas, corrales, el embarcadero…), con fotos, para encontrarlas después. No son potreros: no llevan animales.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">📍 Aguadas / instalaciones</span> (en 🛠 Herramientas).</li>
+    <li>Elegí el <b>Tipo</b> (💧 Aguada / fuente de agua o 🚧 Instalación / camino) y el <b>Subtipo</b> (Bebedero, Represa, Tajamar, Arroyo, Cañada, Pozo, Molino, Tanque, Llaves, Bomba solar o eléctrica…; Tranquera, Manga, Corral, Bretes, Embarcadero, Cruce de camino, Alambrado/Portera…).</li>
+    <li>Si querés, escribí un <b>Nombre</b> (por ejemplo, “Manga vieja”).</li>
+    <li>Opcional: <span class="b">📷 Agregar foto (hasta 3)</span>.</li>
+    <li>Tocá <span class="b">📍 Elegir ubicación en el mapa</span>: la ventana se cierra y tocás el mapa donde está el punto. Las fotos van con el punto.</li>
+  </ol>
+  <p>Otras dos opciones de la misma ventana:</p>
+  <ul>
+    <li><span class="b">⬆ Importar de archivo (KML/KMZ/GPX)</span>: carga todos los puntos del archivo con el tipo y subtipo elegidos; los que ya existen casi en el mismo lugar se saltean.</li>
+    <li><span class="b">📥 Cargar bebederos y llaves de referencia</span>: carga la lista de referencia del monitor hidráulico. <span class="campo">Solo La Vuelta la trae (60 puntos); en los otros campos no carga ninguno.</span></li>
+  </ul>
+  <p>Abajo, la lista de puntos. Cada uno tiene:</p>
+  <ul>
+    <li><span class="b">🗺 Ver en el mapa</span>: cierra la ventana, acerca el mapa al punto y abre su globito con las fotos.</li>
+    <li><span class="b">📷 Agregar foto</span> (hasta 10 fotos por punto).</li>
+    <li><span class="b">Eliminar</span>: borra el punto en todos los celulares. Las fotos ya subidas quedan guardadas en el servidor.</li>
+  </ul>
+  <p class="nota">Las fotos se achican solas y, sin señal, esperan en el celular: abajo dice <b>“⏳ N fotos sin subir”</b> y salen cuando vuelve la señal.</p>
+</div>
+
 <div class="fn" id="reportes">
   <h3>🔧 Infraestructura y 🌾 Capín Annoni</h3>
   <p class="para">Para qué sirve: marcar en el mapa un problema (un caño, un bebedero o un alambrado roto) o un foco de capín annoni, para encontrarlo después.</p>
@@ -631,7 +657,7 @@
   <li><b>Lo que cargó otra persona u otro celular</b> no tiene botones en el potrero.</li>
   <li>Un <b>desaparecido que ya tiene resoluciones</b> (encontrado, perdido, muerte) no se puede borrar hasta borrar esas.</li>
   <li>Un <b>traslado</b> se borra (🗑) y se anula en los dos campos; no se edita.</li>
-  <li><b>Reportes</b> de Infraestructura o Capín: <span class="b">Eliminar</span>, en su lista.</li>
+  <li><b>Reportes</b> de Infraestructura o Capín y <b>puntos</b> de Aguadas / instalaciones: <span class="b">Eliminar</span>, en su lista.</li>
 </ul>
 <div class="caja aviso">
   <p><b>Esto no se arregla desde el celular: avisale a Pedro qué cargaste mal</b> (potrero, fecha y qué era):</p>

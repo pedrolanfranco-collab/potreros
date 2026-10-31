@@ -520,7 +520,7 @@ botón, sin conexión, lee la copia de la caché y la abre como `blob:` (los sal
 su "Novedades de esta versión" en el MISMO PR**, junto con las versiones de "Actualizado para" (`data-version`: `versionMovilSimple` en
 Campo, `versionMovil` en la móvil completa, `versionPc` en la PC, de los 3 configs). Un cambio en código compartido toca más de una
 página. Se lee el formulario real en el template antes de escribir un paso: nombres de botones exactos, con su emoji. Los botones que la
-app no muestra (`btn-puntos` y `btn-resync-puntos`, `display:none` en la móvil y en Campo; las ventanas que cuelgan de ellos y los
+app no muestra (`btn-resync-puntos`, `display:none` en la móvil y en Campo, y los
 controles de "Dibujar potrero") no van: están en `excepciones` de la prueba, con su motivo.
 
 `tests/probar_instructivos.js` (en el workflow, sin argumentos; reemplaza a `probar_instructivo_campo.js`) falla si, en alguna de las
@@ -869,7 +869,7 @@ Infraestructura y Capín Annoni aceptan hasta 3 fotos al crear, más fotos despu
 (`rp_…`, `pt_…`, `event_id`) y `momento` (reportes: `reporte`/`resuelto`; punto y muerte: `registro`). `encolarFoto(tipo, id, blob, momento)` es la entrada;
 los registros de la cola de antes (sin `tipoFoto`, con el id en `reporteId`) se leen como de un reporte. **Un tipo nuevo con fotos = una entrada en `TIPOS_FOTO`
 y `MOMENTOS_FOTO`, su evento en los tres lugares y su `refrescar`.**
-- *Puntos* (Aguadas / instalaciones: Manga, Corral, Bretes, Embarcadero… son subtipos de "Instalación", no potreros): hasta 3 fotos al crearlo (`montarSelectorFotos`,
+- *Puntos* (Aguadas / instalaciones: Manga, Corral, Bretes, Embarcadero… son subtipos de "Instalación", no potreros; **desde el 31/10/2026 el botón "📍 Aguadas / instalaciones" se ve también en la móvil completa y en Campo**, antes estaba `display:none` y solo lo tenía la PC, en Herramientas › Mapa y potreros › Puntos; `btn-resync-puntos` sigue oculto fuera de la PC): hasta 3 fotos al crearlo (`montarSelectorFotos`,
   selector reutilizable), "📷 Agregar foto" y "🗺 Ver en el mapa" (`verPuntoEnMapa()` → `verUbicacionEnMapa()`) en cada renglón de la lista, tope 10.
 - *Muertes* (el evento `muerte` y también `muerte_desaparecido`, o sea "Dar muerte" desde Desaparecidos: `abrirFormularioMuerteDesaparecido()`, ids `md-…`; los dos usan `muerte_foto` y el mismo `_ubicMuerte`): el formulario suma fotos y **lugar opcional** (GPS en el celular, o tocar el mapa: `modoColocarMuerte`).
   **El detalle del potrero y la ventana de Desaparecidos son capas a pantalla completa que tapan el mapa** (en el celular): `iniciarMarcarUbicMuerte(idOverlay)` las oculta mientras se toca el mapa, con "✕ Cancelar" en el aviso (`mostrarAvisoModo(texto, alCancelar)`), y `colocarUbicMuerteEn()` / `cancelarMarcarUbicMuerte()` las devuelven con el formulario como estaba.
