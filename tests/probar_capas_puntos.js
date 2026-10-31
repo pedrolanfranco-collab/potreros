@@ -240,7 +240,17 @@ async function probarArchivo(archivo){
 
   // helpers: cada uno recibe la ventana (`w`) porque se reabre la app varias veces
   const boton = (w, t) => w.document.getElementById(BTN[t]);
-  const texto = (w, t) => boton(w, t).textContent;
+  // El botón muestra un texto corto fijo ("💧 Aguadas" / "🚧 Instal.") y el estado va en el color (capa-off), en
+  // aria-pressed y en el title. `texto` arma "<rótulo>: ON/OFF" desde ahí y solo si el texto visible es el corto.
+  const CORTO = { agua: '💧 Aguadas', instalacion: '🚧 Instal.' };
+  const texto = (w, t) => {
+    const b = boton(w, t);
+    const on = b.getAttribute('aria-pressed') === 'true' && !b.classList.contains('capa-off');
+    const off = b.getAttribute('aria-pressed') === 'false' && b.classList.contains('capa-off');
+    const nombre = ROTULO[t].replace(/^\S+ /, '');
+    if(b.textContent !== CORTO[t] || b.title !== nombre + (on ? ': ON' : ': OFF') || on === off) return 'inconsistente: ' + b.textContent + ' / ' + b.title;
+    return ROTULO[t] + (on ? ': ON' : ': OFF');
+  };
   const apagada = (w, t) => boton(w, t).classList.contains('capa-off');
   const enMapa = (w, p) => { const m = w.__puntosLayers()[p.id]; return !!m && w.__mapa().hasLayer(m); };
   const lsCapas = w => { try { return JSON.parse(w.localStorage.getItem(clave)); } catch(e){ return null; } };
@@ -267,11 +277,24 @@ async function probarArchivo(archivo){
   const btnAgua = boton(uno.win, 'agua'), btnInst = boton(uno.win, 'instalacion');
   chequear('#btn-capa-agua y #btn-capa-instalacion existen y no están ocultos',
     !!btnAgua && !!btnInst && btnAgua.style.display !== 'none' && btnInst.style.display !== 'none');
-  chequear('los dos están dentro del mapa (#map), o sea a la izquierda sobre Leaflet',
-    !!btnAgua && uno.win.document.getElementById('map').contains(btnAgua) && uno.win.document.getElementById('map').contains(btnInst));
+  chequear('los dos están dentro del mapa (#map), en la fila del borde de arriba (.capas-puntos)',
+    !!btnAgua && uno.win.document.getElementById('map').contains(btnAgua) && uno.win.document.getElementById('map').contains(btnInst) &&
+    !!btnAgua.closest('.capas-puntos') && btnAgua.parentNode === btnInst.parentNode);
   chequear('por defecto dicen ON ("💧 Aguadas: ON" y "🚧 Instalaciones: ON") y ninguno está gris',
     texto(uno.win, 'agua') === '💧 Aguadas: ON' && texto(uno.win, 'instalacion') === '🚧 Instalaciones: ON' && !apagada(uno.win, 'agua') && !apagada(uno.win, 'instalacion'),
     texto(uno.win, 'agua') + ' / ' + texto(uno.win, 'instalacion'));
+
+  {
+    // un doble toque sobre el botón no llega al mapa (si no, Leaflet hace zoom)
+    let llegaron = 0;
+    const div = uno.win.document.getElementById('map');
+    const contar = () => { llegaron++; };
+    div.addEventListener('dblclick', contar);
+    btnAgua.dispatchEvent(new uno.win.MouseEvent('dblclick', { bubbles: true }));
+    btnInst.dispatchEvent(new uno.win.MouseEvent('dblclick', { bubbles: true }));
+    div.removeEventListener('dblclick', contar);
+    chequear('un doble toque sobre los botones no llega al mapa (no hace zoom)', llegaron === 0, String(llegaron));
+  }
 
   // ---------- 2. Un punto de cada tipo; apagar Aguadas saca SOLO los de agua ----------
   const pA = await crearPunto(uno.win, 'agua', 'Bebedero', 'Bebedero prueba', -31.40, -55.43);
