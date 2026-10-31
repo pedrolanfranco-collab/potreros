@@ -85,7 +85,12 @@
   #map{flex:1;min-width:0;position:relative;background:#dce3d1;}
   .satelital-off{background:var(--tierra) !important;}
   /* Capas de Aguadas / Instalaciones apagadas (31/10/2026): gris para que se note que no se ven */
-  .capa-off{background:#8c8c8c !important;}
+  /* Capas de Aguadas e Instalaciones: en fila sobre el borde de arriba del mapa, al lado del zoom (a pedido de Pedro, 31/10/2026) */
+  .capas-puntos{position:absolute;top:10px;left:54px;z-index:800;display:flex;gap:6px;}
+  .capas-puntos button{border:none;border-radius:20px;padding:7px 10px;font-family:'Inter',sans-serif;font-weight:600;font-size:11.5px;color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);white-space:nowrap;}
+  .capa-off{background:#8c8c8c !important;text-decoration:line-through;opacity:0.9;}
+  /* pantallas muy angostas (≤345 px): no entran entre el zoom y Satelital, van debajo del zoom */
+  @media (max-width:345px){ .capas-puntos{top:84px;left:10px;} }
   #sidebar{
     width:380px;
     min-width:320px;
@@ -544,7 +549,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.18 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.19 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -562,8 +567,10 @@
   <div id="main">
     <div id="map">
       <button id="btn-satelital" style="position:absolute;top:14px;right:14px;z-index:800;background:var(--verde-monte);color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🛰 Satelital: ON</button>
-      <button id="btn-capa-agua" style="position:absolute;top:92px;left:10px;z-index:800;background:#3f6b8f;color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">💧 Aguadas: ON</button>
-      <button id="btn-capa-instalacion" style="position:absolute;top:132px;left:10px;z-index:800;background:#7a5236;color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🚧 Instalaciones: ON</button>
+      <div class="capas-puntos">
+        <button id="btn-capa-agua" style="background:#3f6b8f;" title="Aguadas: ON" aria-pressed="true">💧 Aguadas</button>
+        <button id="btn-capa-instalacion" style="background:#7a5236;" title="Instalaciones: ON" aria-pressed="true">🚧 Instal.</button>
+      </div>
     </div>
     <div id="sidebar">
       <div style="position:relative;">
@@ -1263,7 +1270,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.18","versionMovil":"2.17","simpleHabilitado":true,"versionMovilSimple":"1.57","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.19","versionMovil":"2.18","simpleHabilitado":true,"versionMovilSimple":"1.58","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Fase 3, paso 5 (12/10/2026, "Verificar stock", solo PC): los potreros TAL COMO VIENEN EN EL ARCHIVO. POTREROS_GEO es este
@@ -1965,7 +1972,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-2.18';
+const VERSION_APP = 'pc-2.19';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = false;
@@ -4845,13 +4852,15 @@ let modoColocarPunto = null; // {tipo, subtipo, nombre}
 const puntosLayers = {}; // id -> marker
 let avisoModo = null;
 
-/* Capas de Aguadas e Instalaciones (31/10/2026, a pedido de Pedro): se prenden y apagan con los botones de la izquierda del mapa.
+/* Capas de Aguadas e Instalaciones (31/10/2026, a pedido de Pedro): se prenden y apagan con los botones del borde de arriba del mapa.
    La elección se recuerda por equipo y por campo (`<ESTABLECIMIENTO>_capas_puntos`, fuera de `estado`: no va al Backup ni a
    Supabase). Por defecto, todo ON. No se usa L.layerGroup: cada marcador se agrega o se saca del mapa a mano (ver CLAUDE.md). */
 const CAPAS_PUNTOS_KEY = ESTABLECIMIENTO + '_capas_puntos';
 const CAPAS_PUNTO = {
-  agua: {boton: 'btn-capa-agua', etiqueta: '💧 Aguadas'},
-  instalacion: {boton: 'btn-capa-instalacion', etiqueta: '🚧 Instalaciones'}
+  // `corto` es lo que dice el botón (en el celular tienen que entrar los dos en el borde de arriba, entre el zoom y Satelital);
+  // `etiqueta`, el nombre completo para los avisos y el `title`
+  agua: {boton: 'btn-capa-agua', etiqueta: '💧 Aguadas', corto: '💧 Aguadas', nombre: 'Aguadas'},
+  instalacion: {boton: 'btn-capa-instalacion', etiqueta: '🚧 Instalaciones', corto: '🚧 Instal.', nombre: 'Instalaciones'}
 };
 function leerCapasPuntos(){
   const capas = {agua: true, instalacion: true};
@@ -4870,7 +4879,10 @@ function actualizarBotonesCapas(){
     const btn = document.getElementById(CAPAS_PUNTO[t].boton);
     if(!btn) return;
     const visible = capaPuntoVisible(t);
-    btn.textContent = CAPAS_PUNTO[t].etiqueta + (visible ? ': ON' : ': OFF');
+    // prendida: color; apagada: gris y tachado (el texto no cambia, así no se corre la fila)
+    btn.textContent = CAPAS_PUNTO[t].corto;
+    btn.title = CAPAS_PUNTO[t].nombre + (visible ? ': ON' : ': OFF');
+    btn.setAttribute('aria-pressed', visible ? 'true' : 'false');
     btn.classList.toggle('capa-off', !visible);
   });
 }
@@ -4914,13 +4926,15 @@ function crearMarcadorPunto(punto){
   if(capaPuntoVisible(punto.tipo)) marker.addTo(map);
   puntosLayers[punto.id] = marker;
 }
-/* Los dos botones de capas, a la izquierda del mapa. stopPropagation: el clic no tiene que llegar al mapa (si no, con el modo
+/* Los dos botones de capas, arriba del mapa al lado del zoom. stopPropagation: el clic no tiene que llegar al mapa (si no, con el modo
    "tocar el mapa" activo colocaría un punto debajo del botón). */
 Object.keys(CAPAS_PUNTO).forEach(t => {
   document.getElementById(CAPAS_PUNTO[t].boton).addEventListener('click', e => {
     e.stopPropagation();
     ponerCapaPuntos(t, !capaPuntoVisible(t));
   });
+  // un doble toque rápido sobre el botón no hace zoom en el mapa
+  document.getElementById(CAPAS_PUNTO[t].boton).addEventListener('dblclick', e => e.stopPropagation());
 });
 actualizarBotonesCapas();
 /* Lugar donde se encontró un animal muerto (formulario de muerte): se toca el mapa o, en el celular, se usa el GPS. */

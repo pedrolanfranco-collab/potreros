@@ -85,7 +85,12 @@
   #map{flex:1;min-width:0;position:relative;background:#dce3d1;}
   .satelital-off{background:var(--tierra) !important;}
   /* Capas de Aguadas / Instalaciones apagadas (31/10/2026): gris para que se note que no se ven */
-  .capa-off{background:#8c8c8c !important;}
+  /* Capas de Aguadas e Instalaciones: en fila sobre el borde de arriba del mapa, al lado del zoom (a pedido de Pedro, 31/10/2026) */
+  .capas-puntos{position:absolute;top:10px;left:54px;z-index:800;display:flex;gap:6px;}
+  .capas-puntos button{border:none;border-radius:20px;padding:7px 10px;font-family:'Inter',sans-serif;font-weight:600;font-size:11.5px;color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);white-space:nowrap;}
+  .capa-off{background:#8c8c8c !important;text-decoration:line-through;opacity:0.9;}
+  /* pantallas muy angostas (≤345 px): no entran entre el zoom y Satelital, van debajo del zoom */
+  @media (max-width:345px){ .capas-puntos{top:84px;left:10px;} }
   #sidebar{
     width:380px;
     min-width:320px;
@@ -586,7 +591,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v1.56</div>
+        <div class="sub">v1.57</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -604,8 +609,10 @@
   <div id="main">
     <div id="map">
       <button id="btn-satelital" style="position:absolute;top:14px;right:14px;z-index:800;background:var(--verde-monte);color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🛰 Satelital: ON</button>
-      <button id="btn-capa-agua" style="position:absolute;top:92px;left:10px;z-index:800;background:#3f6b8f;color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">💧 Aguadas: ON</button>
-      <button id="btn-capa-instalacion" style="position:absolute;top:132px;left:10px;z-index:800;background:#7a5236;color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🚧 Instalaciones: ON</button>
+      <div class="capas-puntos">
+        <button id="btn-capa-agua" style="background:#3f6b8f;" title="Aguadas: ON" aria-pressed="true">💧 Aguadas</button>
+        <button id="btn-capa-instalacion" style="background:#7a5236;" title="Instalaciones: ON" aria-pressed="true">🚧 Instal.</button>
+      </div>
       <button id="btn-gps" style="position:absolute;top:58px;right:14px;z-index:800;background:#2a6bd6;color:#fff;border:none;border-radius:20px;padding:8px 14px;font-family:'Inter',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);">📍 Mi ubicación</button>
       <div id="gps-info" style="display:none;position:absolute;top:102px;right:14px;z-index:800;background:#fff;border-radius:8px;padding:8px 12px;font-size:12px;max-width:190px;box-shadow:0 2px 8px rgba(0,0,0,0.3);color:var(--texto);line-height:1.4;"></div>
     </div>
@@ -835,7 +842,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.48","versionMovil":"3.46","simpleHabilitado":true,"versionMovilSimple":"1.56","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.49","versionMovil":"3.47","simpleHabilitado":true,"versionMovilSimple":"1.57","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1527,7 +1534,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'campo-1.56';
+const VERSION_APP = 'campo-1.57';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -4068,13 +4075,15 @@ let modoColocarPunto = null; // {tipo, subtipo, nombre}
 const puntosLayers = {}; // id -> marker
 let avisoModo = null;
 
-/* Capas de Aguadas e Instalaciones (31/10/2026, a pedido de Pedro): se prenden y apagan con los botones de la izquierda del mapa.
+/* Capas de Aguadas e Instalaciones (31/10/2026, a pedido de Pedro): se prenden y apagan con los botones del borde de arriba del mapa.
    La elección se recuerda por equipo y por campo (`<ESTABLECIMIENTO>_capas_puntos`, fuera de `estado`: no va al Backup ni a
    Supabase). Por defecto, todo ON. No se usa L.layerGroup: cada marcador se agrega o se saca del mapa a mano (ver CLAUDE.md). */
 const CAPAS_PUNTOS_KEY = ESTABLECIMIENTO + '_capas_puntos';
 const CAPAS_PUNTO = {
-  agua: {boton: 'btn-capa-agua', etiqueta: '💧 Aguadas'},
-  instalacion: {boton: 'btn-capa-instalacion', etiqueta: '🚧 Instalaciones'}
+  // `corto` es lo que dice el botón (en el celular tienen que entrar los dos en el borde de arriba, entre el zoom y Satelital);
+  // `etiqueta`, el nombre completo para los avisos y el `title`
+  agua: {boton: 'btn-capa-agua', etiqueta: '💧 Aguadas', corto: '💧 Aguadas', nombre: 'Aguadas'},
+  instalacion: {boton: 'btn-capa-instalacion', etiqueta: '🚧 Instalaciones', corto: '🚧 Instal.', nombre: 'Instalaciones'}
 };
 function leerCapasPuntos(){
   const capas = {agua: true, instalacion: true};
@@ -4093,7 +4102,10 @@ function actualizarBotonesCapas(){
     const btn = document.getElementById(CAPAS_PUNTO[t].boton);
     if(!btn) return;
     const visible = capaPuntoVisible(t);
-    btn.textContent = CAPAS_PUNTO[t].etiqueta + (visible ? ': ON' : ': OFF');
+    // prendida: color; apagada: gris y tachado (el texto no cambia, así no se corre la fila)
+    btn.textContent = CAPAS_PUNTO[t].corto;
+    btn.title = CAPAS_PUNTO[t].nombre + (visible ? ': ON' : ': OFF');
+    btn.setAttribute('aria-pressed', visible ? 'true' : 'false');
     btn.classList.toggle('capa-off', !visible);
   });
 }
@@ -4136,13 +4148,15 @@ function crearMarcadorPunto(punto){
   if(capaPuntoVisible(punto.tipo)) marker.addTo(map);
   puntosLayers[punto.id] = marker;
 }
-/* Los dos botones de capas, a la izquierda del mapa. stopPropagation: el clic no tiene que llegar al mapa (si no, con el modo
+/* Los dos botones de capas, arriba del mapa al lado del zoom. stopPropagation: el clic no tiene que llegar al mapa (si no, con el modo
    "tocar el mapa" activo colocaría un punto debajo del botón). */
 Object.keys(CAPAS_PUNTO).forEach(t => {
   document.getElementById(CAPAS_PUNTO[t].boton).addEventListener('click', e => {
     e.stopPropagation();
     ponerCapaPuntos(t, !capaPuntoVisible(t));
   });
+  // un doble toque rápido sobre el botón no hace zoom en el mapa
+  document.getElementById(CAPAS_PUNTO[t].boton).addEventListener('dblclick', e => e.stopPropagation());
 });
 actualizarBotonesCapas();
 /* Lugar donde se encontró un animal muerto (formulario de muerte): se toca el mapa o, en el celular, se usa el GPS. */
