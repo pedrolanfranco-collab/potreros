@@ -113,7 +113,7 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">3.76</span></li>
+    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">3.77</span></li>
     <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">3.44</span></li>
     <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">2.15</span></li>
   </ul>
@@ -123,6 +123,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+      <li><b>🔎 Buscar caravana sin señal</b> <span class="campo">(solo La Vuelta)</span>: el celular guarda una copia del padrón y, sin señal, la búsqueda la usa y dice <b>“📴 Sin señal: datos del padrón al …”</b>. Si la copia tiene 7 días o más, lo avisa en rojo.</li>
     <li><b>🏡 Vecinos</b>: <span class="b">🏡 Al vecino</span> y <span class="b">↩ Volvió</span> aceptan <b>varias categorías</b> en un solo registro.</li>
     <li><b>Muertes</b>: en <span class="b">✕ Muerte</span> y en <span class="b">🪦 Dar muerte</span> (dentro de ❓ Desaparecidos) podés sacar <b>hasta 3 fotos</b> y marcar <b>dónde se encontró</b> el animal.</li>
     <li><b>📖 Instructivo</b>: este botón nuevo en 🛠 Herramientas abre esta página.</li>
@@ -184,6 +185,7 @@
   <tr><td>El dueño se llama</td><td data-campo="La Vuelta"><b>Firma</b>. Se puede dejar “(sin firma)”.</td><td data-campo="María Laura"><b>Dueño</b>. Hay que elegir uno.</td><td data-campo="Pone Chico"><b>Dueño</b>. Hay que elegir uno.</td></tr>
   <tr><td>🔑 Clave del campo</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No se usa</b></td></tr>
   <tr><td>🔎 Buscar caravana</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>🔎 Buscar caravana sin señal</td><td data-campo="La Vuelta">Sí (con la copia guardada en el celular)</td><td data-campo="María Laura">No: necesita señal</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>Compras y ventas</td><td data-campo="La Vuelta"><b>📑 Movimientos DICOSE</b>, en Herramientas</td><td data-campo="María Laura"><b>📑 Movimientos DICOSE</b>, en Herramientas</td><td data-campo="Pone Chico"><b>💰 Compra / Venta</b>, en la ficha del potrero</td></tr>
   <tr><td>🌾 Campo ajeno y 🚚 Traslado a María Laura (dentro de 📑 Movimientos DICOSE)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No</td><td data-campo="Pone Chico">No</td></tr>
   <tr><td>⚖️ Pesadas</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
@@ -419,7 +421,7 @@
   </ol>
   <ul>
     <li>Sin producto, sin dosis o sin caravana (ni el tilde de “no tiene”) no guarda y avisa.</li>
-    <li>En el individual, al escribir la caravana la app busca de qué animal es y lo muestra: si está <b>NO APTO</b> hasta una fecha o <b>YA NO ESTÁ EN EL CAMPO</b>, lo avisa en la línea de abajo. <b>Avisa pero deja guardar</b>: revisá que el número esté bien. Sin señal avisa que no pudo verificarla, y en un campo sin padrón como Pone Chico dice que no está en el padrón; en los dos casos se guarda igual.</li>
+    <li>En el individual, al escribir la caravana la app busca de qué animal es y lo muestra: si está <b>NO APTO</b> hasta una fecha o <b>YA NO ESTÁ EN EL CAMPO</b>, lo avisa en la línea de abajo. <b>Avisa pero deja guardar</b>: revisá que el número esté bien. Sin señal avisa que no pudo verificarla (<span class="campo">en La Vuelta</span> usa la copia del padrón y dice de qué fecha es), y en un campo sin padrón como Pone Chico dice que no está en el padrón; en los dos casos se guarda igual.</li>
   </ul>
   <p>Más abajo, la misma ventana tiene tres listas plegadas: <b>Últimos tratamientos</b>, <b>🚫 No aptos</b> (animales que todavía no pueden ir a faena) y <b>🔁 Próximos tratamientos (garrapaticidas)</b>. En esta última, <span class="b">✓ Hecho, ya se trató</span> saca el aviso de la lista en todos los celulares (pide confirmar y no se puede deshacer). Las listas necesitan señal; sin señal se ve lo último que se bajó.</p>
   <p><span class="campo">Solo en La Vuelta</span>, <b>Mis cargas recientes</b> (plegado) muestra lo que cargaste desde este celular y en qué paso va: <b>📴 sin señal, en tu dispositivo</b>, <b>⏳ esperando el respaldo</b>, <b>✅ en el respaldo (Excel)</b> o <b>✓ cargado</b>.</p>
@@ -501,7 +503,7 @@
 
 <div class="fn" id="caravana">
   <h3>🔎 Buscar caravana</h3>
-  <p class="para">Para qué sirve: saber de qué animal es una caravana y, sobre todo, si está en período de espera. <span class="campo">Solo en La Vuelta y María Laura.</span> Necesita señal.</p>
+  <p class="para">Para qué sirve: saber de qué animal es una caravana y, sobre todo, si está en período de espera. <span class="campo">Solo en La Vuelta y María Laura.</span> Necesita señal, salvo <span class="campo">en La Vuelta</span>, que guarda una copia en el celular (ver abajo).</p>
   <ol class="pasos">
     <li>Tocá <span class="b">🔎 Buscar caravana</span>.</li>
     <li>Escribí el número visual de la caravana (los 8 dígitos) y tocá <span class="b">Buscar</span>.</li>
@@ -514,6 +516,7 @@
     <li><b>📤 YA NO ESTÁ EN EL CAMPO</b>: salió o está dado de baja. Revisá que el número esté bien.</li>
   </ul>
   <p>Debajo, los datos del animal: categoría, sexo, generación, dueño (o firma), potrero, <b>Rodeo</b> y <b>Nota</b> que anotó el bastón (con la fecha de esa lectura), último peso, última lectura y próximo tratamiento. <span class="campo">En La Vuelta</span> también el bloque <b>⚖️ Pesadas</b> con la ganancia diaria y el historial. Si dice que la caravana no está en el padrón, puede ser un animal que nunca pasó por la manga o un número mal escrito.</p>
+  <p class="nota"><b>Sin señal</b> <span class="campo">(solo La Vuelta)</span>: la app guarda en el celular una copia del padrón, que se pone al día sola cuando sincroniza con señal (cada media hora como mucho, y entera una vez por día). Sin señal, o si la consulta no contesta en unos segundos, la búsqueda usa esa copia y arriba de la ficha dice <b>“📴 Sin señal: datos del padrón al &lt;fecha y hora&gt;”</b>. Con 7 días o más lo avisa en rojo: puede haber tratamientos o bajas que no figuran, así que confirmá con señal antes de mandar a faena. El período de espera se sigue contando con la fecha de hoy. Al abrir el buscador, una línea dice cuántas caravanas tiene la copia y de cuándo es. Para tenerla hay que abrir la app con señal y con la 🔑 Clave del campo cargada al menos una vez.</p>
 </div>
 
 <div class="fn" id="pesadas">
@@ -555,7 +558,7 @@
 <div class="fn" id="restablecer">
   <h3>↺ Restablecer datos de fábrica</h3>
   <div class="caja peligro">
-    <p><b>Usalo solo si Pedro te lo pide.</b> Borra todo lo guardado en este celular (animales, historial, backups) y lo vuelve a bajar desde el servidor, como si fuera un celular nuevo. Pide confirmar y avisa si hay movimientos o cargas de Sanidad sin mandar: <b>esas se pierden</b>. No se puede deshacer.</p>
+    <p><b>Usalo solo si Pedro te lo pide.</b> Borra todo lo guardado en este celular (animales, historial, backups y la copia del padrón para buscar caravanas sin señal) y lo vuelve a bajar desde el servidor, como si fuera un celular nuevo. Pide confirmar y avisa si hay movimientos o cargas de Sanidad sin mandar: <b>esas se pierden</b>. No se puede deshacer.</p>
   </div>
 </div>
 
@@ -593,7 +596,7 @@
 <ul>
   <li><b>Cargá normalmente.</b> Todo se guarda en el celular y sale solo cuando vuelva la señal. <b>No lo cargues dos veces</b> por miedo a que no se mandó.</li>
   <li>Con señal, arriba dice <b>“🟢 En línea”</b>. Sin señal dice <b>“⚪ Sin conexión — los datos se siguen guardando en este dispositivo”</b>.</li>
-  <li>Sin señal no se ven las imágenes del mapa satelital, y no andan la <a href="#voz">🎤 carga por voz</a>, <a href="#caravana">🔎 Buscar caravana</a>, <a href="#pesadas">⚖️ Pesadas</a> ni el registro de muertes. Las listas de Sanidad, <a href="#stock">📊 Stock total</a> y los consumos muestran lo último que se bajó. Lo demás anda.</li>
+  <li>Sin señal no se ven las imágenes del mapa satelital, y no andan la <a href="#voz">🎤 carga por voz</a>, <a href="#pesadas">⚖️ Pesadas</a> ni el registro de muertes; <a href="#caravana">🔎 Buscar caravana</a> anda solo en La Vuelta, con la copia del padrón guardada en el celular. Las listas de Sanidad, <a href="#stock">📊 Stock total</a> y los consumos muestran lo último que se bajó. Lo demás anda.</li>
 </ul>
 <p>Abajo, en el pie, la app muestra cómo viene el envío:</p>
 <table>
