@@ -59,7 +59,7 @@ Stock de un potrero (la app los aplica sumando o restando en `potreros[potrero].
 | `ingreso` | destino | `{categoria, dueno, cantidad}` | suma. Carga inicial y "agregar animales" |
 | `nacimiento` | potrero | `{categoria, dueno, cantidad, obs?}` | suma y cuenta como nacido de la temporada |
 | `muerte` | potrero | `{categoria, dueno, cantidad, obs?, caravana?, grupoTernero?, lat?, lon?}` | resta y cuenta como muerte (`grupoTernero`, solo en Terneros: `temporada` o `marcado`; `lat`/`lon`, opcionales: dónde se encontró el animal, para "Ver en el mapa") |
-| `consumo` | potrero | `{categoria, dueno, cantidad, obs?}` | resta; animales faenados para consumo del establecimiento (ovinos y eventualmente un vacuno). NO cuenta como muerte; tiene su propio resumen por ejercicio 1/jul–30/jun |
+| `consumo` | potrero | `{categoria, dueno, cantidad, obs?, faltante?, sin_stock?}` | resta (solo lo que había: `faltante` = cuántos de `cantidad` no estaban en el stock de la app, con `sin_stock:true`; las apps viejas lo ignoran y restan con piso en 0); animales faenados para consumo del establecimiento (ovinos y eventualmente un vacuno). NO cuenta como muerte; tiene su propio resumen por ejercicio 1/jul–30/jun |
 | `movimiento` | origen | `{categoria, dueno, cantidad, destino}` | resta en el origen, suma en `destino`. Lo genera el comando de voz |
 | `movimiento_multi` | origen | `{destino, items:[{categoria, categoriaDestino, dueno, duenoDestino?, cantidad}], obs?}` | varias categorías al mismo destino; con `destino` = el propio potrero es una recategorización o un cambio de dueño |
 | `movimiento_todo` | origen | `{destino, items:[{categoria, dueno, cantidad}]}` | vacía el potrero hacia `destino` |

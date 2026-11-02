@@ -240,8 +240,11 @@ async function probarConsumos(archivoPc){
 
   // 2. no deja consumir más de lo que hay
   const antes = servidor.filas.eventos_sync.length;
+  // (3/11/2026: ahora avisa y pregunta; si no se confirma, no registra nada. Confirmando, ver probar_hacienda_ajena.js)
+  A.win.confirm = () => false;
   await cargar('Ovejas', o0 + 50, '');
-  chequear('no deja consumir más de lo que hay', servidor.filas.eventos_sync.length === antes && stock(A.win, p, keyO) === o0 - 3);
+  A.win.confirm = () => true;
+  chequear('no deja consumir más de lo que hay sin confirmar', servidor.filas.eventos_sync.length === antes && stock(A.win, p, keyO) === o0 - 3);
 
   // 3. un vacuno, eventualmente
   await cargar('Vacas', 1, 'PRUEBA vacuno');

@@ -201,6 +201,9 @@ jobs:
       - name: "Consumos (11/10/2026) -- faena para el establecimiento: resta del stock, resumen por ejercicio, borrar/editar; sin Consumos en Campo"
         run: node tests/probar_consumos.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
+      - name: "Hacienda ajena y consumo sin stock (3/11/2026) -- ajeno visible en el detalle y por dueño, Consumo en el potrero (PC y Campo), faltante y deshacer"
+        run: node tests/probar_hacienda_ajena.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
+
       - name: "Muertes de terneros en dos grupos, de temporada y marcados (10/10/2026) -- formulario, Stock total, editar/borrar y voz"
         run: node tests/probar_muerte_terneros_grupo.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 

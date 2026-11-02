@@ -582,6 +582,8 @@
   .acciones [data-accion="desaparecido"]{order:6;margin-top:10px;background:#7a5236;}
   /* 29/10/2026: 🏡 Al vecino, justo después de Desaparecido */
   .acciones [data-accion="vecino"]{order:7;background:#3f6b8f;}
+  /* 3/11/2026: 🥩 Consumo (faena) */
+  .acciones [data-accion="consumo"]{order:8;background:#8f4a2a;}
   .form-row label{font-size:12.5px;}
   .form-row select, .form-row input{font-size:16px;padding:12px 10px;min-height:48px;}
   .form-row input[type=checkbox]{width:24px;height:24px;min-height:0;padding:0;}
@@ -1624,6 +1626,23 @@ function partesClave(key){
   return {cat, dueno: dueno || ''};
 }
 function textoFirma(dueno){ return dueno || CONFIG.textoSinAsignar; }
+/* Hacienda ajena (3/11/2026): ajeno = cualquier dueño con nombre que NO esté en CONFIG.duenos (los que se
+   cargan con "Otro (escribir)…"). No hay evento ni columna nueva: sale de la misma clave "categoria||dueño",
+   así que cuenta en stock, UG y carga como cualquier otro animal y solo se muestra aparte. */
+function esDuenoAjeno(dueno){ return !!dueno && !DUENOS.includes(dueno); }
+function duenosAjenosEnPotrero(nombre){
+  const out = new Set();
+  Object.entries(estado.potreros[nombre].animales).forEach(([key,cant])=>{
+    if(!cant) return;
+    const {dueno} = partesClave(key);
+    if(esDuenoAjeno(dueno)) out.add(dueno);
+  });
+  return Array.from(out).sort((a,b)=> a.localeCompare(b,'es'));
+}
+function ugAjenasEnPotrero(nombre){
+  return Object.entries(ugPorDuenoEnPotrero(nombre, true))
+    .filter(([dueno])=> esDuenoAjeno(dueno)).reduce((s,[,ug])=> s + ug, 0);
+}
 function opcionesDuenos(seleccionado, permitirOtro){
   const enBlanco = CONFIG.duenoObligatorio ? '' : `<option value="" ${!seleccionado?'selected':''}>— sin asignar —</option>`;
   const opts = DUENOS.map(d=>`<option value="${d}" ${d===seleccionado?'selected':''}>${d}</option>`).join('');
@@ -1680,7 +1699,12 @@ function resumenPorDueno(){
   // tiene dueno==='' y antes quedaba totalmente afuera de este reporte.
   // Comparar siempre contra el dueno CRUDO (partes.dueno, ya normalizado a
   // '' por partesClave -- nunca undefined); textoFirma() solo para mostrar.
-  const grupos = DUENOS.includes('') ? DUENOS : [...DUENOS, ''];
+  const grupos = DUENOS.includes('') ? DUENOS.slice() : [...DUENOS, ''];
+  // 3/11/2026: los dueños de texto libre ("Otro (escribir)…") que hoy tienen animales también entran, rotulados
+  // "ajeno" -- antes la hacienda de terceros contaba en el stock y las UG pero faltaba en este reporte.
+  const ajenos = new Set();
+  POTREROS_GEO.forEach(p=> duenosAjenosEnPotrero(p.nombre).forEach(d=> ajenos.add(d)));
+  Array.from(ajenos).sort((a,b)=> a.localeCompare(b,'es')).forEach(d=> grupos.push(d));
   return grupos.map(dueno=>{
     const categorias = {};
     let ug = 0;
@@ -1694,7 +1718,7 @@ function resumenPorDueno(){
       ug += ugPorDuenoEnPotrero(p.nombre, true)[dueno] || 0;
     });
     const total = Object.values(categorias).reduce((s,c)=>s+c,0);
-    return {dueno: textoFirma(dueno), categorias, total, ug, dotacion: totalHa>0 ? ug/totalHa : 0};
+    return {dueno: textoFirma(dueno) + (esDuenoAjeno(dueno) ? ' (ajeno)' : ''), ajeno: esDuenoAjeno(dueno), categorias, total, ug, dotacion: totalHa>0 ? ug/totalHa : 0};
   }).filter(d=>d.total>0);
 }
 /* Migración de una sola vez: si alguna vez se guardó una clave de "animales"
@@ -3674,7 +3698,8 @@ function aplicarEventoRemoto(row, potrerosSucios){
   if(row.tipo==='ingreso' || row.tipo==='nacimiento' || row.tipo==='compra'){
     a[key] = (a[key]||0) + d.cantidad;
   } else if(row.tipo==='muerte' || row.tipo==='venta' || row.tipo==='consumo'){
-    a[key] = Math.max(0, (a[key]||0) - d.cantidad);
+    // 3/11/2026: un consumo cargado sin stock suficiente en la app trae `faltante` (lo que no estaba): solo se resta lo que había
+    a[key] = Math.max(0, (a[key]||0) - (d.cantidad - (row.tipo==='consumo' ? (Number(d.faltante)||0) : 0)));
   } else {
     return;
   }
@@ -4515,7 +4540,7 @@ function aplicarAjusteReversion(ajuste, fecha){
     const p = estado.potreros[ajuste.potrero]; if(!p) return;
     const key = claveAnimal(ajuste.categoria, ajuste.dueno);
     const totalAntes = totalPotrero(ajuste.potrero);
-    const delta = ajuste.tipo==='sumar' ? ajuste.cantidad : -ajuste.cantidad;
+    const delta = ajuste.tipo==='sumar' ? ajuste.cantidad - (Number(ajuste.faltante)||0) : -ajuste.cantidad;
     p.animales[key] = Math.max(0, (p.animales[key]||0) + delta);
     registrarCambioOcupacion(ajuste.potrero, totalAntes, fecha);
   } else if(ajuste.tipo==='retorno_campo_ajeno_ajuste' || ajuste.tipo==='envio_campo_ajeno_ajuste'){
@@ -4706,7 +4731,9 @@ function construirAjusteInverso(h, potreroHost){
   }
   if(h.tipo==='muerte' || h.tipo==='venta' || h.tipo==='consumo'){
     return Object.assign({tipo:'sumar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad},
-      (h.tipo==='muerte' && grupoTerneroValido(e.grupoTernero)) ? {grupoTernero: e.grupoTernero} : {});
+      (h.tipo==='muerte' && grupoTerneroValido(e.grupoTernero)) ? {grupoTernero: e.grupoTernero} : {},
+      // 3/11/2026: deshacer un consumo con faltante devuelve solo lo que se había restado (cantidad - faltante)
+      (h.tipo==='consumo' && Number(e.faltante) > 0) ? {faltante: Number(e.faltante)} : {});
   }
   if(h.tipo==='envio_campo_ajeno'){
     // deshacer un envío = un retorno: el potrero recupera, campo ajeno devuelve
@@ -6330,13 +6357,24 @@ function renderDetalle(nombre){
   const alertasPotrero = calcularAlertas(nombre);
   const casosPotrero = listarCasosDesaparecidos().filter(c=>c.potreroOrigen===nombre);
   const historialVisible = historial;
+  // 3/11/2026: hacienda de terceros en este potrero (cuenta en el total y en UG/ha; acá se muestra aparte)
+  const ajenosPotrero = duenosAjenosEnPotrero(nombre);
+  const ugAjenas = ajenosPotrero.length ? ugAjenasEnPotrero(nombre) : 0;
+  const bloqueAjena = ajenosPotrero.length ? `<div class="bloque-ajena" style="background:#eef3f8;border-left:3px solid #3f6b8f;border-radius:5px;padding:8px 10px;margin:0 0 10px 0;font-size:12.5px;">
+      <strong>🤝 Hacienda ajena (${ugAjenas.toFixed(1)} UG)</strong>
+      ${ajenosPotrero.map(d=>{
+        const cats = detalleAnimales(estado.potreros[nombre].animales).filter(x=>x.dueno===d && x.cant>0);
+        const n = cats.reduce((s,x)=>s+x.cant,0);
+        return `<div style="margin-top:3px;">${esc(d)}: ${n} — ${cats.map(x=>x.cant+' '+esc(x.cat)).join(', ')}</div>`;
+      }).join('')}
+    </div>` : '';
 
   det.innerHTML = `
     <div class="detalle-titulo"><h2>${esc(nombre)}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
 <!-- @simple:start -->
     <div class="total-grande"><strong>${total}</strong>animal${total===1?'':'es'}</div>
 <!-- @simple:end -->
-    <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong></div>
+    <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong>${ugAjenas>0 ? ` <span style="color:var(--texto-suave);">(${ugAjenas.toFixed(1)} UG ajenas)</span>` : ''}</div>
     <div class="ocupacion-badge ocupacion-${ocup.tipo}" style="margin-bottom:10px;">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
 <!-- @completo:start -->
     ${alertasPotrero.length ? `<div style="background:#fbe6d9;border-left:3px solid var(--rojo-hacienda);border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a3420;">${alertasPotrero.map(a=>'⚠️ '+a).join('<br>')}</div>` : ''}
@@ -6350,6 +6388,7 @@ function renderDetalle(nombre){
         <tr class="total"${total<0?' style="color:#d32f2f;"':''}><td>Total (${ug.toFixed(1)} UG)</td><td class="num">${total}</td></tr>
       </tbody>
     </table>
+    ${bloqueAjena}
     <button class="btn btn-secundario btn-full" id="btn-detalle-por-dueno" style="margin-bottom:10px;">👤 Ver por dueño</button>
 
     <div class="acciones">
@@ -6361,6 +6400,7 @@ function renderDetalle(nombre){
       <button class="btn btn-muerte" data-accion="muerte">✕ Muerte</button>
       <button class="btn btn-muerte" data-accion="desaparecido">❓ Desaparecido</button>
       <button class="btn btn-muerte" data-accion="vecino">🏡 Al vecino</button>
+      <button class="btn btn-muerte" data-accion="consumo">🥩 Consumo (faena)</button>
 <!-- @completo:start -->
       ${CONFIG.guiasHabilitado ? '' : `<button class="btn btn-compraventa btn-full" data-accion="compraventa">💰 Compra / Venta</button>`}
 <!-- @completo:end -->
@@ -6651,6 +6691,52 @@ document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
 });
 
 /* ======================= FORMULARIOS DE ACCIÓN ======================= */
+/* Consumo (faena para el establecimiento), compartido por la acción del potrero (todas las variantes, Campo
+   incluida) y el formulario de Herramientas (3/11/2026). Si el animal no está en el stock de la app (o hay
+   menos de los que se faenan), se resta lo que había -- nunca queda en negativo -- y el evento lleva
+   `sin_stock:true` y `faltante` (cuántos no estaban), para que el resumen lo marque y se regularice la
+   compra/ingreso que faltó cargar. */
+function opcionesCategoriasConsumo(seleccionada){
+  return ['ovino','bovino'].map(esp=>{
+    const opts = Object.keys(ESPECIES[esp]).map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
+    return `<optgroup label="${ESPECIE_LABEL[esp]}">${opts}</optgroup>`;
+  }).join('');
+}
+function registrarConsumoLocal(potrero, cat, dueno, cant, fechaISO, obs){
+  const a = estado.potreros[potrero].animales;
+  const key = claveAnimal(cat, dueno);
+  const disponibles = Math.max(0, a[key] || 0);
+  const descontado = Math.min(cant, disponibles);
+  const faltante = cant - descontado;
+  const fecha = fechaISOaDisplay(fechaISO);
+  const totalAntes = totalPotrero(potrero);
+  if(descontado > 0) a[key] = (a[key] || 0) - descontado;
+  registrarCambioOcupacion(potrero, totalAntes, fecha);
+  const eventId = crypto.randomUUID();
+  const extra = {potrero, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO};
+  const det = {categoria: cat, dueno, cantidad: cant, obs: obs||null};
+  if(faltante > 0){ extra.faltante = faltante; det.faltante = faltante; det.sin_stock = true; }
+  const faltTxt = faltante > 0 ? ` (${faltante} no ${faltante===1?'estaba':'estaban'} en la app)` : '';
+  registrarHistorial(potrero, 'consumo', `Consumo: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}${faltTxt}`,
+    extra, undefined, fecha).eventId = eventId;
+  const envio = enviarEvento('consumo', potrero, det, fecha, {eventId});
+  guardarEstado(); actualizarTodo(); publicarStockPotreros([potrero]);
+  return {envio, faltante};
+}
+/* Aviso antes de registrar un consumo que supera lo que la app tiene de esa categoría/dueño. */
+function confirmarConsumoSinStock(potrero, cat, dueno, cant){
+  const hay = Math.max(0, (estado.potreros[potrero].animales[claveAnimal(cat, dueno)]) || 0);
+  if(cant <= hay) return true;
+  return confirm(`En ${potrero} la app tiene ${hay} ${cat}${dueno?' de '+dueno:''} y vas a faenar ${cant}. ¿Registrar igual? Se resta lo que hay y queda anotado que ${cant-hay} no estaba${cant-hay===1?'':'n'} en la app.`);
+}
+/* Dueño del consumo: los de la lista, los ajenos que ya hay en el potrero y "Otro (escribir)…" (animal que la app no tiene). */
+function opcionesDuenosConsumo(nombre, seleccionado){
+  const enBlanco = CONFIG.duenoObligatorio ? '' : `<option value="" ${!seleccionado?'selected':''}>— sin asignar —</option>`;
+  const lista = DUENOS.filter(d=>d).concat(nombre && estado.potreros[nombre] ? duenosAjenosEnPotrero(nombre) : []);
+  if(seleccionado && !lista.includes(seleccionado)) lista.push(seleccionado);
+  return enBlanco + lista.map(d=>`<option value="${esc(d)}" ${d===seleccionado?'selected':''}>${esc(d)}</option>`).join('')
+    + '<option value="__otro__">Otro (escribir)…</option>';
+}
 function opcionesCategorias(seleccionada){
   return Object.entries(ESPECIES).map(([esp,cats])=>{
     const opts = Object.keys(cats).map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
@@ -7428,6 +7514,46 @@ function mostrarFormulario(nombre, accion, prefill){
       // las fotos van después de la muerte: el evento `muerte` queda primero en la cola y cada muerte_foto sale detrás
       fotosMuerte.forEach(b => encolarFoto('muerte', eventId, b, 'registro'));
       toast(`Muerte registrada en ${nombre}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
+
+  // 3/11/2026: 🥩 Consumo (faena) desde el potrero -- también en Campo. Ver registrarConsumoLocal().
+  if(accion==='consumo'){
+    const pre = prefill || {};
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Consumo (faena) en ${esc(nombre)}</h3>
+        <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Animales que se faenan para consumo de carne: se restan del potrero. Si el animal no figura en la app se resta lo que haya y queda anotado cuántos faltaban.</p>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategoriasConsumo(pre.categoria)}</select></div>
+        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenosConsumo(nombre, pre.dueno)}</select>
+          <input type="text" id="f-dueno-otro" placeholder="Escribir dueño/procedencia" style="display:none;margin-top:6px;"></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${pre.cantidad||1}"></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${pre._fechaISO?pre._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: cordero para la casa" value="${esc(pre.obs||'')}"></div>
+        <div class="form-botones">
+          <button class="btn btn-muerte" id="f-confirmar">${prefill?'Guardar corrección':'Registrar consumo'}</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-dueno').addEventListener('change', (e)=>{
+      const libre = document.getElementById('f-dueno-otro');
+      libre.style.display = e.target.value==='__otro__' ? '' : 'none';
+      if(e.target.value==='__otro__') libre.focus();
+    });
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const cat = document.getElementById('f-cat').value;
+      const dueno = valorDueno('f-dueno');
+      const cant = parseInt(document.getElementById('f-cant').value,10);
+      const fechaISO = document.getElementById('f-fecha').value;
+      const obs = document.getElementById('f-obs').value.trim();
+      if(document.getElementById('f-dueno').value==='__otro__' && !dueno){ toast('Escribí el dueño o procedencia'); return; }
+      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      if(!confirmarConsumoSinStock(nombre, cat, dueno, cant)) return;
+      const {faltante} = registrarConsumoLocal(nombre, cat, dueno, cant, fechaISO, obs);
+      cerrarDetalle();
+      toast(faltante ? `Consumo registrado en ${nombre} (${faltante} no estaban en la app)` : `Consumo registrado: ${cant} ${cat} de ${nombre}`);
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
@@ -13012,12 +13138,6 @@ document.getElementById('sn-guardar').addEventListener('click', ()=>{
    tipo de evento ('consumo'): no entra en el conteo de muertes. El resumen es por
    EJERCICIO (1/jul al 30/jun, el de la Carpeta Verde y el DICOSE) y se arma desde
    eventos_sync igual que calcularEstadisticasMuertes(). */
-function opcionesCategoriasConsumo(seleccionada){
-  return ['ovino','bovino'].map(esp=>{
-    const opts = Object.keys(ESPECIES[esp]).map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
-    return `<optgroup label="${ESPECIE_LABEL[esp]}">${opts}</optgroup>`;
-  }).join('');
-}
 function prepararFormConsumo(prefill){
   const pre = prefill || {};
   document.getElementById('co-potrero').innerHTML = opcionesPotreros();
@@ -13048,22 +13168,11 @@ document.getElementById('co-guardar').addEventListener('click', async ()=>{
   if(!potrero || !estado.potreros[potrero]){ toast('Elegí un potrero'); return; }
   if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
   if(!fechaISO){ toast('Elegí una fecha'); return; }
-  const a = estado.potreros[potrero].animales;
-  const key = claveAnimal(cat, dueno);
-  const disponibles = a[key] || 0;
-  if(cant > disponibles){ toast(`Solo hay ${disponibles} ${cat}${dueno?' de '+dueno:''} en ${potrero}`); return; }
-  const fecha = fechaISOaDisplay(fechaISO);
-  const totalAntes = totalPotrero(potrero);
-  a[key] -= cant;
-  registrarCambioOcupacion(potrero, totalAntes, fecha);
-  const eventId = crypto.randomUUID();
-  registrarHistorial(potrero, 'consumo', `Consumo: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}`,
-    {potrero, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO}, undefined, fecha).eventId = eventId;
-  const envio = enviarEvento('consumo', potrero, {categoria: cat, dueno, cantidad: cant, obs: obs||null}, fecha, {eventId});
-  guardarEstado(); actualizarTodo(); publicarStockPotreros([potrero]);
+  if(!confirmarConsumoSinStock(potrero, cat, dueno, cant)) return;
+  const {envio, faltante} = registrarConsumoLocal(potrero, cat, dueno, cant, fechaISO, obs);
   document.getElementById('co-cant').value = '1';
   document.getElementById('co-obs').value = '';
-  toast(`Consumo registrado: ${cant} ${cat} de ${potrero}`);
+  toast(faltante ? `Consumo registrado: ${cant} ${cat} de ${potrero} (${faltante} no estaban en la app)` : `Consumo registrado: ${cant} ${cat} de ${potrero}`);
   // el resumen sale de eventos_sync: se espera a que el evento haya subido (sin señal queda en la cola
   // y el consumo aparece cuando sincronice)
   try{ await envio; }catch(e){}
@@ -13103,7 +13212,7 @@ async function leerConsumos(){
   eventos.forEach(ev=>{
     const d = ev.detalle || {};
     if(ev.tipo==='consumo'){
-      filas.push({fecha: ev.fecha_cliente, potrero: ev.potrero, categoria: d.categoria, dueno: d.dueno||'', cantidad: d.cantidad||0, obs: d.obs||null});
+      filas.push({fecha: ev.fecha_cliente, potrero: ev.potrero, categoria: d.categoria, dueno: d.dueno||'', cantidad: d.cantidad||0, obs: d.obs||null, faltante: Number(d.faltante)||0});
     } else if(ev.tipo==='correccion' && d.tipoOriginal==='consumo' && (d.accion==='eliminar' || d.accion==='editar') && d.reversar){
       // la corrección anula el consumo que más se le parece (potrero+categoría+dueño+cantidad, el más
       // cercano a la fecha original) y todavía vigente; la edición vuelve a entrar como un consumo nuevo
@@ -13128,16 +13237,17 @@ function resumirConsumos(filas, hoy){
   const enEjercicio = filas.filter(f=>{ const t = parseFechaDMY(f.fecha); return t >= desde && t < hasta; });
   const porCategoria = {}, porMes = MESES_EJERCICIO.map(()=>0);
   const porEspecie = {ovino:0, bovino:0, otro:0};
-  let total = 0;
+  let total = 0, sinStock = 0;
   enEjercicio.forEach(f=>{
     total += f.cantidad;
+    sinStock += f.faltante || 0;
     porCategoria[f.categoria] = (porCategoria[f.categoria]||0) + f.cantidad;
     const esp = CATEGORIA_ESPECIE[f.categoria];
     porEspecie[(esp==='ovino' || esp==='bovino') ? esp : 'otro'] += f.cantidad;
     const m = parseInt(f.fecha.split('/')[1], 10);
     if(m) porMes[(m + 5) % 12] += f.cantidad;   // jul=0 … jun=11
   });
-  return {anio, total, porCategoria, porMes, porEspecie, filas: enEjercicio};
+  return {anio, total, sinStock, porCategoria, porMes, porEspecie, filas: enEjercicio};
 }
 async function renderConsumosResumen(){
   const cont = document.getElementById('consumos-resumen');
@@ -13155,13 +13265,14 @@ async function renderConsumosResumen(){
     return;
   }
   html += `<p style="font-size:13px;margin:0 0 2px;"><strong>${r.total}</strong> animal${r.total===1?'':'es'}: ${r.porEspecie.ovino} ovinos · ${r.porEspecie.bovino} vacunos${r.porEspecie.otro ? ' · '+r.porEspecie.otro+' otros' : ''}</p>`;
+  if(r.sinStock) html += `<p style="font-size:12.5px;color:#96601a;">⚠️ ${r.sinStock} animal${r.sinStock===1?'':'es'} faenado${r.sinStock===1?'':'s'} no figuraba${r.sinStock===1?'':'n'} en el stock de la app: falta cargar la compra o el ingreso.</p>`;
   if(fuente==='cache') html += '<p style="font-size:11.5px;color:#96601a;">Dato de la última vez que hubo conexión, puede estar desactualizado.</p>';
   const cats = Object.entries(r.porCategoria).sort((a,b)=> b[1]-a[1]);
   html += `<table class="tabla-animales"><thead><tr><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead><tbody>${cats.map(([c,n])=>`<tr><td>${esc(c)}</td><td class="num">${n}</td></tr>`).join('')}</tbody></table>`;
   html += `<table class="tabla-animales"><thead><tr>${MESES_EJERCICIO.map(m=>`<th style="text-align:right;">${m}</th>`).join('')}</tr></thead><tbody><tr>${r.porMes.map(n=>`<td class="num">${n||'·'}</td>`).join('')}</tr></tbody></table>`;
   const recientes = r.filas.slice().sort((a,b)=> parseFechaDMY(b.fecha) - parseFechaDMY(a.fecha)).slice(0, 15);
   html += `<details class="historial-det historial-det-lista"><summary>Historial de consumos (${r.filas.length})</summary><table class="tabla-animales"><thead><tr><th>Fecha</th><th>Potrero</th><th>Categoría</th><th style="text-align:right;">Cant.</th></tr></thead><tbody>${recientes.map(f=>
-    `<tr><td>${esc(f.fecha)}</td><td>${esc(f.potrero||'')}</td><td>${esc(f.categoria||'')}${f.dueno ? ' ('+esc(textoFirma(f.dueno))+')' : ''}${f.obs ? '<br><span style="color:var(--texto-suave);font-size:11px;">'+esc(f.obs)+'</span>' : ''}</td><td class="num">${f.cantidad}</td></tr>`).join('')}</tbody></table></details>`;
+    `<tr><td>${esc(f.fecha)}</td><td>${esc(f.potrero||'')}</td><td>${esc(f.categoria||'')}${f.dueno ? ' ('+esc(textoFirma(f.dueno))+')' : ''}${f.obs ? '<br><span style="color:var(--texto-suave);font-size:11px;">'+esc(f.obs)+'</span>' : ''}${f.faltante ? '<br><span style="color:#96601a;font-size:11px;">⚠️ '+f.faltante+' sin stock en la app</span>' : ''}</td><td class="num">${f.cantidad}</td></tr>`).join('')}</tbody></table></details>`;
   cont.innerHTML = html;
 }
 <!-- @completo:end -->
