@@ -549,6 +549,8 @@
   .acciones [data-accion="desaparecido"]{order:6;margin-top:10px;background:#7a5236;}
   /* 29/10/2026: 🏡 Al vecino, justo después de Desaparecido */
   .acciones [data-accion="vecino"]{order:7;background:#3f6b8f;}
+  /* 3/11/2026: 🥩 Consumo (faena) */
+  .acciones [data-accion="consumo"]{order:8;background:#8f4a2a;}
   .form-row label{font-size:12.5px;}
   .form-row select, .form-row input{font-size:16px;padding:12px 10px;min-height:48px;}
   .form-row input[type=checkbox]{width:24px;height:24px;min-height:0;padding:0;}
@@ -591,7 +593,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v1.57</div>
+        <div class="sub">v1.58</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -842,7 +844,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.49","versionMovil":"3.47","simpleHabilitado":true,"versionMovilSimple":"1.57","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.50","versionMovil":"3.48","simpleHabilitado":true,"versionMovilSimple":"1.58","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -991,6 +993,23 @@ function partesClave(key){
   return {cat, dueno: dueno || ''};
 }
 function textoFirma(dueno){ return dueno || CONFIG.textoSinAsignar; }
+/* Hacienda ajena (3/11/2026): ajeno = cualquier dueño con nombre que NO esté en CONFIG.duenos (los que se
+   cargan con "Otro (escribir)…"). No hay evento ni columna nueva: sale de la misma clave "categoria||dueño",
+   así que cuenta en stock, UG y carga como cualquier otro animal y solo se muestra aparte. */
+function esDuenoAjeno(dueno){ return !!dueno && !DUENOS.includes(dueno); }
+function duenosAjenosEnPotrero(nombre){
+  const out = new Set();
+  Object.entries(estado.potreros[nombre].animales).forEach(([key,cant])=>{
+    if(!cant) return;
+    const {dueno} = partesClave(key);
+    if(esDuenoAjeno(dueno)) out.add(dueno);
+  });
+  return Array.from(out).sort((a,b)=> a.localeCompare(b,'es'));
+}
+function ugAjenasEnPotrero(nombre){
+  return Object.entries(ugPorDuenoEnPotrero(nombre, true))
+    .filter(([dueno])=> esDuenoAjeno(dueno)).reduce((s,[,ug])=> s + ug, 0);
+}
 function opcionesDuenos(seleccionado, permitirOtro){
   const enBlanco = CONFIG.duenoObligatorio ? '' : `<option value="" ${!seleccionado?'selected':''}>— sin asignar —</option>`;
   const opts = DUENOS.map(d=>`<option value="${d}" ${d===seleccionado?'selected':''}>${d}</option>`).join('');
@@ -1047,7 +1066,12 @@ function resumenPorDueno(){
   // tiene dueno==='' y antes quedaba totalmente afuera de este reporte.
   // Comparar siempre contra el dueno CRUDO (partes.dueno, ya normalizado a
   // '' por partesClave -- nunca undefined); textoFirma() solo para mostrar.
-  const grupos = DUENOS.includes('') ? DUENOS : [...DUENOS, ''];
+  const grupos = DUENOS.includes('') ? DUENOS.slice() : [...DUENOS, ''];
+  // 3/11/2026: los dueños de texto libre ("Otro (escribir)…") que hoy tienen animales también entran, rotulados
+  // "ajeno" -- antes la hacienda de terceros contaba en el stock y las UG pero faltaba en este reporte.
+  const ajenos = new Set();
+  POTREROS_GEO.forEach(p=> duenosAjenosEnPotrero(p.nombre).forEach(d=> ajenos.add(d)));
+  Array.from(ajenos).sort((a,b)=> a.localeCompare(b,'es')).forEach(d=> grupos.push(d));
   return grupos.map(dueno=>{
     const categorias = {};
     let ug = 0;
@@ -1061,7 +1085,7 @@ function resumenPorDueno(){
       ug += ugPorDuenoEnPotrero(p.nombre, true)[dueno] || 0;
     });
     const total = Object.values(categorias).reduce((s,c)=>s+c,0);
-    return {dueno: textoFirma(dueno), categorias, total, ug, dotacion: totalHa>0 ? ug/totalHa : 0};
+    return {dueno: textoFirma(dueno) + (esDuenoAjeno(dueno) ? ' (ajeno)' : ''), ajeno: esDuenoAjeno(dueno), categorias, total, ug, dotacion: totalHa>0 ? ug/totalHa : 0};
   }).filter(d=>d.total>0);
 }
 /* Migración de una sola vez: si alguna vez se guardó una clave de "animales"
@@ -1534,7 +1558,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'campo-1.57';
+const VERSION_APP = 'campo-1.58';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -2898,7 +2922,8 @@ function aplicarEventoRemoto(row, potrerosSucios){
   if(row.tipo==='ingreso' || row.tipo==='nacimiento' || row.tipo==='compra'){
     a[key] = (a[key]||0) + d.cantidad;
   } else if(row.tipo==='muerte' || row.tipo==='venta' || row.tipo==='consumo'){
-    a[key] = Math.max(0, (a[key]||0) - d.cantidad);
+    // 3/11/2026: un consumo cargado sin stock suficiente en la app trae `faltante` (lo que no estaba): solo se resta lo que había
+    a[key] = Math.max(0, (a[key]||0) - (d.cantidad - (row.tipo==='consumo' ? (Number(d.faltante)||0) : 0)));
   } else {
     return;
   }
@@ -3364,7 +3389,7 @@ function aplicarAjusteReversion(ajuste, fecha){
     const p = estado.potreros[ajuste.potrero]; if(!p) return;
     const key = claveAnimal(ajuste.categoria, ajuste.dueno);
     const totalAntes = totalPotrero(ajuste.potrero);
-    const delta = ajuste.tipo==='sumar' ? ajuste.cantidad : -ajuste.cantidad;
+    const delta = ajuste.tipo==='sumar' ? ajuste.cantidad - (Number(ajuste.faltante)||0) : -ajuste.cantidad;
     p.animales[key] = Math.max(0, (p.animales[key]||0) + delta);
     registrarCambioOcupacion(ajuste.potrero, totalAntes, fecha);
   } else if(ajuste.tipo==='retorno_campo_ajeno_ajuste' || ajuste.tipo==='envio_campo_ajeno_ajuste'){
@@ -3555,7 +3580,9 @@ function construirAjusteInverso(h, potreroHost){
   }
   if(h.tipo==='muerte' || h.tipo==='venta' || h.tipo==='consumo'){
     return Object.assign({tipo:'sumar', potrero: e.potrero, categoria: e.categoria, dueno: e.dueno, cantidad: e.cantidad},
-      (h.tipo==='muerte' && grupoTerneroValido(e.grupoTernero)) ? {grupoTernero: e.grupoTernero} : {});
+      (h.tipo==='muerte' && grupoTerneroValido(e.grupoTernero)) ? {grupoTernero: e.grupoTernero} : {},
+      // 3/11/2026: deshacer un consumo con faltante devuelve solo lo que se había restado (cantidad - faltante)
+      (h.tipo==='consumo' && Number(e.faltante) > 0) ? {faltante: Number(e.faltante)} : {});
   }
   if(h.tipo==='envio_campo_ajeno'){
     // deshacer un envío = un retorno: el potrero recupera, campo ajeno devuelve
@@ -5029,11 +5056,22 @@ function renderDetalle(nombre){
   const alertasPotrero = calcularAlertas(nombre);
   const casosPotrero = listarCasosDesaparecidos().filter(c=>c.potreroOrigen===nombre);
   const historialVisible = historial;
+  // 3/11/2026: hacienda de terceros en este potrero (cuenta en el total y en UG/ha; acá se muestra aparte)
+  const ajenosPotrero = duenosAjenosEnPotrero(nombre);
+  const ugAjenas = ajenosPotrero.length ? ugAjenasEnPotrero(nombre) : 0;
+  const bloqueAjena = ajenosPotrero.length ? `<div class="bloque-ajena" style="background:#eef3f8;border-left:3px solid #3f6b8f;border-radius:5px;padding:8px 10px;margin:0 0 10px 0;font-size:12.5px;">
+      <strong>🤝 Hacienda ajena (${ugAjenas.toFixed(1)} UG)</strong>
+      ${ajenosPotrero.map(d=>{
+        const cats = detalleAnimales(estado.potreros[nombre].animales).filter(x=>x.dueno===d && x.cant>0);
+        const n = cats.reduce((s,x)=>s+x.cant,0);
+        return `<div style="margin-top:3px;">${esc(d)}: ${n} — ${cats.map(x=>x.cant+' '+esc(x.cat)).join(', ')}</div>`;
+      }).join('')}
+    </div>` : '';
 
   det.innerHTML = `
     <div class="detalle-titulo"><h2>${esc(nombre)}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
     <div class="total-grande"><strong>${total}</strong>animal${total===1?'':'es'}</div>
-    <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong></div>
+    <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong>${ugAjenas>0 ? ` <span style="color:var(--texto-suave);">(${ugAjenas.toFixed(1)} UG ajenas)</span>` : ''}</div>
     <div class="ocupacion-badge ocupacion-${ocup.tipo}" style="margin-bottom:10px;">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
     ${casosPotrero.length ? `<div style="background:#fdf1de;border-left:3px solid #c68a3b;border-radius:5px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;color:#7a5220;">${casosPotrero.map(c=>`❓ ${c.pendiente} de ${c.cantidadOriginal} ${esc(c.categoria)}${c.dueno?' de '+esc(c.dueno):''} desaparecidos desde ${esc(c.fecha)} — <span style="cursor:pointer;text-decoration:underline;" data-abrir-desaparecidos="1">resolver</span>`).join('<br>')}</div>` : ''}
 
@@ -5044,6 +5082,7 @@ function renderDetalle(nombre){
         <tr class="total"${total<0?' style="color:#d32f2f;"':''}><td>Total (${ug.toFixed(1)} UG)</td><td class="num">${total}</td></tr>
       </tbody>
     </table>
+    ${bloqueAjena}
     <button class="btn btn-secundario btn-full" id="btn-detalle-por-dueno" style="margin-bottom:10px;">👤 Ver por dueño</button>
 
     <div class="acciones">
@@ -5053,6 +5092,7 @@ function renderDetalle(nombre){
       <button class="btn btn-muerte" data-accion="muerte">✕ Muerte</button>
       <button class="btn btn-muerte" data-accion="desaparecido">❓ Desaparecido</button>
       <button class="btn btn-muerte" data-accion="vecino">🏡 Al vecino</button>
+      <button class="btn btn-muerte" data-accion="consumo">🥩 Consumo (faena)</button>
       <button class="btn btn-mover btn-full" data-accion="mover-todo" style="filter:brightness(0.9);">⇄⇄ Mover TODO el potrero</button>
     </div>
 
@@ -5301,6 +5341,52 @@ document.getElementById('menu-herramientas').addEventListener('click', (e)=>{
 });
 
 /* ======================= FORMULARIOS DE ACCIÓN ======================= */
+/* Consumo (faena para el establecimiento), compartido por la acción del potrero (todas las variantes, Campo
+   incluida) y el formulario de Herramientas (3/11/2026). Si el animal no está en el stock de la app (o hay
+   menos de los que se faenan), se resta lo que había -- nunca queda en negativo -- y el evento lleva
+   `sin_stock:true` y `faltante` (cuántos no estaban), para que el resumen lo marque y se regularice la
+   compra/ingreso que faltó cargar. */
+function opcionesCategoriasConsumo(seleccionada){
+  return ['ovino','bovino'].map(esp=>{
+    const opts = Object.keys(ESPECIES[esp]).map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
+    return `<optgroup label="${ESPECIE_LABEL[esp]}">${opts}</optgroup>`;
+  }).join('');
+}
+function registrarConsumoLocal(potrero, cat, dueno, cant, fechaISO, obs){
+  const a = estado.potreros[potrero].animales;
+  const key = claveAnimal(cat, dueno);
+  const disponibles = Math.max(0, a[key] || 0);
+  const descontado = Math.min(cant, disponibles);
+  const faltante = cant - descontado;
+  const fecha = fechaISOaDisplay(fechaISO);
+  const totalAntes = totalPotrero(potrero);
+  if(descontado > 0) a[key] = (a[key] || 0) - descontado;
+  registrarCambioOcupacion(potrero, totalAntes, fecha);
+  const eventId = crypto.randomUUID();
+  const extra = {potrero, categoria: cat, dueno, cantidad: cant, obs: obs||null, _fechaISO: fechaISO};
+  const det = {categoria: cat, dueno, cantidad: cant, obs: obs||null};
+  if(faltante > 0){ extra.faltante = faltante; det.faltante = faltante; det.sin_stock = true; }
+  const faltTxt = faltante > 0 ? ` (${faltante} no ${faltante===1?'estaba':'estaban'} en la app)` : '';
+  registrarHistorial(potrero, 'consumo', `Consumo: -${cant} ${cat}${dueno?' de '+dueno:''}${obs ? ' — '+obs : ''}${faltTxt}`,
+    extra, undefined, fecha).eventId = eventId;
+  const envio = enviarEvento('consumo', potrero, det, fecha, {eventId});
+  guardarEstado(); actualizarTodo(); publicarStockPotreros([potrero]);
+  return {envio, faltante};
+}
+/* Aviso antes de registrar un consumo que supera lo que la app tiene de esa categoría/dueño. */
+function confirmarConsumoSinStock(potrero, cat, dueno, cant){
+  const hay = Math.max(0, (estado.potreros[potrero].animales[claveAnimal(cat, dueno)]) || 0);
+  if(cant <= hay) return true;
+  return confirm(`En ${potrero} la app tiene ${hay} ${cat}${dueno?' de '+dueno:''} y vas a faenar ${cant}. ¿Registrar igual? Se resta lo que hay y queda anotado que ${cant-hay} no estaba${cant-hay===1?'':'n'} en la app.`);
+}
+/* Dueño del consumo: los de la lista, los ajenos que ya hay en el potrero y "Otro (escribir)…" (animal que la app no tiene). */
+function opcionesDuenosConsumo(nombre, seleccionado){
+  const enBlanco = CONFIG.duenoObligatorio ? '' : `<option value="" ${!seleccionado?'selected':''}>— sin asignar —</option>`;
+  const lista = DUENOS.filter(d=>d).concat(nombre && estado.potreros[nombre] ? duenosAjenosEnPotrero(nombre) : []);
+  if(seleccionado && !lista.includes(seleccionado)) lista.push(seleccionado);
+  return enBlanco + lista.map(d=>`<option value="${esc(d)}" ${d===seleccionado?'selected':''}>${esc(d)}</option>`).join('')
+    + '<option value="__otro__">Otro (escribir)…</option>';
+}
 function opcionesCategorias(seleccionada){
   return Object.entries(ESPECIES).map(([esp,cats])=>{
     const opts = Object.keys(cats).map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
@@ -5750,6 +5836,46 @@ function mostrarFormulario(nombre, accion, prefill){
       // las fotos van después de la muerte: el evento `muerte` queda primero en la cola y cada muerte_foto sale detrás
       fotosMuerte.forEach(b => encolarFoto('muerte', eventId, b, 'registro'));
       toast(`Muerte registrada en ${nombre}`);
+    });
+    document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
+  }
+
+  // 3/11/2026: 🥩 Consumo (faena) desde el potrero -- también en Campo. Ver registrarConsumoLocal().
+  if(accion==='consumo'){
+    const pre = prefill || {};
+    zona.innerHTML = `
+      <div class="form-accion">
+        <h3>Consumo (faena) en ${esc(nombre)}</h3>
+        <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Animales que se faenan para consumo de carne: se restan del potrero. Si el animal no figura en la app se resta lo que haya y queda anotado cuántos faltaban.</p>
+        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategoriasConsumo(pre.categoria)}</select></div>
+        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenosConsumo(nombre, pre.dueno)}</select>
+          <input type="text" id="f-dueno-otro" placeholder="Escribir dueño/procedencia" style="display:none;margin-top:6px;"></div>
+        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${pre.cantidad||1}"></div>
+        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${pre._fechaISO?pre._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: cordero para la casa" value="${esc(pre.obs||'')}"></div>
+        <div class="form-botones">
+          <button class="btn btn-muerte" id="f-confirmar">${prefill?'Guardar corrección':'Registrar consumo'}</button>
+          <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
+        </div>
+      </div>`;
+    document.getElementById('f-dueno').addEventListener('change', (e)=>{
+      const libre = document.getElementById('f-dueno-otro');
+      libre.style.display = e.target.value==='__otro__' ? '' : 'none';
+      if(e.target.value==='__otro__') libre.focus();
+    });
+    document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const cat = document.getElementById('f-cat').value;
+      const dueno = valorDueno('f-dueno');
+      const cant = parseInt(document.getElementById('f-cant').value,10);
+      const fechaISO = document.getElementById('f-fecha').value;
+      const obs = document.getElementById('f-obs').value.trim();
+      if(document.getElementById('f-dueno').value==='__otro__' && !dueno){ toast('Escribí el dueño o procedencia'); return; }
+      if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
+      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      if(!confirmarConsumoSinStock(nombre, cat, dueno, cant)) return;
+      const {faltante} = registrarConsumoLocal(nombre, cat, dueno, cant, fechaISO, obs);
+      cerrarDetalle();
+      toast(faltante ? `Consumo registrado en ${nombre} (${faltante} no estaban en la app)` : `Consumo registrado: ${cant} ${cat} de ${nombre}`);
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
