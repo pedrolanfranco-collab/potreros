@@ -413,6 +413,27 @@
   #df-tabla tr.df-det td{padding-top:0;border-bottom:1px solid #eee6cd;font-size:12px;color:var(--texto-suave);}
   #df-tabla tr.df-det td.df-ojo{color:var(--ocre);font-weight:600;}
   #df-notas p{font-size:12px;color:var(--texto-suave);margin:4px 0;line-height:1.4;}
+  /* 3/11/2026: pantalla "🧴 Insumos" (stock de productos veterinarios; La Vuelta y María Laura, CONFIG.insumos). */
+  #modal-insumos .modal-box, #modal-insumos-form .modal-box{max-width:560px;}
+  .ins-aviso{font-size:13px;line-height:1.4;margin:0 0 10px;padding:8px 10px;border-radius:8px;background:#eef4e6;border:1px solid var(--verde-campo);color:var(--texto);}
+  .ins-aviso.ins-offline{background:#fbf1de;border-color:var(--ocre);}
+  .ins-aviso.ins-error{background:#f7e3df;border-color:var(--rojo-hacienda);}
+  .ins-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--linea);border-left:8px solid var(--verde-campo);border-radius:8px;padding:8px 10px;margin:0 0 6px;}
+  .ins-item.ins-amarillo{border-left-color:var(--ocre);background:#fbf1de;}
+  .ins-item.ins-rojo{border-left-color:var(--rojo-hacienda);background:#f7e3df;}
+  .ins-nombre{font-weight:700;font-size:14px;line-height:1.25;}
+  .ins-fecha{font-size:12px;color:var(--texto-suave);margin-top:2px;}
+  .ins-der{text-align:right;flex:none;}
+  .ins-stock{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;}
+  .ins-frascos{font-size:12px;color:var(--texto-suave);}
+  .ins-estado{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:10px;padding:1px 8px;margin-top:2px;background:#dfe9d3;color:#2b3a24;}
+  .ins-amarillo .ins-estado{background:#f2d9a8;color:#6b4a0c;}
+  .ins-rojo .ins-estado{background:#e8b9b0;color:#7a2417;}
+  .ins-cola-titulo{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);margin:12px 0 6px;}
+  .ins-item.ins-encola{border-left-color:#8a8060;border-style:dashed;background:#faf6ea;}
+  .ins-encola .ins-estado{background:#e6e0c8;color:#4a4430;}
+  #ins-ayuda-frascos{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  #ins-form-error{color:var(--rojo-hacienda);font-size:13px;margin:6px 0;min-height:1px;}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
 
   input[type=file]{display:none;}
@@ -549,7 +570,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.20 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.21 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -613,6 +634,7 @@
           <div class="hg-grid">
             <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
             <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
+            <button class="btn btn-json" id="btn-insumos" style="display:none;">🧴 Insumos</button>
             <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
             <button class="btn btn-json" id="btn-guias" style="display:none;">📑 Movimientos DICOSE</button>
             <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
@@ -1146,6 +1168,56 @@
     <div class="form-botones"><button class="btn btn-secundario" id="pesadas-cerrar">Cerrar</button></div>
   </div>
 </div>
+<div id="modal-insumos" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🧴 Insumos</h3>
+    <button class="btn-cerrar-x" id="insumos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info" id="ins-subtitulo">Stock de productos veterinarios del galpón.</p>
+    <div id="ins-aviso" class="ins-aviso" role="status" style="display:none;"></div>
+    <div id="ins-lista"></div>
+    <div id="ins-cola"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="ins-nuevo">+ Cargar movimiento</button>
+      <button class="btn btn-secundario" id="ins-actualizar">🔄 Actualizar</button>
+      <button class="btn btn-secundario" id="insumos-cerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div id="modal-insumos-form" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🧴 Cargar insumo</h3>
+    <button class="btn-cerrar-x" id="insumos-form-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <div class="form-row"><label for="ins-tipo">Qué cargás</label>
+      <select id="ins-tipo">
+        <option value="inicial">Conteo del galpón</option>
+        <option value="ajuste">Ajuste (+ o −)</option>
+        <option value="pasaje_salida">Pasaje a otro campo</option>
+      </select>
+    </div>
+    <p class="modal-info" id="ins-tipo-ayuda"></p>
+    <div class="form-row"><label for="ins-producto">Producto</label>
+      <input type="text" id="ins-producto" list="ins-productos-lista" autocomplete="off" placeholder="Escribí para buscar">
+      <datalist id="ins-productos-lista"></datalist>
+    </div>
+    <div class="form-row" id="ins-fila-destino" style="display:none;"><label>Destino</label><input type="text" id="ins-destino" readonly></div>
+    <div class="form-row"><label for="ins-cantidad">Cantidad (ml)</label>
+      <input type="text" id="ins-cantidad" inputmode="decimal" autocomplete="off" placeholder="Ej: 500">
+    </div>
+    <div class="form-row"><label>Ayuda: frascos × ml por frasco (opcional)</label>
+      <div id="ins-ayuda-frascos">
+        <input type="text" id="ins-frascos" inputmode="decimal" autocomplete="off" placeholder="N° de frascos" aria-label="Número de frascos">
+        <input type="text" id="ins-ml-frasco" inputmode="decimal" autocomplete="off" placeholder="ml por frasco" aria-label="ml por frasco">
+      </div>
+    </div>
+    <div class="form-row"><label for="ins-fecha">Fecha</label><input type="date" id="ins-fecha"></div>
+    <div class="form-row"><label for="ins-nota">Nota (opcional)</label><input type="text" id="ins-nota" maxlength="200" autocomplete="off"></div>
+    <div id="ins-form-error" role="alert"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="ins-guardar">Guardar</button>
+      <button class="btn btn-secundario" id="ins-form-cancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 <div id="modal-coef" class="modal-overlay" style="display:none;">
   <div class="modal-box">
@@ -1270,7 +1342,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.20","versionMovil":"2.19","simpleHabilitado":true,"versionMovilSimple":"1.59","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.21","versionMovil":"2.20","simpleHabilitado":true,"versionMovilSimple":"1.60","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Fase 3, paso 5 (12/10/2026, "Verificar stock", solo PC): los potreros TAL COMO VIENEN EN EL ARCHIVO. POTREROS_GEO es este
@@ -1994,7 +2066,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-2.20';
+const VERSION_APP = 'pc-2.21';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = false;
@@ -3417,6 +3489,7 @@ async function sincronizar(mostrarToast){
   sincronizando = true;
   actualizarEstadoSync('sincronizando');
   verificarClaveGuardada(); // Fase 4: una vez por apertura, no espera ni frena la sincronización
+  if(CONFIG.insumos) insumosAlSincronizar(); // 3/11/2026: cola y stock de Insumos; en segundo plano, no frena ni rompe la sincronización
   try{
     // Antes de que el forEach de abajo pise ultimaSincronizacion -- si es
     // null, esta es la primera sincronización de este dispositivo (recién
@@ -6070,6 +6143,8 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['dp-cerrar-x', 'dp-cancelar'],
   ['caravana-cerrar-x', 'caravana-cerrar'],
   ['pesadas-cerrar-x', 'pesadas-cerrar'],
+  ['insumos-cerrar-x', 'insumos-cerrar'],
+  ['insumos-form-cerrar-x', 'ins-form-cancelar'],
 ].forEach(([xId, targetId])=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
@@ -10710,6 +10785,401 @@ if(CONFIG.pesadasHistorial && document.getElementById('modal-pesadas')){
   document.getElementById('pesadas-cerrar').addEventListener('click', ()=>{
     document.getElementById('modal-pesadas').style.display = 'none';
   });
+}
+
+/* ======================= INSUMOS (stock de productos veterinarios) =======================
+   3/11/2026, a pedido de Pedro. Solo donde CONFIG.insumos es true (La Vuelta y María Laura); Pone Chico no lo tiene:
+   el botón queda oculto y no se hace ni una consulta.
+   El stock lo calcula Supabase (RPC `stock_insumos_app()`, sin argumentos: devuelve establecimiento, producto, fecha_conteo,
+   inicial_ml, entradas_ml, salidas_ml, stock_ml, estado) y la app SOLO lo muestra. Lo que se carga va a la tabla
+   `insumos_ajustes` (tipo inicial / ajuste / pasaje_salida; el `pasaje_entrada` del otro campo lo genera la base, NUNCA se
+   inserta desde acá). Nada de esto toca `estado`, `eventos_sync` ni su cola: tiene su propio registro en localStorage
+   (INSUMOS_KEY: último stock con su hora, catálogo, cola de cargas sin enviar y ml por frasco), así no cambia ni el
+   Backup JSON, ni Verificar stock, ni la idempotencia de los eventos.
+   Cola: cada carga se guarda en el equipo ANTES de mandarla, con un `uid` (uuid) propio; se manda de a una y recién se
+   saca cuando Supabase confirma. Un 23505 (uid repetido: ya llegó) cuenta como enviado, así un reintento no duplica.
+   Se vacía al abrir la pantalla, al guardar y en cada sincronización (sincronizar() → insumosAlSincronizar()). */
+const INSUMOS_ACTIVO = !!CONFIG.insumos;
+const INSUMOS_KEY = ESTABLECIMIENTO + '_insumos_v1';
+const INSUMOS_CAMPOS = { la_vuelta: 'La Vuelta', maria_laura: 'María Laura' };
+const INSUMOS_OTRO_CAMPO = { la_vuelta: 'maria_laura', maria_laura: 'la_vuelta' };
+const INSUMOS_TIPOS = { inicial: 'Conteo del galpón', ajuste: 'Ajuste', pasaje_salida: 'Pasaje a otro campo' };
+const INSUMOS_CATALOGO_VIGENCIA_MS = 12 * 60 * 60 * 1000;
+let _insEnviando = false;
+let _insUltimoError = null;   // texto del último fallo al leer el stock; null si la última lectura anduvo
+let _insFicha = 0;            // cambia en cada apertura/cierre: una lectura que termina tarde no pinta una ventana que ya no es la suya
+
+function insLeer(){
+  let st = null;
+  try{ st = JSON.parse(localStorage.getItem(INSUMOS_KEY) || 'null'); }catch(e){ st = null; }
+  if(!st || typeof st !== 'object' || Array.isArray(st)) st = {};
+  if(!Array.isArray(st.cola)) st.cola = [];
+  if(!st.envases || typeof st.envases !== 'object' || Array.isArray(st.envases)) st.envases = {};
+  return st;
+}
+function insGuardar(st){
+  try{ localStorage.setItem(INSUMOS_KEY, JSON.stringify(st)); return true; }catch(e){ return false; }
+}
+function insNuevoUid(){
+  if(window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+}
+/* Número escrito a mano: acepta coma o punto decimal, signo − o -, y "1.500" como mil quinientos (en ml un punto con
+   tres cifras detrás es casi seguro un separador de miles). Devuelve NaN si no es un número. */
+function insNumero(txt){
+  let s = String(txt == null ? '' : txt).trim().replace(/\s/g, '').replace(/[−–]/g, '-');
+  if(!s) return NaN;
+  if(s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+  else if(/^[+-]?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  if(!/^[+-]?\d+(\.\d+)?$/.test(s)) return NaN;
+  return Number(s);
+}
+function insFmt(n){
+  const x = Math.round(Number(n) * 10) / 10;
+  if(!isFinite(x)) return '—';
+  const partes = Math.abs(x).toFixed(1).replace(/\.0$/, '').split('.');
+  const ent = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (x < 0 ? '−' : '') + ent + (partes[1] ? ',' + partes[1] : '');
+}
+function insFechaCorta(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+  return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso || '');
+}
+function insHoraCorta(iso){
+  const d = new Date(iso);
+  if(!iso || isNaN(d.getTime())) return '';
+  const dos = n => String(n).padStart(2, '0');
+  return dos(d.getDate()) + '/' + dos(d.getMonth() + 1) + ' ' + dos(d.getHours()) + ':' + dos(d.getMinutes());
+}
+function insNorm(t){
+  return String(t == null ? '' : t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+/* Verde / amarillo / rojo. Rojo: "sin stock", stock cero o negativo, o sin dato ("revisar"). Amarillo: menos del 20 % de
+   (inicial + entradas) o menos de 100 ml. */
+function insClasificar(f){
+  const estado = insNorm(f && f.estado);
+  const stock = (f && f.stock_ml != null && f.stock_ml !== '') ? Number(f.stock_ml) : NaN;
+  if(estado.indexOf('negativo') >= 0 || estado.indexOf('revisar') >= 0 || !isFinite(stock) || stock < 0) return { clase: 'rojo', texto: 'revisar' };
+  if(estado === 'sin stock' || stock === 0) return { clase: 'rojo', texto: 'sin stock' };
+  const base = (Number(f.inicial_ml) || 0) + (Number(f.entradas_ml) || 0);
+  if(stock < 100 || stock < 0.2 * base) return { clase: 'amarillo', texto: 'poco' };
+  return { clase: 'verde', texto: 'ok' };
+}
+const INSUMOS_ORDEN = { rojo: 0, amarillo: 1, verde: 2 };
+function insTextoFrascos(producto, stockMl, envases){
+  const env = Number(envases && envases[producto]);
+  if(!(env > 0) || !isFinite(Number(stockMl))) return '';
+  const n = Math.round(Number(stockMl) / env * 10) / 10;
+  return '≈ ' + insFmt(n) + (n === 1 ? ' frasco' : ' frascos') + ' de ' + insFmt(env) + ' ml';
+}
+function insNombresProductos(){
+  const st = insLeer();
+  const set = new Map();
+  ((st.catalogo && st.catalogo.filas) || []).forEach(f => { if(f && f.producto) set.set(insNorm(f.producto), String(f.producto)); });
+  ((st.stock && st.stock.filas) || []).forEach(f => { if(f && f.producto && !set.has(insNorm(f.producto))) set.set(insNorm(f.producto), String(f.producto)); });
+  return [...set.values()].sort((a, b) => a.localeCompare(b, 'es'));
+}
+function insDestinoDe(){ return INSUMOS_OTRO_CAMPO[ESTABLECIMIENTO] || ''; }
+
+/* ---- lectura del stock y del catálogo (con copia para cuando no hay señal) ---- */
+async function insRefrescarStock(){
+  const client = clienteSupabase();
+  if(!client || typeof client.rpc !== 'function' || !navigator.onLine) return false;
+  try{
+    const res = await client.rpc('stock_insumos_app');
+    if(!res || res.error || !Array.isArray(res.data)){
+      const e = (res && res.error) || {};
+      _insUltimoError = String(e.message || e.code || 'sin respuesta').slice(0, 120);
+      return false;
+    }
+    const filas = limpiarTextoRemoto(res.data).filter(f => f && f.establecimiento === ESTABLECIMIENTO);
+    const st = insLeer();
+    st.stock = { filas, hora: new Date().toISOString() };
+    insGuardar(st);
+    _insUltimoError = null;
+    return true;
+  }catch(e){
+    _insUltimoError = String((e && e.message) || e).slice(0, 120);
+    return false;
+  }
+}
+async function insRefrescarCatalogo(forzar){
+  const client = clienteSupabase();
+  if(!client || typeof client.from !== 'function' || !navigator.onLine) return false;
+  const actual = insLeer();
+  const horaCat = actual.catalogo && Date.parse(actual.catalogo.hora);
+  if(!forzar && horaCat && Date.now() - horaCat < INSUMOS_CATALOGO_VIGENCIA_MS && actual.catalogo.filas && actual.catalogo.filas.length) return true;
+  try{
+    const res = await client.from('productos_catalogo').select('producto,tipo,categoria,valor_dosis_ml,dias_retiro').order('producto', { ascending: true }).limit(1000);
+    if(!res || res.error || !Array.isArray(res.data)) return false;
+    const filas = limpiarTextoRemoto(res.data).filter(f => f && f.producto);
+    if(!filas.length) return false;
+    const st = insLeer();
+    st.catalogo = { filas, hora: new Date().toISOString() };
+    insGuardar(st);
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ---- cola de cargas ---- */
+function insFilaParaEnviar(it){
+  const fila = {
+    establecimiento: it.establecimiento, producto: it.producto, fecha: it.fecha, tipo: it.tipo,
+    cantidad_ml: it.cantidad_ml, nota: it.nota || null, uid: it.uid, dispositivo: it.dispositivo
+  };
+  if(it.autor) fila.autor = it.autor;
+  if(it.tipo === 'pasaje_salida') fila.destino = it.destino;
+  return fila;
+}
+function insEsPasajero(res, err){
+  const status = Number(res && res.status) || Number(err && err.status) || 0;
+  if(!status) return !(err && /^(22|23|42|PGRST)/.test(String(err.code || '')));  // sin respuesta: pasajero; un código de la base: permanente
+  return status >= 500 || status === 408 || status === 429;
+}
+/* Manda las cargas pendientes de a una, en orden. Devuelve {enviados, pendientes, error}. */
+async function insVaciarCola(){
+  const vacio = { enviados: 0, pendientes: insLeer().cola.length, error: null };
+  if(!INSUMOS_ACTIVO || _insEnviando) return vacio;
+  const client = clienteSupabase();
+  if(!client || typeof client.from !== 'function' || !navigator.onLine) return vacio;
+  _insEnviando = true;
+  let enviados = 0, error = null;
+  try{
+    const uids = insLeer().cola.map(it => it.uid);
+    for(const uid of uids){
+      const it = insLeer().cola.find(x => x.uid === uid);
+      if(!it) continue;  // otra pestaña ya la mandó
+      let res;
+      try{ res = await client.from('insumos_ajustes').insert(insFilaParaEnviar(it)); }
+      catch(e){ res = { error: { message: String((e && e.message) || e), code: '' } }; }
+      const err = res && res.error;
+      if(err && String(err.code) !== '23505'){
+        const st = insLeer();
+        const x = st.cola.find(y => y.uid === uid);
+        const pasajero = insEsPasajero(res, err);
+        if(x){ x.error = String(err.message || err.code || 'error').slice(0, 160); x.permanente = !pasajero; x.intentos = (x.intentos || 0) + 1; insGuardar(st); }
+        error = x && x.error;
+        if(pasajero) break;   // sin señal o servidor caído: se sigue en la próxima
+        continue;             // la base la rechazó: no frena a las demás
+      }
+      const st = insLeer();
+      st.cola = st.cola.filter(y => y.uid !== uid);
+      insGuardar(st);
+      enviados++;
+    }
+  }finally{
+    _insEnviando = false;
+  }
+  return { enviados, pendientes: insLeer().cola.length, error };
+}
+
+/* ---- pantalla ---- */
+function insAbierta(){ const m = document.getElementById('modal-insumos'); return !!m && m.style.display !== 'none'; }
+function insRender(){
+  const modal = document.getElementById('modal-insumos');
+  if(!modal) return;
+  const st = insLeer();
+  const sinSenal = !navigator.onLine || !clienteSupabase();
+  const hora = st.stock && insHoraCorta(st.stock.hora);
+  const aviso = document.getElementById('ins-aviso');
+  let texto = '', clase = 'ins-aviso';
+  if(sinSenal){
+    texto = hora ? 'Sin señal — datos del ' + hora : 'Sin señal — todavía no hay datos guardados en este equipo';
+    clase += ' ins-offline';
+  }else if(_insUltimoError){
+    texto = 'No se pudo actualizar (' + _insUltimoError + ')' + (hora ? ' — datos del ' + hora : ' — todavía no hay datos guardados en este equipo');
+    clase += ' ins-error';
+  }else if(hora){
+    texto = 'Actualizado ' + hora;
+  }
+  aviso.className = clase;
+  aviso.textContent = texto;
+  aviso.style.display = texto ? '' : 'none';
+  document.getElementById('ins-subtitulo').textContent = CONFIG.nombre + ' · stock de productos veterinarios del galpón';
+  const filas = ((st.stock && st.stock.filas) || []).map(f => ({ f, c: insClasificar(f) }))
+    .sort((a, b) => INSUMOS_ORDEN[a.c.clase] - INSUMOS_ORDEN[b.c.clase] || String(a.f.producto).localeCompare(String(b.f.producto), 'es'));
+  let html = '';
+  filas.forEach(({ f, c }) => {
+    const frascos = insTextoFrascos(f.producto, f.stock_ml, st.envases);
+    html += '<div class="ins-item ins-' + c.clase + '" data-producto="' + esc(f.producto) + '" data-clase="' + c.clase + '">'
+      + '<div><div class="ins-nombre">' + esc(f.producto) + '</div>'
+      + '<div class="ins-fecha">' + (f.fecha_conteo ? 'Último conteo: ' + esc(insFechaCorta(f.fecha_conteo)) : 'Sin fecha de conteo') + '</div></div>'
+      + '<div class="ins-der"><div class="ins-stock">' + esc(insFmt(f.stock_ml)) + ' ml</div>'
+      + (frascos ? '<div class="ins-frascos">' + esc(frascos) + '</div>' : '')
+      + '<div class="ins-estado">' + esc(c.texto) + '</div></div></div>';
+  });
+  if(!filas.length) html = '<p class="modal-info">' + (st.stock ? 'No hay productos con conteo inicial todavía. Cargá un "Conteo del galpón" para empezar.' : 'Todavía no se pudo leer el stock.') + '</p>';
+  document.getElementById('ins-lista').innerHTML = html;
+  let cola = '';
+  if(st.cola.length){
+    cola = '<div class="ins-cola-titulo">En cola (' + st.cola.length + ') — se mandan cuando haya señal</div>';
+    st.cola.forEach(it => {
+      const signo = it.tipo === 'ajuste' && it.cantidad_ml > 0 ? '+' : '';
+      const destino = it.tipo === 'pasaje_salida' ? ' → ' + esc(INSUMOS_CAMPOS[it.destino] || it.destino) : '';
+      cola += '<div class="ins-item ins-encola" data-uid="' + esc(it.uid) + '">'
+        + '<div><div class="ins-nombre">' + esc(it.producto) + '</div>'
+        + '<div class="ins-fecha">' + esc(INSUMOS_TIPOS[it.tipo] || it.tipo) + destino + ' · ' + esc(insFechaCorta(it.fecha)) + '</div>'
+        + (it.error ? '<div class="ins-fecha" style="color:var(--rojo-hacienda);">No se pudo mandar: ' + esc(it.error) + '</div>' : '') + '</div>'
+        + '<div class="ins-der"><div class="ins-stock">' + signo + esc(insFmt(it.cantidad_ml)) + ' ml</div>'
+        + '<div class="ins-estado">en cola</div>'
+        + (it.permanente ? '<div><button class="btn btn-secundario" data-quitar="' + esc(it.uid) + '" style="padding:2px 8px;font-size:12px;">Quitar</button></div>' : '')
+        + '</div></div>';
+    });
+  }
+  document.getElementById('ins-cola').innerHTML = cola;
+}
+async function insActualizarTodo(){
+  const ficha = _insFicha;
+  await insVaciarCola();
+  await insRefrescarStock();
+  await insRefrescarCatalogo(false);
+  if(ficha === _insFicha && insAbierta()) insRender();
+}
+async function abrirInsumos(){
+  const ficha = ++_insFicha;
+  document.getElementById('modal-insumos').style.display = 'flex';
+  insRender();   // primero lo que hay guardado en el equipo; después se actualiza si hay señal
+  if(!navigator.onLine || !clienteSupabase()) return;
+  document.getElementById('ins-actualizar').disabled = true;
+  try{ await insActualizarTodo(); }
+  finally{ if(ficha === _insFicha) document.getElementById('ins-actualizar').disabled = false; }
+}
+function cerrarInsumos(){
+  _insFicha++;
+  document.getElementById('modal-insumos').style.display = 'none';
+}
+/* Lo llama sincronizar(): sin esperar a nadie y sin poder romper la sincronización. */
+async function insumosAlSincronizar(){
+  if(!INSUMOS_ACTIVO) return;
+  try{
+    await insVaciarCola();
+    await insRefrescarStock();
+    await insRefrescarCatalogo(false);
+    if(insAbierta()) insRender();
+  }catch(e){ console.warn('Insumos', e); }
+}
+
+/* ---- formulario ---- */
+function insFormError(txt){ document.getElementById('ins-form-error').textContent = txt || ''; }
+function insActualizarTipoForm(){
+  const tipo = document.getElementById('ins-tipo').value;
+  const otro = insDestinoDe();
+  document.getElementById('ins-fila-destino').style.display = tipo === 'pasaje_salida' ? '' : 'none';
+  document.getElementById('ins-destino').value = INSUMOS_CAMPOS[otro] || otro;
+  const ayudas = {
+    inicial: 'Contá lo que hay hoy en el galpón. Ese número es el punto de partida del stock.',
+    ajuste: 'Para corregir el stock. Escribí un número positivo si sobra o negativo (con −) si falta. Ej: −50.',
+    pasaje_salida: 'Sale del galpón de este campo y entra en el de ' + (INSUMOS_CAMPOS[otro] || otro) + '. Escribí la cantidad en positivo.'
+  };
+  document.getElementById('ins-tipo-ayuda').textContent = ayudas[tipo] || '';
+}
+function insCompletarProductosLista(){
+  document.getElementById('ins-productos-lista').innerHTML = insNombresProductos().map(n => '<option value="' + esc(n) + '"></option>').join('');
+}
+function insResolverProducto(txt){
+  const t = insNorm(txt);
+  if(!t) return null;
+  return insNombresProductos().find(n => insNorm(n) === t) || null;
+}
+function insPrecargarEnvase(){
+  const campo = document.getElementById('ins-ml-frasco');
+  if(campo.value.trim()) return;
+  const prod = insResolverProducto(document.getElementById('ins-producto').value);
+  const env = prod && Number(insLeer().envases[prod]);
+  if(env > 0) campo.value = String(env).replace('.', ',');
+}
+function insCalcularDesdeFrascos(){
+  const n = insNumero(document.getElementById('ins-frascos').value);
+  const ml = insNumero(document.getElementById('ins-ml-frasco').value);
+  if(n > 0 && ml > 0){
+    const total = Math.round(n * ml * 100) / 100;
+    document.getElementById('ins-cantidad').value = String(total).replace('.', ',');
+  }
+}
+async function abrirFormInsumos(){
+  ['ins-producto', 'ins-cantidad', 'ins-frascos', 'ins-ml-frasco', 'ins-nota'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('ins-tipo').value = 'inicial';
+  document.getElementById('ins-fecha').value = fechaISOHoy();
+  insFormError('');
+  insActualizarTipoForm();
+  insCompletarProductosLista();
+  document.getElementById('modal-insumos-form').style.display = 'flex';
+  // la lista de productos se baja en segundo plano si todavía no está (o está vieja); con señal mala se usa la guardada
+  if(navigator.onLine && await insRefrescarCatalogo(false)) insCompletarProductosLista();
+}
+function cerrarFormInsumos(){ document.getElementById('modal-insumos-form').style.display = 'none'; }
+async function guardarFormInsumos(){
+  const tipo = document.getElementById('ins-tipo').value;
+  if(!INSUMOS_TIPOS[tipo]) return insFormError('Elegí qué cargás.');
+  const escrito = document.getElementById('ins-producto').value.trim();
+  if(!escrito) return insFormError('Elegí el producto.');
+  let producto = insResolverProducto(escrito);
+  if(!producto){
+    if(insNombresProductos().length) return insFormError('Ese producto no está en la lista. Elegilo de las sugerencias.');
+    producto = escrito.slice(0, 120);  // sin lista guardada (nunca hubo señal): se guarda como se escribió
+  }
+  const cantidad = insNumero(document.getElementById('ins-cantidad').value);
+  if(!isFinite(cantidad)) return insFormError('Escribí la cantidad en ml, solo con números.');
+  if(tipo === 'ajuste' ? cantidad === 0 : cantidad <= 0) return insFormError(tipo === 'ajuste' ? 'El ajuste no puede ser 0.' : 'La cantidad tiene que ser mayor que 0.');
+  if(Math.abs(cantidad) > 10000000) return insFormError('Esa cantidad es demasiado grande. Revisala.');
+  const fecha = document.getElementById('ins-fecha').value;
+  const fd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha);
+  if(!fd || isNaN(new Date(fecha + 'T00:00:00').getTime())) return insFormError('Elegí la fecha.');
+  const destino = tipo === 'pasaje_salida' ? insDestinoDe() : null;
+  if(tipo === 'pasaje_salida' && !destino) return insFormError('No se sabe a qué campo pasar.');
+  const item = {
+    uid: insNuevoUid(), establecimiento: ESTABLECIMIENTO, producto, fecha, tipo,
+    cantidad_ml: Math.round(cantidad * 100) / 100, nota: document.getElementById('ins-nota').value.trim().slice(0, 200),
+    dispositivo: idDispositivo(), autor: usuarioActual() || null, creado: new Date().toISOString()
+  };
+  if(destino) item.destino = destino;
+  const st = insLeer();
+  st.cola.push(item);
+  const mlFrasco = insNumero(document.getElementById('ins-ml-frasco').value);
+  if(mlFrasco > 0) st.envases[producto] = mlFrasco;
+  if(!insGuardar(st)) return insFormError('No se pudo guardar en este equipo (memoria llena o navegador bloqueado). No se cargó.');
+  cerrarFormInsumos();
+  insRender();
+  const r = await insVaciarCola();
+  if(!r.pendientes){
+    toast('Insumo cargado');
+    await insRefrescarStock();
+  }else{
+    toast(navigator.onLine ? 'Guardado — quedó en cola' : 'Sin señal — quedó en cola y se manda solo');
+  }
+  if(insAbierta()) insRender();
+}
+if(INSUMOS_ACTIVO){
+  const bi = document.getElementById('btn-insumos');
+  if(bi){
+    bi.style.display = '';
+    bi.addEventListener('click', abrirInsumos);
+  }
+  document.getElementById('insumos-cerrar').addEventListener('click', cerrarInsumos);
+  document.getElementById('modal-insumos').addEventListener('click', (e)=>{ if(e.target.id === 'modal-insumos') cerrarInsumos(); });
+  document.getElementById('ins-nuevo').addEventListener('click', abrirFormInsumos);
+  document.getElementById('ins-actualizar').addEventListener('click', ()=>{
+    if(!navigator.onLine){ toast('Sin señal — no se puede actualizar ahora'); insRender(); return; }
+    insActualizarTodo();
+  });
+  document.getElementById('ins-form-cancelar').addEventListener('click', cerrarFormInsumos);
+  document.getElementById('ins-guardar').addEventListener('click', guardarFormInsumos);
+  document.getElementById('ins-tipo').addEventListener('change', insActualizarTipoForm);
+  document.getElementById('ins-producto').addEventListener('input', insPrecargarEnvase);
+  document.getElementById('ins-producto').addEventListener('change', insPrecargarEnvase);
+  document.getElementById('ins-frascos').addEventListener('input', insCalcularDesdeFrascos);
+  document.getElementById('ins-ml-frasco').addEventListener('input', insCalcularDesdeFrascos);
+  document.getElementById('ins-cola').addEventListener('click', (e)=>{
+    const uid = e.target && e.target.getAttribute && e.target.getAttribute('data-quitar');
+    if(!uid) return;
+    if(!confirm('¿Quitar esta carga de la cola? Nunca se va a mandar.')) return;
+    const st = insLeer();
+    st.cola = st.cola.filter(x => x.uid !== uid);
+    insGuardar(st);
+    insRender();
+  });
+  window.addEventListener('online', ()=>{ if(insAbierta()) insRender(); });
+  window.addEventListener('offline', ()=>{ if(insAbierta()) insRender(); });
 }
 
 /* 25/9/2026: "Cargar tratamiento individual" (con caravana) esta disponible

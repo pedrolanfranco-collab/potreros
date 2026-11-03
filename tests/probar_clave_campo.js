@@ -104,6 +104,8 @@ async function levantar(archivo, op){
     } };
     if(op.conRpc){
       c.rpc = (nombre, args) => {
+        // 3/11/2026: esta prueba es de verificar_clave; otras RPC de la app (stock_insumos_app, de Insumos) ni se cuentan ni usan el responder de la clave
+        if(nombre !== 'verificar_clave') return Promise.resolve({ data: [], error: null });
         srv.rpc.push({ nombre, args, headers: (opts && opts.global && opts.global.headers) || null });
         try{ return Promise.resolve(srv.responder(args)); }catch(e){ return Promise.reject(e); }
       };
