@@ -8334,6 +8334,9 @@ function pesadasFichaHTML(a){
     </details>`;
 }
 
+/* Fase reproductiva: solo la PC la define (bloque @pc de abajo); en las demás no se llama (CONFIG.reproduccion apagado). */
+let reproFichaHTML = () => '';
+
 function fichaCaravanaHTML(a){
   const filas = [
     ['Categoría', a.categoria],
@@ -8404,7 +8407,7 @@ function fichaCaravanaHTML(a){
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${esc(v)}</td></tr>`).join('')}
-    </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}`;
+    </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}${CONFIG.reproduccion ? reproFichaHTML(a) : ''}`;
 }
 
 async function ejecutarBusquedaCaravana(){
@@ -8621,6 +8624,7 @@ if(CONFIG.pesadasHistorial && document.getElementById('modal-pesadas')){
     document.getElementById('modal-pesadas').style.display = 'none';
   });
 }
+
 
 /* 25/9/2026: "Cargar tratamiento individual" (con caravana) esta disponible
    en los 3 establecimientos desde el principio -- a diferencia de "🔎

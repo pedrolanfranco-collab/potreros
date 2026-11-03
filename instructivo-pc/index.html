@@ -113,7 +113,7 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.83</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.84</span></li>
     <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.50</span></li>
     <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">2.20</span></li>
   </ul>
@@ -161,6 +161,7 @@
         <li><a href="#vecinos">🏡 Vecinos</a></li>
         <li><a href="#caravana">🔎 Buscar caravana</a></li>
         <li><a href="#pesadas">⚖️ Pesadas</a></li>
+        <li><a href="#reproduccion">🐄 Reproducción</a></li>
         <li><a href="#alertas">🔔 Alertas</a></li>
         <li><a href="#verificar">🔍 Verificar stock</a></li>
         <li><a href="#faltantes">⚠ Datos faltantes</a></li>
@@ -203,6 +204,7 @@
   <tr><td>Compras y ventas</td><td data-campo="La Vuelta"><b>📑 Movimientos DICOSE</b> (formulario completo)</td><td data-campo="María Laura"><b>📑 Movimientos DICOSE</b> (formulario completo)</td><td data-campo="Pone Chico"><b>💰 Compra / Venta</b>, en la ficha del potrero (formulario simple, sin guía)</td></tr>
   <tr><td>🌾 Campo ajeno y 🚚 Traslado a María Laura (dentro de 📑 Movimientos DICOSE)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No</td><td data-campo="Pone Chico">No</td></tr>
   <tr><td>⚖️ Pesadas</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
+  <tr><td>🐄 Reproducción</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>⚠ Datos faltantes</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>📂 Completar lectura del bastón (CSV), dentro de 🏥 Sanidad</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>🏥 Sanidad: “Mis cargas recientes” y tratamientos del Excel de respaldo</td><td data-campo="La Vuelta">Sí. Lo que el Excel ya importó no se edita ni se borra desde la app.</td><td data-campo="María Laura">No: siempre se puede editar y borrar</td><td data-campo="Pone Chico">No: siempre se puede editar y borrar</td></tr>
@@ -530,6 +532,18 @@
     <li>En <b>Comparar con potrero</b> elegí un potrero para ver qué parte de sus animales actuales se pesó (viene elegido el que más se repite en la sesión, si coincide con uno de la app).</li>
   </ol>
   <p>Muestra los animales pesados, el peso promedio, el mayor y el menor (con su caravana), la ganancia diaria promedio y la proporción del lote, y abajo la lista animal por animal. Las pesadas dudosas (fuera de rango) se ven marcadas y no entran en los promedios.</p>
+</div>
+
+<div class="fn" id="reproduccion">
+  <h3>🐄 Reproducción</h3>
+  <p class="para">Para qué sirve: ver los tactos, los DAO (diagnóstico de actividad ovárica) y los IATF que se hicieron con el bastón. <span class="campo">Solo en La Vuelta.</span> Necesita conexión. Solo cuenta animales con caravana.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">🐄 Reproducción</span>. El tipo de cada sesión sale del nombre del archivo del bastón: TACTO, DAO o IATF (con la etapa D0, D8 o IA).</li>
+    <li><b>Tactos y DAO</b>: elegí la sesión y mirá cuántas quedaron preñadas (por tamaño), vacías o, en el DAO, ciclando o en anestro superficial o profundo, con su porcentaje y el detalle por categoría.</li>
+    <li><b>IATF</b>: elegí el lote y mirá cuántos recibieron cada etapa, con qué productos, y cuántos completaron el protocolo.</li>
+    <li><b>Cruces</b>: cada animal con DAO contra su último tacto posterior (por ejemplo, de los que ciclaban, cuántos quedaron preñados).</li>
+  </ol>
+  <p>En <span class="b">🔎 Buscar caravana</span>, la ficha del animal muestra su estado reproductivo y la línea de tiempo (DAO, etapas de IATF con fecha y producto, tactos). Si el nombre de un archivo del bastón no dice el tipo, se corrige en la PC del Lector, no acá.</p>
 </div>
 
 <div class="fn" id="alertas">
