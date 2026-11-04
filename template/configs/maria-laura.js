@@ -250,10 +250,10 @@ module.exports = {
   "themeColor": "#7a5236",
   "nombre": "María Laura",
   "subtitulo": "Gestión de hacienda por potrero y dueño",
-  "versionPc": "3.50",
-  "versionMovil": "3.48",
+  "versionPc": "3.51",
+  "versionMovil": "3.49",
   "simpleHabilitado": true,
-  "versionMovilSimple": "1.58",
+  "versionMovilSimple": "1.59",
   "duenoLabel": "Dueño",
   "duenoObligatorio": true,
   "guiasHabilitado": true,
@@ -264,6 +264,7 @@ module.exports = {
   "stockSupabase": true,
   "colaOrdenada": true,
   "claveCampo": true,
+  "insumos": true,
   "caravanasHabilitado": true,
   "fixFechaIngreso": {
     "potreros": [

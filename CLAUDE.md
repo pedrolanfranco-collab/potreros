@@ -906,6 +906,37 @@ reemplaza por dos scripts de Python que usan **solo la clave pública**:
 - **Cierre de la Fase 4**: estos scripts leen y escriben con la clave pública, así que también necesitan
   `CLAVE_CAMPO_<EST>` (de `~\.potreros\.env`); sumarlos a la lista de scripts a verificar antes de correr el cierre.
 
+### Insumos (3/11/2026, a pedido de Pedro, `CONFIG.insumos`)
+
+Pantalla "🧴 Insumos" (Herramientas; en la PC dentro de Consultar, justo después de Sanidad) con el stock de productos veterinarios del
+galpón. **Solo La Vuelta y María Laura** (`insumos: true`); Pone Chico `false`: el botón queda oculto y no hace ninguna consulta. Sale en
+las 3 variantes (PC, móvil completa y Campo): ventanas `#modal-insumos` y `#modal-insumos-form` sin marcadores, el código está en el
+template bajo el banner `INSUMOS`.
+- **El stock lo calcula Supabase**: RPC `stock_insumos_app()` (sin argumentos; `establecimiento, producto, fecha_conteo, inicial_ml,
+  entradas_ml, salidas_ml, stock_ml, estado`), que respeta la clave del campo. La app filtra por su `ESTABLECIMIENTO` y solo muestra. Los
+  productos sin conteo inicial no aparecen. Colores (`insClasificar()`): rojo si `estado` es 'sin stock' o 'NEGATIVO - revisar' (o el
+  stock es ≤ 0 o falta: texto "sin stock" / "revisar"), amarillo si `stock_ml` < 100 o < 20 % de `inicial_ml + entradas_ml`, verde el resto;
+  el color nunca va solo (siempre el texto ok / poco / sin stock / revisar). Frascos: `productos_catalogo` no trae el tamaño del envase, así
+  que se recuerda en este equipo el "ml por frasco" que se escribe en el formulario y la lista agrega "≈ N frascos de X ml"; sin dato, solo ml.
+- **Se carga en `insumos_ajustes`** (`anon` solo SELECT e INSERT): `tipo` `inicial` (conteo del galpón, lo contado), `ajuste` (+ o −, no 0) o
+  `pasaje_salida` (positivo, `destino` = el otro campo, fijo). **Nunca se inserta `pasaje_entrada`**: la base la genera. `producto` = nombre
+  exacto de `productos_catalogo` (selector con búsqueda, cacheado; sin catálogo guardado se acepta lo escrito). Cada carga lleva `uid` (uuid del
+  cliente), `dispositivo` (`idDispositivo()`) y `autor` ("Quién soy").
+- **Todo vive aparte de `estado`**: en `localStorage[<ESTABLECIMIENTO>_insumos_v1]` = `{stock:{filas,hora}, catalogo:{filas,hora}, cola:[], envases:{}}`
+  (se lee y se escribe siempre fresco, porque PC/móvil/Campo del mismo campo comparten origen). No entra al Backup JSON, a "Verificar stock"
+  ni a la cola de `eventos_sync`, y "Restablecer datos de fábrica" no lo borra. Es a propósito: no se mezcla con la idempotencia de los eventos.
+- **Cola propia** (`insVaciarCola()`): la carga se guarda en el equipo ANTES de mandarse y se manda de a una; se saca solo cuando Supabase
+  confirma. Un **23505 (uid repetido) cuenta como enviado**, así una respuesta perdida no duplica. Sin respuesta / 5xx / 408 / 429 = pasajero
+  (se frena y se reintenta); un rechazo de la base (22…, 23…, 42…, PGRST…) deja esa carga marcada con su error y con "Quitar", y sigue con las
+  demás. Se vacía al abrir la pantalla, al guardar, con "🔄 Actualizar" y en cada `sincronizar()` (`insumosAlSincronizar()`, en segundo plano, no
+  frena ni rompe la sincronización). Lo pendiente se ve como "en cola".
+- **Sin señal** se muestra la última copia con "Sin señal — datos del dd/mm hh:mm"; con señal pero con error del servidor, la copia más
+  "No se pudo actualizar (…) — datos del …".
+- **Si el esquema de Supabase cambia** (columnas de `insumos_ajustes`, nombre o forma de la RPC) hay que tocar `insFilaParaEnviar()` e `insRefrescarStock()`.
+- Tests: `tests/probar_insumos.js` (9 variantes, Supabase falso con `uid` único; en el CI). `probar_clave_campo.js` ahora ignora las RPC que no son
+  `verificar_clave` (antes contaba cualquiera y `stock_insumos_app` lo ponía en rojo). Los instructivos (`instructivo-*`) llevan la sección
+  "🧴 Insumos", la fila de "Según tu campo" y el flag `insumos` en `probar_instructivos.js`.
+
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 
 RLS está **activado** (`relrowsecurity = true`) en las tablas de este proyecto.
