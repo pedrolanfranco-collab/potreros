@@ -161,6 +161,14 @@ theme-color).
   Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
   (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
   no cambian.
+  **PC nueva estilo FieldData, parte 1 (4/11/2026, a pedido de Pedro; bosquejo aprobado, Design canvas
+  `47fe61b2-50ec-4859-8e7f-5c07cea19f26`)**: menú fijo a la izquierda `#pc-rail` (10 secciones `data-pc-seccion`) y
+  tarjetas de totales (`res-cabezas`, `res-con-animales` nuevas). **Los botones de siempre no se mueven**: cada sección
+  abre `#pc-seccion` con atajos `data-pc-ir="<id>"` que hacen `.click()` en el botón original (`SECCIONES_PC`, lista de
+  ids por sección); un botón con `display:none` no se ofrece, una sección sin botones se esconde (`actualizarRailPC()`,
+  también desde `actualizarResumen()`) y una con uno solo lo abre directo. **Un botón nuevo de la PC se agrega también
+  a su sección en `SECCIONES_PC`.** La caja 🛠 Herramientas sigue igual. Partes que siguen (cada una su PR): mapa
+  pintado por carga + ficha al costado, tablas de Resumen, secciones dentro de la página. Test: `tests/probar_pc_menu.js`.
   **Campo (móvil simple), visualización (10/10/2026, a pedido de Pedro)**: todo en bloques `@simple`: mapa a
   45vh en el celular (más lista), total del potrero grande (26 px en la tarjeta, 28 px en el detalle), botones de
   acción y campos de formulario de 48–56 px con letra de 16 px, Muerte/Desaparecido al final y separados,
