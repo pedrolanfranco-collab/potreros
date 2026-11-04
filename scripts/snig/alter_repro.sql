@@ -1,4 +1,5 @@
--- Fase reproductiva (tacto, DAO, IATF) por animal, 3/11/2026.
+-- Fase reproductiva (tacto y DAO) por animal, 3/11/2026.
+-- La app muestra solo TACTO y DAO. Si el Lector publica eventos IATF en repro, la app los ignora.
 -- Correr en el SQL Editor de Supabase ANTES de publicar con
 -- publicar_animales.py (si falta la columna el publicador la saca solo y avisa,
 -- pero la app PC queda sin el dato).

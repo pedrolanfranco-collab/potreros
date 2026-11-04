@@ -1,5 +1,5 @@
 /*
- * Prueba: fase reproductiva (tacto, DAO, IATF) en la PC de La Vuelta (CONFIG.reproduccion).
+ * Prueba: fase reproductiva (tacto y DAO, sin IATF) en la PC de La Vuelta (CONFIG.reproduccion).
  *
  * 3/11/2026, a pedido de Pedro. La PC (repro.py, carpeta del lector XRS2) publica en
  * animales_caravana.repro / estado_repro / repro_fecha; la app SOLO LEE.
@@ -9,11 +9,13 @@
  *    botón ni ventana, y la ficha de caravana no muestra nada reproductivo (la móvil de La Vuelta
  *    comparte el flag, pero no la pantalla).
  *  - La consulta pide solo lo que usa, por establecimiento, y pagina de a 1000.
- *  - Tactos y DAO: resumen por sesión con porcentajes; IATF: etapas, productos y protocolo completo;
- *    Cruces: DAO contra el último tacto posterior (el valor de control real: 44 ciclando ->
+ *  - Tactos y DAO: resumen por sesión con porcentajes; Cruces: DAO contra el último tacto posterior (el valor de control real: 44 ciclando ->
  *    20 grande + 10 media + 14 vacías).
  *  - Texto de afuera escapado; sin la columna (antes del ALTER TABLE) lo dice sin romperse.
  *  - La ficha de caravana muestra el estado y la línea de tiempo.
+ *  - IATF NO entra (Pedro pidió solo tacto y DAO): aunque el padrón traiga eventos IATF, no hay
+ *    pestaña, ni sesiones, ni renglones en la ficha, y un estado IATF_* se reemplaza por el último
+ *    tacto o DAO.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -164,7 +166,12 @@ async function probarArchivo(archivo){
   chequear('el botón está en Herramientas › Consultar',
     btn && btn.style.display === '' && btn.closest('.hg') && /Consultar/.test(btn.closest('.hg').textContent));
   chequear('la ficha muestra el estado y la línea de tiempo',
-    /Reproducción/.test(ficha) && /Estado: <b>Preñez grande<\/b>/.test(ficha) && /IATF D0/.test(ficha) && /BOVISAN T SE \+ BENZOATO HC/.test(ficha), ficha.slice(-400));
+    /Reproducción<\/b> \(2\)/.test(ficha) && /Estado: <b>Preñez grande<\/b>/.test(ficha) && /969_PALPACION/.test(ficha) && /1116_TACTO/.test(ficha), ficha.slice(-400));
+  chequear('la ficha no muestra IATF', !/IATF/.test(ficha) && !/BOVISAN/.test(ficha), ficha.slice(-400));
+  const fichaIatf = win.fichaCaravanaHTML(an('EI', REPRO_LV[0].repro, { estado_repro: 'IATF_IA', repro_fecha: '2026-06-20' }));
+  chequear('un estado IATF_* muestra el último tacto', /Estado: <b>Preñez grande<\/b> \(2026-08-24\)/.test(fichaIatf) && !/IATF/.test(fichaIatf), fichaIatf.slice(0, 300));
+  chequear('un animal con solo IATF no agrega nada',
+    !/Reproducción/.test(win.fichaCaravanaHTML(an('SOLO', [{ f: '2026-06-11', t: 'IATF', e: 'D0', r: '', p: 'X', s: 'S', o: '' }]))));
   chequear('la ficha de un animal sin datos no agrega nada', !/Reproducción/.test(win.fichaCaravanaHTML(an('SIN', null))));
   chequear('la ficha escapa el HTML de la sesión', !/<img src=x/.test(win.fichaCaravanaHTML(REPRO_LV[REPRO_LV.length - 2])));
 
@@ -190,16 +197,10 @@ async function probarArchivo(archivo){
   chequear('resumen de DAO: ciclando 44 (76%)', /58 con DAO/.test(r) && /ciclando 44 \(76%\)/.test(r) && /Anestro superficial 14/.test(r), r);
   chequear('una sesión con HTML no inyecta nada', doc.querySelectorAll('#modal-reproduccion img').length === 0 && win.__inyectado === undefined);
 
-  doc.querySelector('[data-repro-tab="iatf"]').dispatchEvent(new win.Event('click', { bubbles: true }));
-  const iatf = doc.getElementById('repro-iatf-sesion');
-  chequear('la pestaña IATF se ve y la de tacto no',
-    doc.getElementById('repro-tab-iatf').style.display === '' && doc.getElementById('repro-tab-tacto').style.display === 'none');
-  iatf.value = Array.from(iatf.options).find(o => /1089_DIA_1_IATF/.test(o.textContent)).value;
-  iatf.dispatchEvent(new win.Event('change'));
-  r = texto(doc, 'repro-iatf-resumen');
-  chequear('IATF: lote de 58, protocolo completo 54 (D0 e IA)', /Lote de 58 animales/.test(r) && /completo \(D0 e IA\): 54 \(93%\)/.test(r), r);
-  chequear('IATF: etapa D0 con los productos', /D0 \(implante \+ benzoato\) 58 de 58 BOVISAN T SE, BENZOATO HC/.test(r), r);
-  chequear('IATF: lista los 4 sin IA', /Protocolo incompleto \(4\)/.test(r) && /AN10 \(sin IA\)/.test(r), r);
+  chequear('sin pestaña ni lista de IATF',
+    !doc.querySelector('[data-repro-tab="iatf"]') && !doc.getElementById('repro-tab-iatf') && !doc.getElementById('repro-iatf-sesion'));
+  chequear('la ventana no nombra IATF', !/IATF/.test(doc.getElementById('modal-reproduccion').textContent));
+  chequear('las sesiones de IATF no aparecen en la lista', !opts.some(o => /IATF/.test(o)), JSON.stringify(opts));
 
   doc.querySelector('[data-repro-tab="cruces"]').dispatchEvent(new win.Event('click', { bubbles: true }));
   r = texto(doc, 'repro-cruces');

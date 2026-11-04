@@ -1343,16 +1343,14 @@
   <div class="modal-box" style="max-width:720px;">
     <h3>🐄 Reproducción</h3>
     <button class="btn-cerrar-x" id="repro-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
-    <p class="modal-info">Tacto, DAO (diagnóstico de actividad ovárica) e IATF de los animales con caravana, tal como los lee el bastón. Solo animales con caravana: no es todo el stock.</p>
+    <p class="modal-info">Tacto y DAO (diagnóstico de actividad ovárica) de los animales con caravana, tal como los lee el bastón. Solo animales con caravana: no es todo el stock.</p>
     <div id="repro-mensaje"></div>
     <div id="repro-cuerpo" style="display:none;">
       <div class="form-botones" style="margin-bottom:8px;">
         <button class="btn btn-secundario" data-repro-tab="tacto">Tactos y DAO</button>
-        <button class="btn btn-secundario" data-repro-tab="iatf">IATF</button>
         <button class="btn btn-secundario" data-repro-tab="cruces">Cruces</button>
       </div>
       <div id="repro-tab-tacto"><div class="form-row"><label>Sesión</label><select id="repro-sesion"></select></div><div id="repro-resumen"></div></div>
-      <div id="repro-tab-iatf" style="display:none;"><div class="form-row"><label>Lote (sesión de IATF)</label><select id="repro-iatf-sesion"></select></div><div id="repro-iatf-resumen"></div></div>
       <div id="repro-tab-cruces" style="display:none;"><div id="repro-cruces"></div></div>
     </div>
     <div class="form-botones"><button class="btn btn-secundario" id="repro-cerrar">Cerrar</button></div>
@@ -11513,12 +11511,13 @@ if(CONFIG.pesadasHistorial && document.getElementById('modal-pesadas')){
 }
 
 // @pc:start
-/* 3/11/2026 (a pedido de Pedro): fase reproductiva (tacto, DAO, IATF), solo PC de La Vuelta
+/* 3/11/2026 (a pedido de Pedro): fase reproductiva (tacto y DAO, sin IATF), solo PC de La Vuelta
    (CONFIG.reproduccion). La PC (repro.py, carpeta del lector XRS2) clasifica cada sesión por el
    nombre del archivo y publica en animales_caravana.repro (jsonb, una lista por animal):
-     {f:fecha, t:'TACTO'|'DAO'|'IATF', e:'D0'|'D8'|'IA'|'', r:resultado, p:productos, s:sesión, o:potrero}
-   más estado_repro y repro_fecha. La app SOLO LEE y no recalcula la clasificación: si el nombre
-   de un archivo no se reconoce, se corrige allá (repro_sesiones.csv). Un tacto/DAO/IATF NO es un
+     {f:fecha, t:'TACTO'|'DAO', r:resultado, p:productos, s:sesión, o:potrero}
+   más estado_repro y repro_fecha. Si la lista trae otro tipo (por ejemplo IATF), la app lo ignora:
+   Pedro pidió solo tacto y DAO. La app SOLO LEE y no recalcula la clasificación: si el nombre
+   de un archivo no se reconoce, se corrige allá (repro_sesiones.csv). Un tacto/DAO NO es un
    evento de stock: nunca pasa por eventos_sync. Resultados: PRENEZ_GRANDE/MEDIA/CHICA, PRENEZ (sin
    tamaño), VACIA, DUDA, CICLANDO, ANESTRO_SUP, ANESTRO_PROF, ANESTRO. Un valor desconocido llega
    crudo y se muestra tal cual. */
@@ -11529,23 +11528,22 @@ const REPRO_ROTULOS = {
 };
 const REPRO_ORDEN_TACTO = ['PRENEZ_GRANDE', 'PRENEZ_MEDIA', 'PRENEZ_CHICA', 'PRENEZ', 'VACIA', 'DUDA'];
 const REPRO_ORDEN_DAO = ['CICLANDO', 'ANESTRO_SUP', 'ANESTRO_PROF', 'ANESTRO'];
-const REPRO_ETAPAS = {D0: 'D0 (implante + benzoato)', D8: 'D8 (retiro + PGF/eCG)', IA: 'IA (inseminación)'};
+const REPRO_TIPOS = ['TACTO', 'DAO'];
 function reproRotulo(r){
   if(!r) return '—';
-  if(r.indexOf('IATF_') === 0) return 'IATF ' + r.slice(5);
   return REPRO_ROTULOS[r] || String(r);
 }
 function reproDeAnimal(a){
   if(!a || !Array.isArray(a.repro)) return [];
-  return a.repro.filter(x => x && typeof x === 'object' && x.f && x.t);
+  return a.repro.filter(x => x && typeof x === 'object' && x.f && REPRO_TIPOS.indexOf(x.t) >= 0);
 }
 function reproFilasPorTipo(animales, tipos){
   const por = {};
   animales.forEach(an => reproDeAnimal(an).forEach(x => {
     if(tipos.indexOf(x.t) < 0) return;
     const k = x.f + '|' + (x.s || '');
-    const g = por[k] = por[k] || {clave: k, f: x.f, s: x.s || '', t: x.t, e: x.e || '', items: []};
-    g.items.push({id8: an.id8, categoria: an.categoria || '', r: x.r || '', p: x.p || '', e: x.e || ''});
+    const g = por[k] = por[k] || {clave: k, f: x.f, s: x.s || '', t: x.t, items: []};
+    g.items.push({id8: an.id8, categoria: an.categoria || '', r: x.r || '', p: x.p || ''});
   }));
   return Object.values(por).sort((a, b) => String(b.f).localeCompare(String(a.f)) || String(a.s).localeCompare(String(b.s)));
 }
@@ -11578,32 +11576,8 @@ function reproResumenSesionHTML(g){
     <details class="historial-det historial-det-lista"><summary>Por categoría (${cats.length})</summary>
     <table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:#5a6572;"><td style="padding:2px 6px;">Categoría</td><td style="padding:2px 6px;">Animales</td><td style="padding:2px 6px;">Resultado</td></tr>${porCat}</table></details>`;
 }
-/* IATF: el lote es una sesión. Para cada animal de ese lote se mira qué etapas tiene en total. */
-function reproIatfLoteHTML(g, animales){
-  const ids = new Set(g.items.map(x => x.id8));
-  const por = {D0: [], D8: [], IA: []};
-  const prods = {D0: new Set(), D8: new Set(), IA: new Set()};
-  let completos = 0;
-  const faltan = [];
-  animales.forEach(an => {
-    if(!ids.has(an.id8)) return;
-    const et = new Set();
-    reproDeAnimal(an).forEach(x => {
-      if(x.t !== 'IATF' || !x.e || !por[x.e]) return;
-      if(!et.has(x.e)){ et.add(x.e); por[x.e].push(an.id8); }
-      String(x.p || '').split(' + ').filter(Boolean).forEach(p => prods[x.e].add(p));
-    });
-    if(et.has('D0') && et.has('IA')) completos++;
-    else faltan.push(an.id8 + (et.has('D0') ? ' (sin IA)' : ' (sin D0)'));
-  });
-  const n = ids.size;
-  const filas = ['D0', 'D8', 'IA'].map(e => `<tr><td style="padding:3px 6px;color:#5a6572;">${esc(REPRO_ETAPAS[e])}</td><td style="padding:3px 6px;font-weight:600;">${por[e].length} de ${n}</td><td style="padding:3px 6px;">${esc([...prods[e]].join(', ') || '—')}</td></tr>`).join('');
-  return `<p class="modal-info">Lote de <b>${n}</b> animales. Protocolo completo (D0 e IA): <b>${completos}</b> (${reproPct(completos, n)}).</p>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="color:#5a6572;"><td style="padding:3px 6px;">Etapa</td><td style="padding:3px 6px;">Animales</td><td style="padding:3px 6px;">Productos</td></tr>${filas}</table>
-    ${faltan.length ? `<details class="historial-det historial-det-lista"><summary>Protocolo incompleto (${faltan.length})</summary><p class="modal-info">${faltan.map(esc).join(' · ')}</p></details>` : ''}`;
-}
-/* Cruces: DAO -> último tacto posterior a ese DAO. Con la secuencia de IATF, el último tacto
-   es el de después de la IA, que es el que importa. Sin tacto posterior: "sin tacto". */
+/* Cruces: DAO -> último tacto posterior a ese DAO (el último es el que importa).
+   Sin tacto posterior: "sin tacto". */
 function reproCruces(animales){
   const filas = {};
   animales.forEach(an => {
@@ -11634,17 +11608,20 @@ function reproCrucesHTML(animales){
 reproFichaHTML = function(a){
   const ev = reproDeAnimal(a).slice().sort((x, y) => String(y.f).localeCompare(String(x.f)));
   if(!ev.length) return '';
-  const estado = a.estado_repro ? reproRotulo(a.estado_repro) : '—';
+  // Si el estado publicado es de IATF (no se muestra), se usa el último tacto o DAO.
+  const deIatf = !a.estado_repro || String(a.estado_repro).indexOf('IATF') === 0;
+  const estado = deIatf ? (ev[0].r ? reproRotulo(ev[0].r) : '—') : reproRotulo(a.estado_repro);
+  const fechaEstado = deIatf ? (ev[0].r ? ev[0].f : '') : a.repro_fecha;
   const filas = ev.map(x => {
-    const que = x.t === 'IATF' ? 'IATF ' + (x.e || '?') : (x.t === 'DAO' ? 'DAO' : 'Tacto');
-    const det = x.t === 'IATF' ? (x.p || '') : reproRotulo(x.r);
+    const que = x.t === 'DAO' ? 'DAO' : 'Tacto';
+    const det = reproRotulo(x.r);
     return `<tr><td style="padding:2px 6px;">${esc(x.f)}</td><td style="padding:2px 6px;font-weight:600;">${esc(que)}</td><td style="padding:2px 6px;">${esc(det)}</td><td style="padding:2px 6px;color:#5a6572;">${esc(x.s || '')}</td></tr>`;
   }).join('');
-  return `<div class="modal-info" style="margin-top:10px;"><b>🐄 Reproducción</b> (${ev.length})<br>Estado: <b>${esc(estado)}</b>${a.repro_fecha ? ' (' + esc(a.repro_fecha) + ')' : ''}</div>
+  return `<div class="modal-info" style="margin-top:10px;"><b>🐄 Reproducción</b> (${ev.length})<br>Estado: <b>${esc(estado)}</b>${fechaEstado ? ' (' + esc(fechaEstado) + ')' : ''}</div>
     <details class="historial-det historial-det-lista"><summary>Línea de tiempo reproductiva (${ev.length})</summary>
     <table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:#5a6572;"><td style="padding:2px 6px;">Fecha</td><td style="padding:2px 6px;">Evento</td><td style="padding:2px 6px;">Resultado / productos</td><td style="padding:2px 6px;">Sesión</td></tr>${filas}</table></details>`;
 };
-let REPRO_ANIMALES = [], REPRO_TACTOS = [], REPRO_IATF = [];
+let REPRO_ANIMALES = [], REPRO_TACTOS = [];
 async function cargarReproduccion(){
   const client = clienteSupabase();
   if(!client) return {error: 'sin conexión'};
@@ -11670,12 +11647,8 @@ function reproPintarTacto(){
   const g = REPRO_TACTOS.find(x => x.clave === document.getElementById('repro-sesion').value);
   document.getElementById('repro-resumen').innerHTML = g ? reproResumenSesionHTML(g) : '<p class="modal-info">No hay sesiones de tacto o DAO.</p>';
 }
-function reproPintarIatf(){
-  const g = REPRO_IATF.find(x => x.clave === document.getElementById('repro-iatf-sesion').value);
-  document.getElementById('repro-iatf-resumen').innerHTML = g ? reproIatfLoteHTML(g, REPRO_ANIMALES) : '<p class="modal-info">No hay sesiones de IATF.</p>';
-}
 function reproElegirTab(tab){
-  ['tacto', 'iatf', 'cruces'].forEach(t => { document.getElementById('repro-tab-' + t).style.display = t === tab ? '' : 'none'; });
+  ['tacto', 'cruces'].forEach(t => { document.getElementById('repro-tab-' + t).style.display = t === tab ? '' : 'none'; });
 }
 async function abrirReproduccion(){
   const modal = document.getElementById('modal-reproduccion');
@@ -11691,7 +11664,6 @@ async function abrirReproduccion(){
   }
   REPRO_ANIMALES = r.animales;
   REPRO_TACTOS = reproFilasPorTipo(REPRO_ANIMALES, ['TACTO', 'DAO']);
-  REPRO_IATF = reproFilasPorTipo(REPRO_ANIMALES, ['IATF']);
   if(!REPRO_ANIMALES.length){
     msg.innerHTML = '<p class="modal-info">Todavía no hay datos reproductivos publicados.</p>';
     return;
@@ -11700,11 +11672,8 @@ async function abrirReproduccion(){
   cuerpo.style.display = '';
   document.getElementById('repro-sesion').innerHTML = REPRO_TACTOS.map(g =>
     `<option value="${esc(g.clave)}">${esc(g.f)} · ${g.t === 'DAO' ? 'DAO' : 'Tacto'} · ${esc(g.s || 'sin nombre')} · ${g.items.length} animales</option>`).join('');
-  document.getElementById('repro-iatf-sesion').innerHTML = REPRO_IATF.map(g =>
-    `<option value="${esc(g.clave)}">${esc(g.f)} · IATF ${esc(g.e || '?')} · ${esc(g.s || 'sin nombre')} · ${g.items.length} animales</option>`).join('');
   document.getElementById('repro-cruces').innerHTML = reproCrucesHTML(REPRO_ANIMALES);
   reproPintarTacto();
-  reproPintarIatf();
   reproElegirTab('tacto');
 }
 if(CONFIG.reproduccion && document.getElementById('modal-reproduccion')){
@@ -11714,7 +11683,6 @@ if(CONFIG.reproduccion && document.getElementById('modal-reproduccion')){
     br.addEventListener('click', abrirReproduccion);
   }
   document.getElementById('repro-sesion').addEventListener('change', reproPintarTacto);
-  document.getElementById('repro-iatf-sesion').addEventListener('change', reproPintarIatf);
   document.querySelectorAll('[data-repro-tab]').forEach(b => b.addEventListener('click', () => reproElegirTab(b.getAttribute('data-repro-tab'))));
   document.getElementById('repro-cerrar').addEventListener('click', () => { document.getElementById('modal-reproduccion').style.display = 'none'; });
   document.getElementById('repro-cerrar-x').addEventListener('click', () => document.getElementById('repro-cerrar').click());
