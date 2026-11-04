@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "agent-bridge-potreros": {
+      "command": "node",
+      "args": ["C:/Users/Pedro/Documents/Codex/2026-10-29/referenced-chatgpt-conversation-this-is-an/agent-bridge/dist/mcp.js"],
+      "env": {
+        "AGENT_BRIDGE_CREDENTIAL_ID": "claude-potreros"
+      }
+    }
+  }
+}
