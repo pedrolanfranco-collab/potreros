@@ -2404,7 +2404,7 @@ module.exports = {
   "themeColor": "#2b3a24",
   "nombre": "La Vuelta",
   "subtitulo": "Rivera, Uruguay · Gestión de hacienda por potrero",
-  "versionPc": "3.84",
+  "versionPc": "3.86",
   "versionMovil": "3.82",
   "simpleHabilitado": true,
   "versionMovilSimple": "1.60",

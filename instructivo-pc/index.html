@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.84</span></li>
-    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.51</span></li>
-    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">2.21</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.86</span></li>
+    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.53</span></li>
+    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">2.23</span></li>
   </ul>
   <p class="nota">La versión de tu PC está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.81 (completa)</b>). Si tu número es más viejo, abrí la app con conexión y esperá un momento: se actualiza sola.</p>
 </div>
@@ -123,6 +123,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>Menú a la izquierda</b> (primera parte de la PC nueva): una columna verde con las secciones <span class="b">🗺 Mapa</span>, <span class="b">📊 Stock total</span>, <span class="b">🌾 Potreros</span>, <span class="b">🐄 Hacienda</span>, <span class="b">🏥 Sanidad e insumos</span>, <span class="b">🌧 Lluvias y eventos</span>, <span class="b">📑 Movimientos DICOSE</span>, <span class="b">📍 Puntos y reportes</span>, <span class="b">⬇ Exportar y respaldo</span> y <span class="b">⚙ Este dispositivo</span>. Los números de arriba ahora son tarjetas y suman <b>Cabezas</b> y <b>Con animales</b>. <span class="b">🛠 Herramientas</span> sigue igual. Ver <a href="#menu-izquierda">El menú de la izquierda</a>.</li>
     <li><b>🧴 Insumos</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva con el stock de los productos veterinarios del galpón, en verde, amarillo o rojo. Desde ahí cargás un conteo, un ajuste o un pasaje al otro campo; sin señal queda “en cola” y se manda solo.</li>
     <li><b>🥩 Consumo (faena)</b> en cada potrero (también en Campo): si faenás algo que la app no tenía cargado, la app resta lo que había, te avisa cuántos faltaban y lo deja anotado. La <b>🤝 hacienda ajena</b> (dueños que no son de la lista) ahora se ve aparte en el potrero y en el reporte por dueño, y cuenta en los UG/ha.</li>
     <li><b>💧 Aguadas</b> y <b>🚧 Instalaciones</b> son ahora <b>capas</b> del mapa: los botones <span class="b">💧 Aguadas</span> y <span class="b">🚧 Instal.</span>, <b>en el borde de arriba del mapa</b> al lado del zoom, las prenden y apagan (apagada, el botón queda gris y tachado). Cada PC recuerda su elección.</li>
@@ -136,7 +137,7 @@
   <h2 style="border:0;margin-bottom:0;">Índice</h2>
   <ul class="indice">
     <li><a href="#campos">Según tu campo</a></li>
-    <li><a href="#pantalla">1. La pantalla principal</a></li>
+    <li><a href="#pantalla">1. La pantalla principal</a> <ul><li><a href="#menu-izquierda">El menú de la izquierda</a></li></ul></li>
     <li><a href="#cargar">2. Lo que se carga en un potrero</a>
       <ul>
         <li><a href="#agregar">＋ Agregar animales</a></li>
@@ -219,7 +220,7 @@
 <h2 id="pantalla">1. La pantalla principal</h2>
 <p class="para">Para qué sirve: ver cuántos animales hay en cada potrero y entrar a cargar.</p>
 <ul>
-  <li><b>Franja de arriba</b>: los números del campo: <b>Potreros</b>, <b>Hectáreas</b>, <b>Vacunos</b>, <b>Ovinos</b>, <b>Equinos</b>, <b>UG totales</b> y <b>UG / ha</b> (la carga). Debajo del nombre del campo dice la versión y, abajo de eso, <b>“🟢 En línea”</b> o <b>“⚪ Sin conexión”</b>.</li>
+  <li><b>Franja de arriba</b>: los números del campo en tarjetas: <b>Potreros</b>, <b>Hectáreas</b>, <b>Vacunos</b>, <b>Ovinos</b>, <b>Equinos</b>, <b>UG totales</b>, <b>UG / ha</b> (la carga), <b>Cabezas</b> (vacunos + ovinos + equinos) y <b>Con animales</b> (cuántos potreros tienen animales, por ejemplo “12 de 31”). Debajo del nombre del campo dice la versión y, abajo de eso, <b>“🟢 En línea”</b> o <b>“⚪ Sin conexión”</b>.</li>
   <li><b>El mapa</b>, a la izquierda. <span class="b">🛰 Satelital: ON</span> (arriba a la derecha del mapa) prende o apaga la imagen de satélite (necesita conexión). <span class="b">💧 Aguadas</span> y <span class="b">🚧 Instal.</span> (en el borde de arriba del mapa, al lado de los botones del zoom) prenden o apagan cada capa de puntos: las aguadas, y las instalaciones (mangas, corrales, bretes y embarcaderos). Apagada, la capa no se ve y su botón queda gris y tachado; la elección queda guardada en esa PC, para ese campo. <span class="b">🗺 Ver en el mapa</span> de un punto con su capa apagada muestra solo ese punto, y la capa sigue apagada. Un punto nuevo que cargás con su capa apagada prende la capa para que se vea. Los potreros con animales se ven más oscuros que los vacíos. <span class="campo">En María Laura y Pone Chico</span> cada potrero muestra su nombre y su total, y al hacerle clic sale un cartel con el detalle por categoría y dueño. La PC no tiene GPS.</li>
   <li><b>La columna de la derecha</b>: el buscador (“Buscar potrero…”), la lista de potreros, la ficha del potrero elegido y, al pie, el estado de sincronización, el del backup y el botón <span class="b">🛠 Herramientas</span>.</li>
 </ul>
@@ -232,6 +233,22 @@
   <li>Los botones de carga (ver <a href="#cargar">2. Lo que se carga en un potrero</a>) y, abajo, <b>Historial (N)</b>: plegado, con los últimos 15 registros. Cada renglón tiene sus botones ✏️ y 🗑 (ver <a href="#errores">8. Si te equivocaste</a>). Un 📍 en un renglón es que se marcó una ubicación en el mapa.</li>
   <li>Para cerrar la ficha, la <b>✕</b> de arriba a la derecha.</li>
 </ul>
+
+<h3 id="menu-izquierda">El menú de la izquierda</h3>
+<p class="para">Para qué sirve: llegar a cada función con un clic, ordenadas por tema. Cada botón hace lo mismo que el de 🛠 Herramientas.</p>
+<ul>
+  <li><span class="b">🗺 Mapa</span>: vuelve a la pantalla del mapa y cierra la ventana de sección.</li>
+  <li><span class="b">📊 Stock total</span>: abre <a href="#stock">📊 Stock total</a>.</li>
+  <li><span class="b">🌾 Potreros</span>: Importar KML/KMZ, Dibujar potrero y Coeficientes UG.</li>
+  <li><span class="b">🐄 Hacienda</span>: Desaparecidos, Vecinos, Buscar caravana, Pesadas, Alertas, Verificar stock y Datos faltantes.</li>
+  <li><span class="b">🏥 Sanidad e insumos</span>: Sanidad e Insumos.</li>
+  <li><span class="b">🌧 Lluvias y eventos</span>: abre <a href="#lluvias">🌧 Lluvias y otros eventos</a>.</li>
+  <li><span class="b">📑 Movimientos DICOSE</span>: abre <a href="#dicose">📑 Movimientos DICOSE</a>.</li>
+  <li><span class="b">📍 Puntos y reportes</span>: Aguadas / instalaciones, Resincronizar mis puntos, Infraestructura y Capín Annoni.</li>
+  <li><span class="b">⬇ Exportar y respaldo</span>: KMZ, PDF, Excel y el backup.</li>
+  <li><span class="b">⚙ Este dispositivo</span>: Sincronizar, Quién soy, Clave del campo, Instructivo, Restablecer y 🛠 Herramientas.</li>
+</ul>
+<p>Una sección con varias funciones abre una ventana con sus botones; con una sola, la abre directo. Una sección que tu campo no usa no aparece (por ejemplo <span class="campo">📑 Movimientos DICOSE en Pone Chico</span>). Con la ventana angosta el menú muestra solo los íconos: pasá el mouse para ver el nombre. <b>Esc</b> o <b>✕</b> cierran la ventana de sección.</p>
 
 <h2 id="cargar">2. Lo que se carga en un potrero</h2>
 <p>Primero abrí la ficha del potrero. Todos los formularios tienen <b>Fecha</b> (viene la de hoy, y no se puede poner una futura) y un botón <span class="b">Cancelar</span>. Al confirmar, lo cargado se guarda en la PC y se manda solo; si no hay conexión, sale cuando vuelva.</p>
