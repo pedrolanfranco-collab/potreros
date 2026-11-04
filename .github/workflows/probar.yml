@@ -214,6 +214,9 @@ jobs:
       - name: "Insumos (3/11/2026) -- stock de productos veterinarios: colores, copia sin senal, cola con uid, reintento sin duplicar, pasaje al otro campo; Pone Chico no lo muestra"
         run: node tests/probar_insumos.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 
+      - name: "Baño de aspersion (4/11/2026) -- abrir ciclo con dosis sugerida, tandas con y sin baston (Sanidad), reposicion, fin del dia, cierre, tramos L/animal, toca reponer, cola sin senal en orden (ciclo primero), 23505 no duplica, otro equipo ve el ciclo, productos por RPC, aviso de doble carga; Pone Chico no lo muestra"
+        run: node tests/probar_bano.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
       - name: "Movil completa y Campo comparten almacenamiento (6/10/2026) -- una pagina abierta se actualiza sola cuando la otra guarda"
         run: node tests/probar_actualizar_solo.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 

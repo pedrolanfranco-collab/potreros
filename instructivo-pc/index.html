@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.84</span></li>
-    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.51</span></li>
-    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">2.21</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.85</span></li>
+    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.52</span></li>
+    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">2.22</span></li>
   </ul>
   <p class="nota">La versión de tu PC está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.81 (completa)</b>). Si tu número es más viejo, abrí la app con conexión y esperá un momento: se actualiza sola.</p>
 </div>
@@ -123,6 +123,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🛁 Baño</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva para el control del baño de aspersión. Abrís el ciclo con el agua y el producto, anotás cada tanda, las reposiciones, el fin del día y el cierre, y la app calcula los litros por animal y avisa cuándo toca reponer. Anda sin señal.</li>
     <li><b>🧴 Insumos</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva con el stock de los productos veterinarios del galpón, en verde, amarillo o rojo. Desde ahí cargás un conteo, un ajuste o un pasaje al otro campo; sin señal queda “en cola” y se manda solo.</li>
     <li><b>🥩 Consumo (faena)</b> en cada potrero (también en Campo): si faenás algo que la app no tenía cargado, la app resta lo que había, te avisa cuántos faltaban y lo deja anotado. La <b>🤝 hacienda ajena</b> (dueños que no son de la lista) ahora se ve aparte en el potrero y en el reporte por dueño, y cuenta en los UG/ha.</li>
     <li><b>💧 Aguadas</b> y <b>🚧 Instalaciones</b> son ahora <b>capas</b> del mapa: los botones <span class="b">💧 Aguadas</span> y <span class="b">🚧 Instal.</span>, <b>en el borde de arriba del mapa</b> al lado del zoom, las prenden y apagan (apagada, el botón queda gris y tachado). Cada PC recuerda su elección.</li>
@@ -156,6 +157,7 @@
         <li><a href="#stock">📊 Stock total</a></li>
         <li><a href="#sanidad">🏥 Sanidad</a></li>
         <li><a href="#insumos">🧴 Insumos</a></li>
+        <li><a href="#bano">🛁 Baño</a></li>
         <li><a href="#csv-baston">📂 Completar lectura del bastón (CSV)</a></li>
         <li><a href="#lluvias">🌧 Lluvias y otros eventos</a></li>
         <li><a href="#dicose">📑 Movimientos DICOSE</a></li>
@@ -213,6 +215,7 @@
   <tr><td>Mapa: nombre y total sobre cada potrero, y cartel al tocarlo</td><td data-campo="La Vuelta">No (son 31 potreros)</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico">Sí</td></tr>
   <tr><td>Potreros de partida</td><td data-campo="La Vuelta">31</td><td data-campo="María Laura">5</td><td data-campo="Pone Chico">Ninguno: se agregan con ➕ Agregar potrero</td></tr>
   <tr><td>🧴 Insumos</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>🛁 Baño</td><td data-campo="La Vuelta">Sí. La tanda viene con bastón “Sí”.</td><td data-campo="María Laura">Sí. La tanda viene con bastón “No”.</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
 </table>
 <p class="nota">Todo lo demás es igual en los tres campos. En las explicaciones, donde dice “dueño” en La Vuelta es la “firma”.</p>
 
@@ -454,6 +457,45 @@
     <li>Sin producto, sin cantidad o con un ajuste de 0 no guarda y avisa.</li>
     <li>Sin señal la pantalla muestra lo último que se bajó, con el aviso <b>“Sin señal — datos del …”</b>. Lo que cargues queda <b>“en cola”</b> y se manda solo cuando vuelva la señal, una sola vez.</li>
     <li><span class="b">🔄 Actualizar</span> baja el stock de nuevo.</li>
+  </ul>
+</div>
+
+<div class="fn" id="bano">
+  <h3>🛁 Baño</h3>
+  <p class="para">Para qué sirve: llevar el control del baño de aspersión (tanque cerrado de 900 litros, con la regla que marca cada 100 litros). Un <b>ciclo</b> es una carga de agua y producto, que se repone y se usa hasta que vence. <span class="campo">Solo en La Vuelta y María Laura.</span> En la PC: <span class="b">🛠 Herramientas</span> › <b>Consultar</b> › <span class="b">🛁 Baño</span>.</p>
+  <p>La fecha y la hora las pone el equipo solo, al guardar. No hay que escribirlas.</p>
+  <p><b>Abrir un ciclo nuevo</b> (cuando no hay ninguno abierto):</p>
+  <ol class="pasos">
+    <li>Tocá el <b>producto</b>. Abajo de cada uno dice cuánto dura la mezcla (por ejemplo Aspersin 7 días).</li>
+    <li>Tocá el <b>agua cargada</b>: 500, 600, 700, 800 o 900 litros, o escribí otro número.</li>
+    <li>Mirá el <b>producto puesto (ml)</b>: la app lo sugiere con la dosis (por ejemplo 750 ml de Aspersin para 900 L). Si pusiste otra cantidad, cambiala.</li>
+    <li>Tocá <span class="b">Abrir ciclo</span>.</li>
+  </ol>
+  <p>Si el producto dice <b>“falta la dosis”</b> (en naranja), la app no sugiere nada: escribí vos los ml. La dosis se carga en <span class="b">⚙ Productos</span>.</p>
+  <p><b>Con el ciclo en marcha</b> la pantalla muestra el producto, <b>“Día N de M · vence …”</b> (en rojo si ya venció), el <b>nivel estimado</b> con una barrita, lo que <b>gastó desde la última carga</b> y, cuando corresponde, el cartel <b>“Toca reponer: agregá X L y unos Y ml”</b>. Entre una regla y otra el gasto se estima con 4 litros por animal y dice <b>“estimado”</b>. Hay cuatro botones grandes:</p>
+  <ul>
+    <li><span class="b">+ Tanda</span>: tocá la <b>categoría</b>, elegí el dueño (en La Vuelta, la firma, que se puede dejar sin asignar) y el <b>potrero</b>, y la <b>cantidad</b> (con −10, +1 y +10). Después contestá <b>“¿La vas a pasar por el bastón?”</b>:
+      <ul>
+        <li><b>Sí</b>: el bastón carga el tratamiento en Sanidad. La cantidad es opcional (sin contar, el tramo sale “sin conteo”).</li>
+        <li><b>No</b>: la app carga sola el tratamiento en <a href="#sanidad">🏥 Sanidad</a> (con el producto del ciclo, para el retiro). Por eso <b>la cantidad es obligatoria</b>.</li>
+      </ul>
+    </li>
+    <li><span class="b">+ Reposición</span>: tocá lo que marca la <b>regla antes de reponer</b>. La app sugiere el <b>agua que agregás</b> (hasta 900 L) y el <b>producto</b> (por ejemplo 300 L → 500 ml de Aspersin). Abajo muestra el <b>tramo que se cierra</b>: litros gastados, animales y litros por animal.</li>
+    <li><span class="b">Fin del día</span>: tocá lo que marca la regla al terminar el día. Mañana se sigue con el mismo ciclo.</li>
+    <li><span class="b">Cerrar ciclo</span>: tocá la regla final. Antes de cerrar muestra el resumen (producto total, animales y tandas sin contar, agua gastada y costo) y cada tramo con su color. Lo que queda se tira.</li>
+  </ul>
+  <p>Cada <b>tramo</b> va de una carga o reposición (o un fin del día) hasta la siguiente lectura de la regla. Los litros por animal se marcan:</p>
+  <ul>
+    <li><b>ok</b> (verde): entre 3 y 5 litros por animal.</li>
+    <li><b>alto</b> o <b>bajo</b> (rojo): más de 5 o menos de 3. Revisá la presión o el conteo.</li>
+    <li><b>sin conteo</b> (gris): alguna tanda del tramo no se contó. No es una alarma.</li>
+  </ul>
+  <ul>
+    <li><b>Hoy</b> lista lo cargado hoy con su hora. Más abajo están el <b>último tramo</b> y el <b>resumen del ciclo</b>.</li>
+    <li>Si aparece <b>“Posible doble carga en Sanidad”</b>, una tanda se cargó sin bastón y el bastón también trajo el producto ese día. Revisá en 🏥 Sanidad cuál dejar. La app no borra nada sola.</li>
+    <li>Sin señal se carga igual: queda <b>“en cola”</b> y se manda solo, en orden, una sola vez. Si la base rechaza algo, se ve el error y el botón <b>Quitar</b>.</li>
+    <li>Otro equipo del mismo campo ve el mismo ciclo al abrir la pantalla con señal. <span class="b">🔄 Actualizar</span> lo trae de nuevo.</li>
+    <li><span class="b">⚙ Productos</span>: lista de productos del baño con su dosis de carga y de reposición (ml cada 100 L) y cuánto dura. <b>+ Agregar producto</b> (del catálogo) y <b>Editar</b> necesitan señal.</li>
   </ul>
 </div>
 

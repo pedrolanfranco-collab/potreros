@@ -403,6 +403,42 @@
   .ins-encola .ins-estado{background:#e6e0c8;color:#4a4430;}
   #ins-ayuda-frascos{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   #ins-form-error{color:var(--rojo-hacienda);font-size:13px;margin:6px 0;min-height:1px;}
+  /* 4/11/2026: pantalla "🛁 Baño" (control del baño de aspersión; La Vuelta y María Laura, CONFIG.bano). Botones grandes y
+     colores fuertes para usar al sol; el color nunca va solo (siempre hay texto: ok / alto / bajo / sin conteo). */
+  #modal-bano .modal-box, #modal-bano-form .modal-box, #modal-bano-productos .modal-box{max-width:560px;}
+  .bano-h{font-size:17px;margin:4px 0 8px;}
+  .bano-chips{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 8px;}
+  .bano-chip{min-height:48px;min-width:58px;padding:8px 12px;font-size:16px;font-weight:600;line-height:1.2;border:2px solid #6b6245;border-radius:10px;background:#fff;color:#1f1b12;cursor:pointer;font-family:inherit;}
+  .bano-chip small{display:block;font-size:12px;font-weight:500;}
+  .bano-chip[aria-pressed="true"]{background:#1f3a5c;border-color:#1f3a5c;color:#fff;}
+  .bano-chip:focus-visible{outline:3px solid #c68a3b;outline-offset:2px;}
+  .bano-num-fila{display:flex;gap:8px;align-items:center;}
+  .bano-num-fila input{flex:1;min-width:0;text-align:center;font-size:20px !important;font-weight:700;}
+  .bano-grandes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;}
+  .bano-grandes .btn{min-height:64px;font-size:18px;font-weight:700;}
+  .bano-ancho{width:100%;min-height:56px;font-size:18px;font-weight:700;}
+  .bano-prod{font-size:22px;font-weight:800;line-height:1.2;}
+  .bano-dia{font-size:15px;font-weight:600;color:#3a3426;margin:2px 0 8px;}
+  .bano-tanque{height:26px;border:2px solid #3a3426;border-radius:6px;background:#fff;overflow:hidden;margin:4px 0;}
+  .bano-tanque > div{height:100%;background:#2f6f9f;}
+  .bano-dato{font-size:15px;line-height:1.4;margin:2px 0;}
+  .bano-dato b{font-family:'JetBrains Mono',monospace;}
+  .bano-cartel{font-size:15px;line-height:1.4;margin:8px 0;padding:10px 12px;border-radius:8px;border:2px solid #3a3426;background:#fff;}
+  .bano-reponer{background:#fbe3b0;border-color:#8f5f12;font-weight:700;font-size:17px;color:#3d2a05;}
+  .bano-vencido, .bano-dup{background:#f7e3df;border-color:var(--rojo-hacienda);color:#4a140b;}
+  .bano-falta{color:#8f5f12;font-weight:700;}
+  .bano-error{color:var(--rojo-hacienda);font-size:14px;font-weight:600;margin:6px 0;min-height:1px;}
+  .bano-sub{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);margin:14px 0 6px;}
+  .bano-linea{font-size:14px;line-height:1.35;padding:6px 8px;border-bottom:1px solid var(--linea);}
+  .bano-linea .bano-hora{font-family:'JetBrains Mono',monospace;font-weight:700;margin-right:6px;}
+  .bano-tramo{font-size:14px;line-height:1.35;padding:8px 10px;margin:0 0 6px;border-radius:8px;border:1px solid var(--linea);border-left:8px solid #8a8060;background:#fff;}
+  .bano-tramo.bano-ok{border-left-color:#2b5d1e;background:#eef4e6;}
+  .bano-tramo.bano-alto, .bano-tramo.bano-bajo{border-left-color:var(--rojo-hacienda);background:#f7e3df;}
+  .bano-tramo.bano-sin_conteo{border-left-color:#8a8060;background:#faf6ea;}
+  .bano-etq{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:10px;padding:1px 8px;margin-left:4px;background:#e6e0c8;color:#3a3426;}
+  .bano-ok .bano-etq{background:#cfe0bf;color:#1f3a14;}
+  .bano-alto .bano-etq, .bano-bajo .bano-etq{background:#e8b9b0;color:#5c1a0f;}
+  .bano-prod-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--linea);border-radius:8px;padding:8px 10px;margin:0 0 6px;}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
 
   input[type=file]{display:none;}
@@ -539,7 +575,7 @@
     <div class="brand">
       <div>
         <h1>La Vuelta <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v3.82</div>
+        <div class="sub">Rivera, Uruguay · Gestión de hacienda por potrero · v3.83</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -602,6 +638,7 @@
       <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
       <button class="btn btn-json" id="btn-insumos" style="display:none;">🧴 Insumos</button>
+      <button class="btn btn-json" id="btn-bano" style="display:none;">🛁 Baño</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
       <button class="btn btn-json" id="btn-guias" style="display:none;">📑 Movimientos DICOSE</button>
       <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
@@ -1028,6 +1065,148 @@
     </div>
   </div>
 </div>
+<div id="modal-bano" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🛁 Baño</h3>
+    <button class="btn-cerrar-x" id="bano-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info" id="bano-subtitulo">Control del baño de aspersión.</p>
+    <div id="bano-aviso" class="ins-aviso" role="status" style="display:none;"></div>
+    <div id="bano-duplicados"></div>
+    <div id="bano-sin-ciclo" style="display:none;">
+      <h4 class="bano-h">Abrir ciclo nuevo</h4>
+      <p class="modal-info" id="bano-ultimo"></p>
+      <div class="form-row"><label id="bano-nc-prod-label">Producto</label>
+        <div class="bano-chips" id="bano-nc-productos" role="group" aria-labelledby="bano-nc-prod-label"></div>
+      </div>
+      <div class="form-row"><label for="bano-nc-agua">Agua cargada (litros)</label>
+        <div class="bano-chips" id="bano-nc-aguas" role="group" aria-label="Agua cargada">
+          <button type="button" class="bano-chip" data-bano-agua="500">500</button>
+          <button type="button" class="bano-chip" data-bano-agua="600">600</button>
+          <button type="button" class="bano-chip" data-bano-agua="700">700</button>
+          <button type="button" class="bano-chip" data-bano-agua="800">800</button>
+          <button type="button" class="bano-chip" data-bano-agua="900">900</button>
+        </div>
+        <input type="text" id="bano-nc-agua" inputmode="numeric" autocomplete="off" placeholder="Otro: escribí los litros">
+      </div>
+      <div class="form-row"><label for="bano-nc-ml">Producto puesto (ml)</label>
+        <input type="text" id="bano-nc-ml" inputmode="decimal" autocomplete="off" placeholder="ml de producto">
+        <p class="modal-info" id="bano-nc-sug" aria-live="polite"></p>
+      </div>
+      <div id="bano-nc-error" class="bano-error" role="alert"></div>
+      <button class="btn btn-agregar bano-ancho" id="bano-abrir">Abrir ciclo</button>
+    </div>
+    <div id="bano-en-marcha" style="display:none;">
+      <div id="bano-cab"></div>
+      <div id="bano-vencido" class="bano-cartel bano-vencido" role="alert" style="display:none;"></div>
+      <div id="bano-nivel"></div>
+      <div id="bano-reponer" class="bano-cartel bano-reponer" role="status" style="display:none;"></div>
+      <div class="bano-grandes">
+        <button class="btn btn-agregar" id="bano-tanda">+ Tanda</button>
+        <button class="btn btn-agregar" id="bano-reposicion">+ Reposición</button>
+        <button class="btn btn-secundario" id="bano-fin-dia">Fin del día</button>
+        <button class="btn btn-secundario" id="bano-cerrar-ciclo">Cerrar ciclo</button>
+      </div>
+      <div id="bano-hoy"></div>
+      <div id="bano-tramo"></div>
+      <div id="bano-resumen"></div>
+    </div>
+    <div id="bano-cola"></div>
+    <div class="form-botones">
+      <button class="btn btn-secundario" id="bano-productos">⚙ Productos</button>
+      <button class="btn btn-secundario" id="bano-actualizar">🔄 Actualizar</button>
+      <button class="btn btn-secundario" id="bano-cerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div id="modal-bano-form" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3 id="bano-f-titulo">🛁 Baño</h3>
+    <button class="btn-cerrar-x" id="bano-f-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info" id="bano-f-ayuda"></p>
+    <div id="bano-f-tanda">
+      <div class="form-row"><label id="bano-t-cat-label">Categoría</label>
+        <div class="bano-chips" id="bano-t-cats" role="group" aria-labelledby="bano-t-cat-label"></div>
+        <select id="bano-t-cat-otra" aria-label="Otra categoría"></select>
+      </div>
+      <div class="form-row"><label for="bano-t-dueno" id="bano-t-dueno-label">Dueño</label><select id="bano-t-dueno"></select></div>
+      <div class="form-row"><label for="bano-t-potrero">Potrero</label><select id="bano-t-potrero"></select></div>
+      <div class="form-row"><label for="bano-t-cant" id="bano-t-cant-label">Cantidad de animales</label>
+        <div class="bano-num-fila">
+          <button type="button" class="bano-chip" data-bano-delta="-10" aria-label="Restar 10">−10</button>
+          <input type="text" id="bano-t-cant" inputmode="numeric" autocomplete="off" placeholder="sin contar">
+          <button type="button" class="bano-chip" data-bano-delta="1" aria-label="Sumar 1">+1</button>
+          <button type="button" class="bano-chip" data-bano-delta="10" aria-label="Sumar 10">+10</button>
+        </div>
+      </div>
+      <div class="form-row"><label id="bano-t-baston-label">¿La vas a pasar por el bastón?</label>
+        <div class="bano-chips" role="group" aria-labelledby="bano-t-baston-label">
+          <button type="button" class="bano-chip" id="bano-t-baston-si" aria-pressed="false">Sí</button>
+          <button type="button" class="bano-chip" id="bano-t-baston-no" aria-pressed="false">No</button>
+        </div>
+        <p class="modal-info" id="bano-t-baston-ayuda"></p>
+      </div>
+    </div>
+    <div id="bano-f-nivel-sec">
+      <div class="form-row"><label for="bano-f-nivel" id="bano-f-nivel-label">Lo que marca la regla (litros)</label>
+        <div class="bano-chips" id="bano-f-reglas" role="group" aria-label="Regla">
+          <button type="button" class="bano-chip" data-bano-regla="100">100</button>
+          <button type="button" class="bano-chip" data-bano-regla="200">200</button>
+          <button type="button" class="bano-chip" data-bano-regla="300">300</button>
+          <button type="button" class="bano-chip" data-bano-regla="400">400</button>
+          <button type="button" class="bano-chip" data-bano-regla="500">500</button>
+          <button type="button" class="bano-chip" data-bano-regla="600">600</button>
+          <button type="button" class="bano-chip" data-bano-regla="700">700</button>
+          <button type="button" class="bano-chip" data-bano-regla="800">800</button>
+          <button type="button" class="bano-chip" data-bano-regla="900">900</button>
+        </div>
+        <input type="text" id="bano-f-nivel" inputmode="numeric" autocomplete="off" placeholder="Otro: escribí los litros">
+      </div>
+    </div>
+    <div id="bano-f-repos">
+      <div class="form-row"><label for="bano-r-agua">Agua que agregás (litros)</label>
+        <input type="text" id="bano-r-agua" inputmode="numeric" autocomplete="off">
+        <p class="modal-info" id="bano-r-agua-sug" aria-live="polite"></p>
+      </div>
+      <div class="form-row"><label for="bano-r-ml">Producto que agregás (ml)</label>
+        <input type="text" id="bano-r-ml" inputmode="decimal" autocomplete="off">
+        <p class="modal-info" id="bano-r-ml-sug" aria-live="polite"></p>
+      </div>
+    </div>
+    <div id="bano-f-preview" aria-live="polite"></div>
+    <div id="bano-f-error" class="bano-error" role="alert"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="bano-f-guardar">Guardar</button>
+      <button class="btn btn-secundario" id="bano-f-cancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div id="modal-bano-productos" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>⚙ Productos del baño</h3>
+    <button class="btn-cerrar-x" id="bano-p-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Dosis de cada producto en ml cada 100 litros de agua, y cuánto dura la mezcla. Guardar un cambio necesita señal.</p>
+    <div id="bano-p-aviso" class="ins-aviso" role="status" style="display:none;"></div>
+    <div id="bano-p-lista"></div>
+    <div id="bano-p-form" style="display:none;">
+      <div class="form-row"><label for="bano-p-producto">Producto (del catálogo)</label>
+        <input type="text" id="bano-p-producto" list="bano-p-catalogo" autocomplete="off" placeholder="Escribí para buscar">
+        <datalist id="bano-p-catalogo"></datalist>
+      </div>
+      <div class="form-row"><label for="bano-p-carga">ml cada 100 L al cargar</label><input type="text" id="bano-p-carga" inputmode="decimal" autocomplete="off" placeholder="vacío = falta la dosis"></div>
+      <div class="form-row"><label for="bano-p-repos">ml cada 100 L al reponer</label><input type="text" id="bano-p-repos" inputmode="decimal" autocomplete="off" placeholder="vacío = falta la dosis"></div>
+      <div class="form-row"><label for="bano-p-horas">Dura (horas)</label><input type="text" id="bano-p-horas" inputmode="numeric" autocomplete="off" placeholder="Ej: 168 = 7 días"></div>
+      <div id="bano-p-error" class="bano-error" role="alert"></div>
+      <div class="form-botones">
+        <button class="btn btn-agregar" id="bano-p-guardar">Guardar producto</button>
+        <button class="btn btn-secundario" id="bano-p-cancelar-form">Cancelar</button>
+      </div>
+    </div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="bano-p-nuevo">+ Agregar producto</button>
+      <button class="btn btn-secundario" id="bano-p-cerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 <div id="modal-puntos" class="modal-overlay" style="display:none;">
   <div class="modal-box">
@@ -1079,7 +1258,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"la_vuelta","storageKey":"la_vuelta_potreros_v1","potrerosGeo":[{"nombre":"CERRO","area":"42","coords":[[-31.3832525304926,-55.4257231752813],[-31.3844824063022,-55.4261636506441],[-31.38578089,-55.426384],[-31.388764692918,-55.4273629941945],[-31.3867546932095,-55.4342334171299],[-31.3815787580165,-55.4325234740025],[-31.3832525304926,-55.4257231752813]]},{"nombre":"14","area":"48","coords":[[-31.3904287581061,-55.4220192512738],[-31.3903730237931,-55.4219860170168],[-31.3903426849273,-55.421967926031],[-31.3849655238657,-55.4187617394543],[-31.3849876115164,-55.4186711929254],[-31.3864937213251,-55.4124962913363],[-31.3929108523983,-55.41476151494],[-31.3904287581061,-55.4220192512738]]},{"nombre":"EMBARCADERO","area":"42","coords":[[-31.3881318426669,-55.4058229025073],[-31.3882242508544,-55.4054420242023],[-31.3908047983251,-55.4076751738435],[-31.3921463811933,-55.4088579012118],[-31.393977337083,-55.4104415531117],[-31.3937668645307,-55.4112023074105],[-31.3940064267483,-55.4113426309966],[-31.3938763787632,-55.4117235093016],[-31.3936881510973,-55.4116513428859],[-31.3929934166272,-55.4142373061149],[-31.3929899942772,-55.4142854170587],[-31.3930071060261,-55.4143255095119],[-31.3930276401205,-55.4143535742291],[-31.3929108523983,-55.41476151494],[-31.3864937213251,-55.4124962913363],[-31.3864937213251,-55.4124962913363],[-31.3864937213251,-55.4124962913363],[-31.3881318426669,-55.4058229025073]]},{"nombre":"CERRITO","area":"19","coords":[[-31.3973625412959,-55.4134200547371],[-31.3966790546491,-55.4165822409397],[-31.396153064866,-55.417861554832],[-31.3929108523983,-55.41476151494],[-31.3930276401205,-55.4143535742291],[-31.3930071060261,-55.4143255095119],[-31.3929899942772,-55.4142854170587],[-31.3929934166272,-55.4142373061149],[-31.3936881510973,-55.4116513428859],[-31.3938763787632,-55.4117235093016],[-31.3940064267483,-55.4113426309966],[-31.3937668645307,-55.4112023074105],[-31.393977337083,-55.4104415531117],[-31.3973625412959,-55.4134200547371]]},{"nombre":"17","area":"11","coords":[[-31.3989174244541,-55.4205049154794],[-31.4013430475651,-55.4212894534984],[-31.400810529841,-55.4232114323106],[-31.4001528067025,-55.4255851304614],[-31.4001528067025,-55.4255851304614],[-31.397844579311,-55.423589528601],[-31.3989174244541,-55.4205049154794]]},{"nombre":"15","area":"29","coords":[[-31.3929986231188,-55.4239068046623],[-31.3961603139233,-55.4178684863261],[-31.3989174244541,-55.4205049154794],[-31.397844579311,-55.423589528601],[-31.3974342317843,-55.4247664848511],[-31.397124523252,-55.4256164448599],[-31.3968644357395,-55.4264002523209],[-31.396689047372,-55.4268372600612],[-31.3932188569781,-55.4240819062119],[-31.3929986231188,-55.4239068046623]]},{"nombre":"18","area":"23","coords":[[-31.4001528067025,-55.4255851304614],[-31.3984235771055,-55.4318433552253],[-31.3953304180881,-55.4307993967533],[-31.396689047372,-55.4268372600612],[-31.396689047372,-55.4268372600612],[-31.3968644357395,-55.4264002523209],[-31.397124523252,-55.4256164448599],[-31.3974342317843,-55.4247664848511],[-31.397844579311,-55.423589528601],[-31.397844579311,-55.423589528601],[-31.397844579311,-55.423589528601],[-31.4001528067025,-55.4255851304614]]},{"nombre":"BOMBA","area":"47","coords":[[-31.388764692918,-55.4273629941945],[-31.3916898243375,-55.4291071618768],[-31.3940359000047,-55.430505099991],[-31.3938947399993,-55.4310609799995],[-31.3949405483756,-55.4319013343634],[-31.3933352699992,-55.4364381497247],[-31.3867546932095,-55.4342334171299],[-31.388764692918,-55.4273629941945],[-31.388764692918,-55.4273629941945]]},{"nombre":"23","area":"28","coords":[[-31.3933352699992,-55.4364381497247],[-31.3949405483756,-55.4319013343634],[-31.3953304180881,-55.4307993967533],[-31.3984235771055,-55.4318433552253],[-31.3990366576763,-55.4320502812946],[-31.3991187887523,-55.4320863645025],[-31.3991187887523,-55.4320863645025],[-31.399508910382,-55.4323810440339],[-31.3999489181527,-55.4326905703019],[-31.3996313552807,-55.4332542105743],[-31.3992194648295,-55.4339852597644],[-31.3971275711483,-55.4376978671346],[-31.3933352699992,-55.4364381497247]]},{"nombre":"7","area":"22","coords":[[-31.3971275711483,-55.4376978671346],[-31.3992194648295,-55.4339852597644],[-31.4012116632326,-55.4353122408775],[-31.403956535247,-55.4372306647653],[-31.4034278424381,-55.4397850551928],[-31.3971275711483,-55.4376978671346]]},{"nombre":"8","area":"63","coords":[[-31.4034278424381,-55.4397850551928],[-31.403956535247,-55.4372306647653],[-31.406632034492,-55.4391009777093],[-31.4073557535544,-55.4384394522307],[-31.4077663718172,-55.4370081516498],[-31.4089058280852,-55.4326962083031],[-31.4091624604706,-55.4316798646134],[-31.4095833360633,-55.4300801757288],[-31.4140332100565,-55.4314257786909],[-31.4112385906607,-55.4423725218942],[-31.4034278424381,-55.4397850551928]]},{"nombre":"9","area":"53","coords":[[-31.4022299315718,-55.4334152413943],[-31.4022742038577,-55.4325097783955],[-31.402977424613,-55.4319324470688],[-31.4030492862913,-55.431848252917],[-31.4036909059799,-55.4310965194186],[-31.4037730329834,-55.4310604362107],[-31.4040399452483,-55.4306755486595],[-31.4050988895838,-55.4294550676885],[-31.405615738727,-55.4288593605274],[-31.4095833360633,-55.4300801757288],[-31.4073557535544,-55.4384394522307],[-31.406632034492,-55.4391009777093],[-31.403956535247,-55.4372306647653],[-31.4012116632326,-55.4353122408775],[-31.4021073806425,-55.4336403855771],[-31.4022299315718,-55.4334152413943]]},{"nombre":"OMBU","area":"12","coords":[[-31.4027324849525,-55.4277744211559],[-31.4030775176499,-55.4271893845608],[-31.4030967662986,-55.4270518173306],[-31.403137188448,-55.42695822651],[-31.4038493853674,-55.4279460043269],[-31.4048772492307,-55.4291953854012],[-31.4050988895835,-55.4294550676882],[-31.4050988895836,-55.4294550676883],[-31.4050988895837,-55.4294550676885],[-31.4050988895837,-55.4294550676885],[-31.4050988895838,-55.4294550676885],[-31.4040399452483,-55.4306755486595],[-31.4037730329834,-55.4310604362107],[-31.4036909059799,-55.4310965194186],[-31.4030492862913,-55.431848252917],[-31.402977424613,-55.4319324470688],[-31.4022742038577,-55.4325097783955],[-31.4022960191793,-55.4320064928183],[-31.4017512762489,-55.4318508839842],[-31.4016608062688,-55.4318602806529],[-31.4008229923633,-55.4311061040207],[-31.4027324849525,-55.4277744211559]]},{"nombre":"10","area":"12","coords":[[-31.4050988895837,-55.4294550676885],[-31.4050988895836,-55.4294550676883],[-31.4038493853674,-55.4279460043269],[-31.403137188448,-55.42695822651],[-31.4040447573615,-55.424785904633],[-31.4050206488186,-55.425250475935],[-31.4058425455857,-55.4246776550093],[-31.4060629358836,-55.424571660586],[-31.4061052815584,-55.4245175357741],[-31.4062554160698,-55.4245457257803],[-31.4062380928692,-55.4246099989944],[-31.4062390552693,-55.4246460822023],[-31.4062496416699,-55.4246652514065],[-31.4062891000617,-55.424676527409],[-31.4063150848473,-55.4246539754041],[-31.4071398574502,-55.4248794954536],[-31.405615738727,-55.4288593605274],[-31.4050988895837,-55.4294550676885]]},{"nombre":"PAST","area":"10","coords":[[-31.4046640742705,-55.423296344706],[-31.4059094326522,-55.4202743760426],[-31.4067159233129,-55.4207705201515],[-31.407578225469,-55.4212779402629],[-31.4077822511593,-55.4214222730946],[-31.4083423571415,-55.4217628083693],[-31.4071398574502,-55.4248794954536],[-31.4063150848473,-55.4246539754041],[-31.4063097916508,-55.4245383963787],[-31.4063016112557,-55.424471304164],[-31.4062905436611,-55.4244560815606],[-31.4063030548549,-55.4242649533187],[-31.4063275960378,-55.4242593153174],[-31.4063295208362,-55.4241944783032],[-31.4062765888661,-55.4241933507029],[-31.4062785136656,-55.4240726974764],[-31.4062929496601,-55.4240636766745],[-31.4062895812616,-55.4239937654591],[-31.4062284688675,-55.4239869998576],[-31.4062260628669,-55.4240619852741],[-31.4062583032695,-55.4240687508756],[-31.4062501228699,-55.4241702348979],[-31.4058045306129,-55.4242051905056],[-31.4057852825196,-55.4242593153174],[-31.4046640742705,-55.423296344706]]},{"nombre":"26","area":"11","coords":[[-31.4021338478071,-55.4238251892222],[-31.4029315077833,-55.4219098972456],[-31.4040779609359,-55.4191569241972],[-31.4059094326522,-55.4202743760426],[-31.4046640742705,-55.423296344706],[-31.4040634584718,-55.4247409262725],[-31.4021338478071,-55.4238251892222]]},{"nombre":"21","area":"5","coords":[[-31.4028727599051,-55.4218575267902],[-31.4030748709603,-55.4212982370674],[-31.4031040090312,-55.4211687334322],[-31.4031144993706,-55.421091916923],[-31.4031210677119,-55.421018592206],[-31.403097969339,-55.4208765145748],[-31.402963228717,-55.4206171665179],[-31.4028015397152,-55.4203848808669],[-31.4024935598937,-55.4199473719708],[-31.4023241705611,-55.4196970447159],[-31.4021836541782,-55.4194828006688],[-31.4020912597296,-55.4193565094411],[-31.4020123393994,-55.4191693278],[-31.4019468932216,-55.418928021347],[-31.4017544041988,-55.4180530035549],[-31.4016831831603,-55.4176583434683],[-31.4015840510844,-55.4172851077863],[-31.4015224544019,-55.4171328817529],[-31.4015648021254,-55.4170342167313],[-31.4032579735764,-55.4185277232591],[-31.4038392799084,-55.4190328881701],[-31.4040779609359,-55.4191569241972],[-31.4040779609358,-55.4191569241974],[-31.4029315077833,-55.4219098972456],[-31.4028727599051,-55.4218575267902]]},{"nombre":"TRI","area":"4","coords":[[-31.4023761423206,-55.4258311900626],[-31.4022941216483,-55.4256389982454],[-31.4022818231802,-55.4256101804141],[-31.4022491001909,-55.4253124939487],[-31.4021586306907,-55.4246539754042],[-31.4021182081198,-55.4238714208324],[-31.4021338478071,-55.4238251892222],[-31.4040634584717,-55.4247409262725],[-31.4040447573615,-55.424785904633],[-31.403137188448,-55.42695822651],[-31.4030967662986,-55.4270518173306],[-31.4029718906199,-55.4268719650911],[-31.4029345558304,-55.4268105728316],[-31.4028621731235,-55.4266915490515],[-31.4026844922781,-55.4263715942916],[-31.4026148270691,-55.4262461469537],[-31.4025745265544,-55.4261760836193],[-31.4023761423206,-55.4258311900626]]},{"nombre":"19","area":"7","coords":[[-31.400810529841,-55.4232114323106],[-31.4020736597051,-55.4237688722544],[-31.4020652737745,-55.423933438846],[-31.402087751852,-55.4244165354399],[-31.4021326447543,-55.4249189614624],[-31.4022057903347,-55.4254399127767],[-31.402251025073,-55.425673326028],[-31.402302996873,-55.4258232968609],[-31.402455062345,-55.4260815173176],[-31.4026350382497,-55.4263938625862],[-31.4028053894566,-55.4266859110503],[-31.4028987456366,-55.4268561786877],[-31.402997876324,-55.4269914907174],[-31.4030775176499,-55.4271893845608],[-31.4030775176499,-55.4271893845608],[-31.4027324849525,-55.4277744211559],[-31.4001528067025,-55.4255851304614],[-31.400810529841,-55.4232114323106]]},{"nombre":"13","area":"40","coords":[[-31.388764692918,-55.4273629941945],[-31.38578089,-55.426384],[-31.3844824063022,-55.4261636506441],[-31.3832525304926,-55.4257231752813],[-31.384920356718,-55.4189453175114],[-31.3849655238657,-55.4187617394543],[-31.3903405808876,-55.421975120125],[-31.3903406301464,-55.4219751495753],[-31.3903302999385,-55.4220104698385],[-31.388764692918,-55.4273629941945]]},{"nombre":"12","area":"41","coords":[[-31.3949405483756,-55.4319013343634],[-31.3938947399993,-55.4310609799995],[-31.3940359000047,-55.430505099991],[-31.3916898243375,-55.4291071618768],[-31.388764692918,-55.4273629941945],[-31.3903302999385,-55.4220104698385],[-31.3903406301464,-55.4219751495753],[-31.3903405808876,-55.421975120125],[-31.3903426849273,-55.421967926031],[-31.3903730237931,-55.4219860170168],[-31.3904287581061,-55.4220192512738],[-31.391285213983,-55.4225343375165],[-31.3920792102615,-55.4231758167685],[-31.3929986231188,-55.4239068046623],[-31.3932188569781,-55.4240819062119],[-31.396689047372,-55.4268372600612],[-31.3953304180881,-55.4307993967533],[-31.3949405483756,-55.4319013343634]]},{"nombre":"CALLE","area":"17","coords":[[-31.396153064866,-55.417861554832],[-31.3966790546491,-55.4165822409397],[-31.3973625412959,-55.4134200547371],[-31.3983292433283,-55.4142640239759],[-31.4004697771584,-55.4161147918489],[-31.3989174244541,-55.4205049154794],[-31.3961603139233,-55.4178684863261],[-31.396153064866,-55.417861554832]]},{"nombre":"TAJAMAR","area":"28","coords":[[-31.3961603139233,-55.4178684863261],[-31.3929986231188,-55.4239068046623],[-31.3920792102615,-55.4231758167685],[-31.391285213983,-55.4225343375165],[-31.3904287581061,-55.4220192512738],[-31.3929108523983,-55.41476151494],[-31.396153064866,-55.417861554832],[-31.3961603139233,-55.4178684863261]]},{"nombre":"16","area":"10","coords":[[-31.4013430475651,-55.4212894534984],[-31.3989174244541,-55.4205049154794],[-31.4004697771584,-55.4161147918489],[-31.4013342754846,-55.416845977965],[-31.4013022758607,-55.4169238531355],[-31.4013363701137,-55.4169438254279],[-31.4014069939318,-55.417003340844],[-31.40146859069,-55.417139655185],[-31.40152334333,-55.4172639417901],[-31.4015866510303,-55.4174463624524],[-31.4016482476706,-55.4177931621729],[-31.4019356981243,-55.4191502917153],[-31.4013430475651,-55.4212894534984]]},{"nombre":"20","area":"6","coords":[[-31.4020736597051,-55.4237688722544],[-31.400810529841,-55.4232114323106],[-31.4013430475651,-55.4212894534984],[-31.4019356981243,-55.4191502917153],[-31.4020421751418,-55.4194275482567],[-31.4022038654517,-55.4196440475043],[-31.4023694052423,-55.4198921195587],[-31.4026196392553,-55.42021686843],[-31.4029545668132,-55.420694970935],[-31.4030030394555,-55.4208138411598],[-31.4030354112171,-55.4209204909845],[-31.4030594250761,-55.4211057438947],[-31.402950717078,-55.4214797807073],[-31.4027505306271,-55.4220300496281],[-31.4022038654517,-55.4233155139103],[-31.4020943083852,-55.4236452976878],[-31.4020736597051,-55.4237688722544]]},{"nombre":"11","area":"15","coords":[[-31.4001528067025,-55.4255851304614],[-31.4001528067025,-55.4255851304614],[-31.4027324849525,-55.4277744211559],[-31.4008229923633,-55.4311061040207],[-31.4007305965753,-55.4312865200603],[-31.4006074020498,-55.4318999345949],[-31.399508910382,-55.4323810440339],[-31.3991187887523,-55.4320863645025],[-31.3990366576763,-55.4320502812946],[-31.3984235771055,-55.4318433552253],[-31.4001528067025,-55.4255851304614]]},{"nombre":"6","area":"53","coords":[[-31.4112796595214,-55.4422266525997],[-31.4089737150548,-55.4513252257824],[-31.3933164538007,-55.4508057130539],[-31.3955038314635,-55.4370697773884],[-31.4112261457408,-55.4422785013532],[-31.4112796595214,-55.4422266525997]]},{"nombre":"1","area":"5","coords":[[-31.4050866820016,-55.4661938831126],[-31.4043577890487,-55.4659210253117],[-31.4026808547626,-55.4664673619031],[-31.4022015387981,-55.4664831482702],[-31.4015187867173,-55.4666351177981],[-31.4002768056683,-55.4667164980593],[-31.399366385923,-55.4688896496189],[-31.398806968116,-55.4693266817332],[-31.4038029251791,-55.471134418346],[-31.4051170212433,-55.4662080910201],[-31.4050866820016,-55.4661938831126]]},{"nombre":"2","area":"10","coords":[[-31.4038272530339,-55.4711144388844],[-31.400930796371,-55.470146326202],[-31.3984736497565,-55.4742174944512],[-31.3995888296376,-55.4756497123905],[-31.4008393521767,-55.4793202607549],[-31.4018757070718,-55.4794531620971],[-31.4038233864727,-55.4711574681161],[-31.4038272530339,-55.4711144388844]]},{"nombre":"3","area":"27","coords":[[-31.390568430431,-55.4665657294887],[-31.3873170424389,-55.4856701584164],[-31.3885688908183,-55.4846215251183],[-31.3892188175645,-55.4829682383475],[-31.3905032385804,-55.4824258981148],[-31.3916943875454,-55.4810494243746],[-31.3945480320566,-55.4766778219426],[-31.3957445277016,-55.4745609610131],[-31.3957779407199,-55.4707394098424],[-31.3953846037567,-55.4695707236339],[-31.3951741550169,-55.4681223549083],[-31.3905983512931,-55.466597713447],[-31.390568430431,-55.4665657294887]]},{"nombre":"5","area":"70","coords":[[-31.4089697079437,-55.4512573534476],[-31.4051243967495,-55.4661966192843],[-31.4043353790449,-55.465961144876],[-31.4026263325518,-55.4664399695575],[-31.4022667843063,-55.4664419500766],[-31.4015364885432,-55.466659218785],[-31.4002619044777,-55.4666908812888],[-31.3998716188583,-55.4675612283892],[-31.3993096998838,-55.4690005142156],[-31.3987484654985,-55.4692992473834],[-31.3905742567039,-55.4665455234611],[-31.3933223320913,-55.4508239935416],[-31.4089351139558,-55.4513051594378],[-31.4089697079437,-55.4512573534476]]}],"puntosSeed":[{"tipo":"agua","subtipo":"Tanque","nombre":"Tanque Cerro Norte","lat":-31.3875398578274,"lon":-55.428643226623535},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 1","lat":-31.38734294294843,"lon":-55.42862176895142},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 2","lat":-31.38688957921558,"lon":-55.43143808841705},{"tipo":"agua","subtipo":"Tanque","nombre":"Tanque Casa Sur","lat":-31.402751428853595,"lon":-55.43163120746613},{"tipo":"agua","subtipo":"Tanque","nombre":"Tanque Cerro Sur","lat":-31.387523829887574,"lon":-55.42862847447396},{"tipo":"agua","subtipo":"Tanque","nombre":"Tanque Casa Norte","lat":-31.402751428853595,"lon":-55.43163120746613},{"tipo":"agua","subtipo":"Bomba eléctrica","nombre":"Bomba electrica","lat":-31.404509621305987,"lon":-55.42891144752503},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 7","lat":-31.389985231456645,"lon":-55.42178750038148},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 6","lat":-31.391221632086822,"lon":-55.42324662208557},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 5","lat":-31.3930075153667,"lon":-55.42522072792054},{"tipo":"agua","subtipo":"Distribución T","nombre":"T 1","lat":-31.39193031,"lon":-55.42403265},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave 1 Norte","lat":-31.387524974740508,"lon":-55.42864993214608},{"tipo":"agua","subtipo":"Bomba solar","nombre":"Bomba Lorentz","lat":-31.39120331515925,"lon":-55.43063879013062},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave 2 Sur","lat":-31.387523829887574,"lon":-55.42862847447396},{"tipo":"agua","subtipo":"Llave en Cruz","nombre":"Cruz 1","lat":-31.38852814,"lon":-55.42724016},{"tipo":"agua","subtipo":"Bebedero","nombre":"B","lat":-31.39350878,"lon":-55.41531634},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 3","lat":-31.38976346,"lon":-55.42793109},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 14 Y Emb 1","lat":-31.39158625,"lon":-55.41427208},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 14 Y Emb 2","lat":-31.4030666351318,"lon":-55.42131042480471},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 16","lat":-31.40181060729831,"lon":-55.4195646260381},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 16 - Calle","lat":-31.3983058929443,"lon":-55.4222984313965},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 2 Emb Y 14","lat":-31.3884312726745,"lon":-55.4131973228758},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero Calle Y 15-1","lat":-31.39754711,"lon":-55.41920047},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero Emb Cerrito","lat":-31.39363477,"lon":-55.41189360999999},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero Pastoreo","lat":-31.40482599,"lon":-55.42286485},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero Plazoleta","lat":-31.40456255,"lon":-55.42388014},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebederos","lat":-31.40196718,"lon":-55.42916192},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebederos (1)","lat":-31.40206907,"lon":-55.42716647},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Distribución Cruz","nombre":"Cruz 1 (2)","lat":-31.38852814,"lon":-55.42724016},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave","lat":-31.39322715,"lon":-55.4163429},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave (2)","lat":-31.3929103110842,"lon":-55.4147608939796},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave (3)","lat":-31.3989005,"lon":-55.42051148},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave (4)","lat":-31.39787169,"lon":-55.42359454},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave Corte 15","lat":-31.39319231,"lon":-55.41637651},{"tipo":"agua","subtipo":"Llave en T","nombre":"Llave Y T","lat":-31.39320992,"lon":-55.41504101999999},{"tipo":"agua","subtipo":"Llave en T","nombre":"Llave Y T (2)","lat":-31.4002060044607,"lon":-55.4255619432811},{"tipo":"agua","subtipo":"Llave en T","nombre":"Llave Y T (3)","lat":-31.4020874106233,"lon":-55.4271797058359},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño (2)","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Distribución T","nombre":"T","lat":-31.3989107196461,"lon":-55.4205177157522},{"tipo":"agua","subtipo":"Distribución T","nombre":"T 1 (2)","lat":-31.39193031,"lon":-55.42403265},{"tipo":"agua","subtipo":"Distribución T","nombre":"T 12-1","lat":-31.39123972000001,"lon":-55.42337707},{"tipo":"agua","subtipo":"Llave en T","nombre":"T y Llave","lat":-31.3975571953239,"lon":-55.4192171830309},{"tipo":"agua","subtipo":"Llave en T","nombre":"T y Llave 12","lat":-31.39098641,"lon":-55.42306679},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Valvula","lat":-31.39561079,"lon":-55.41726027},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Válvula Retencion","lat":-31.393191,"lon":-55.417409},{"tipo":"agua","subtipo":"Llave en T","nombre":"Y y Llave","lat":-31.3934932332456,"lon":-55.4152839467361},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave B 6","lat":-31.39145549579817,"lon":-55.423506011297334},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave B 5","lat":-31.39265203759569,"lon":-55.424828662206764},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave B 3","lat":-31.3893558044,"lon":-55.4277030831},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 21 y pastoreo","lat":-31.4036226645112,"lon":-55.4202564619482},{"tipo":"agua","subtipo":"Bebedero","nombre":"B calle 16","lat":-31.3993231524545,"lon":-55.4194123772142},{"tipo":"agua","subtipo":"Bebedero","nombre":"B Cerro y 13","lat":-31.3866421440616,"lon":-55.4266432207078},{"tipo":"agua","subtipo":"Bebedero","nombre":"Beb triangulo","lat":-31.4033856242895,"lon":-55.4264169093221},{"tipo":"agua","subtipo":"Distribución Cruz","nombre":"Cruz 2 con 2 llaves","lat":-31.3983207754791,"lon":-55.4222770035267},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave pot 10","lat":-31.4033581316471,"lon":-55.4264977108687},{"tipo":"agua","subtipo":"Distribución T","nombre":"T con 2 llaves ombu","lat":-31.4027572330087,"lon":-55.4277834948152}],"duenos":["Pedro Lanfranco","Silvia Dutra","Fideicomiso","Walter Lanfranco"],"cargaInicialSeed":{"2":{"animales":{"Vaquillonas 1-2 años":56},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 56 Vaquillonas 1-2 años"}],"fechaIngreso":"2026-08-20"},"3":{"animales":{"Terneros":60,"Novillitos 1-2 años":12},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 60 Terneros, 12 Novillitos 1-2 años"}],"fechaIngreso":"2026-08-20"},"5":{"animales":{"Vacas":68},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 68 Vacas"}],"fechaIngreso":"2026-08-20"},"6":{"animales":{"Terneras":132},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 132 ternera -> Terneras"}],"fechaIngreso":"2026-08-20"},"8":{"animales":{"Terneros":4},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 4 Terneros"}],"fechaIngreso":"2026-08-20"},"9":{"animales":{"Vacas":80},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 80 Vacas"}],"fechaIngreso":"2026-08-20"},"14":{"animales":{"Vaquillonas 1-2 años":62},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 62 Vaquillonas 1-2 años"}],"fechaIngreso":"2026-08-20"},"15":{"animales":{"Terneros":143,"Novillitos 1-2 años":6},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 143 Terneros, 6 Novillitos 1-2 años"}],"fechaIngreso":"2026-08-20"},"23":{"animales":{"Toros":15},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 15 Toros"}],"fechaIngreso":"2026-08-20"},"EMBARCADERO":{"animales":{"Vacas":60},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 60 Vacas"}],"fechaIngreso":"2026-08-20"},"BOMBA":{"animales":{"Vacas":83},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 83 Vacas"}],"fechaIngreso":"2026-08-20"},"PAST":{"animales":{"Vaquillonas 1-2 años":41,"Vacas":2},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 41 Vaquillonas 1-2 años, 2 Vacas"}],"fechaIngreso":"2026-08-20"},"TRI":{"animales":{"Vaquillonas 1-2 años":1,"Novillitos 1-2 años":1,"Vacas":1},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vaquillonas 1-2 años, 1 Novillitos 1-2 años, 1 Vacas"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{},"vacasPrenadasTemporada":224,"ovejasEncarneradasTemporada":0,"titulo":"La Vuelta — Mapa de Potreros","themeColor":"#2b3a24","nombre":"La Vuelta","subtitulo":"Rivera, Uruguay · Gestión de hacienda por potrero","versionPc":"3.84","versionMovil":"3.82","simpleHabilitado":true,"versionMovilSimple":"1.60","duenoLabel":"Firma","duenoObligatorio":false,"textoSinAsignar":"(sin firma)","mapLabels":false,"usaExcelBridge":true,"tablaSanidad":"sanidad_carga","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"dicoseHabilitado":true,"trasladoHabilitado":true,"guiasHabilitado":true,"traslado":{"destinoEstablecimiento":"maria_laura","destinoNombre":"María Laura","potrerosDestino":["Tajamar","Casco","Uno","Rincon","Manantial"],"duenosDestino":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"mapeoDuenos":{"Silvia Dutra":"Silvia","Pedro Lanfranco":"Pedro"}},"caravanasHabilitado":true,"pesadasHistorial":true,"padronOffline":true,"datosFaltantes":true,"completarCsvBaston":true,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"la_vuelta","storageKey":"la_vuelta_potreros_v1","potrerosGeo":[{"nombre":"CERRO","area":"42","coords":[[-31.3832525304926,-55.4257231752813],[-31.3844824063022,-55.4261636506441],[-31.38578089,-55.426384],[-31.388764692918,-55.4273629941945],[-31.3867546932095,-55.4342334171299],[-31.3815787580165,-55.4325234740025],[-31.3832525304926,-55.4257231752813]]},{"nombre":"14","area":"48","coords":[[-31.3904287581061,-55.4220192512738],[-31.3903730237931,-55.4219860170168],[-31.3903426849273,-55.421967926031],[-31.3849655238657,-55.4187617394543],[-31.3849876115164,-55.4186711929254],[-31.3864937213251,-55.4124962913363],[-31.3929108523983,-55.41476151494],[-31.3904287581061,-55.4220192512738]]},{"nombre":"EMBARCADERO","area":"42","coords":[[-31.3881318426669,-55.4058229025073],[-31.3882242508544,-55.4054420242023],[-31.3908047983251,-55.4076751738435],[-31.3921463811933,-55.4088579012118],[-31.393977337083,-55.4104415531117],[-31.3937668645307,-55.4112023074105],[-31.3940064267483,-55.4113426309966],[-31.3938763787632,-55.4117235093016],[-31.3936881510973,-55.4116513428859],[-31.3929934166272,-55.4142373061149],[-31.3929899942772,-55.4142854170587],[-31.3930071060261,-55.4143255095119],[-31.3930276401205,-55.4143535742291],[-31.3929108523983,-55.41476151494],[-31.3864937213251,-55.4124962913363],[-31.3864937213251,-55.4124962913363],[-31.3864937213251,-55.4124962913363],[-31.3881318426669,-55.4058229025073]]},{"nombre":"CERRITO","area":"19","coords":[[-31.3973625412959,-55.4134200547371],[-31.3966790546491,-55.4165822409397],[-31.396153064866,-55.417861554832],[-31.3929108523983,-55.41476151494],[-31.3930276401205,-55.4143535742291],[-31.3930071060261,-55.4143255095119],[-31.3929899942772,-55.4142854170587],[-31.3929934166272,-55.4142373061149],[-31.3936881510973,-55.4116513428859],[-31.3938763787632,-55.4117235093016],[-31.3940064267483,-55.4113426309966],[-31.3937668645307,-55.4112023074105],[-31.393977337083,-55.4104415531117],[-31.3973625412959,-55.4134200547371]]},{"nombre":"17","area":"11","coords":[[-31.3989174244541,-55.4205049154794],[-31.4013430475651,-55.4212894534984],[-31.400810529841,-55.4232114323106],[-31.4001528067025,-55.4255851304614],[-31.4001528067025,-55.4255851304614],[-31.397844579311,-55.423589528601],[-31.3989174244541,-55.4205049154794]]},{"nombre":"15","area":"29","coords":[[-31.3929986231188,-55.4239068046623],[-31.3961603139233,-55.4178684863261],[-31.3989174244541,-55.4205049154794],[-31.397844579311,-55.423589528601],[-31.3974342317843,-55.4247664848511],[-31.397124523252,-55.4256164448599],[-31.3968644357395,-55.4264002523209],[-31.396689047372,-55.4268372600612],[-31.3932188569781,-55.4240819062119],[-31.3929986231188,-55.4239068046623]]},{"nombre":"18","area":"23","coords":[[-31.4001528067025,-55.4255851304614],[-31.3984235771055,-55.4318433552253],[-31.3953304180881,-55.4307993967533],[-31.396689047372,-55.4268372600612],[-31.396689047372,-55.4268372600612],[-31.3968644357395,-55.4264002523209],[-31.397124523252,-55.4256164448599],[-31.3974342317843,-55.4247664848511],[-31.397844579311,-55.423589528601],[-31.397844579311,-55.423589528601],[-31.397844579311,-55.423589528601],[-31.4001528067025,-55.4255851304614]]},{"nombre":"BOMBA","area":"47","coords":[[-31.388764692918,-55.4273629941945],[-31.3916898243375,-55.4291071618768],[-31.3940359000047,-55.430505099991],[-31.3938947399993,-55.4310609799995],[-31.3949405483756,-55.4319013343634],[-31.3933352699992,-55.4364381497247],[-31.3867546932095,-55.4342334171299],[-31.388764692918,-55.4273629941945],[-31.388764692918,-55.4273629941945]]},{"nombre":"23","area":"28","coords":[[-31.3933352699992,-55.4364381497247],[-31.3949405483756,-55.4319013343634],[-31.3953304180881,-55.4307993967533],[-31.3984235771055,-55.4318433552253],[-31.3990366576763,-55.4320502812946],[-31.3991187887523,-55.4320863645025],[-31.3991187887523,-55.4320863645025],[-31.399508910382,-55.4323810440339],[-31.3999489181527,-55.4326905703019],[-31.3996313552807,-55.4332542105743],[-31.3992194648295,-55.4339852597644],[-31.3971275711483,-55.4376978671346],[-31.3933352699992,-55.4364381497247]]},{"nombre":"7","area":"22","coords":[[-31.3971275711483,-55.4376978671346],[-31.3992194648295,-55.4339852597644],[-31.4012116632326,-55.4353122408775],[-31.403956535247,-55.4372306647653],[-31.4034278424381,-55.4397850551928],[-31.3971275711483,-55.4376978671346]]},{"nombre":"8","area":"63","coords":[[-31.4034278424381,-55.4397850551928],[-31.403956535247,-55.4372306647653],[-31.406632034492,-55.4391009777093],[-31.4073557535544,-55.4384394522307],[-31.4077663718172,-55.4370081516498],[-31.4089058280852,-55.4326962083031],[-31.4091624604706,-55.4316798646134],[-31.4095833360633,-55.4300801757288],[-31.4140332100565,-55.4314257786909],[-31.4112385906607,-55.4423725218942],[-31.4034278424381,-55.4397850551928]]},{"nombre":"9","area":"53","coords":[[-31.4022299315718,-55.4334152413943],[-31.4022742038577,-55.4325097783955],[-31.402977424613,-55.4319324470688],[-31.4030492862913,-55.431848252917],[-31.4036909059799,-55.4310965194186],[-31.4037730329834,-55.4310604362107],[-31.4040399452483,-55.4306755486595],[-31.4050988895838,-55.4294550676885],[-31.405615738727,-55.4288593605274],[-31.4095833360633,-55.4300801757288],[-31.4073557535544,-55.4384394522307],[-31.406632034492,-55.4391009777093],[-31.403956535247,-55.4372306647653],[-31.4012116632326,-55.4353122408775],[-31.4021073806425,-55.4336403855771],[-31.4022299315718,-55.4334152413943]]},{"nombre":"OMBU","area":"12","coords":[[-31.4027324849525,-55.4277744211559],[-31.4030775176499,-55.4271893845608],[-31.4030967662986,-55.4270518173306],[-31.403137188448,-55.42695822651],[-31.4038493853674,-55.4279460043269],[-31.4048772492307,-55.4291953854012],[-31.4050988895835,-55.4294550676882],[-31.4050988895836,-55.4294550676883],[-31.4050988895837,-55.4294550676885],[-31.4050988895837,-55.4294550676885],[-31.4050988895838,-55.4294550676885],[-31.4040399452483,-55.4306755486595],[-31.4037730329834,-55.4310604362107],[-31.4036909059799,-55.4310965194186],[-31.4030492862913,-55.431848252917],[-31.402977424613,-55.4319324470688],[-31.4022742038577,-55.4325097783955],[-31.4022960191793,-55.4320064928183],[-31.4017512762489,-55.4318508839842],[-31.4016608062688,-55.4318602806529],[-31.4008229923633,-55.4311061040207],[-31.4027324849525,-55.4277744211559]]},{"nombre":"10","area":"12","coords":[[-31.4050988895837,-55.4294550676885],[-31.4050988895836,-55.4294550676883],[-31.4038493853674,-55.4279460043269],[-31.403137188448,-55.42695822651],[-31.4040447573615,-55.424785904633],[-31.4050206488186,-55.425250475935],[-31.4058425455857,-55.4246776550093],[-31.4060629358836,-55.424571660586],[-31.4061052815584,-55.4245175357741],[-31.4062554160698,-55.4245457257803],[-31.4062380928692,-55.4246099989944],[-31.4062390552693,-55.4246460822023],[-31.4062496416699,-55.4246652514065],[-31.4062891000617,-55.424676527409],[-31.4063150848473,-55.4246539754041],[-31.4071398574502,-55.4248794954536],[-31.405615738727,-55.4288593605274],[-31.4050988895837,-55.4294550676885]]},{"nombre":"PAST","area":"10","coords":[[-31.4046640742705,-55.423296344706],[-31.4059094326522,-55.4202743760426],[-31.4067159233129,-55.4207705201515],[-31.407578225469,-55.4212779402629],[-31.4077822511593,-55.4214222730946],[-31.4083423571415,-55.4217628083693],[-31.4071398574502,-55.4248794954536],[-31.4063150848473,-55.4246539754041],[-31.4063097916508,-55.4245383963787],[-31.4063016112557,-55.424471304164],[-31.4062905436611,-55.4244560815606],[-31.4063030548549,-55.4242649533187],[-31.4063275960378,-55.4242593153174],[-31.4063295208362,-55.4241944783032],[-31.4062765888661,-55.4241933507029],[-31.4062785136656,-55.4240726974764],[-31.4062929496601,-55.4240636766745],[-31.4062895812616,-55.4239937654591],[-31.4062284688675,-55.4239869998576],[-31.4062260628669,-55.4240619852741],[-31.4062583032695,-55.4240687508756],[-31.4062501228699,-55.4241702348979],[-31.4058045306129,-55.4242051905056],[-31.4057852825196,-55.4242593153174],[-31.4046640742705,-55.423296344706]]},{"nombre":"26","area":"11","coords":[[-31.4021338478071,-55.4238251892222],[-31.4029315077833,-55.4219098972456],[-31.4040779609359,-55.4191569241972],[-31.4059094326522,-55.4202743760426],[-31.4046640742705,-55.423296344706],[-31.4040634584718,-55.4247409262725],[-31.4021338478071,-55.4238251892222]]},{"nombre":"21","area":"5","coords":[[-31.4028727599051,-55.4218575267902],[-31.4030748709603,-55.4212982370674],[-31.4031040090312,-55.4211687334322],[-31.4031144993706,-55.421091916923],[-31.4031210677119,-55.421018592206],[-31.403097969339,-55.4208765145748],[-31.402963228717,-55.4206171665179],[-31.4028015397152,-55.4203848808669],[-31.4024935598937,-55.4199473719708],[-31.4023241705611,-55.4196970447159],[-31.4021836541782,-55.4194828006688],[-31.4020912597296,-55.4193565094411],[-31.4020123393994,-55.4191693278],[-31.4019468932216,-55.418928021347],[-31.4017544041988,-55.4180530035549],[-31.4016831831603,-55.4176583434683],[-31.4015840510844,-55.4172851077863],[-31.4015224544019,-55.4171328817529],[-31.4015648021254,-55.4170342167313],[-31.4032579735764,-55.4185277232591],[-31.4038392799084,-55.4190328881701],[-31.4040779609359,-55.4191569241972],[-31.4040779609358,-55.4191569241974],[-31.4029315077833,-55.4219098972456],[-31.4028727599051,-55.4218575267902]]},{"nombre":"TRI","area":"4","coords":[[-31.4023761423206,-55.4258311900626],[-31.4022941216483,-55.4256389982454],[-31.4022818231802,-55.4256101804141],[-31.4022491001909,-55.4253124939487],[-31.4021586306907,-55.4246539754042],[-31.4021182081198,-55.4238714208324],[-31.4021338478071,-55.4238251892222],[-31.4040634584717,-55.4247409262725],[-31.4040447573615,-55.424785904633],[-31.403137188448,-55.42695822651],[-31.4030967662986,-55.4270518173306],[-31.4029718906199,-55.4268719650911],[-31.4029345558304,-55.4268105728316],[-31.4028621731235,-55.4266915490515],[-31.4026844922781,-55.4263715942916],[-31.4026148270691,-55.4262461469537],[-31.4025745265544,-55.4261760836193],[-31.4023761423206,-55.4258311900626]]},{"nombre":"19","area":"7","coords":[[-31.400810529841,-55.4232114323106],[-31.4020736597051,-55.4237688722544],[-31.4020652737745,-55.423933438846],[-31.402087751852,-55.4244165354399],[-31.4021326447543,-55.4249189614624],[-31.4022057903347,-55.4254399127767],[-31.402251025073,-55.425673326028],[-31.402302996873,-55.4258232968609],[-31.402455062345,-55.4260815173176],[-31.4026350382497,-55.4263938625862],[-31.4028053894566,-55.4266859110503],[-31.4028987456366,-55.4268561786877],[-31.402997876324,-55.4269914907174],[-31.4030775176499,-55.4271893845608],[-31.4030775176499,-55.4271893845608],[-31.4027324849525,-55.4277744211559],[-31.4001528067025,-55.4255851304614],[-31.400810529841,-55.4232114323106]]},{"nombre":"13","area":"40","coords":[[-31.388764692918,-55.4273629941945],[-31.38578089,-55.426384],[-31.3844824063022,-55.4261636506441],[-31.3832525304926,-55.4257231752813],[-31.384920356718,-55.4189453175114],[-31.3849655238657,-55.4187617394543],[-31.3903405808876,-55.421975120125],[-31.3903406301464,-55.4219751495753],[-31.3903302999385,-55.4220104698385],[-31.388764692918,-55.4273629941945]]},{"nombre":"12","area":"41","coords":[[-31.3949405483756,-55.4319013343634],[-31.3938947399993,-55.4310609799995],[-31.3940359000047,-55.430505099991],[-31.3916898243375,-55.4291071618768],[-31.388764692918,-55.4273629941945],[-31.3903302999385,-55.4220104698385],[-31.3903406301464,-55.4219751495753],[-31.3903405808876,-55.421975120125],[-31.3903426849273,-55.421967926031],[-31.3903730237931,-55.4219860170168],[-31.3904287581061,-55.4220192512738],[-31.391285213983,-55.4225343375165],[-31.3920792102615,-55.4231758167685],[-31.3929986231188,-55.4239068046623],[-31.3932188569781,-55.4240819062119],[-31.396689047372,-55.4268372600612],[-31.3953304180881,-55.4307993967533],[-31.3949405483756,-55.4319013343634]]},{"nombre":"CALLE","area":"17","coords":[[-31.396153064866,-55.417861554832],[-31.3966790546491,-55.4165822409397],[-31.3973625412959,-55.4134200547371],[-31.3983292433283,-55.4142640239759],[-31.4004697771584,-55.4161147918489],[-31.3989174244541,-55.4205049154794],[-31.3961603139233,-55.4178684863261],[-31.396153064866,-55.417861554832]]},{"nombre":"TAJAMAR","area":"28","coords":[[-31.3961603139233,-55.4178684863261],[-31.3929986231188,-55.4239068046623],[-31.3920792102615,-55.4231758167685],[-31.391285213983,-55.4225343375165],[-31.3904287581061,-55.4220192512738],[-31.3929108523983,-55.41476151494],[-31.396153064866,-55.417861554832],[-31.3961603139233,-55.4178684863261]]},{"nombre":"16","area":"10","coords":[[-31.4013430475651,-55.4212894534984],[-31.3989174244541,-55.4205049154794],[-31.4004697771584,-55.4161147918489],[-31.4013342754846,-55.416845977965],[-31.4013022758607,-55.4169238531355],[-31.4013363701137,-55.4169438254279],[-31.4014069939318,-55.417003340844],[-31.40146859069,-55.417139655185],[-31.40152334333,-55.4172639417901],[-31.4015866510303,-55.4174463624524],[-31.4016482476706,-55.4177931621729],[-31.4019356981243,-55.4191502917153],[-31.4013430475651,-55.4212894534984]]},{"nombre":"20","area":"6","coords":[[-31.4020736597051,-55.4237688722544],[-31.400810529841,-55.4232114323106],[-31.4013430475651,-55.4212894534984],[-31.4019356981243,-55.4191502917153],[-31.4020421751418,-55.4194275482567],[-31.4022038654517,-55.4196440475043],[-31.4023694052423,-55.4198921195587],[-31.4026196392553,-55.42021686843],[-31.4029545668132,-55.420694970935],[-31.4030030394555,-55.4208138411598],[-31.4030354112171,-55.4209204909845],[-31.4030594250761,-55.4211057438947],[-31.402950717078,-55.4214797807073],[-31.4027505306271,-55.4220300496281],[-31.4022038654517,-55.4233155139103],[-31.4020943083852,-55.4236452976878],[-31.4020736597051,-55.4237688722544]]},{"nombre":"11","area":"15","coords":[[-31.4001528067025,-55.4255851304614],[-31.4001528067025,-55.4255851304614],[-31.4027324849525,-55.4277744211559],[-31.4008229923633,-55.4311061040207],[-31.4007305965753,-55.4312865200603],[-31.4006074020498,-55.4318999345949],[-31.399508910382,-55.4323810440339],[-31.3991187887523,-55.4320863645025],[-31.3990366576763,-55.4320502812946],[-31.3984235771055,-55.4318433552253],[-31.4001528067025,-55.4255851304614]]},{"nombre":"6","area":"53","coords":[[-31.4112796595214,-55.4422266525997],[-31.4089737150548,-55.4513252257824],[-31.3933164538007,-55.4508057130539],[-31.3955038314635,-55.4370697773884],[-31.4112261457408,-55.4422785013532],[-31.4112796595214,-55.4422266525997]]},{"nombre":"1","area":"5","coords":[[-31.4050866820016,-55.4661938831126],[-31.4043577890487,-55.4659210253117],[-31.4026808547626,-55.4664673619031],[-31.4022015387981,-55.4664831482702],[-31.4015187867173,-55.4666351177981],[-31.4002768056683,-55.4667164980593],[-31.399366385923,-55.4688896496189],[-31.398806968116,-55.4693266817332],[-31.4038029251791,-55.471134418346],[-31.4051170212433,-55.4662080910201],[-31.4050866820016,-55.4661938831126]]},{"nombre":"2","area":"10","coords":[[-31.4038272530339,-55.4711144388844],[-31.400930796371,-55.470146326202],[-31.3984736497565,-55.4742174944512],[-31.3995888296376,-55.4756497123905],[-31.4008393521767,-55.4793202607549],[-31.4018757070718,-55.4794531620971],[-31.4038233864727,-55.4711574681161],[-31.4038272530339,-55.4711144388844]]},{"nombre":"3","area":"27","coords":[[-31.390568430431,-55.4665657294887],[-31.3873170424389,-55.4856701584164],[-31.3885688908183,-55.4846215251183],[-31.3892188175645,-55.4829682383475],[-31.3905032385804,-55.4824258981148],[-31.3916943875454,-55.4810494243746],[-31.3945480320566,-55.4766778219426],[-31.3957445277016,-55.4745609610131],[-31.3957779407199,-55.4707394098424],[-31.3953846037567,-55.4695707236339],[-31.3951741550169,-55.4681223549083],[-31.3905983512931,-55.466597713447],[-31.390568430431,-55.4665657294887]]},{"nombre":"5","area":"70","coords":[[-31.4089697079437,-55.4512573534476],[-31.4051243967495,-55.4661966192843],[-31.4043353790449,-55.465961144876],[-31.4026263325518,-55.4664399695575],[-31.4022667843063,-55.4664419500766],[-31.4015364885432,-55.466659218785],[-31.4002619044777,-55.4666908812888],[-31.3998716188583,-55.4675612283892],[-31.3993096998838,-55.4690005142156],[-31.3987484654985,-55.4692992473834],[-31.3905742567039,-55.4665455234611],[-31.3933223320913,-55.4508239935416],[-31.4089351139558,-55.4513051594378],[-31.4089697079437,-55.4512573534476]]}],"puntosSeed":[{"tipo":"agua","subtipo":"Tanque","nombre":"Tanque Cerro Norte","lat":-31.3875398578274,"lon":-55.428643226623535},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 1","lat":-31.38734294294843,"lon":-55.42862176895142},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 2","lat":-31.38688957921558,"lon":-55.43143808841705},{"tipo":"agua","subtipo":"Tanque","nombre":"Tanque Casa Sur","lat":-31.402751428853595,"lon":-55.43163120746613},{"tipo":"agua","subtipo":"Tanque","nombre":"Tanque Cerro Sur","lat":-31.387523829887574,"lon":-55.42862847447396},{"tipo":"agua","subtipo":"Tanque","nombre":"Tanque Casa Norte","lat":-31.402751428853595,"lon":-55.43163120746613},{"tipo":"agua","subtipo":"Bomba eléctrica","nombre":"Bomba electrica","lat":-31.404509621305987,"lon":-55.42891144752503},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 7","lat":-31.389985231456645,"lon":-55.42178750038148},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 6","lat":-31.391221632086822,"lon":-55.42324662208557},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 5","lat":-31.3930075153667,"lon":-55.42522072792054},{"tipo":"agua","subtipo":"Distribución T","nombre":"T 1","lat":-31.39193031,"lon":-55.42403265},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave 1 Norte","lat":-31.387524974740508,"lon":-55.42864993214608},{"tipo":"agua","subtipo":"Bomba solar","nombre":"Bomba Lorentz","lat":-31.39120331515925,"lon":-55.43063879013062},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave 2 Sur","lat":-31.387523829887574,"lon":-55.42862847447396},{"tipo":"agua","subtipo":"Llave en Cruz","nombre":"Cruz 1","lat":-31.38852814,"lon":-55.42724016},{"tipo":"agua","subtipo":"Bebedero","nombre":"B","lat":-31.39350878,"lon":-55.41531634},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 3","lat":-31.38976346,"lon":-55.42793109},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 14 Y Emb 1","lat":-31.39158625,"lon":-55.41427208},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 14 Y Emb 2","lat":-31.4030666351318,"lon":-55.42131042480471},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 16","lat":-31.40181060729831,"lon":-55.4195646260381},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 16 - Calle","lat":-31.3983058929443,"lon":-55.4222984313965},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero 2 Emb Y 14","lat":-31.3884312726745,"lon":-55.4131973228758},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero Calle Y 15-1","lat":-31.39754711,"lon":-55.41920047},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero Emb Cerrito","lat":-31.39363477,"lon":-55.41189360999999},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero Pastoreo","lat":-31.40482599,"lon":-55.42286485},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebedero Plazoleta","lat":-31.40456255,"lon":-55.42388014},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebederos","lat":-31.40196718,"lon":-55.42916192},{"tipo":"agua","subtipo":"Bebedero","nombre":"Bebederos (1)","lat":-31.40206907,"lon":-55.42716647},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Distribución Cruz","nombre":"Cruz 1 (2)","lat":-31.38852814,"lon":-55.42724016},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave","lat":-31.39322715,"lon":-55.4163429},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave (2)","lat":-31.3929103110842,"lon":-55.4147608939796},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave (3)","lat":-31.3989005,"lon":-55.42051148},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave (4)","lat":-31.39787169,"lon":-55.42359454},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave Corte 15","lat":-31.39319231,"lon":-55.41637651},{"tipo":"agua","subtipo":"Llave en T","nombre":"Llave Y T","lat":-31.39320992,"lon":-55.41504101999999},{"tipo":"agua","subtipo":"Llave en T","nombre":"Llave Y T (2)","lat":-31.4002060044607,"lon":-55.4255619432811},{"tipo":"agua","subtipo":"Llave en T","nombre":"Llave Y T (3)","lat":-31.4020874106233,"lon":-55.4271797058359},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Paso Zanja Caño (2)","lat":-31.3836757,"lon":-55.4300295},{"tipo":"agua","subtipo":"Distribución T","nombre":"T","lat":-31.3989107196461,"lon":-55.4205177157522},{"tipo":"agua","subtipo":"Distribución T","nombre":"T 1 (2)","lat":-31.39193031,"lon":-55.42403265},{"tipo":"agua","subtipo":"Distribución T","nombre":"T 12-1","lat":-31.39123972000001,"lon":-55.42337707},{"tipo":"agua","subtipo":"Llave en T","nombre":"T y Llave","lat":-31.3975571953239,"lon":-55.4192171830309},{"tipo":"agua","subtipo":"Llave en T","nombre":"T y Llave 12","lat":-31.39098641,"lon":-55.42306679},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Valvula","lat":-31.39561079,"lon":-55.41726027},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Válvula Retencion","lat":-31.393191,"lon":-55.417409},{"tipo":"agua","subtipo":"Llave en T","nombre":"Y y Llave","lat":-31.3934932332456,"lon":-55.4152839467361},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave B 6","lat":-31.39145549579817,"lon":-55.423506011297334},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave B 5","lat":-31.39265203759569,"lon":-55.424828662206764},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave B 3","lat":-31.3893558044,"lon":-55.4277030831},{"tipo":"agua","subtipo":"Bebedero","nombre":"B 21 y pastoreo","lat":-31.4036226645112,"lon":-55.4202564619482},{"tipo":"agua","subtipo":"Bebedero","nombre":"B calle 16","lat":-31.3993231524545,"lon":-55.4194123772142},{"tipo":"agua","subtipo":"Bebedero","nombre":"B Cerro y 13","lat":-31.3866421440616,"lon":-55.4266432207078},{"tipo":"agua","subtipo":"Bebedero","nombre":"Beb triangulo","lat":-31.4033856242895,"lon":-55.4264169093221},{"tipo":"agua","subtipo":"Distribución Cruz","nombre":"Cruz 2 con 2 llaves","lat":-31.3983207754791,"lon":-55.4222770035267},{"tipo":"agua","subtipo":"Llave de agua","nombre":"Llave pot 10","lat":-31.4033581316471,"lon":-55.4264977108687},{"tipo":"agua","subtipo":"Distribución T","nombre":"T con 2 llaves ombu","lat":-31.4027572330087,"lon":-55.4277834948152}],"duenos":["Pedro Lanfranco","Silvia Dutra","Fideicomiso","Walter Lanfranco"],"cargaInicialSeed":{"2":{"animales":{"Vaquillonas 1-2 años":56},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 56 Vaquillonas 1-2 años"}],"fechaIngreso":"2026-08-20"},"3":{"animales":{"Terneros":60,"Novillitos 1-2 años":12},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 60 Terneros, 12 Novillitos 1-2 años"}],"fechaIngreso":"2026-08-20"},"5":{"animales":{"Vacas":68},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 68 Vacas"}],"fechaIngreso":"2026-08-20"},"6":{"animales":{"Terneras":132},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 132 ternera -> Terneras"}],"fechaIngreso":"2026-08-20"},"8":{"animales":{"Terneros":4},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 4 Terneros"}],"fechaIngreso":"2026-08-20"},"9":{"animales":{"Vacas":80},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 80 Vacas"}],"fechaIngreso":"2026-08-20"},"14":{"animales":{"Vaquillonas 1-2 años":62},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 62 Vaquillonas 1-2 años"}],"fechaIngreso":"2026-08-20"},"15":{"animales":{"Terneros":143,"Novillitos 1-2 años":6},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 143 Terneros, 6 Novillitos 1-2 años"}],"fechaIngreso":"2026-08-20"},"23":{"animales":{"Toros":15},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 15 Toros"}],"fechaIngreso":"2026-08-20"},"EMBARCADERO":{"animales":{"Vacas":60},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 60 Vacas"}],"fechaIngreso":"2026-08-20"},"BOMBA":{"animales":{"Vacas":83},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 83 Vacas"}],"fechaIngreso":"2026-08-20"},"PAST":{"animales":{"Vaquillonas 1-2 años":41,"Vacas":2},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 41 Vaquillonas 1-2 años, 2 Vacas"}],"fechaIngreso":"2026-08-20"},"TRI":{"animales":{"Vaquillonas 1-2 años":1,"Novillitos 1-2 años":1,"Vacas":1},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vaquillonas 1-2 años, 1 Novillitos 1-2 años, 1 Vacas"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{},"vacasPrenadasTemporada":224,"ovejasEncarneradasTemporada":0,"titulo":"La Vuelta — Mapa de Potreros","themeColor":"#2b3a24","nombre":"La Vuelta","subtitulo":"Rivera, Uruguay · Gestión de hacienda por potrero","versionPc":"3.85","versionMovil":"3.83","simpleHabilitado":true,"versionMovilSimple":"1.61","duenoLabel":"Firma","duenoObligatorio":false,"textoSinAsignar":"(sin firma)","mapLabels":false,"usaExcelBridge":true,"tablaSanidad":"sanidad_carga","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"dicoseHabilitado":true,"trasladoHabilitado":true,"guiasHabilitado":true,"traslado":{"destinoEstablecimiento":"maria_laura","destinoNombre":"María Laura","potrerosDestino":["Tajamar","Casco","Uno","Rincon","Manantial"],"duenosDestino":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"mapeoDuenos":{"Silvia Dutra":"Silvia","Pedro Lanfranco":"Pedro"}},"caravanasHabilitado":true,"pesadasHistorial":true,"padronOffline":true,"datosFaltantes":true,"completarCsvBaston":true,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 
@@ -1793,7 +1972,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'movil-3.82';
+const VERSION_APP = 'movil-3.83';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -3208,6 +3387,7 @@ async function sincronizar(mostrarToast){
   actualizarEstadoSync('sincronizando');
   verificarClaveGuardada(); // Fase 4: una vez por apertura, no espera ni frena la sincronización
   if(CONFIG.insumos) insumosAlSincronizar(); // 3/11/2026: cola y stock de Insumos; en segundo plano, no frena ni rompe la sincronización
+  if(CONFIG.bano) banoAlSincronizar(); // 4/11/2026: cola del Baño de aspersión; en segundo plano, no frena ni rompe la sincronización
   try{
     // Antes de que el forEach de abajo pise ultimaSincronizacion -- si es
     // null, esta es la primera sincronización de este dispositivo (recién
@@ -5507,6 +5687,9 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['pesadas-cerrar-x', 'pesadas-cerrar'],
   ['insumos-cerrar-x', 'insumos-cerrar'],
   ['insumos-form-cerrar-x', 'ins-form-cancelar'],
+  ['bano-cerrar-x', 'bano-cerrar'],
+  ['bano-f-cerrar-x', 'bano-f-cancelar'],
+  ['bano-p-cerrar-x', 'bano-p-cerrar'],
 ].forEach(([xId, targetId])=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
@@ -9112,6 +9295,931 @@ if(INSUMOS_ACTIVO){
   });
   window.addEventListener('online', ()=>{ if(insAbierta()) insRender(); });
   window.addEventListener('offline', ()=>{ if(insAbierta()) insRender(); });
+}
+
+/* ======================= BAÑO DE ASPERSIÓN (control del baño) =======================
+   4/11/2026, a pedido de Pedro. Solo donde CONFIG.bano es true (La Vuelta y María Laura); Pone Chico no lo tiene: el botón
+   queda oculto y no se hace ni una consulta. Ver CLAUDE.md "Baño de aspersión".
+   Sistema CERRADO, tanque de 900 L con una regla que marca cada 100 L, un producto por ciclo. Un ciclo se abre con agua y
+   producto; pasan tandas de animales; cuando gastó 300–400 L se repone (regla + agua + producto); "Fin del día" anota la
+   regla al terminar el día; "Cerrar ciclo" anota la regla final (lo que queda se tira). La hora SIEMPRE es la del equipo
+   al guardar (no se pide).
+   Supabase (backend hecho aparte, no se toca desde acá): `bano_config` (dosis por producto), `bano_ciclos` y
+   `bano_lecturas` (solo agregar: cada fila lleva su `uid`; un 23505 = ya llegó), RPC `bano_estado_app()`,
+   `bano_avisos_app()` y `bano_config_guardar(...)`.
+   Nada de esto toca `estado` ni `eventos_sync`: vive en localStorage[BANO_KEY] = {config, catalogo, ciclo, cola, servidor,
+   ultimo, cerrados}, que se lee y escribe fresco siempre (PC/móvil/Campo del mismo campo comparten origen). No va al Backup
+   JSON ni a Verificar stock, y "Restablecer datos de fábrica" no lo borra (igual que Insumos).
+   Cola: cada acción se guarda en el equipo ANTES de mandarse y sale de a una, en orden (el ciclo antes que sus lecturas).
+   La tanda que NO pasa por el bastón crea además su tratamiento en Sanidad por la cola de siempre (guardarSanidadCarga).
+   Los tramos (litros por animal) se calculan acá, igual que la vista del servidor, para que anden sin señal. */
+const BANO_ACTIVO = !!CONFIG.bano;
+const BANO_KEY = ESTABLECIMIENTO + '_bano_v1';
+const BANO_L_ESTIMADO = 4;   // litros por animal para estimar el gasto entre dos lecturas de la regla (marcado "estimado")
+const BANO_TIPOS_NIVEL = { reposicion: true, fin_dia: true, cierre: true };
+/* El bastón crea el tratamiento en Sanidad solo en La Vuelta (sanidad_puente.py del Lector XRS2; la misma razón por la que
+   solo La Vuelta tiene completarCsvBaston): ahí la tanda viene con "Sí" por defecto; en María Laura, con "No". */
+const BANO_BASTON_DEFECTO = !!CONFIG.completarCsvBaston;
+const BANO_CATS_BASE = ['Vacas', 'Terneros', 'Terneras', 'Vaquillonas 1-2 años', 'Vaquillonas 2-3 años', 'Novillos 2-3 años', 'Toros'];
+const BANO_CATALOGO_VIGENCIA_MS = 12 * 60 * 60 * 1000;
+let _banoEnviando = false;
+let _banoUltimoError = null;
+let _banoFicha = 0;
+let _banoNc = { producto: null, mlEditado: false };
+let _banoForm = null;        // { tipo, cat, baston, aguaEditada, mlEditado }
+let _banoProdEditando = null;
+
+function banoLeer(){
+  let st = null;
+  try{ st = JSON.parse(localStorage.getItem(BANO_KEY) || 'null'); }catch(e){ st = null; }
+  if(!st || typeof st !== 'object' || Array.isArray(st)) st = {};
+  if(!Array.isArray(st.cola)) st.cola = [];
+  if(!st.config || typeof st.config !== 'object' || !Array.isArray(st.config.filas)) st.config = { filas: [], hora: null };
+  if(!st.catalogo || typeof st.catalogo !== 'object' || !Array.isArray(st.catalogo.filas)) st.catalogo = { filas: [], hora: null };
+  if(!st.servidor || typeof st.servidor !== 'object') st.servidor = { estado: [], avisos: [], hora: null };
+  if(!Array.isArray(st.servidor.estado)) st.servidor.estado = [];
+  if(!Array.isArray(st.servidor.avisos)) st.servidor.avisos = [];
+  if(!st.ciclo || typeof st.ciclo !== 'object' || !st.ciclo.ciclo || !Array.isArray(st.ciclo.lecturas)) st.ciclo = null;
+  if(!Array.isArray(st.cerrados)) st.cerrados = [];
+  return st;
+}
+function banoGuardar(st){
+  try{ localStorage.setItem(BANO_KEY, JSON.stringify(st)); return true; }catch(e){ return false; }
+}
+function banoFmt(n, dec){
+  const x = Number(n);
+  if(n == null || n === '' || !isFinite(x)) return '—';
+  const d = dec == null ? 0 : dec;
+  const partes = Math.abs(x).toFixed(d).split('.');
+  const ent = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const neg = x < 0 && Number(Math.abs(x).toFixed(d)) !== 0;
+  return (neg ? '−' : '') + ent + (partes[1] ? ',' + partes[1] : '');
+}
+/* L por animal: dos decimales, sin el cero de más (5,0 / 4,17). */
+function banoFmtLpa(n){ return banoFmt(n, 2).replace(/(,\d)0$/, '$1'); }
+/* Dosis ml cada 100 L: hasta 3 decimales, sin ceros de más (83,333 / 100). */
+function banoFmtDosis(n){ return banoFmt(n, 3).replace(/,?0+$/, ''); }
+function banoHora(iso){
+  const d = new Date(iso);
+  if(!iso || isNaN(d.getTime())) return '';
+  const dos = x => String(x).padStart(2, '0');
+  return dos(d.getHours()) + ':' + dos(d.getMinutes());
+}
+function banoDia(iso){
+  const d = new Date(iso);
+  if(!iso || isNaN(d.getTime())) return '';
+  const dos = x => String(x).padStart(2, '0');
+  return d.getFullYear() + '-' + dos(d.getMonth() + 1) + '-' + dos(d.getDate());
+}
+function banoDuraTexto(horas){
+  const h = Number(horas);
+  if(!(h > 0)) return 'sin duración';
+  if(h % 24 === 0) return 'dura ' + (h / 24) + (h === 24 ? ' día' : ' días') + ' (' + h + ' h)';
+  return 'dura ' + banoFmt(h, 0) + ' h';
+}
+function banoNumONull(v){ return (v == null || v === '' || !isFinite(Number(v))) ? null : Number(v); }
+function banoFilaConfig(producto, st){
+  return ((st || banoLeer()).config.filas || []).find(f => f && f.producto === producto) || null;
+}
+/* Parámetros de un producto, con los valores de siempre si falta algo (tanque 900 L, reponer a los 300 L, 3–5 L por animal). */
+function banoParams(producto, st){
+  const f = banoFilaConfig(producto, st) || {};
+  const n = (v, def) => { const x = banoNumONull(v); return x == null ? def : x; };
+  return {
+    producto, conocido: !!f.producto,
+    capacidad: n(f.capacidad_l, 900), umbral: n(f.umbral_reponer_l, 300),
+    min: n(f.l_animal_min, 3), max: n(f.l_animal_max, 5), vida: banoNumONull(f.vida_horas),
+    carga: banoNumONull(f.ml_100l_carga), repos: banoNumONull(f.ml_100l_reposicion)
+  };
+}
+function banoSugerido(litros, mlPor100){
+  if(mlPor100 == null || !(Number(litros) > 0)) return null;
+  return Math.round(Number(litros) * Number(mlPor100) / 100);
+}
+function banoCant(l){
+  const c = banoNumONull(l && l.cantidad_animales);
+  return c != null && c > 0 ? c : null;
+}
+function banoOrdenar(lecturas){
+  return (lecturas || []).map((l, i) => ({ l, i })).sort((a, b) => {
+    const ta = Date.parse(a.l.hora), tb = Date.parse(b.l.hora);
+    if(isFinite(ta) && isFinite(tb) && ta !== tb) return ta - tb;
+    const ia = banoNumONull(a.l.id), ib = banoNumONull(b.l.id);
+    if(ia != null && ib != null && ia !== ib) return ia - ib;
+    return a.i - b.i;
+  }).map(x => x.l);
+}
+/* Tramos, igual que la vista del servidor (bano_resumen_ciclo): un tramo va desde la carga inicial, una reposición o un
+   fin del día hasta la siguiente lectura de la regla (reposición, fin del día o cierre). Nivel al empezar = agua inicial
+   (primer tramo), regla + agua agregada de la reposición anterior, o la regla del fin del día anterior. Gastó = nivel al
+   empezar − regla al terminar. L por animal solo si TODAS las tandas del tramo tienen cantidad y suman más de 0; si no,
+   "sin conteo" (sin alarma). Estado: menos que el mínimo "bajo", más que el máximo "alto", si no "ok". */
+function banoCalcular(ciclo, lecturas, p){
+  const ls = banoOrdenar(lecturas);
+  const aguaIni = Number(ciclo && ciclo.agua_inicial_l) || 0;
+  let nivelIni = aguaIni, nivelTrasCarga = aguaIni, nivelActual = aguaIni;
+  let horaUltimaLectura = ciclo && ciclo.inicio, horaUltimaCarga = ciclo && ciclo.inicio;
+  let tandas = [];
+  const tramos = [];
+  let productoTotal = Number(ciclo && ciclo.producto_inicial_ml) || 0;
+  let animales = 0, tandasTotal = 0, tandasSinConteo = 0;
+  ls.forEach(l => {
+    if(l.tipo === 'tanda'){
+      tandas.push(l); tandasTotal++;
+      const c = banoCant(l);
+      if(c == null) tandasSinConteo++; else animales += c;
+      return;
+    }
+    if(!BANO_TIPOS_NIVEL[l.tipo]) return;
+    const nivel = Number(l.nivel_l) || 0;
+    const litros = nivelIni - nivel;
+    const conts = tandas.map(banoCant);
+    const todas = conts.length > 0 && conts.every(c => c != null);
+    const anim = conts.reduce((s, c) => s + (c || 0), 0);
+    const lpa = (todas && anim > 0) ? litros / anim : null;
+    const est = lpa == null ? 'sin_conteo' : (lpa < p.min ? 'bajo' : (lpa > p.max ? 'alto' : 'ok'));
+    tramos.push({ inicio: nivelIni, fin: nivel, litros, animales: anim, tandas: conts.length, sinConteo: conts.filter(c => c == null).length, lpa, estado: est, tipo: l.tipo, hora: l.hora });
+    if(l.tipo === 'reposicion'){
+      nivelIni = nivel + (Number(l.agua_agregada_l) || 0);
+      nivelTrasCarga = nivelIni;
+      horaUltimaCarga = l.hora;
+      productoTotal += Number(l.producto_ml) || 0;
+    }else{
+      nivelIni = nivel;
+    }
+    nivelActual = nivelIni;
+    horaUltimaLectura = l.hora;
+    tandas = [];
+  });
+  const contsCurso = tandas.map(banoCant);
+  const animCurso = contsCurso.reduce((s, c) => s + (c || 0), 0);
+  const gastoReal = Math.max(0, nivelTrasCarga - nivelActual);
+  const gastoEstimado = animCurso * BANO_L_ESTIMADO;
+  const gasto = gastoReal + gastoEstimado;
+  return {
+    tramos, productoTotal, animales, tandasTotal, tandasSinConteo,
+    aguaGastada: tramos.reduce((s, t) => s + t.litros, 0),
+    nivelActual, nivelTrasCarga, nivelEstimado: Math.max(0, nivelActual - gastoEstimado),
+    horaUltimaLectura, horaUltimaCarga,
+    tandasEnCurso: tandas.length, animalesEnCurso: animCurso, sinContarEnCurso: contsCurso.filter(c => c == null).length,
+    gastoReal, gastoEstimado, gasto, estimado: gastoEstimado > 0,
+    tocaReponer: gasto >= p.umbral,
+    cerrado: ls.some(l => l.tipo === 'cierre')
+  };
+}
+function banoVida(ciclo, p){
+  const ini = Date.parse(ciclo && ciclo.inicio);
+  if(!(p.vida > 0) || !isFinite(ini)) return null;
+  const vence = ini + p.vida * 3600 * 1000;
+  const horas = Math.max(0, (Date.now() - ini) / 3600000);
+  return { dia: Math.floor(horas / 24) + 1, dias: Math.max(1, Math.ceil(p.vida / 24)), vence: new Date(vence).toISOString(), vencido: Date.now() > vence };
+}
+function banoValorMl(producto, st){
+  const f = ((st || banoLeer()).catalogo.filas || []).find(x => x && x.producto === producto);
+  let v = f ? banoNumONull(f.valor_dosis_ml) : null;
+  if(v == null && typeof datosProducto === 'function'){ const d = datosProducto(producto); v = d ? banoNumONull(d.valor_dosis_ml) : null; }
+  return v;
+}
+function banoTextoTramo(t){
+  const base = 'Gastó ' + banoFmt(t.litros) + ' L';
+  if(t.lpa == null){
+    const motivo = !t.tandas ? 'sin tandas' : (t.sinConteo ? (t.sinConteo === 1 ? '1 tanda sin contar' : t.sinConteo + ' tandas sin contar') : 'sin animales');
+    return base + ' · ' + motivo;
+  }
+  return base + ' · ' + banoFmt(t.animales) + ' animales · ' + banoFmtLpa(t.lpa) + ' L por animal';
+}
+const BANO_ETIQUETA = { ok: 'ok', alto: 'alto', bajo: 'bajo', sin_conteo: 'sin conteo' };
+function banoTramoHTML(t, titulo){
+  return '<div class="bano-tramo bano-' + t.estado + '" data-estado="' + t.estado + '">'
+    + (titulo ? '<b>' + esc(titulo) + ':</b> ' : '') + esc(banoTextoTramo(t))
+    + '<span class="bano-etq">' + esc(BANO_ETIQUETA[t.estado]) + '</span></div>';
+}
+function banoTextoLectura(l, producto){
+  if(l.tipo === 'tanda'){
+    const c = banoCant(l);
+    return 'Tanda: ' + (c == null ? 'sin contar' : banoFmt(c)) + ' ' + (l.categoria || '') + (l.dueno ? ' de ' + l.dueno : '')
+      + ' · pot. ' + (l.potrero || '—') + (l.con_baston === false ? ' · sin bastón (cargada en Sanidad)' : (l.con_baston ? ' · por el bastón' : ''));
+  }
+  if(l.tipo === 'reposicion') return 'Reposición: regla ' + banoFmt(l.nivel_l) + ' L, +' + banoFmt(l.agua_agregada_l) + ' L, +' + banoFmt(l.producto_ml) + ' ml';
+  if(l.tipo === 'fin_dia') return 'Fin del día: regla ' + banoFmt(l.nivel_l) + ' L';
+  if(l.tipo === 'cierre') return 'Cierre: regla ' + banoFmt(l.nivel_l) + ' L';
+  return String(l.tipo || '');
+}
+function banoNuevaLectura(ciclo, tipo, datos){
+  const fila = {
+    uid: insNuevoUid(), ciclo_uid: ciclo.uid, establecimiento: ESTABLECIMIENTO, hora: new Date().toISOString(), tipo,
+    nivel_l: null, agua_agregada_l: null, producto_ml: null, cantidad_animales: null, categoria: null, potrero: null,
+    dueno: null, nota: null, dispositivo: idDispositivo(), autor: usuarioActual() || null, con_baston: null, sanidad_id: null
+  };
+  return Object.assign(fila, datos || {});
+}
+
+/* ---- cola ---- */
+function banoFilaParaEnviar(it){
+  const f = it.fila || {};
+  if(it.clase === 'ciclo'){
+    return { uid: f.uid, establecimiento: f.establecimiento, producto: f.producto, inicio: f.inicio, agua_inicial_l: f.agua_inicial_l,
+      producto_inicial_ml: f.producto_inicial_ml, nota: f.nota || null, dispositivo: f.dispositivo, autor: f.autor || null };
+  }
+  return { uid: f.uid, ciclo_uid: f.ciclo_uid, establecimiento: f.establecimiento, hora: f.hora, tipo: f.tipo,
+    nivel_l: f.nivel_l, agua_agregada_l: f.agua_agregada_l, producto_ml: f.producto_ml, cantidad_animales: f.cantidad_animales,
+    categoria: f.categoria, potrero: f.potrero, dueno: f.dueno, nota: f.nota || null, dispositivo: f.dispositivo,
+    autor: f.autor || null, con_baston: f.tipo === 'tanda' ? !!f.con_baston : null, sanidad_id: f.sanidad_id || null };
+}
+/* Manda lo pendiente de a uno, en orden. El ciclo siempre va antes que sus lecturas (la base lo exige); si el ciclo quedó
+   rechazado, sus lecturas esperan. Devuelve {enviados, pendientes, error}. */
+async function banoVaciarCola(){
+  const vacio = { enviados: 0, pendientes: banoLeer().cola.length, error: null };
+  if(!BANO_ACTIVO || _banoEnviando) return vacio;
+  const client = clienteSupabase();
+  if(!client || typeof client.from !== 'function' || !navigator.onLine) return vacio;
+  _banoEnviando = true;
+  let enviados = 0, error = null;
+  try{
+    const uids = banoLeer().cola.map(it => it.uid);
+    for(const uid of uids){
+      const st0 = banoLeer();
+      const it = st0.cola.find(x => x.uid === uid);
+      if(!it) continue;   // otra pestaña ya la mandó
+      if(it.clase === 'lectura' && st0.cola.some(x => x.clase === 'ciclo' && x.uid === it.ciclo_uid)) continue;   // su ciclo todavía no subió
+      let res;
+      try{ res = await client.from(it.clase === 'ciclo' ? 'bano_ciclos' : 'bano_lecturas').insert(banoFilaParaEnviar(it)); }
+      catch(e){ res = { error: { message: String((e && e.message) || e), code: '' } }; }
+      const err = res && res.error;
+      if(err && String(err.code) !== '23505'){
+        const st = banoLeer();
+        const x = st.cola.find(y => y.uid === uid);
+        const pasajero = insEsPasajero(res, err);
+        if(x){ x.error = String(err.message || err.code || 'error').slice(0, 160); x.permanente = !pasajero; x.intentos = (x.intentos || 0) + 1; banoGuardar(st); }
+        error = x && x.error;
+        if(pasajero) break;   // sin señal o servidor caído: se sigue en la próxima
+        continue;             // la base lo rechazó: no frena a las demás
+      }
+      const st = banoLeer();
+      st.cola = st.cola.filter(y => y.uid !== uid);
+      banoGuardar(st);
+      enviados++;
+    }
+  }finally{
+    _banoEnviando = false;
+  }
+  return { enviados, pendientes: banoLeer().cola.length, error };
+}
+
+/* ---- lectura del servidor (con copia para cuando no hay señal) ---- */
+async function banoRefrescarCatalogo(forzar){
+  const client = clienteSupabase();
+  if(!client || typeof client.from !== 'function' || !navigator.onLine) return false;
+  const actual = banoLeer();
+  const hora = Date.parse(actual.catalogo.hora);
+  if(!forzar && hora && Date.now() - hora < BANO_CATALOGO_VIGENCIA_MS && actual.catalogo.filas.length) return true;
+  try{
+    const res = await client.from('productos_catalogo').select('producto,tipo,valor_dosis_ml').order('producto', { ascending: true }).limit(1000);
+    if(!res || res.error || !Array.isArray(res.data)) return false;
+    const filas = limpiarTextoRemoto(res.data).filter(f => f && f.producto);
+    if(!filas.length) return false;
+    const st = banoLeer();
+    st.catalogo = { filas, hora: new Date().toISOString() };
+    banoGuardar(st);
+    return true;
+  }catch(e){ return false; }
+}
+function banoMensajeError(res, e){
+  const err = (res && res.error) || e || {};
+  return String(err.message || err.code || 'sin respuesta').slice(0, 120);
+}
+/* Trae dosis, estado de los ciclos abiertos y avisos; si hay un ciclo abierto de este campo, trae el ciclo y sus lecturas
+   y los junta con lo que hay en el equipo (sin duplicar por uid). Así otro celular ve el mismo ciclo. */
+async function banoRefrescarServidor(){
+  const client = clienteSupabase();
+  if(!client || typeof client.from !== 'function' || typeof client.rpc !== 'function' || !navigator.onLine) return false;
+  let error = null;
+  try{
+    const rc = await client.from('bano_config').select('producto,ml_100l_carga,ml_100l_reposicion,l_animal_min,l_animal_max,vida_horas,capacidad_l,umbral_reponer_l').order('producto', { ascending: true });
+    if(rc && !rc.error && Array.isArray(rc.data)){
+      const st = banoLeer();
+      st.config = { filas: limpiarTextoRemoto(rc.data).filter(f => f && f.producto), hora: new Date().toISOString() };
+      banoGuardar(st);
+    }else error = banoMensajeError(rc);
+    const re = await client.rpc('bano_estado_app');
+    const ra = await client.rpc('bano_avisos_app');
+    let estadoOk = false, abierto = null;
+    {
+      const st = banoLeer();
+      if(re && !re.error && Array.isArray(re.data)){
+        st.servidor.estado = limpiarTextoRemoto(re.data).filter(f => f && f.establecimiento === ESTABLECIMIENTO);
+        estadoOk = true;
+        abierto = st.servidor.estado.filter(f => !f.cerrado && f.ciclo_uid && st.cerrados.indexOf(f.ciclo_uid) < 0)
+          .sort((a, b) => String(b.inicio || '').localeCompare(String(a.inicio || '')))[0] || null;
+      }else error = error || banoMensajeError(re);
+      if(ra && !ra.error && Array.isArray(ra.data)) st.servidor.avisos = limpiarTextoRemoto(ra.data).filter(f => f && f.establecimiento === ESTABLECIMIENTO);
+      else error = error || banoMensajeError(ra);
+      st.servidor.hora = new Date().toISOString();
+      banoGuardar(st);
+    }
+    if(estadoOk){
+      const st = banoLeer();
+      const local = st.ciclo;
+      const localPendiente = local && st.cola.some(x => x.uid === local.ciclo.uid || x.ciclo_uid === local.ciclo.uid);
+      if(abierto && !(local && local.ciclo.uid !== abierto.ciclo_uid && localPendiente)){
+        const rcic = await client.from('bano_ciclos').select('*').eq('uid', abierto.ciclo_uid).limit(1);
+        const rlec = await client.from('bano_lecturas').select('*').eq('ciclo_uid', abierto.ciclo_uid).order('hora', { ascending: true }).order('id', { ascending: true }).limit(1000);
+        if(rcic && !rcic.error && Array.isArray(rcic.data) && rcic.data.length && rlec && !rlec.error && Array.isArray(rlec.data)){
+          const st2 = banoLeer();
+          const fila = limpiarTextoRemoto(rcic.data[0]);
+          const vistos = new Set();
+          const lecturas = [];
+          limpiarTextoRemoto(rlec.data).forEach(l => { if(l && l.uid && !vistos.has(l.uid)){ vistos.add(l.uid); lecturas.push(l); } });
+          if(st2.ciclo && st2.ciclo.ciclo.uid === fila.uid){
+            st2.ciclo.lecturas.forEach(l => { if(l && l.uid && !vistos.has(l.uid)){ vistos.add(l.uid); lecturas.push(l); } });
+          }
+          st2.ciclo = { ciclo: fila, lecturas: banoOrdenar(lecturas) };
+          banoGuardar(st2);
+        }else error = error || banoMensajeError(rcic && rcic.error ? rcic : rlec);
+      }else if(!abierto && local && !localPendiente){
+        // el servidor no lo tiene abierto y no queda nada por mandar: lo cerró otro equipo
+        st.ultimo = { producto: local.ciclo.producto, inicio: local.ciclo.inicio, cierre: null, otroEquipo: true };
+        st.ciclo = null;
+        banoGuardar(st);
+      }
+    }
+  }catch(e){
+    error = banoMensajeError(null, e);
+  }
+  _banoUltimoError = error;
+  return !error;
+}
+
+/* ---- pantalla principal ---- */
+function banoAbierta(){ const m = document.getElementById('modal-bano'); return !!m && m.style.display !== 'none'; }
+function banoEnCola(st, uid){ return st.cola.some(x => x.uid === uid); }
+function banoRender(){
+  const modal = document.getElementById('modal-bano');
+  if(!modal) return;
+  const st = banoLeer();
+  const sinSenal = !navigator.onLine || !clienteSupabase();
+  const hora = st.servidor.hora && insHoraCorta(st.servidor.hora);
+  const aviso = document.getElementById('bano-aviso');
+  let texto = '', clase = 'ins-aviso';
+  if(sinSenal){
+    texto = hora ? 'Sin señal — datos del ' + hora + '. Lo que cargues queda en cola.' : 'Sin señal — lo que cargues queda en cola y se manda solo.';
+    clase += ' ins-offline';
+  }else if(_banoUltimoError){
+    texto = 'No se pudo actualizar (' + _banoUltimoError + ')' + (hora ? ' — datos del ' + hora : '');
+    clase += ' ins-error';
+  }else if(hora){
+    texto = 'Actualizado ' + hora;
+  }
+  aviso.className = clase;
+  aviso.textContent = texto;
+  aviso.style.display = texto ? '' : 'none';
+  document.getElementById('bano-subtitulo').textContent = CONFIG.nombre + ' · baño de aspersión (tanque cerrado)';
+  // posibles dobles cargas en Sanidad (no se borra nada solo)
+  document.getElementById('bano-duplicados').innerHTML = st.servidor.avisos.map(a =>
+    '<div class="bano-cartel bano-dup" data-tanda="' + esc(a.tanda_uid || '') + '">Posible doble carga en Sanidad: la tanda de '
+    + esc(a.categoria || '—') + ' pot. ' + esc(a.potrero || '—') + ' del ' + esc(insFechaCorta(a.fecha).slice(0, 5))
+    + ' se cargó sin bastón y el bastón también trajo ' + esc(a.producto || 'el producto') + ' ese día. Revisá en Sanidad cuál dejar.</div>'
+  ).join('');
+  const hay = !!st.ciclo;
+  document.getElementById('bano-sin-ciclo').style.display = hay ? 'none' : '';
+  document.getElementById('bano-en-marcha').style.display = hay ? '' : 'none';
+  if(hay) banoRenderEnMarcha(st); else banoRenderSinCiclo(st);
+  banoRenderCola(st);
+}
+function banoRenderSinCiclo(st){
+  const u = st.ultimo;
+  document.getElementById('bano-ultimo').textContent = u
+    ? 'Último ciclo: ' + u.producto + (u.cierre ? ', cerrado el ' + insHoraCorta(u.cierre) : (u.otroEquipo ? ', cerrado en otro equipo' : '')) + '.'
+    : 'No hay un ciclo abierto.';
+  const filas = st.config.filas;
+  if(_banoNc.producto && !filas.some(f => f.producto === _banoNc.producto)) _banoNc.producto = null;
+  if(!_banoNc.producto && filas.length === 1) _banoNc.producto = filas[0].producto;
+  document.getElementById('bano-nc-productos').innerHTML = filas.length
+    ? filas.map(f => '<button type="button" class="bano-chip" data-bano-producto="' + esc(f.producto) + '" aria-pressed="' + (f.producto === _banoNc.producto) + '">'
+      + esc(f.producto) + '<small>' + esc(banoDuraTexto(f.vida_horas)) + '</small></button>').join('')
+    : '<p class="modal-info">Todavía no se bajó la lista de productos del baño. Abrí esta pantalla con señal una vez, o agregá uno en ⚙ Productos.</p>';
+  banoNcSugerir();
+}
+function banoNcSugerir(){
+  const sug = document.getElementById('bano-nc-sug');
+  const agua = insNumero(document.getElementById('bano-nc-agua').value);
+  document.querySelectorAll('#bano-nc-aguas [data-bano-agua]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-bano-agua')) === agua)));
+  if(!_banoNc.producto){ sug.className = 'modal-info'; sug.textContent = 'Elegí el producto.'; return; }
+  const p = banoParams(_banoNc.producto);
+  if(p.carga == null){
+    sug.className = 'modal-info bano-falta';
+    sug.textContent = _banoNc.producto + ': falta la dosis. Escribí cuánto pusiste (la dosis se carga en ⚙ Productos).';
+    return;
+  }
+  const s = banoSugerido(agua, p.carga);
+  sug.className = 'modal-info';
+  sug.textContent = s == null ? 'Dosis: ' + banoFmtDosis(p.carga) + ' ml cada 100 L. Elegí el agua para ver la cuenta.'
+    : 'Sugerido: ' + banoFmt(s) + ' ml (' + banoFmtDosis(p.carga) + ' ml cada 100 L).';
+  if(s != null && !_banoNc.mlEditado) document.getElementById('bano-nc-ml').value = String(s);
+}
+function banoResetNuevo(){
+  _banoNc = { producto: null, mlEditado: false };
+  document.getElementById('bano-nc-agua').value = '';
+  document.getElementById('bano-nc-ml').value = '';
+  document.getElementById('bano-nc-error').textContent = '';
+}
+function banoRenderEnMarcha(st){
+  const c = st.ciclo.ciclo;
+  const p = banoParams(c.producto, st);
+  const r = banoCalcular(c, st.ciclo.lecturas, p);
+  const v = banoVida(c, p);
+  document.getElementById('bano-cab').innerHTML = '<div class="bano-prod">' + esc(c.producto) + '</div>'
+    + '<div class="bano-dia">' + (v ? 'Día ' + v.dia + ' de ' + v.dias + ' · vence ' + esc(insHoraCorta(v.vence)) : 'Abierto el ' + esc(insHoraCorta(c.inicio))) + '</div>';
+  const venc = document.getElementById('bano-vencido');
+  if(v && v.vencido){
+    venc.textContent = 'Venció el ' + insHoraCorta(v.vence) + '. Cerrá el ciclo: lo que queda se tira.';
+    venc.style.display = '';
+  }else venc.style.display = 'none';
+  const pct = Math.max(0, Math.min(100, Math.round(r.nivelEstimado / p.capacidad * 100)));
+  let nivel = '<div class="bano-dato">Nivel estimado: <b>' + banoFmt(r.nivelEstimado) + ' L</b> de ' + banoFmt(p.capacidad) + ' L</div>'
+    + '<div class="bano-tanque" role="img" aria-label="Tanque al ' + pct + ' %"><div style="width:' + pct + '%;"></div></div>'
+    + '<div class="bano-dato">Gastó desde la última carga: <b>' + banoFmt(r.gasto) + ' L</b> (reponer a los ' + banoFmt(p.umbral) + ' L)'
+    + (r.estimado ? ' · <span class="bano-falta">estimado</span>: incluye ' + banoFmt(r.animalesEnCurso) + ' animales × ' + BANO_L_ESTIMADO + ' L' : '') + '</div>';
+  if(r.sinContarEnCurso) nivel += '<div class="bano-dato">' + (r.sinContarEnCurso === 1 ? '1 tanda sin contar' : r.sinContarEnCurso + ' tandas sin contar') + ' desde la última regla: no entran en la cuenta.</div>';
+  document.getElementById('bano-nivel').innerHTML = nivel;
+  const rep = document.getElementById('bano-reponer');
+  if(r.tocaReponer){
+    const agua = Math.max(0, Math.round((p.capacidad - r.nivelEstimado) / 10) * 10);
+    const ml = banoSugerido(agua, p.repos);
+    rep.textContent = 'Toca reponer: agregá ' + banoFmt(agua) + ' L' + (ml != null ? ' y unos ' + banoFmt(ml) + ' ml de ' + c.producto : ' (falta la dosis de reposición)') + '.';
+    rep.style.display = '';
+  }else rep.style.display = 'none';
+  // lo de hoy
+  const hoy = banoDia(new Date().toISOString());
+  const lineas = [];
+  if(banoDia(c.inicio) === hoy) lineas.push({ hora: c.inicio, texto: 'Carga: ' + banoFmt(c.agua_inicial_l) + ' L + ' + banoFmt(c.producto_inicial_ml) + ' ml', uid: c.uid });
+  banoOrdenar(st.ciclo.lecturas).forEach(l => { if(banoDia(l.hora) === hoy) lineas.push({ hora: l.hora, texto: banoTextoLectura(l, c.producto), uid: l.uid }); });
+  document.getElementById('bano-hoy').innerHTML = '<div class="bano-sub">Hoy</div>' + (lineas.length
+    ? lineas.reverse().map(x => '<div class="bano-linea"><span class="bano-hora">' + esc(banoHora(x.hora)) + '</span>' + esc(x.texto)
+      + (banoEnCola(st, x.uid) ? ' <span class="bano-etq">en cola</span>' : '') + '</div>').join('')
+    : '<p class="modal-info">Todavía nada hoy.</p>');
+  const t = r.tramos[r.tramos.length - 1];
+  document.getElementById('bano-tramo').innerHTML = t ? '<div class="bano-sub">Último tramo</div>' + banoTramoHTML(t) : '';
+  document.getElementById('bano-resumen').innerHTML = '<div class="bano-sub">Resumen del ciclo</div>' + banoResumenHTML(c, r, st);
+}
+function banoResumenHTML(c, r, st){
+  const valor = banoValorMl(c.producto, st);
+  const costo = valor != null ? valor * r.productoTotal : null;
+  return '<div class="bano-dato">Producto total: <b>' + banoFmt(r.productoTotal) + ' ml</b></div>'
+    + '<div class="bano-dato">Animales: <b>' + banoFmt(r.animales) + '</b> en ' + r.tandasTotal + (r.tandasTotal === 1 ? ' tanda' : ' tandas')
+    + (r.tandasSinConteo ? ' (' + r.tandasSinConteo + ' sin contar)' : '') + '</div>'
+    + '<div class="bano-dato">Agua gastada: <b>' + banoFmt(r.aguaGastada) + ' L</b></div>'
+    + (costo != null ? '<div class="bano-dato">Costo: <b>USD ' + banoFmt(costo, 2) + '</b>' + (r.animales > 0 ? ' (USD ' + banoFmt(costo / r.animales, 2) + ' por animal)' : '') + '</div>' : '');
+}
+function banoRenderCola(st){
+  let html = '';
+  if(st.cola.length){
+    html = '<div class="ins-cola-titulo">' + st.cola.length + ' en cola — se mandan cuando haya señal</div>';
+    st.cola.forEach(it => {
+      const f = it.fila || {};
+      const texto = it.clase === 'ciclo' ? 'Abrir ciclo: ' + f.producto + ', ' + banoFmt(f.agua_inicial_l) + ' L + ' + banoFmt(f.producto_inicial_ml) + ' ml' : banoTextoLectura(f);
+      html += '<div class="ins-item ins-encola" data-uid="' + esc(it.uid) + '"><div><div class="ins-nombre">' + esc(texto) + '</div>'
+        + '<div class="ins-fecha">' + esc(insHoraCorta(f.hora || f.inicio)) + '</div>'
+        + (it.error ? '<div class="ins-fecha" style="color:var(--rojo-hacienda);">No se pudo mandar: ' + esc(it.error) + '</div>' : '') + '</div>'
+        + '<div class="ins-der"><div class="ins-estado">en cola</div>'
+        + (it.permanente ? '<div><button class="btn btn-secundario" data-bano-quitar="' + esc(it.uid) + '" style="padding:2px 8px;font-size:12px;">Quitar</button></div>' : '')
+        + '</div></div>';
+    });
+  }
+  document.getElementById('bano-cola').innerHTML = html;
+}
+async function banoActualizarTodo(){
+  const ficha = _banoFicha;
+  await banoVaciarCola();
+  await banoRefrescarServidor();
+  await banoRefrescarCatalogo(false);
+  if(ficha === _banoFicha && banoAbierta()) banoRender();
+}
+async function abrirBano(){
+  const ficha = ++_banoFicha;
+  banoResetNuevo();
+  document.getElementById('modal-bano').style.display = 'flex';
+  banoRender();   // primero lo guardado en el equipo; después se actualiza si hay señal
+  if(!navigator.onLine || !clienteSupabase()) return;
+  document.getElementById('bano-actualizar').disabled = true;
+  try{ await banoActualizarTodo(); }
+  finally{ if(ficha === _banoFicha) document.getElementById('bano-actualizar').disabled = false; }
+}
+function cerrarBano(){
+  _banoFicha++;
+  document.getElementById('modal-bano').style.display = 'none';
+}
+/* Lo llama sincronizar(): sin esperar a nadie y sin poder romper la sincronización. Con la pantalla abierta, también
+   la refresca. */
+async function banoAlSincronizar(){
+  if(!BANO_ACTIVO) return;
+  try{
+    await banoVaciarCola();
+    if(banoAbierta()){ await banoRefrescarServidor(); banoRender(); }
+  }catch(e){ console.warn('Baño', e); }
+}
+async function banoDespuesDeGuardar(textoOk){
+  const r = await banoVaciarCola();
+  if(!r.pendientes) toast(textoOk);
+  else toast(navigator.onLine ? 'Guardado — quedó en cola' : 'Sin señal — quedó en cola y se manda solo');
+  if(banoAbierta()) banoRender();
+}
+async function banoAbrirCiclo(){
+  const err = t => { document.getElementById('bano-nc-error').textContent = t || ''; };
+  const st = banoLeer();
+  if(st.ciclo) return err('Ya hay un ciclo abierto.');
+  const producto = _banoNc.producto;
+  if(!producto || !banoFilaConfig(producto, st)) return err('Elegí el producto.');
+  const p = banoParams(producto, st);
+  const agua = insNumero(document.getElementById('bano-nc-agua').value);
+  if(!isFinite(agua) || agua <= 0 || agua > p.capacidad) return err('Elegí cuánta agua cargaste (hasta ' + banoFmt(p.capacidad) + ' L).');
+  const ml = insNumero(document.getElementById('bano-nc-ml').value);
+  if(!isFinite(ml) || ml <= 0) return err(p.carga == null ? 'Falta la dosis de ' + producto + ': escribí cuántos ml pusiste.' : 'Escribí cuánto producto pusiste, en ml.');
+  if(ml > 100000) return err('Esa cantidad de producto es demasiado grande. Revisala.');
+  const fila = {
+    uid: insNuevoUid(), establecimiento: ESTABLECIMIENTO, producto, inicio: new Date().toISOString(),
+    agua_inicial_l: Math.round(agua * 10) / 10, producto_inicial_ml: Math.round(ml * 10) / 10, nota: null,
+    dispositivo: idDispositivo(), autor: usuarioActual() || null
+  };
+  st.ciclo = { ciclo: fila, lecturas: [] };
+  st.cola.push({ clase: 'ciclo', uid: fila.uid, fila });
+  if(!banoGuardar(st)) return err('No se pudo guardar en este equipo (memoria llena o navegador bloqueado). No se abrió.');
+  err('');
+  banoRender();
+  await banoDespuesDeGuardar('Ciclo abierto');
+}
+function banoRegistrarLectura(fila){
+  const st = banoLeer();
+  if(!st.ciclo || st.ciclo.ciclo.uid !== fila.ciclo_uid) return false;
+  st.ciclo.lecturas.push(fila);
+  st.cola.push({ clase: 'lectura', uid: fila.uid, ciclo_uid: fila.ciclo_uid, fila });
+  if(fila.tipo === 'cierre'){
+    st.ultimo = { producto: st.ciclo.ciclo.producto, inicio: st.ciclo.ciclo.inicio, cierre: fila.hora };
+    st.cerrados = [fila.ciclo_uid].concat(st.cerrados.filter(u => u !== fila.ciclo_uid)).slice(0, 20);
+    st.ciclo = null;
+  }
+  return banoGuardar(st);
+}
+
+/* ---- formularios: + Tanda, + Reposición, Fin del día, Cerrar ciclo ---- */
+const BANO_FORM_TEXTOS = {
+  tanda: { titulo: '🛁 + Tanda', boton: 'Guardar tanda', ayuda: 'Una tanda de animales que pasa por el baño. La hora la pone el equipo.' },
+  reposicion: { titulo: '🛁 + Reposición', boton: 'Guardar reposición', ayuda: 'Primero leé la regla. Después agregá agua y producto.' },
+  fin_dia: { titulo: '🛁 Fin del día', boton: 'Guardar fin del día', ayuda: 'Leé la regla al terminar el día. Mañana se sigue con el mismo ciclo.' },
+  cierre: { titulo: '🛁 Cerrar ciclo', boton: 'Cerrar ciclo', ayuda: 'Leé la regla final. Lo que queda se tira y el ciclo se cierra.' }
+};
+function banoCategoriasChips(){
+  const tot = {};
+  Object.keys(estado.potreros || {}).forEach(n => {
+    Object.entries(estado.potreros[n].animales || {}).forEach(([key, cant]) => {
+      if(!(Number(cant) > 0)) return;
+      const { cat } = partesClave(key);
+      tot[cat] = (tot[cat] || 0) + Number(cant);
+    });
+  });
+  const conStock = Object.keys(tot).filter(c => CATEGORIA_ESPECIE[c] === 'bovino').sort((a, b) => tot[b] - tot[a]);
+  const lista = conStock.slice(0, 8);
+  BANO_CATS_BASE.forEach(c => { if(lista.indexOf(c) < 0 && lista.length < 10) lista.push(c); });
+  return lista;
+}
+function banoMarcarCategoria(cat){
+  _banoForm.cat = cat || null;
+  let enChip = false;
+  document.querySelectorAll('#bano-t-cats [data-bano-cat]').forEach(b => {
+    const si = b.getAttribute('data-bano-cat') === cat;
+    if(si) enChip = true;
+    b.setAttribute('aria-pressed', String(si));
+  });
+  document.getElementById('bano-t-cat-otra').value = enChip || !cat ? '' : cat;
+}
+function banoMarcarBaston(si){
+  _banoForm.baston = !!si;
+  document.getElementById('bano-t-baston-si').setAttribute('aria-pressed', String(!!si));
+  document.getElementById('bano-t-baston-no').setAttribute('aria-pressed', String(!si));
+  document.getElementById('bano-t-cant-label').textContent = si ? 'Cantidad de animales (si la contaste)' : 'Cantidad de animales (obligatoria)';
+  document.getElementById('bano-t-baston-ayuda').textContent = si
+    ? 'El bastón carga el tratamiento en Sanidad. Acá no se carga nada en Sanidad.'
+    : 'Sin bastón, esta tanda se carga sola en 🏥 Sanidad (producto del ciclo, para el retiro). Por eso hay que contar los animales.';
+}
+function banoAbrirForm(tipo){
+  const st = banoLeer();
+  if(!st.ciclo || !BANO_FORM_TEXTOS[tipo]) return;
+  const tx = BANO_FORM_TEXTOS[tipo];
+  _banoForm = { tipo, cat: null, baston: BANO_BASTON_DEFECTO, aguaEditada: false, mlEditado: false };
+  document.getElementById('bano-f-titulo').textContent = tx.titulo;
+  document.getElementById('bano-f-ayuda').textContent = tx.ayuda;
+  document.getElementById('bano-f-guardar').textContent = tx.boton;
+  document.getElementById('bano-f-tanda').style.display = tipo === 'tanda' ? '' : 'none';
+  document.getElementById('bano-f-nivel-sec').style.display = tipo === 'tanda' ? 'none' : '';
+  document.getElementById('bano-f-repos').style.display = tipo === 'reposicion' ? '' : 'none';
+  ['bano-f-nivel', 'bano-r-agua', 'bano-r-ml', 'bano-t-cant'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('bano-f-error').textContent = '';
+  document.getElementById('bano-f-nivel-label').textContent = tipo === 'reposicion' ? 'Regla antes de reponer (litros)' : (tipo === 'cierre' ? 'Regla final (litros)' : 'Regla al final del día (litros)');
+  if(tipo === 'tanda'){
+    document.getElementById('bano-t-cats').innerHTML = banoCategoriasChips().map(c => '<button type="button" class="bano-chip" data-bano-cat="' + esc(c) + '" aria-pressed="false">' + esc(c) + '</button>').join('');
+    document.getElementById('bano-t-cat-otra').innerHTML = '<option value="">Otra categoría…</option>' + opcionesCategorias();
+    document.getElementById('bano-t-dueno-label').textContent = CONFIG.duenoLabel + (CONFIG.duenoObligatorio ? '' : ' (opcional)');
+    document.getElementById('bano-t-dueno').innerHTML = (CONFIG.duenoObligatorio ? '<option value="">Elegí…</option>' : '') + opcionesDuenos();
+    document.getElementById('bano-t-potrero').innerHTML = '<option value="">Elegí…</option>' + opcionesPotreros();
+    banoMarcarCategoria(null);
+    banoMarcarBaston(BANO_BASTON_DEFECTO);
+  }
+  banoFormActualizar();
+  document.getElementById('modal-bano-form').style.display = 'flex';
+}
+function cerrarBanoForm(){ document.getElementById('modal-bano-form').style.display = 'none'; _banoForm = null; }
+/* Cuentas en vivo del formulario: sugerencias de la reposición y el tramo que se cierra (o el resumen del cierre). */
+function banoFormActualizar(){
+  if(!_banoForm) return;
+  const st = banoLeer();
+  const prev = document.getElementById('bano-f-preview');
+  if(!st.ciclo){ prev.innerHTML = ''; return; }
+  const c = st.ciclo.ciclo;
+  const p = banoParams(c.producto, st);
+  const tipo = _banoForm.tipo;
+  if(tipo === 'tanda'){ prev.innerHTML = ''; return; }
+  const nivel = insNumero(document.getElementById('bano-f-nivel').value);
+  document.querySelectorAll('#bano-f-reglas [data-bano-regla]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-bano-regla')) === nivel)));
+  const valido = isFinite(nivel) && nivel >= 0 && nivel <= p.capacidad;
+  if(tipo === 'reposicion'){
+    const aguaIn = document.getElementById('bano-r-agua');
+    const sugA = document.getElementById('bano-r-agua-sug');
+    if(valido){
+      const sa = Math.max(0, p.capacidad - nivel);
+      sugA.textContent = 'Sugerido: ' + banoFmt(sa) + ' L (hasta ' + banoFmt(p.capacidad) + ' L).';
+      if(!_banoForm.aguaEditada) aguaIn.value = String(sa);
+    }else sugA.textContent = 'Elegí primero lo que marca la regla.';
+    const agua = insNumero(aguaIn.value);
+    const sugM = document.getElementById('bano-r-ml-sug');
+    if(p.repos == null){
+      sugM.className = 'modal-info bano-falta';
+      sugM.textContent = c.producto + ': falta la dosis de reposición. Escribí cuántos ml pusiste.';
+    }else{
+      const sm = banoSugerido(agua, p.repos);
+      sugM.className = 'modal-info';
+      sugM.textContent = sm == null ? 'Dosis: ' + banoFmtDosis(p.repos) + ' ml cada 100 L.' : 'Sugerido: ' + banoFmt(sm) + ' ml (' + banoFmtDosis(p.repos) + ' ml cada 100 L).';
+      if(sm != null && !_banoForm.mlEditado) document.getElementById('bano-r-ml').value = String(sm);
+    }
+  }
+  if(!valido){ prev.innerHTML = ''; return; }
+  const hipotetica = { uid: '_prev', tipo: tipo === 'cierre' ? 'cierre' : (tipo === 'fin_dia' ? 'fin_dia' : 'reposicion'), hora: new Date().toISOString(), nivel_l: nivel, agua_agregada_l: 0, producto_ml: 0 };
+  const r = banoCalcular(c, st.ciclo.lecturas.concat([hipotetica]), p);
+  const t = r.tramos[r.tramos.length - 1];
+  if(tipo === 'cierre'){
+    prev.innerHTML = '<div class="bano-sub">Resumen del ciclo</div>' + banoResumenHTML(c, r, st)
+      + '<div class="bano-sub">Tramos</div>' + r.tramos.map((x, i) => banoTramoHTML(x, 'Tramo ' + (i + 1))).join('');
+  }else{
+    prev.innerHTML = '<div class="bano-sub">Tramo que se cierra</div>' + (t ? banoTramoHTML(t) : '');
+  }
+}
+async function banoGuardarForm(){
+  const err = t => { document.getElementById('bano-f-error').textContent = t || ''; };
+  if(!_banoForm) return;
+  const st = banoLeer();
+  if(!st.ciclo){ cerrarBanoForm(); return; }
+  const c = st.ciclo.ciclo;
+  const p = banoParams(c.producto, st);
+  const tipo = _banoForm.tipo;
+  let fila, textoOk;
+  if(tipo === 'tanda'){
+    const cat = _banoForm.cat;
+    if(!cat) return err('Elegí la categoría.');
+    const dueno = document.getElementById('bano-t-dueno').value;
+    if(CONFIG.duenoObligatorio && !dueno) return err('Elegí el ' + CONFIG.duenoLabel.toLowerCase() + '.');
+    const potrero = document.getElementById('bano-t-potrero').value;
+    if(!potrero) return err('Elegí el potrero.');
+    const cantTxt = document.getElementById('bano-t-cant').value.trim();
+    let cant = null;
+    if(cantTxt){
+      if(!/^\d+$/.test(cantTxt) || Number(cantTxt) < 1) return err('La cantidad tiene que ser un número entero mayor que 0.');
+      cant = Number(cantTxt);
+      if(cant > 5000) return err('Esa cantidad es demasiado grande. Revisala.');
+    }
+    const baston = !!_banoForm.baston;
+    if(!baston && cant == null) return err('Sin bastón la cantidad es obligatoria: sin contar no queda el retiro en Sanidad.');
+    fila = banoNuevaLectura(c, 'tanda', { cantidad_animales: cant, categoria: cat, potrero, dueno: dueno || null, con_baston: baston });
+    if(!baston){
+      // el tratamiento va a Sanidad por la cola de siempre; la tanda guarda el id de esa fila
+      const registro = {
+        id: 'sc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        fecha: banoDia(fila.hora), categoria: cat, potrero, cantidad: cant, gen: null,
+        producto1: c.producto, dosis1: 0, producto2: null, dosis2: null,
+        observaciones: 'Baño de aspersión · tanda ' + banoHora(fila.hora), caravana: null, sin_caravana: null
+      };
+      if(CONFIG.usaExcelBridge) registro.establecimiento = ESTABLECIMIENTO;
+      else registro.dueno = dueno;
+      fila.sanidad_id = registro.id;
+      guardarSanidadCarga(registro).catch(e => console.warn('Baño → Sanidad', e));
+      if(CONFIG.usaExcelBridge){
+        estado.historialSanidad = estado.historialSanidad || [];
+        estado.historialSanidad.unshift({ id: registro.id, fecha: registro.fecha, categoria: registro.categoria, potrero: registro.potrero, producto1: registro.producto1, dosis1: registro.dosis1, producto2: null, dosis2: null, cantidad: registro.cantidad });
+        estado.historialSanidad = estado.historialSanidad.slice(0, 15);
+        guardarEstado();
+      }
+    }
+    textoOk = baston ? 'Tanda guardada' : 'Tanda guardada y cargada en Sanidad';
+  }else{
+    const nivel = insNumero(document.getElementById('bano-f-nivel').value);
+    if(!isFinite(nivel) || nivel < 0 || nivel > p.capacidad) return err('Escribí lo que marca la regla, entre 0 y ' + banoFmt(p.capacidad) + ' litros.');
+    const datos = { nivel_l: Math.round(nivel * 10) / 10 };
+    if(tipo === 'reposicion'){
+      const agua = insNumero(document.getElementById('bano-r-agua').value);
+      if(!isFinite(agua) || agua <= 0) return err('Escribí cuánta agua agregás, en litros.');
+      if(nivel + agua > p.capacidad + 0.5) return err('No entra: ' + banoFmt(nivel) + ' L + ' + banoFmt(agua) + ' L pasa de ' + banoFmt(p.capacidad) + ' L.');
+      const ml = insNumero(document.getElementById('bano-r-ml').value);
+      if(!isFinite(ml) || ml < 0) return err(p.repos == null ? 'Falta la dosis de reposición: escribí cuántos ml pusiste.' : 'Escribí cuánto producto agregás, en ml.');
+      if(ml > 100000) return err('Esa cantidad de producto es demasiado grande. Revisala.');
+      datos.agua_agregada_l = Math.round(agua * 10) / 10;
+      datos.producto_ml = Math.round(ml * 10) / 10;
+    }
+    fila = banoNuevaLectura(c, tipo, datos);
+    textoOk = tipo === 'reposicion' ? 'Reposición guardada' : (tipo === 'fin_dia' ? 'Fin del día guardado' : 'Ciclo cerrado');
+  }
+  if(!banoRegistrarLectura(fila)) return err('No se pudo guardar en este equipo (memoria llena o navegador bloqueado). No se guardó.');
+  cerrarBanoForm();
+  if(tipo === 'cierre') banoResetNuevo();
+  banoRender();
+  await banoDespuesDeGuardar(textoOk);
+}
+
+/* ---- ⚙ Productos del baño (necesita señal: va directo a la RPC, no a la cola) ---- */
+function banoProdAbierta(){ const m = document.getElementById('modal-bano-productos'); return !!m && m.style.display !== 'none'; }
+function banoRenderProductos(){
+  const st = banoLeer();
+  const filas = st.config.filas.slice().sort((a, b) => String(a.producto).localeCompare(String(b.producto), 'es'));
+  document.getElementById('bano-p-lista').innerHTML = filas.length ? filas.map(f => {
+    const carga = banoNumONull(f.ml_100l_carga), repos = banoNumONull(f.ml_100l_reposicion);
+    const dosis = (carga == null || repos == null)
+      ? '<div class="ins-fecha bano-falta">falta la dosis</div>' : '';
+    return '<div class="bano-prod-item" data-producto="' + esc(f.producto) + '"><div><div class="ins-nombre">' + esc(f.producto) + '</div>'
+      + '<div class="ins-fecha">Carga: ' + (carga == null ? '—' : esc(banoFmtDosis(carga)) + ' ml') + ' · Reposición: ' + (repos == null ? '—' : esc(banoFmtDosis(repos)) + ' ml') + ' (cada 100 L)</div>'
+      + '<div class="ins-fecha">' + esc(banoDuraTexto(f.vida_horas)) + '</div>' + dosis + '</div>'
+      + '<button class="btn btn-secundario" data-bano-editar="' + esc(f.producto) + '" style="padding:6px 12px;">Editar</button></div>';
+  }).join('') : '<p class="modal-info">Todavía no hay productos guardados en este equipo. Abrí con señal para bajarlos.</p>';
+  const av = document.getElementById('bano-p-aviso');
+  const sinSenal = !navigator.onLine || !clienteSupabase();
+  av.className = 'ins-aviso' + (sinSenal ? ' ins-offline' : '');
+  av.textContent = sinSenal ? 'Sin señal: podés mirar la lista, pero para agregar o cambiar un producto hace falta señal.' : '';
+  av.style.display = sinSenal ? '' : 'none';
+}
+function banoProdCompletarCatalogo(){
+  const st = banoLeer();
+  document.getElementById('bano-p-catalogo').innerHTML = st.catalogo.filas.map(f => '<option value="' + esc(f.producto) + '"></option>').join('');
+}
+function banoProdFormAbrir(nombre){
+  const f = nombre ? banoFilaConfig(nombre) : null;
+  _banoProdEditando = f ? f.producto : null;
+  const prod = document.getElementById('bano-p-producto');
+  prod.value = f ? f.producto : '';
+  prod.readOnly = !!f;
+  const val = v => v == null ? '' : String(v).replace('.', ',');
+  document.getElementById('bano-p-carga').value = f ? val(f.ml_100l_carga) : '';
+  document.getElementById('bano-p-repos').value = f ? val(f.ml_100l_reposicion) : '';
+  document.getElementById('bano-p-horas').value = f ? val(f.vida_horas) : '';
+  document.getElementById('bano-p-error').textContent = '';
+  document.getElementById('bano-p-form').style.display = '';
+  banoProdCompletarCatalogo();
+}
+async function abrirBanoProductos(){
+  document.getElementById('bano-p-form').style.display = 'none';
+  document.getElementById('modal-bano-productos').style.display = 'flex';
+  banoRenderProductos();
+  if(navigator.onLine && clienteSupabase()){
+    if(await banoRefrescarCatalogo(false)) banoProdCompletarCatalogo();
+  }
+}
+function cerrarBanoProductos(){ document.getElementById('modal-bano-productos').style.display = 'none'; }
+async function banoGuardarProducto(){
+  const err = t => { document.getElementById('bano-p-error').textContent = t || ''; };
+  const client = clienteSupabase();
+  if(!navigator.onLine || !client || typeof client.rpc !== 'function') return err('Sin señal: los productos del baño se cambian con señal. Probá de nuevo cuando haya.');
+  const st = banoLeer();
+  const escrito = document.getElementById('bano-p-producto').value.trim();
+  if(!escrito) return err('Elegí el producto.');
+  let producto = _banoProdEditando;
+  if(!producto){
+    const t = insNorm(escrito);
+    const delCat = st.catalogo.filas.find(f => insNorm(f.producto) === t);
+    if(!delCat && st.catalogo.filas.length) return err('Ese producto no está en el catálogo. Elegilo de las sugerencias.');
+    producto = delCat ? delCat.producto : escrito.slice(0, 120);
+  }
+  const leer = id => { const txt = document.getElementById(id).value.trim(); return txt ? insNumero(txt) : null; };
+  const carga = leer('bano-p-carga'), repos = leer('bano-p-repos'), horas = leer('bano-p-horas');
+  if(carga != null && !(carga > 0)) return err('La dosis de carga tiene que ser un número mayor que 0 (o quedar vacía).');
+  if(repos != null && !(repos > 0)) return err('La dosis de reposición tiene que ser un número mayor que 0 (o quedar vacía).');
+  if(horas == null || !(horas > 0) || Math.round(horas) !== horas) return err('Escribí cuántas horas dura la mezcla (por ejemplo 168 = 7 días).');
+  const actual = banoFilaConfig(producto, st);
+  const btn = document.getElementById('bano-p-guardar');
+  btn.disabled = true;
+  try{
+    let res;
+    try{
+      res = await client.rpc('bano_config_guardar', {
+        p_producto: producto, p_ml_100l_carga: carga, p_ml_100l_reposicion: repos, p_vida_horas: horas,
+        p_l_animal_min: actual && banoNumONull(actual.l_animal_min) != null ? Number(actual.l_animal_min) : 3,
+        p_l_animal_max: actual && banoNumONull(actual.l_animal_max) != null ? Number(actual.l_animal_max) : 5
+      });
+    }catch(e){ res = { error: { message: String((e && e.message) || e), code: '' } }; }
+    const e = res && res.error;
+    if(e){
+      const code = String(e.code || '');
+      if(code === '42501') return err('No se guardó: falta la clave del campo o no sirve (🔑 Clave del campo).');
+      if(code === '22023') return err('No se guardó: ese producto no está en el catálogo de productos.');
+      return err('No se guardó (' + String(e.message || code || 'sin respuesta').slice(0, 100) + '). Probá de nuevo.');
+    }
+    await banoRefrescarServidor();
+    document.getElementById('bano-p-form').style.display = 'none';
+    banoRenderProductos();
+    if(banoAbierta()) banoRender();
+    toast('Producto del baño guardado');
+  }finally{ btn.disabled = false; }
+}
+
+if(BANO_ACTIVO){
+  const bb = document.getElementById('btn-bano');
+  if(bb){
+    bb.style.display = '';
+    bb.addEventListener('click', abrirBano);
+  }
+  const $b = id => document.getElementById(id);
+  $b('bano-cerrar').addEventListener('click', cerrarBano);
+  $b('modal-bano').addEventListener('click', (e)=>{ if(e.target.id === 'modal-bano') cerrarBano(); });
+  $b('bano-actualizar').addEventListener('click', ()=>{
+    if(!navigator.onLine){ toast('Sin señal — no se puede actualizar ahora'); banoRender(); return; }
+    banoActualizarTodo();
+  });
+  $b('bano-productos').addEventListener('click', abrirBanoProductos);
+  $b('bano-nc-productos').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-producto]');
+    if(!b) return;
+    _banoNc.producto = b.getAttribute('data-bano-producto');
+    _banoNc.mlEditado = false;
+    banoRenderSinCiclo(banoLeer());
+  });
+  $b('bano-nc-aguas').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-agua]');
+    if(!b) return;
+    $b('bano-nc-agua').value = b.getAttribute('data-bano-agua');
+    banoNcSugerir();
+  });
+  $b('bano-nc-agua').addEventListener('input', banoNcSugerir);
+  $b('bano-nc-ml').addEventListener('input', ()=>{ _banoNc.mlEditado = $b('bano-nc-ml').value.trim() !== ''; });
+  $b('bano-abrir').addEventListener('click', banoAbrirCiclo);
+  $b('bano-tanda').addEventListener('click', ()=> banoAbrirForm('tanda'));
+  $b('bano-reposicion').addEventListener('click', ()=> banoAbrirForm('reposicion'));
+  $b('bano-fin-dia').addEventListener('click', ()=> banoAbrirForm('fin_dia'));
+  $b('bano-cerrar-ciclo').addEventListener('click', ()=> banoAbrirForm('cierre'));
+  $b('bano-cola').addEventListener('click', (e)=>{
+    const uid = e.target && e.target.getAttribute && e.target.getAttribute('data-bano-quitar');
+    if(!uid) return;
+    const st = banoLeer();
+    const it = st.cola.find(x => x.uid === uid);
+    if(!it) return;
+    const esCiclo = it.clase === 'ciclo';
+    if(!confirm(esCiclo ? '¿Quitar este ciclo de la cola? Se quitan también sus lecturas y nunca se van a mandar.' : '¿Quitar esta lectura de la cola? Nunca se va a mandar.')) return;
+    st.cola = st.cola.filter(x => x.uid !== uid && !(esCiclo && x.ciclo_uid === uid));
+    if(esCiclo && st.ciclo && st.ciclo.ciclo.uid === uid) st.ciclo = null;
+    banoGuardar(st);
+    banoRender();
+  });
+  // formulario
+  $b('bano-f-cancelar').addEventListener('click', cerrarBanoForm);
+  $b('bano-f-guardar').addEventListener('click', banoGuardarForm);
+  $b('bano-t-cats').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-cat]');
+    if(b && _banoForm) banoMarcarCategoria(b.getAttribute('data-bano-cat'));
+  });
+  $b('bano-t-cat-otra').addEventListener('change', ()=>{ if(_banoForm) banoMarcarCategoria($b('bano-t-cat-otra').value || null); });
+  $b('bano-t-baston-si').addEventListener('click', ()=>{ if(_banoForm) banoMarcarBaston(true); });
+  $b('bano-t-baston-no').addEventListener('click', ()=>{ if(_banoForm) banoMarcarBaston(false); });
+  $b('bano-f-tanda').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-delta]');
+    if(!b) return;
+    const campo = $b('bano-t-cant');
+    const actual = /^\d+$/.test(campo.value.trim()) ? Number(campo.value.trim()) : 0;
+    const nuevo = Math.max(0, actual + Number(b.getAttribute('data-bano-delta')));
+    campo.value = nuevo ? String(nuevo) : '';
+  });
+  $b('bano-f-reglas').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-regla]');
+    if(!b) return;
+    $b('bano-f-nivel').value = b.getAttribute('data-bano-regla');
+    banoFormActualizar();
+  });
+  $b('bano-f-nivel').addEventListener('input', banoFormActualizar);
+  $b('bano-r-agua').addEventListener('input', ()=>{ if(_banoForm){ _banoForm.aguaEditada = $b('bano-r-agua').value.trim() !== ''; banoFormActualizar(); } });
+  $b('bano-r-ml').addEventListener('input', ()=>{ if(_banoForm){ _banoForm.mlEditado = $b('bano-r-ml').value.trim() !== ''; } });
+  // productos
+  $b('bano-p-cerrar').addEventListener('click', cerrarBanoProductos);
+  $b('bano-p-nuevo').addEventListener('click', ()=> banoProdFormAbrir(null));
+  $b('bano-p-cancelar-form').addEventListener('click', ()=>{ $b('bano-p-form').style.display = 'none'; });
+  $b('bano-p-guardar').addEventListener('click', banoGuardarProducto);
+  $b('bano-p-lista').addEventListener('click', (e)=>{
+    const nombre = e.target && e.target.getAttribute && e.target.getAttribute('data-bano-editar');
+    if(nombre) banoProdFormAbrir(nombre);
+  });
+  window.addEventListener('online', ()=>{ if(banoAbierta()) banoRender(); if(banoProdAbierta()) banoRenderProductos(); });
+  window.addEventListener('offline', ()=>{ if(banoAbierta()) banoRender(); if(banoProdAbierta()) banoRenderProductos(); });
 }
 
 /* 25/9/2026: "Cargar tratamiento individual" (con caravana) esta disponible

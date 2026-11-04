@@ -435,6 +435,42 @@
   .ins-encola .ins-estado{background:#e6e0c8;color:#4a4430;}
   #ins-ayuda-frascos{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   #ins-form-error{color:var(--rojo-hacienda);font-size:13px;margin:6px 0;min-height:1px;}
+  /* 4/11/2026: pantalla "🛁 Baño" (control del baño de aspersión; La Vuelta y María Laura, CONFIG.bano). Botones grandes y
+     colores fuertes para usar al sol; el color nunca va solo (siempre hay texto: ok / alto / bajo / sin conteo). */
+  #modal-bano .modal-box, #modal-bano-form .modal-box, #modal-bano-productos .modal-box{max-width:560px;}
+  .bano-h{font-size:17px;margin:4px 0 8px;}
+  .bano-chips{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 8px;}
+  .bano-chip{min-height:48px;min-width:58px;padding:8px 12px;font-size:16px;font-weight:600;line-height:1.2;border:2px solid #6b6245;border-radius:10px;background:#fff;color:#1f1b12;cursor:pointer;font-family:inherit;}
+  .bano-chip small{display:block;font-size:12px;font-weight:500;}
+  .bano-chip[aria-pressed="true"]{background:#1f3a5c;border-color:#1f3a5c;color:#fff;}
+  .bano-chip:focus-visible{outline:3px solid #c68a3b;outline-offset:2px;}
+  .bano-num-fila{display:flex;gap:8px;align-items:center;}
+  .bano-num-fila input{flex:1;min-width:0;text-align:center;font-size:20px !important;font-weight:700;}
+  .bano-grandes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;}
+  .bano-grandes .btn{min-height:64px;font-size:18px;font-weight:700;}
+  .bano-ancho{width:100%;min-height:56px;font-size:18px;font-weight:700;}
+  .bano-prod{font-size:22px;font-weight:800;line-height:1.2;}
+  .bano-dia{font-size:15px;font-weight:600;color:#3a3426;margin:2px 0 8px;}
+  .bano-tanque{height:26px;border:2px solid #3a3426;border-radius:6px;background:#fff;overflow:hidden;margin:4px 0;}
+  .bano-tanque > div{height:100%;background:#2f6f9f;}
+  .bano-dato{font-size:15px;line-height:1.4;margin:2px 0;}
+  .bano-dato b{font-family:'JetBrains Mono',monospace;}
+  .bano-cartel{font-size:15px;line-height:1.4;margin:8px 0;padding:10px 12px;border-radius:8px;border:2px solid #3a3426;background:#fff;}
+  .bano-reponer{background:#fbe3b0;border-color:#8f5f12;font-weight:700;font-size:17px;color:#3d2a05;}
+  .bano-vencido, .bano-dup{background:#f7e3df;border-color:var(--rojo-hacienda);color:#4a140b;}
+  .bano-falta{color:#8f5f12;font-weight:700;}
+  .bano-error{color:var(--rojo-hacienda);font-size:14px;font-weight:600;margin:6px 0;min-height:1px;}
+  .bano-sub{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);margin:14px 0 6px;}
+  .bano-linea{font-size:14px;line-height:1.35;padding:6px 8px;border-bottom:1px solid var(--linea);}
+  .bano-linea .bano-hora{font-family:'JetBrains Mono',monospace;font-weight:700;margin-right:6px;}
+  .bano-tramo{font-size:14px;line-height:1.35;padding:8px 10px;margin:0 0 6px;border-radius:8px;border:1px solid var(--linea);border-left:8px solid #8a8060;background:#fff;}
+  .bano-tramo.bano-ok{border-left-color:#2b5d1e;background:#eef4e6;}
+  .bano-tramo.bano-alto, .bano-tramo.bano-bajo{border-left-color:var(--rojo-hacienda);background:#f7e3df;}
+  .bano-tramo.bano-sin_conteo{border-left-color:#8a8060;background:#faf6ea;}
+  .bano-etq{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:10px;padding:1px 8px;margin-left:4px;background:#e6e0c8;color:#3a3426;}
+  .bano-ok .bano-etq{background:#cfe0bf;color:#1f3a14;}
+  .bano-alto .bano-etq, .bano-bajo .bano-etq{background:#e8b9b0;color:#5c1a0f;}
+  .bano-prod-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--linea);border-radius:8px;padding:8px 10px;margin:0 0 6px;}
   .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
 
   input[type=file]{display:none;}
@@ -728,6 +764,7 @@
 <!-- @completo:end -->
       <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
       <button class="btn btn-json" id="btn-insumos" style="display:none;">🧴 Insumos</button>
+      <button class="btn btn-json" id="btn-bano" style="display:none;">🛁 Baño</button>
 <!-- @completo:start -->
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
       <button class="btn btn-json" id="btn-guias" style="display:none;">📑 Movimientos DICOSE</button>
@@ -770,6 +807,7 @@
             <button class="btn btn-json" id="btn-stock">📊 Stock total</button>
             <button class="btn btn-json" id="btn-sanidad">🏥 Sanidad</button>
             <button class="btn btn-json" id="btn-insumos" style="display:none;">🧴 Insumos</button>
+            <button class="btn btn-json" id="btn-bano" style="display:none;">🛁 Baño</button>
             <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
             <button class="btn btn-json" id="btn-guias" style="display:none;">📑 Movimientos DICOSE</button>
             <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
@@ -1407,6 +1445,148 @@
     <div class="form-botones">
       <button class="btn btn-agregar" id="ins-guardar">Guardar</button>
       <button class="btn btn-secundario" id="ins-form-cancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div id="modal-bano" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>🛁 Baño</h3>
+    <button class="btn-cerrar-x" id="bano-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info" id="bano-subtitulo">Control del baño de aspersión.</p>
+    <div id="bano-aviso" class="ins-aviso" role="status" style="display:none;"></div>
+    <div id="bano-duplicados"></div>
+    <div id="bano-sin-ciclo" style="display:none;">
+      <h4 class="bano-h">Abrir ciclo nuevo</h4>
+      <p class="modal-info" id="bano-ultimo"></p>
+      <div class="form-row"><label id="bano-nc-prod-label">Producto</label>
+        <div class="bano-chips" id="bano-nc-productos" role="group" aria-labelledby="bano-nc-prod-label"></div>
+      </div>
+      <div class="form-row"><label for="bano-nc-agua">Agua cargada (litros)</label>
+        <div class="bano-chips" id="bano-nc-aguas" role="group" aria-label="Agua cargada">
+          <button type="button" class="bano-chip" data-bano-agua="500">500</button>
+          <button type="button" class="bano-chip" data-bano-agua="600">600</button>
+          <button type="button" class="bano-chip" data-bano-agua="700">700</button>
+          <button type="button" class="bano-chip" data-bano-agua="800">800</button>
+          <button type="button" class="bano-chip" data-bano-agua="900">900</button>
+        </div>
+        <input type="text" id="bano-nc-agua" inputmode="numeric" autocomplete="off" placeholder="Otro: escribí los litros">
+      </div>
+      <div class="form-row"><label for="bano-nc-ml">Producto puesto (ml)</label>
+        <input type="text" id="bano-nc-ml" inputmode="decimal" autocomplete="off" placeholder="ml de producto">
+        <p class="modal-info" id="bano-nc-sug" aria-live="polite"></p>
+      </div>
+      <div id="bano-nc-error" class="bano-error" role="alert"></div>
+      <button class="btn btn-agregar bano-ancho" id="bano-abrir">Abrir ciclo</button>
+    </div>
+    <div id="bano-en-marcha" style="display:none;">
+      <div id="bano-cab"></div>
+      <div id="bano-vencido" class="bano-cartel bano-vencido" role="alert" style="display:none;"></div>
+      <div id="bano-nivel"></div>
+      <div id="bano-reponer" class="bano-cartel bano-reponer" role="status" style="display:none;"></div>
+      <div class="bano-grandes">
+        <button class="btn btn-agregar" id="bano-tanda">+ Tanda</button>
+        <button class="btn btn-agregar" id="bano-reposicion">+ Reposición</button>
+        <button class="btn btn-secundario" id="bano-fin-dia">Fin del día</button>
+        <button class="btn btn-secundario" id="bano-cerrar-ciclo">Cerrar ciclo</button>
+      </div>
+      <div id="bano-hoy"></div>
+      <div id="bano-tramo"></div>
+      <div id="bano-resumen"></div>
+    </div>
+    <div id="bano-cola"></div>
+    <div class="form-botones">
+      <button class="btn btn-secundario" id="bano-productos">⚙ Productos</button>
+      <button class="btn btn-secundario" id="bano-actualizar">🔄 Actualizar</button>
+      <button class="btn btn-secundario" id="bano-cerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div id="modal-bano-form" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3 id="bano-f-titulo">🛁 Baño</h3>
+    <button class="btn-cerrar-x" id="bano-f-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info" id="bano-f-ayuda"></p>
+    <div id="bano-f-tanda">
+      <div class="form-row"><label id="bano-t-cat-label">Categoría</label>
+        <div class="bano-chips" id="bano-t-cats" role="group" aria-labelledby="bano-t-cat-label"></div>
+        <select id="bano-t-cat-otra" aria-label="Otra categoría"></select>
+      </div>
+      <div class="form-row"><label for="bano-t-dueno" id="bano-t-dueno-label">Dueño</label><select id="bano-t-dueno"></select></div>
+      <div class="form-row"><label for="bano-t-potrero">Potrero</label><select id="bano-t-potrero"></select></div>
+      <div class="form-row"><label for="bano-t-cant" id="bano-t-cant-label">Cantidad de animales</label>
+        <div class="bano-num-fila">
+          <button type="button" class="bano-chip" data-bano-delta="-10" aria-label="Restar 10">−10</button>
+          <input type="text" id="bano-t-cant" inputmode="numeric" autocomplete="off" placeholder="sin contar">
+          <button type="button" class="bano-chip" data-bano-delta="1" aria-label="Sumar 1">+1</button>
+          <button type="button" class="bano-chip" data-bano-delta="10" aria-label="Sumar 10">+10</button>
+        </div>
+      </div>
+      <div class="form-row"><label id="bano-t-baston-label">¿La vas a pasar por el bastón?</label>
+        <div class="bano-chips" role="group" aria-labelledby="bano-t-baston-label">
+          <button type="button" class="bano-chip" id="bano-t-baston-si" aria-pressed="false">Sí</button>
+          <button type="button" class="bano-chip" id="bano-t-baston-no" aria-pressed="false">No</button>
+        </div>
+        <p class="modal-info" id="bano-t-baston-ayuda"></p>
+      </div>
+    </div>
+    <div id="bano-f-nivel-sec">
+      <div class="form-row"><label for="bano-f-nivel" id="bano-f-nivel-label">Lo que marca la regla (litros)</label>
+        <div class="bano-chips" id="bano-f-reglas" role="group" aria-label="Regla">
+          <button type="button" class="bano-chip" data-bano-regla="100">100</button>
+          <button type="button" class="bano-chip" data-bano-regla="200">200</button>
+          <button type="button" class="bano-chip" data-bano-regla="300">300</button>
+          <button type="button" class="bano-chip" data-bano-regla="400">400</button>
+          <button type="button" class="bano-chip" data-bano-regla="500">500</button>
+          <button type="button" class="bano-chip" data-bano-regla="600">600</button>
+          <button type="button" class="bano-chip" data-bano-regla="700">700</button>
+          <button type="button" class="bano-chip" data-bano-regla="800">800</button>
+          <button type="button" class="bano-chip" data-bano-regla="900">900</button>
+        </div>
+        <input type="text" id="bano-f-nivel" inputmode="numeric" autocomplete="off" placeholder="Otro: escribí los litros">
+      </div>
+    </div>
+    <div id="bano-f-repos">
+      <div class="form-row"><label for="bano-r-agua">Agua que agregás (litros)</label>
+        <input type="text" id="bano-r-agua" inputmode="numeric" autocomplete="off">
+        <p class="modal-info" id="bano-r-agua-sug" aria-live="polite"></p>
+      </div>
+      <div class="form-row"><label for="bano-r-ml">Producto que agregás (ml)</label>
+        <input type="text" id="bano-r-ml" inputmode="decimal" autocomplete="off">
+        <p class="modal-info" id="bano-r-ml-sug" aria-live="polite"></p>
+      </div>
+    </div>
+    <div id="bano-f-preview" aria-live="polite"></div>
+    <div id="bano-f-error" class="bano-error" role="alert"></div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="bano-f-guardar">Guardar</button>
+      <button class="btn btn-secundario" id="bano-f-cancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div id="modal-bano-productos" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>⚙ Productos del baño</h3>
+    <button class="btn-cerrar-x" id="bano-p-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Dosis de cada producto en ml cada 100 litros de agua, y cuánto dura la mezcla. Guardar un cambio necesita señal.</p>
+    <div id="bano-p-aviso" class="ins-aviso" role="status" style="display:none;"></div>
+    <div id="bano-p-lista"></div>
+    <div id="bano-p-form" style="display:none;">
+      <div class="form-row"><label for="bano-p-producto">Producto (del catálogo)</label>
+        <input type="text" id="bano-p-producto" list="bano-p-catalogo" autocomplete="off" placeholder="Escribí para buscar">
+        <datalist id="bano-p-catalogo"></datalist>
+      </div>
+      <div class="form-row"><label for="bano-p-carga">ml cada 100 L al cargar</label><input type="text" id="bano-p-carga" inputmode="decimal" autocomplete="off" placeholder="vacío = falta la dosis"></div>
+      <div class="form-row"><label for="bano-p-repos">ml cada 100 L al reponer</label><input type="text" id="bano-p-repos" inputmode="decimal" autocomplete="off" placeholder="vacío = falta la dosis"></div>
+      <div class="form-row"><label for="bano-p-horas">Dura (horas)</label><input type="text" id="bano-p-horas" inputmode="numeric" autocomplete="off" placeholder="Ej: 168 = 7 días"></div>
+      <div id="bano-p-error" class="bano-error" role="alert"></div>
+      <div class="form-botones">
+        <button class="btn btn-agregar" id="bano-p-guardar">Guardar producto</button>
+        <button class="btn btn-secundario" id="bano-p-cancelar-form">Cancelar</button>
+      </div>
+    </div>
+    <div class="form-botones">
+      <button class="btn btn-agregar" id="bano-p-nuevo">+ Agregar producto</button>
+      <button class="btn btn-secundario" id="bano-p-cerrar">Cerrar</button>
     </div>
   </div>
 </div>
@@ -3827,6 +4007,7 @@ async function sincronizar(mostrarToast){
   actualizarEstadoSync('sincronizando');
   verificarClaveGuardada(); // Fase 4: una vez por apertura, no espera ni frena la sincronización
   if(CONFIG.insumos) insumosAlSincronizar(); // 3/11/2026: cola y stock de Insumos; en segundo plano, no frena ni rompe la sincronización
+  if(CONFIG.bano) banoAlSincronizar(); // 4/11/2026: cola del Baño de aspersión; en segundo plano, no frena ni rompe la sincronización
   try{
     // Antes de que el forEach de abajo pise ultimaSincronizacion -- si es
     // null, esta es la primera sincronización de este dispositivo (recién
@@ -6703,6 +6884,9 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['pesadas-cerrar-x', 'pesadas-cerrar'],
   ['insumos-cerrar-x', 'insumos-cerrar'],
   ['insumos-form-cerrar-x', 'ins-form-cancelar'],
+  ['bano-cerrar-x', 'bano-cerrar'],
+  ['bano-f-cerrar-x', 'bano-f-cancelar'],
+  ['bano-p-cerrar-x', 'bano-p-cerrar'],
 ].forEach(([xId, targetId])=>{
   const xBtn = document.getElementById(xId);
   if(xBtn) xBtn.addEventListener('click', ()=> document.getElementById(targetId).click());
@@ -11956,6 +12140,931 @@ if(INSUMOS_ACTIVO){
   });
   window.addEventListener('online', ()=>{ if(insAbierta()) insRender(); });
   window.addEventListener('offline', ()=>{ if(insAbierta()) insRender(); });
+}
+
+/* ======================= BAÑO DE ASPERSIÓN (control del baño) =======================
+   4/11/2026, a pedido de Pedro. Solo donde CONFIG.bano es true (La Vuelta y María Laura); Pone Chico no lo tiene: el botón
+   queda oculto y no se hace ni una consulta. Ver CLAUDE.md "Baño de aspersión".
+   Sistema CERRADO, tanque de 900 L con una regla que marca cada 100 L, un producto por ciclo. Un ciclo se abre con agua y
+   producto; pasan tandas de animales; cuando gastó 300–400 L se repone (regla + agua + producto); "Fin del día" anota la
+   regla al terminar el día; "Cerrar ciclo" anota la regla final (lo que queda se tira). La hora SIEMPRE es la del equipo
+   al guardar (no se pide).
+   Supabase (backend hecho aparte, no se toca desde acá): `bano_config` (dosis por producto), `bano_ciclos` y
+   `bano_lecturas` (solo agregar: cada fila lleva su `uid`; un 23505 = ya llegó), RPC `bano_estado_app()`,
+   `bano_avisos_app()` y `bano_config_guardar(...)`.
+   Nada de esto toca `estado` ni `eventos_sync`: vive en localStorage[BANO_KEY] = {config, catalogo, ciclo, cola, servidor,
+   ultimo, cerrados}, que se lee y escribe fresco siempre (PC/móvil/Campo del mismo campo comparten origen). No va al Backup
+   JSON ni a Verificar stock, y "Restablecer datos de fábrica" no lo borra (igual que Insumos).
+   Cola: cada acción se guarda en el equipo ANTES de mandarse y sale de a una, en orden (el ciclo antes que sus lecturas).
+   La tanda que NO pasa por el bastón crea además su tratamiento en Sanidad por la cola de siempre (guardarSanidadCarga).
+   Los tramos (litros por animal) se calculan acá, igual que la vista del servidor, para que anden sin señal. */
+const BANO_ACTIVO = !!CONFIG.bano;
+const BANO_KEY = ESTABLECIMIENTO + '_bano_v1';
+const BANO_L_ESTIMADO = 4;   // litros por animal para estimar el gasto entre dos lecturas de la regla (marcado "estimado")
+const BANO_TIPOS_NIVEL = { reposicion: true, fin_dia: true, cierre: true };
+/* El bastón crea el tratamiento en Sanidad solo en La Vuelta (sanidad_puente.py del Lector XRS2; la misma razón por la que
+   solo La Vuelta tiene completarCsvBaston): ahí la tanda viene con "Sí" por defecto; en María Laura, con "No". */
+const BANO_BASTON_DEFECTO = !!CONFIG.completarCsvBaston;
+const BANO_CATS_BASE = ['Vacas', 'Terneros', 'Terneras', 'Vaquillonas 1-2 años', 'Vaquillonas 2-3 años', 'Novillos 2-3 años', 'Toros'];
+const BANO_CATALOGO_VIGENCIA_MS = 12 * 60 * 60 * 1000;
+let _banoEnviando = false;
+let _banoUltimoError = null;
+let _banoFicha = 0;
+let _banoNc = { producto: null, mlEditado: false };
+let _banoForm = null;        // { tipo, cat, baston, aguaEditada, mlEditado }
+let _banoProdEditando = null;
+
+function banoLeer(){
+  let st = null;
+  try{ st = JSON.parse(localStorage.getItem(BANO_KEY) || 'null'); }catch(e){ st = null; }
+  if(!st || typeof st !== 'object' || Array.isArray(st)) st = {};
+  if(!Array.isArray(st.cola)) st.cola = [];
+  if(!st.config || typeof st.config !== 'object' || !Array.isArray(st.config.filas)) st.config = { filas: [], hora: null };
+  if(!st.catalogo || typeof st.catalogo !== 'object' || !Array.isArray(st.catalogo.filas)) st.catalogo = { filas: [], hora: null };
+  if(!st.servidor || typeof st.servidor !== 'object') st.servidor = { estado: [], avisos: [], hora: null };
+  if(!Array.isArray(st.servidor.estado)) st.servidor.estado = [];
+  if(!Array.isArray(st.servidor.avisos)) st.servidor.avisos = [];
+  if(!st.ciclo || typeof st.ciclo !== 'object' || !st.ciclo.ciclo || !Array.isArray(st.ciclo.lecturas)) st.ciclo = null;
+  if(!Array.isArray(st.cerrados)) st.cerrados = [];
+  return st;
+}
+function banoGuardar(st){
+  try{ localStorage.setItem(BANO_KEY, JSON.stringify(st)); return true; }catch(e){ return false; }
+}
+function banoFmt(n, dec){
+  const x = Number(n);
+  if(n == null || n === '' || !isFinite(x)) return '—';
+  const d = dec == null ? 0 : dec;
+  const partes = Math.abs(x).toFixed(d).split('.');
+  const ent = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const neg = x < 0 && Number(Math.abs(x).toFixed(d)) !== 0;
+  return (neg ? '−' : '') + ent + (partes[1] ? ',' + partes[1] : '');
+}
+/* L por animal: dos decimales, sin el cero de más (5,0 / 4,17). */
+function banoFmtLpa(n){ return banoFmt(n, 2).replace(/(,\d)0$/, '$1'); }
+/* Dosis ml cada 100 L: hasta 3 decimales, sin ceros de más (83,333 / 100). */
+function banoFmtDosis(n){ return banoFmt(n, 3).replace(/,?0+$/, ''); }
+function banoHora(iso){
+  const d = new Date(iso);
+  if(!iso || isNaN(d.getTime())) return '';
+  const dos = x => String(x).padStart(2, '0');
+  return dos(d.getHours()) + ':' + dos(d.getMinutes());
+}
+function banoDia(iso){
+  const d = new Date(iso);
+  if(!iso || isNaN(d.getTime())) return '';
+  const dos = x => String(x).padStart(2, '0');
+  return d.getFullYear() + '-' + dos(d.getMonth() + 1) + '-' + dos(d.getDate());
+}
+function banoDuraTexto(horas){
+  const h = Number(horas);
+  if(!(h > 0)) return 'sin duración';
+  if(h % 24 === 0) return 'dura ' + (h / 24) + (h === 24 ? ' día' : ' días') + ' (' + h + ' h)';
+  return 'dura ' + banoFmt(h, 0) + ' h';
+}
+function banoNumONull(v){ return (v == null || v === '' || !isFinite(Number(v))) ? null : Number(v); }
+function banoFilaConfig(producto, st){
+  return ((st || banoLeer()).config.filas || []).find(f => f && f.producto === producto) || null;
+}
+/* Parámetros de un producto, con los valores de siempre si falta algo (tanque 900 L, reponer a los 300 L, 3–5 L por animal). */
+function banoParams(producto, st){
+  const f = banoFilaConfig(producto, st) || {};
+  const n = (v, def) => { const x = banoNumONull(v); return x == null ? def : x; };
+  return {
+    producto, conocido: !!f.producto,
+    capacidad: n(f.capacidad_l, 900), umbral: n(f.umbral_reponer_l, 300),
+    min: n(f.l_animal_min, 3), max: n(f.l_animal_max, 5), vida: banoNumONull(f.vida_horas),
+    carga: banoNumONull(f.ml_100l_carga), repos: banoNumONull(f.ml_100l_reposicion)
+  };
+}
+function banoSugerido(litros, mlPor100){
+  if(mlPor100 == null || !(Number(litros) > 0)) return null;
+  return Math.round(Number(litros) * Number(mlPor100) / 100);
+}
+function banoCant(l){
+  const c = banoNumONull(l && l.cantidad_animales);
+  return c != null && c > 0 ? c : null;
+}
+function banoOrdenar(lecturas){
+  return (lecturas || []).map((l, i) => ({ l, i })).sort((a, b) => {
+    const ta = Date.parse(a.l.hora), tb = Date.parse(b.l.hora);
+    if(isFinite(ta) && isFinite(tb) && ta !== tb) return ta - tb;
+    const ia = banoNumONull(a.l.id), ib = banoNumONull(b.l.id);
+    if(ia != null && ib != null && ia !== ib) return ia - ib;
+    return a.i - b.i;
+  }).map(x => x.l);
+}
+/* Tramos, igual que la vista del servidor (bano_resumen_ciclo): un tramo va desde la carga inicial, una reposición o un
+   fin del día hasta la siguiente lectura de la regla (reposición, fin del día o cierre). Nivel al empezar = agua inicial
+   (primer tramo), regla + agua agregada de la reposición anterior, o la regla del fin del día anterior. Gastó = nivel al
+   empezar − regla al terminar. L por animal solo si TODAS las tandas del tramo tienen cantidad y suman más de 0; si no,
+   "sin conteo" (sin alarma). Estado: menos que el mínimo "bajo", más que el máximo "alto", si no "ok". */
+function banoCalcular(ciclo, lecturas, p){
+  const ls = banoOrdenar(lecturas);
+  const aguaIni = Number(ciclo && ciclo.agua_inicial_l) || 0;
+  let nivelIni = aguaIni, nivelTrasCarga = aguaIni, nivelActual = aguaIni;
+  let horaUltimaLectura = ciclo && ciclo.inicio, horaUltimaCarga = ciclo && ciclo.inicio;
+  let tandas = [];
+  const tramos = [];
+  let productoTotal = Number(ciclo && ciclo.producto_inicial_ml) || 0;
+  let animales = 0, tandasTotal = 0, tandasSinConteo = 0;
+  ls.forEach(l => {
+    if(l.tipo === 'tanda'){
+      tandas.push(l); tandasTotal++;
+      const c = banoCant(l);
+      if(c == null) tandasSinConteo++; else animales += c;
+      return;
+    }
+    if(!BANO_TIPOS_NIVEL[l.tipo]) return;
+    const nivel = Number(l.nivel_l) || 0;
+    const litros = nivelIni - nivel;
+    const conts = tandas.map(banoCant);
+    const todas = conts.length > 0 && conts.every(c => c != null);
+    const anim = conts.reduce((s, c) => s + (c || 0), 0);
+    const lpa = (todas && anim > 0) ? litros / anim : null;
+    const est = lpa == null ? 'sin_conteo' : (lpa < p.min ? 'bajo' : (lpa > p.max ? 'alto' : 'ok'));
+    tramos.push({ inicio: nivelIni, fin: nivel, litros, animales: anim, tandas: conts.length, sinConteo: conts.filter(c => c == null).length, lpa, estado: est, tipo: l.tipo, hora: l.hora });
+    if(l.tipo === 'reposicion'){
+      nivelIni = nivel + (Number(l.agua_agregada_l) || 0);
+      nivelTrasCarga = nivelIni;
+      horaUltimaCarga = l.hora;
+      productoTotal += Number(l.producto_ml) || 0;
+    }else{
+      nivelIni = nivel;
+    }
+    nivelActual = nivelIni;
+    horaUltimaLectura = l.hora;
+    tandas = [];
+  });
+  const contsCurso = tandas.map(banoCant);
+  const animCurso = contsCurso.reduce((s, c) => s + (c || 0), 0);
+  const gastoReal = Math.max(0, nivelTrasCarga - nivelActual);
+  const gastoEstimado = animCurso * BANO_L_ESTIMADO;
+  const gasto = gastoReal + gastoEstimado;
+  return {
+    tramos, productoTotal, animales, tandasTotal, tandasSinConteo,
+    aguaGastada: tramos.reduce((s, t) => s + t.litros, 0),
+    nivelActual, nivelTrasCarga, nivelEstimado: Math.max(0, nivelActual - gastoEstimado),
+    horaUltimaLectura, horaUltimaCarga,
+    tandasEnCurso: tandas.length, animalesEnCurso: animCurso, sinContarEnCurso: contsCurso.filter(c => c == null).length,
+    gastoReal, gastoEstimado, gasto, estimado: gastoEstimado > 0,
+    tocaReponer: gasto >= p.umbral,
+    cerrado: ls.some(l => l.tipo === 'cierre')
+  };
+}
+function banoVida(ciclo, p){
+  const ini = Date.parse(ciclo && ciclo.inicio);
+  if(!(p.vida > 0) || !isFinite(ini)) return null;
+  const vence = ini + p.vida * 3600 * 1000;
+  const horas = Math.max(0, (Date.now() - ini) / 3600000);
+  return { dia: Math.floor(horas / 24) + 1, dias: Math.max(1, Math.ceil(p.vida / 24)), vence: new Date(vence).toISOString(), vencido: Date.now() > vence };
+}
+function banoValorMl(producto, st){
+  const f = ((st || banoLeer()).catalogo.filas || []).find(x => x && x.producto === producto);
+  let v = f ? banoNumONull(f.valor_dosis_ml) : null;
+  if(v == null && typeof datosProducto === 'function'){ const d = datosProducto(producto); v = d ? banoNumONull(d.valor_dosis_ml) : null; }
+  return v;
+}
+function banoTextoTramo(t){
+  const base = 'Gastó ' + banoFmt(t.litros) + ' L';
+  if(t.lpa == null){
+    const motivo = !t.tandas ? 'sin tandas' : (t.sinConteo ? (t.sinConteo === 1 ? '1 tanda sin contar' : t.sinConteo + ' tandas sin contar') : 'sin animales');
+    return base + ' · ' + motivo;
+  }
+  return base + ' · ' + banoFmt(t.animales) + ' animales · ' + banoFmtLpa(t.lpa) + ' L por animal';
+}
+const BANO_ETIQUETA = { ok: 'ok', alto: 'alto', bajo: 'bajo', sin_conteo: 'sin conteo' };
+function banoTramoHTML(t, titulo){
+  return '<div class="bano-tramo bano-' + t.estado + '" data-estado="' + t.estado + '">'
+    + (titulo ? '<b>' + esc(titulo) + ':</b> ' : '') + esc(banoTextoTramo(t))
+    + '<span class="bano-etq">' + esc(BANO_ETIQUETA[t.estado]) + '</span></div>';
+}
+function banoTextoLectura(l, producto){
+  if(l.tipo === 'tanda'){
+    const c = banoCant(l);
+    return 'Tanda: ' + (c == null ? 'sin contar' : banoFmt(c)) + ' ' + (l.categoria || '') + (l.dueno ? ' de ' + l.dueno : '')
+      + ' · pot. ' + (l.potrero || '—') + (l.con_baston === false ? ' · sin bastón (cargada en Sanidad)' : (l.con_baston ? ' · por el bastón' : ''));
+  }
+  if(l.tipo === 'reposicion') return 'Reposición: regla ' + banoFmt(l.nivel_l) + ' L, +' + banoFmt(l.agua_agregada_l) + ' L, +' + banoFmt(l.producto_ml) + ' ml';
+  if(l.tipo === 'fin_dia') return 'Fin del día: regla ' + banoFmt(l.nivel_l) + ' L';
+  if(l.tipo === 'cierre') return 'Cierre: regla ' + banoFmt(l.nivel_l) + ' L';
+  return String(l.tipo || '');
+}
+function banoNuevaLectura(ciclo, tipo, datos){
+  const fila = {
+    uid: insNuevoUid(), ciclo_uid: ciclo.uid, establecimiento: ESTABLECIMIENTO, hora: new Date().toISOString(), tipo,
+    nivel_l: null, agua_agregada_l: null, producto_ml: null, cantidad_animales: null, categoria: null, potrero: null,
+    dueno: null, nota: null, dispositivo: idDispositivo(), autor: usuarioActual() || null, con_baston: null, sanidad_id: null
+  };
+  return Object.assign(fila, datos || {});
+}
+
+/* ---- cola ---- */
+function banoFilaParaEnviar(it){
+  const f = it.fila || {};
+  if(it.clase === 'ciclo'){
+    return { uid: f.uid, establecimiento: f.establecimiento, producto: f.producto, inicio: f.inicio, agua_inicial_l: f.agua_inicial_l,
+      producto_inicial_ml: f.producto_inicial_ml, nota: f.nota || null, dispositivo: f.dispositivo, autor: f.autor || null };
+  }
+  return { uid: f.uid, ciclo_uid: f.ciclo_uid, establecimiento: f.establecimiento, hora: f.hora, tipo: f.tipo,
+    nivel_l: f.nivel_l, agua_agregada_l: f.agua_agregada_l, producto_ml: f.producto_ml, cantidad_animales: f.cantidad_animales,
+    categoria: f.categoria, potrero: f.potrero, dueno: f.dueno, nota: f.nota || null, dispositivo: f.dispositivo,
+    autor: f.autor || null, con_baston: f.tipo === 'tanda' ? !!f.con_baston : null, sanidad_id: f.sanidad_id || null };
+}
+/* Manda lo pendiente de a uno, en orden. El ciclo siempre va antes que sus lecturas (la base lo exige); si el ciclo quedó
+   rechazado, sus lecturas esperan. Devuelve {enviados, pendientes, error}. */
+async function banoVaciarCola(){
+  const vacio = { enviados: 0, pendientes: banoLeer().cola.length, error: null };
+  if(!BANO_ACTIVO || _banoEnviando) return vacio;
+  const client = clienteSupabase();
+  if(!client || typeof client.from !== 'function' || !navigator.onLine) return vacio;
+  _banoEnviando = true;
+  let enviados = 0, error = null;
+  try{
+    const uids = banoLeer().cola.map(it => it.uid);
+    for(const uid of uids){
+      const st0 = banoLeer();
+      const it = st0.cola.find(x => x.uid === uid);
+      if(!it) continue;   // otra pestaña ya la mandó
+      if(it.clase === 'lectura' && st0.cola.some(x => x.clase === 'ciclo' && x.uid === it.ciclo_uid)) continue;   // su ciclo todavía no subió
+      let res;
+      try{ res = await client.from(it.clase === 'ciclo' ? 'bano_ciclos' : 'bano_lecturas').insert(banoFilaParaEnviar(it)); }
+      catch(e){ res = { error: { message: String((e && e.message) || e), code: '' } }; }
+      const err = res && res.error;
+      if(err && String(err.code) !== '23505'){
+        const st = banoLeer();
+        const x = st.cola.find(y => y.uid === uid);
+        const pasajero = insEsPasajero(res, err);
+        if(x){ x.error = String(err.message || err.code || 'error').slice(0, 160); x.permanente = !pasajero; x.intentos = (x.intentos || 0) + 1; banoGuardar(st); }
+        error = x && x.error;
+        if(pasajero) break;   // sin señal o servidor caído: se sigue en la próxima
+        continue;             // la base lo rechazó: no frena a las demás
+      }
+      const st = banoLeer();
+      st.cola = st.cola.filter(y => y.uid !== uid);
+      banoGuardar(st);
+      enviados++;
+    }
+  }finally{
+    _banoEnviando = false;
+  }
+  return { enviados, pendientes: banoLeer().cola.length, error };
+}
+
+/* ---- lectura del servidor (con copia para cuando no hay señal) ---- */
+async function banoRefrescarCatalogo(forzar){
+  const client = clienteSupabase();
+  if(!client || typeof client.from !== 'function' || !navigator.onLine) return false;
+  const actual = banoLeer();
+  const hora = Date.parse(actual.catalogo.hora);
+  if(!forzar && hora && Date.now() - hora < BANO_CATALOGO_VIGENCIA_MS && actual.catalogo.filas.length) return true;
+  try{
+    const res = await client.from('productos_catalogo').select('producto,tipo,valor_dosis_ml').order('producto', { ascending: true }).limit(1000);
+    if(!res || res.error || !Array.isArray(res.data)) return false;
+    const filas = limpiarTextoRemoto(res.data).filter(f => f && f.producto);
+    if(!filas.length) return false;
+    const st = banoLeer();
+    st.catalogo = { filas, hora: new Date().toISOString() };
+    banoGuardar(st);
+    return true;
+  }catch(e){ return false; }
+}
+function banoMensajeError(res, e){
+  const err = (res && res.error) || e || {};
+  return String(err.message || err.code || 'sin respuesta').slice(0, 120);
+}
+/* Trae dosis, estado de los ciclos abiertos y avisos; si hay un ciclo abierto de este campo, trae el ciclo y sus lecturas
+   y los junta con lo que hay en el equipo (sin duplicar por uid). Así otro celular ve el mismo ciclo. */
+async function banoRefrescarServidor(){
+  const client = clienteSupabase();
+  if(!client || typeof client.from !== 'function' || typeof client.rpc !== 'function' || !navigator.onLine) return false;
+  let error = null;
+  try{
+    const rc = await client.from('bano_config').select('producto,ml_100l_carga,ml_100l_reposicion,l_animal_min,l_animal_max,vida_horas,capacidad_l,umbral_reponer_l').order('producto', { ascending: true });
+    if(rc && !rc.error && Array.isArray(rc.data)){
+      const st = banoLeer();
+      st.config = { filas: limpiarTextoRemoto(rc.data).filter(f => f && f.producto), hora: new Date().toISOString() };
+      banoGuardar(st);
+    }else error = banoMensajeError(rc);
+    const re = await client.rpc('bano_estado_app');
+    const ra = await client.rpc('bano_avisos_app');
+    let estadoOk = false, abierto = null;
+    {
+      const st = banoLeer();
+      if(re && !re.error && Array.isArray(re.data)){
+        st.servidor.estado = limpiarTextoRemoto(re.data).filter(f => f && f.establecimiento === ESTABLECIMIENTO);
+        estadoOk = true;
+        abierto = st.servidor.estado.filter(f => !f.cerrado && f.ciclo_uid && st.cerrados.indexOf(f.ciclo_uid) < 0)
+          .sort((a, b) => String(b.inicio || '').localeCompare(String(a.inicio || '')))[0] || null;
+      }else error = error || banoMensajeError(re);
+      if(ra && !ra.error && Array.isArray(ra.data)) st.servidor.avisos = limpiarTextoRemoto(ra.data).filter(f => f && f.establecimiento === ESTABLECIMIENTO);
+      else error = error || banoMensajeError(ra);
+      st.servidor.hora = new Date().toISOString();
+      banoGuardar(st);
+    }
+    if(estadoOk){
+      const st = banoLeer();
+      const local = st.ciclo;
+      const localPendiente = local && st.cola.some(x => x.uid === local.ciclo.uid || x.ciclo_uid === local.ciclo.uid);
+      if(abierto && !(local && local.ciclo.uid !== abierto.ciclo_uid && localPendiente)){
+        const rcic = await client.from('bano_ciclos').select('*').eq('uid', abierto.ciclo_uid).limit(1);
+        const rlec = await client.from('bano_lecturas').select('*').eq('ciclo_uid', abierto.ciclo_uid).order('hora', { ascending: true }).order('id', { ascending: true }).limit(1000);
+        if(rcic && !rcic.error && Array.isArray(rcic.data) && rcic.data.length && rlec && !rlec.error && Array.isArray(rlec.data)){
+          const st2 = banoLeer();
+          const fila = limpiarTextoRemoto(rcic.data[0]);
+          const vistos = new Set();
+          const lecturas = [];
+          limpiarTextoRemoto(rlec.data).forEach(l => { if(l && l.uid && !vistos.has(l.uid)){ vistos.add(l.uid); lecturas.push(l); } });
+          if(st2.ciclo && st2.ciclo.ciclo.uid === fila.uid){
+            st2.ciclo.lecturas.forEach(l => { if(l && l.uid && !vistos.has(l.uid)){ vistos.add(l.uid); lecturas.push(l); } });
+          }
+          st2.ciclo = { ciclo: fila, lecturas: banoOrdenar(lecturas) };
+          banoGuardar(st2);
+        }else error = error || banoMensajeError(rcic && rcic.error ? rcic : rlec);
+      }else if(!abierto && local && !localPendiente){
+        // el servidor no lo tiene abierto y no queda nada por mandar: lo cerró otro equipo
+        st.ultimo = { producto: local.ciclo.producto, inicio: local.ciclo.inicio, cierre: null, otroEquipo: true };
+        st.ciclo = null;
+        banoGuardar(st);
+      }
+    }
+  }catch(e){
+    error = banoMensajeError(null, e);
+  }
+  _banoUltimoError = error;
+  return !error;
+}
+
+/* ---- pantalla principal ---- */
+function banoAbierta(){ const m = document.getElementById('modal-bano'); return !!m && m.style.display !== 'none'; }
+function banoEnCola(st, uid){ return st.cola.some(x => x.uid === uid); }
+function banoRender(){
+  const modal = document.getElementById('modal-bano');
+  if(!modal) return;
+  const st = banoLeer();
+  const sinSenal = !navigator.onLine || !clienteSupabase();
+  const hora = st.servidor.hora && insHoraCorta(st.servidor.hora);
+  const aviso = document.getElementById('bano-aviso');
+  let texto = '', clase = 'ins-aviso';
+  if(sinSenal){
+    texto = hora ? 'Sin señal — datos del ' + hora + '. Lo que cargues queda en cola.' : 'Sin señal — lo que cargues queda en cola y se manda solo.';
+    clase += ' ins-offline';
+  }else if(_banoUltimoError){
+    texto = 'No se pudo actualizar (' + _banoUltimoError + ')' + (hora ? ' — datos del ' + hora : '');
+    clase += ' ins-error';
+  }else if(hora){
+    texto = 'Actualizado ' + hora;
+  }
+  aviso.className = clase;
+  aviso.textContent = texto;
+  aviso.style.display = texto ? '' : 'none';
+  document.getElementById('bano-subtitulo').textContent = CONFIG.nombre + ' · baño de aspersión (tanque cerrado)';
+  // posibles dobles cargas en Sanidad (no se borra nada solo)
+  document.getElementById('bano-duplicados').innerHTML = st.servidor.avisos.map(a =>
+    '<div class="bano-cartel bano-dup" data-tanda="' + esc(a.tanda_uid || '') + '">Posible doble carga en Sanidad: la tanda de '
+    + esc(a.categoria || '—') + ' pot. ' + esc(a.potrero || '—') + ' del ' + esc(insFechaCorta(a.fecha).slice(0, 5))
+    + ' se cargó sin bastón y el bastón también trajo ' + esc(a.producto || 'el producto') + ' ese día. Revisá en Sanidad cuál dejar.</div>'
+  ).join('');
+  const hay = !!st.ciclo;
+  document.getElementById('bano-sin-ciclo').style.display = hay ? 'none' : '';
+  document.getElementById('bano-en-marcha').style.display = hay ? '' : 'none';
+  if(hay) banoRenderEnMarcha(st); else banoRenderSinCiclo(st);
+  banoRenderCola(st);
+}
+function banoRenderSinCiclo(st){
+  const u = st.ultimo;
+  document.getElementById('bano-ultimo').textContent = u
+    ? 'Último ciclo: ' + u.producto + (u.cierre ? ', cerrado el ' + insHoraCorta(u.cierre) : (u.otroEquipo ? ', cerrado en otro equipo' : '')) + '.'
+    : 'No hay un ciclo abierto.';
+  const filas = st.config.filas;
+  if(_banoNc.producto && !filas.some(f => f.producto === _banoNc.producto)) _banoNc.producto = null;
+  if(!_banoNc.producto && filas.length === 1) _banoNc.producto = filas[0].producto;
+  document.getElementById('bano-nc-productos').innerHTML = filas.length
+    ? filas.map(f => '<button type="button" class="bano-chip" data-bano-producto="' + esc(f.producto) + '" aria-pressed="' + (f.producto === _banoNc.producto) + '">'
+      + esc(f.producto) + '<small>' + esc(banoDuraTexto(f.vida_horas)) + '</small></button>').join('')
+    : '<p class="modal-info">Todavía no se bajó la lista de productos del baño. Abrí esta pantalla con señal una vez, o agregá uno en ⚙ Productos.</p>';
+  banoNcSugerir();
+}
+function banoNcSugerir(){
+  const sug = document.getElementById('bano-nc-sug');
+  const agua = insNumero(document.getElementById('bano-nc-agua').value);
+  document.querySelectorAll('#bano-nc-aguas [data-bano-agua]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-bano-agua')) === agua)));
+  if(!_banoNc.producto){ sug.className = 'modal-info'; sug.textContent = 'Elegí el producto.'; return; }
+  const p = banoParams(_banoNc.producto);
+  if(p.carga == null){
+    sug.className = 'modal-info bano-falta';
+    sug.textContent = _banoNc.producto + ': falta la dosis. Escribí cuánto pusiste (la dosis se carga en ⚙ Productos).';
+    return;
+  }
+  const s = banoSugerido(agua, p.carga);
+  sug.className = 'modal-info';
+  sug.textContent = s == null ? 'Dosis: ' + banoFmtDosis(p.carga) + ' ml cada 100 L. Elegí el agua para ver la cuenta.'
+    : 'Sugerido: ' + banoFmt(s) + ' ml (' + banoFmtDosis(p.carga) + ' ml cada 100 L).';
+  if(s != null && !_banoNc.mlEditado) document.getElementById('bano-nc-ml').value = String(s);
+}
+function banoResetNuevo(){
+  _banoNc = { producto: null, mlEditado: false };
+  document.getElementById('bano-nc-agua').value = '';
+  document.getElementById('bano-nc-ml').value = '';
+  document.getElementById('bano-nc-error').textContent = '';
+}
+function banoRenderEnMarcha(st){
+  const c = st.ciclo.ciclo;
+  const p = banoParams(c.producto, st);
+  const r = banoCalcular(c, st.ciclo.lecturas, p);
+  const v = banoVida(c, p);
+  document.getElementById('bano-cab').innerHTML = '<div class="bano-prod">' + esc(c.producto) + '</div>'
+    + '<div class="bano-dia">' + (v ? 'Día ' + v.dia + ' de ' + v.dias + ' · vence ' + esc(insHoraCorta(v.vence)) : 'Abierto el ' + esc(insHoraCorta(c.inicio))) + '</div>';
+  const venc = document.getElementById('bano-vencido');
+  if(v && v.vencido){
+    venc.textContent = 'Venció el ' + insHoraCorta(v.vence) + '. Cerrá el ciclo: lo que queda se tira.';
+    venc.style.display = '';
+  }else venc.style.display = 'none';
+  const pct = Math.max(0, Math.min(100, Math.round(r.nivelEstimado / p.capacidad * 100)));
+  let nivel = '<div class="bano-dato">Nivel estimado: <b>' + banoFmt(r.nivelEstimado) + ' L</b> de ' + banoFmt(p.capacidad) + ' L</div>'
+    + '<div class="bano-tanque" role="img" aria-label="Tanque al ' + pct + ' %"><div style="width:' + pct + '%;"></div></div>'
+    + '<div class="bano-dato">Gastó desde la última carga: <b>' + banoFmt(r.gasto) + ' L</b> (reponer a los ' + banoFmt(p.umbral) + ' L)'
+    + (r.estimado ? ' · <span class="bano-falta">estimado</span>: incluye ' + banoFmt(r.animalesEnCurso) + ' animales × ' + BANO_L_ESTIMADO + ' L' : '') + '</div>';
+  if(r.sinContarEnCurso) nivel += '<div class="bano-dato">' + (r.sinContarEnCurso === 1 ? '1 tanda sin contar' : r.sinContarEnCurso + ' tandas sin contar') + ' desde la última regla: no entran en la cuenta.</div>';
+  document.getElementById('bano-nivel').innerHTML = nivel;
+  const rep = document.getElementById('bano-reponer');
+  if(r.tocaReponer){
+    const agua = Math.max(0, Math.round((p.capacidad - r.nivelEstimado) / 10) * 10);
+    const ml = banoSugerido(agua, p.repos);
+    rep.textContent = 'Toca reponer: agregá ' + banoFmt(agua) + ' L' + (ml != null ? ' y unos ' + banoFmt(ml) + ' ml de ' + c.producto : ' (falta la dosis de reposición)') + '.';
+    rep.style.display = '';
+  }else rep.style.display = 'none';
+  // lo de hoy
+  const hoy = banoDia(new Date().toISOString());
+  const lineas = [];
+  if(banoDia(c.inicio) === hoy) lineas.push({ hora: c.inicio, texto: 'Carga: ' + banoFmt(c.agua_inicial_l) + ' L + ' + banoFmt(c.producto_inicial_ml) + ' ml', uid: c.uid });
+  banoOrdenar(st.ciclo.lecturas).forEach(l => { if(banoDia(l.hora) === hoy) lineas.push({ hora: l.hora, texto: banoTextoLectura(l, c.producto), uid: l.uid }); });
+  document.getElementById('bano-hoy').innerHTML = '<div class="bano-sub">Hoy</div>' + (lineas.length
+    ? lineas.reverse().map(x => '<div class="bano-linea"><span class="bano-hora">' + esc(banoHora(x.hora)) + '</span>' + esc(x.texto)
+      + (banoEnCola(st, x.uid) ? ' <span class="bano-etq">en cola</span>' : '') + '</div>').join('')
+    : '<p class="modal-info">Todavía nada hoy.</p>');
+  const t = r.tramos[r.tramos.length - 1];
+  document.getElementById('bano-tramo').innerHTML = t ? '<div class="bano-sub">Último tramo</div>' + banoTramoHTML(t) : '';
+  document.getElementById('bano-resumen').innerHTML = '<div class="bano-sub">Resumen del ciclo</div>' + banoResumenHTML(c, r, st);
+}
+function banoResumenHTML(c, r, st){
+  const valor = banoValorMl(c.producto, st);
+  const costo = valor != null ? valor * r.productoTotal : null;
+  return '<div class="bano-dato">Producto total: <b>' + banoFmt(r.productoTotal) + ' ml</b></div>'
+    + '<div class="bano-dato">Animales: <b>' + banoFmt(r.animales) + '</b> en ' + r.tandasTotal + (r.tandasTotal === 1 ? ' tanda' : ' tandas')
+    + (r.tandasSinConteo ? ' (' + r.tandasSinConteo + ' sin contar)' : '') + '</div>'
+    + '<div class="bano-dato">Agua gastada: <b>' + banoFmt(r.aguaGastada) + ' L</b></div>'
+    + (costo != null ? '<div class="bano-dato">Costo: <b>USD ' + banoFmt(costo, 2) + '</b>' + (r.animales > 0 ? ' (USD ' + banoFmt(costo / r.animales, 2) + ' por animal)' : '') + '</div>' : '');
+}
+function banoRenderCola(st){
+  let html = '';
+  if(st.cola.length){
+    html = '<div class="ins-cola-titulo">' + st.cola.length + ' en cola — se mandan cuando haya señal</div>';
+    st.cola.forEach(it => {
+      const f = it.fila || {};
+      const texto = it.clase === 'ciclo' ? 'Abrir ciclo: ' + f.producto + ', ' + banoFmt(f.agua_inicial_l) + ' L + ' + banoFmt(f.producto_inicial_ml) + ' ml' : banoTextoLectura(f);
+      html += '<div class="ins-item ins-encola" data-uid="' + esc(it.uid) + '"><div><div class="ins-nombre">' + esc(texto) + '</div>'
+        + '<div class="ins-fecha">' + esc(insHoraCorta(f.hora || f.inicio)) + '</div>'
+        + (it.error ? '<div class="ins-fecha" style="color:var(--rojo-hacienda);">No se pudo mandar: ' + esc(it.error) + '</div>' : '') + '</div>'
+        + '<div class="ins-der"><div class="ins-estado">en cola</div>'
+        + (it.permanente ? '<div><button class="btn btn-secundario" data-bano-quitar="' + esc(it.uid) + '" style="padding:2px 8px;font-size:12px;">Quitar</button></div>' : '')
+        + '</div></div>';
+    });
+  }
+  document.getElementById('bano-cola').innerHTML = html;
+}
+async function banoActualizarTodo(){
+  const ficha = _banoFicha;
+  await banoVaciarCola();
+  await banoRefrescarServidor();
+  await banoRefrescarCatalogo(false);
+  if(ficha === _banoFicha && banoAbierta()) banoRender();
+}
+async function abrirBano(){
+  const ficha = ++_banoFicha;
+  banoResetNuevo();
+  document.getElementById('modal-bano').style.display = 'flex';
+  banoRender();   // primero lo guardado en el equipo; después se actualiza si hay señal
+  if(!navigator.onLine || !clienteSupabase()) return;
+  document.getElementById('bano-actualizar').disabled = true;
+  try{ await banoActualizarTodo(); }
+  finally{ if(ficha === _banoFicha) document.getElementById('bano-actualizar').disabled = false; }
+}
+function cerrarBano(){
+  _banoFicha++;
+  document.getElementById('modal-bano').style.display = 'none';
+}
+/* Lo llama sincronizar(): sin esperar a nadie y sin poder romper la sincronización. Con la pantalla abierta, también
+   la refresca. */
+async function banoAlSincronizar(){
+  if(!BANO_ACTIVO) return;
+  try{
+    await banoVaciarCola();
+    if(banoAbierta()){ await banoRefrescarServidor(); banoRender(); }
+  }catch(e){ console.warn('Baño', e); }
+}
+async function banoDespuesDeGuardar(textoOk){
+  const r = await banoVaciarCola();
+  if(!r.pendientes) toast(textoOk);
+  else toast(navigator.onLine ? 'Guardado — quedó en cola' : 'Sin señal — quedó en cola y se manda solo');
+  if(banoAbierta()) banoRender();
+}
+async function banoAbrirCiclo(){
+  const err = t => { document.getElementById('bano-nc-error').textContent = t || ''; };
+  const st = banoLeer();
+  if(st.ciclo) return err('Ya hay un ciclo abierto.');
+  const producto = _banoNc.producto;
+  if(!producto || !banoFilaConfig(producto, st)) return err('Elegí el producto.');
+  const p = banoParams(producto, st);
+  const agua = insNumero(document.getElementById('bano-nc-agua').value);
+  if(!isFinite(agua) || agua <= 0 || agua > p.capacidad) return err('Elegí cuánta agua cargaste (hasta ' + banoFmt(p.capacidad) + ' L).');
+  const ml = insNumero(document.getElementById('bano-nc-ml').value);
+  if(!isFinite(ml) || ml <= 0) return err(p.carga == null ? 'Falta la dosis de ' + producto + ': escribí cuántos ml pusiste.' : 'Escribí cuánto producto pusiste, en ml.');
+  if(ml > 100000) return err('Esa cantidad de producto es demasiado grande. Revisala.');
+  const fila = {
+    uid: insNuevoUid(), establecimiento: ESTABLECIMIENTO, producto, inicio: new Date().toISOString(),
+    agua_inicial_l: Math.round(agua * 10) / 10, producto_inicial_ml: Math.round(ml * 10) / 10, nota: null,
+    dispositivo: idDispositivo(), autor: usuarioActual() || null
+  };
+  st.ciclo = { ciclo: fila, lecturas: [] };
+  st.cola.push({ clase: 'ciclo', uid: fila.uid, fila });
+  if(!banoGuardar(st)) return err('No se pudo guardar en este equipo (memoria llena o navegador bloqueado). No se abrió.');
+  err('');
+  banoRender();
+  await banoDespuesDeGuardar('Ciclo abierto');
+}
+function banoRegistrarLectura(fila){
+  const st = banoLeer();
+  if(!st.ciclo || st.ciclo.ciclo.uid !== fila.ciclo_uid) return false;
+  st.ciclo.lecturas.push(fila);
+  st.cola.push({ clase: 'lectura', uid: fila.uid, ciclo_uid: fila.ciclo_uid, fila });
+  if(fila.tipo === 'cierre'){
+    st.ultimo = { producto: st.ciclo.ciclo.producto, inicio: st.ciclo.ciclo.inicio, cierre: fila.hora };
+    st.cerrados = [fila.ciclo_uid].concat(st.cerrados.filter(u => u !== fila.ciclo_uid)).slice(0, 20);
+    st.ciclo = null;
+  }
+  return banoGuardar(st);
+}
+
+/* ---- formularios: + Tanda, + Reposición, Fin del día, Cerrar ciclo ---- */
+const BANO_FORM_TEXTOS = {
+  tanda: { titulo: '🛁 + Tanda', boton: 'Guardar tanda', ayuda: 'Una tanda de animales que pasa por el baño. La hora la pone el equipo.' },
+  reposicion: { titulo: '🛁 + Reposición', boton: 'Guardar reposición', ayuda: 'Primero leé la regla. Después agregá agua y producto.' },
+  fin_dia: { titulo: '🛁 Fin del día', boton: 'Guardar fin del día', ayuda: 'Leé la regla al terminar el día. Mañana se sigue con el mismo ciclo.' },
+  cierre: { titulo: '🛁 Cerrar ciclo', boton: 'Cerrar ciclo', ayuda: 'Leé la regla final. Lo que queda se tira y el ciclo se cierra.' }
+};
+function banoCategoriasChips(){
+  const tot = {};
+  Object.keys(estado.potreros || {}).forEach(n => {
+    Object.entries(estado.potreros[n].animales || {}).forEach(([key, cant]) => {
+      if(!(Number(cant) > 0)) return;
+      const { cat } = partesClave(key);
+      tot[cat] = (tot[cat] || 0) + Number(cant);
+    });
+  });
+  const conStock = Object.keys(tot).filter(c => CATEGORIA_ESPECIE[c] === 'bovino').sort((a, b) => tot[b] - tot[a]);
+  const lista = conStock.slice(0, 8);
+  BANO_CATS_BASE.forEach(c => { if(lista.indexOf(c) < 0 && lista.length < 10) lista.push(c); });
+  return lista;
+}
+function banoMarcarCategoria(cat){
+  _banoForm.cat = cat || null;
+  let enChip = false;
+  document.querySelectorAll('#bano-t-cats [data-bano-cat]').forEach(b => {
+    const si = b.getAttribute('data-bano-cat') === cat;
+    if(si) enChip = true;
+    b.setAttribute('aria-pressed', String(si));
+  });
+  document.getElementById('bano-t-cat-otra').value = enChip || !cat ? '' : cat;
+}
+function banoMarcarBaston(si){
+  _banoForm.baston = !!si;
+  document.getElementById('bano-t-baston-si').setAttribute('aria-pressed', String(!!si));
+  document.getElementById('bano-t-baston-no').setAttribute('aria-pressed', String(!si));
+  document.getElementById('bano-t-cant-label').textContent = si ? 'Cantidad de animales (si la contaste)' : 'Cantidad de animales (obligatoria)';
+  document.getElementById('bano-t-baston-ayuda').textContent = si
+    ? 'El bastón carga el tratamiento en Sanidad. Acá no se carga nada en Sanidad.'
+    : 'Sin bastón, esta tanda se carga sola en 🏥 Sanidad (producto del ciclo, para el retiro). Por eso hay que contar los animales.';
+}
+function banoAbrirForm(tipo){
+  const st = banoLeer();
+  if(!st.ciclo || !BANO_FORM_TEXTOS[tipo]) return;
+  const tx = BANO_FORM_TEXTOS[tipo];
+  _banoForm = { tipo, cat: null, baston: BANO_BASTON_DEFECTO, aguaEditada: false, mlEditado: false };
+  document.getElementById('bano-f-titulo').textContent = tx.titulo;
+  document.getElementById('bano-f-ayuda').textContent = tx.ayuda;
+  document.getElementById('bano-f-guardar').textContent = tx.boton;
+  document.getElementById('bano-f-tanda').style.display = tipo === 'tanda' ? '' : 'none';
+  document.getElementById('bano-f-nivel-sec').style.display = tipo === 'tanda' ? 'none' : '';
+  document.getElementById('bano-f-repos').style.display = tipo === 'reposicion' ? '' : 'none';
+  ['bano-f-nivel', 'bano-r-agua', 'bano-r-ml', 'bano-t-cant'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('bano-f-error').textContent = '';
+  document.getElementById('bano-f-nivel-label').textContent = tipo === 'reposicion' ? 'Regla antes de reponer (litros)' : (tipo === 'cierre' ? 'Regla final (litros)' : 'Regla al final del día (litros)');
+  if(tipo === 'tanda'){
+    document.getElementById('bano-t-cats').innerHTML = banoCategoriasChips().map(c => '<button type="button" class="bano-chip" data-bano-cat="' + esc(c) + '" aria-pressed="false">' + esc(c) + '</button>').join('');
+    document.getElementById('bano-t-cat-otra').innerHTML = '<option value="">Otra categoría…</option>' + opcionesCategorias();
+    document.getElementById('bano-t-dueno-label').textContent = CONFIG.duenoLabel + (CONFIG.duenoObligatorio ? '' : ' (opcional)');
+    document.getElementById('bano-t-dueno').innerHTML = (CONFIG.duenoObligatorio ? '<option value="">Elegí…</option>' : '') + opcionesDuenos();
+    document.getElementById('bano-t-potrero').innerHTML = '<option value="">Elegí…</option>' + opcionesPotreros();
+    banoMarcarCategoria(null);
+    banoMarcarBaston(BANO_BASTON_DEFECTO);
+  }
+  banoFormActualizar();
+  document.getElementById('modal-bano-form').style.display = 'flex';
+}
+function cerrarBanoForm(){ document.getElementById('modal-bano-form').style.display = 'none'; _banoForm = null; }
+/* Cuentas en vivo del formulario: sugerencias de la reposición y el tramo que se cierra (o el resumen del cierre). */
+function banoFormActualizar(){
+  if(!_banoForm) return;
+  const st = banoLeer();
+  const prev = document.getElementById('bano-f-preview');
+  if(!st.ciclo){ prev.innerHTML = ''; return; }
+  const c = st.ciclo.ciclo;
+  const p = banoParams(c.producto, st);
+  const tipo = _banoForm.tipo;
+  if(tipo === 'tanda'){ prev.innerHTML = ''; return; }
+  const nivel = insNumero(document.getElementById('bano-f-nivel').value);
+  document.querySelectorAll('#bano-f-reglas [data-bano-regla]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-bano-regla')) === nivel)));
+  const valido = isFinite(nivel) && nivel >= 0 && nivel <= p.capacidad;
+  if(tipo === 'reposicion'){
+    const aguaIn = document.getElementById('bano-r-agua');
+    const sugA = document.getElementById('bano-r-agua-sug');
+    if(valido){
+      const sa = Math.max(0, p.capacidad - nivel);
+      sugA.textContent = 'Sugerido: ' + banoFmt(sa) + ' L (hasta ' + banoFmt(p.capacidad) + ' L).';
+      if(!_banoForm.aguaEditada) aguaIn.value = String(sa);
+    }else sugA.textContent = 'Elegí primero lo que marca la regla.';
+    const agua = insNumero(aguaIn.value);
+    const sugM = document.getElementById('bano-r-ml-sug');
+    if(p.repos == null){
+      sugM.className = 'modal-info bano-falta';
+      sugM.textContent = c.producto + ': falta la dosis de reposición. Escribí cuántos ml pusiste.';
+    }else{
+      const sm = banoSugerido(agua, p.repos);
+      sugM.className = 'modal-info';
+      sugM.textContent = sm == null ? 'Dosis: ' + banoFmtDosis(p.repos) + ' ml cada 100 L.' : 'Sugerido: ' + banoFmt(sm) + ' ml (' + banoFmtDosis(p.repos) + ' ml cada 100 L).';
+      if(sm != null && !_banoForm.mlEditado) document.getElementById('bano-r-ml').value = String(sm);
+    }
+  }
+  if(!valido){ prev.innerHTML = ''; return; }
+  const hipotetica = { uid: '_prev', tipo: tipo === 'cierre' ? 'cierre' : (tipo === 'fin_dia' ? 'fin_dia' : 'reposicion'), hora: new Date().toISOString(), nivel_l: nivel, agua_agregada_l: 0, producto_ml: 0 };
+  const r = banoCalcular(c, st.ciclo.lecturas.concat([hipotetica]), p);
+  const t = r.tramos[r.tramos.length - 1];
+  if(tipo === 'cierre'){
+    prev.innerHTML = '<div class="bano-sub">Resumen del ciclo</div>' + banoResumenHTML(c, r, st)
+      + '<div class="bano-sub">Tramos</div>' + r.tramos.map((x, i) => banoTramoHTML(x, 'Tramo ' + (i + 1))).join('');
+  }else{
+    prev.innerHTML = '<div class="bano-sub">Tramo que se cierra</div>' + (t ? banoTramoHTML(t) : '');
+  }
+}
+async function banoGuardarForm(){
+  const err = t => { document.getElementById('bano-f-error').textContent = t || ''; };
+  if(!_banoForm) return;
+  const st = banoLeer();
+  if(!st.ciclo){ cerrarBanoForm(); return; }
+  const c = st.ciclo.ciclo;
+  const p = banoParams(c.producto, st);
+  const tipo = _banoForm.tipo;
+  let fila, textoOk;
+  if(tipo === 'tanda'){
+    const cat = _banoForm.cat;
+    if(!cat) return err('Elegí la categoría.');
+    const dueno = document.getElementById('bano-t-dueno').value;
+    if(CONFIG.duenoObligatorio && !dueno) return err('Elegí el ' + CONFIG.duenoLabel.toLowerCase() + '.');
+    const potrero = document.getElementById('bano-t-potrero').value;
+    if(!potrero) return err('Elegí el potrero.');
+    const cantTxt = document.getElementById('bano-t-cant').value.trim();
+    let cant = null;
+    if(cantTxt){
+      if(!/^\d+$/.test(cantTxt) || Number(cantTxt) < 1) return err('La cantidad tiene que ser un número entero mayor que 0.');
+      cant = Number(cantTxt);
+      if(cant > 5000) return err('Esa cantidad es demasiado grande. Revisala.');
+    }
+    const baston = !!_banoForm.baston;
+    if(!baston && cant == null) return err('Sin bastón la cantidad es obligatoria: sin contar no queda el retiro en Sanidad.');
+    fila = banoNuevaLectura(c, 'tanda', { cantidad_animales: cant, categoria: cat, potrero, dueno: dueno || null, con_baston: baston });
+    if(!baston){
+      // el tratamiento va a Sanidad por la cola de siempre; la tanda guarda el id de esa fila
+      const registro = {
+        id: 'sc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        fecha: banoDia(fila.hora), categoria: cat, potrero, cantidad: cant, gen: null,
+        producto1: c.producto, dosis1: 0, producto2: null, dosis2: null,
+        observaciones: 'Baño de aspersión · tanda ' + banoHora(fila.hora), caravana: null, sin_caravana: null
+      };
+      if(CONFIG.usaExcelBridge) registro.establecimiento = ESTABLECIMIENTO;
+      else registro.dueno = dueno;
+      fila.sanidad_id = registro.id;
+      guardarSanidadCarga(registro).catch(e => console.warn('Baño → Sanidad', e));
+      if(CONFIG.usaExcelBridge){
+        estado.historialSanidad = estado.historialSanidad || [];
+        estado.historialSanidad.unshift({ id: registro.id, fecha: registro.fecha, categoria: registro.categoria, potrero: registro.potrero, producto1: registro.producto1, dosis1: registro.dosis1, producto2: null, dosis2: null, cantidad: registro.cantidad });
+        estado.historialSanidad = estado.historialSanidad.slice(0, 15);
+        guardarEstado();
+      }
+    }
+    textoOk = baston ? 'Tanda guardada' : 'Tanda guardada y cargada en Sanidad';
+  }else{
+    const nivel = insNumero(document.getElementById('bano-f-nivel').value);
+    if(!isFinite(nivel) || nivel < 0 || nivel > p.capacidad) return err('Escribí lo que marca la regla, entre 0 y ' + banoFmt(p.capacidad) + ' litros.');
+    const datos = { nivel_l: Math.round(nivel * 10) / 10 };
+    if(tipo === 'reposicion'){
+      const agua = insNumero(document.getElementById('bano-r-agua').value);
+      if(!isFinite(agua) || agua <= 0) return err('Escribí cuánta agua agregás, en litros.');
+      if(nivel + agua > p.capacidad + 0.5) return err('No entra: ' + banoFmt(nivel) + ' L + ' + banoFmt(agua) + ' L pasa de ' + banoFmt(p.capacidad) + ' L.');
+      const ml = insNumero(document.getElementById('bano-r-ml').value);
+      if(!isFinite(ml) || ml < 0) return err(p.repos == null ? 'Falta la dosis de reposición: escribí cuántos ml pusiste.' : 'Escribí cuánto producto agregás, en ml.');
+      if(ml > 100000) return err('Esa cantidad de producto es demasiado grande. Revisala.');
+      datos.agua_agregada_l = Math.round(agua * 10) / 10;
+      datos.producto_ml = Math.round(ml * 10) / 10;
+    }
+    fila = banoNuevaLectura(c, tipo, datos);
+    textoOk = tipo === 'reposicion' ? 'Reposición guardada' : (tipo === 'fin_dia' ? 'Fin del día guardado' : 'Ciclo cerrado');
+  }
+  if(!banoRegistrarLectura(fila)) return err('No se pudo guardar en este equipo (memoria llena o navegador bloqueado). No se guardó.');
+  cerrarBanoForm();
+  if(tipo === 'cierre') banoResetNuevo();
+  banoRender();
+  await banoDespuesDeGuardar(textoOk);
+}
+
+/* ---- ⚙ Productos del baño (necesita señal: va directo a la RPC, no a la cola) ---- */
+function banoProdAbierta(){ const m = document.getElementById('modal-bano-productos'); return !!m && m.style.display !== 'none'; }
+function banoRenderProductos(){
+  const st = banoLeer();
+  const filas = st.config.filas.slice().sort((a, b) => String(a.producto).localeCompare(String(b.producto), 'es'));
+  document.getElementById('bano-p-lista').innerHTML = filas.length ? filas.map(f => {
+    const carga = banoNumONull(f.ml_100l_carga), repos = banoNumONull(f.ml_100l_reposicion);
+    const dosis = (carga == null || repos == null)
+      ? '<div class="ins-fecha bano-falta">falta la dosis</div>' : '';
+    return '<div class="bano-prod-item" data-producto="' + esc(f.producto) + '"><div><div class="ins-nombre">' + esc(f.producto) + '</div>'
+      + '<div class="ins-fecha">Carga: ' + (carga == null ? '—' : esc(banoFmtDosis(carga)) + ' ml') + ' · Reposición: ' + (repos == null ? '—' : esc(banoFmtDosis(repos)) + ' ml') + ' (cada 100 L)</div>'
+      + '<div class="ins-fecha">' + esc(banoDuraTexto(f.vida_horas)) + '</div>' + dosis + '</div>'
+      + '<button class="btn btn-secundario" data-bano-editar="' + esc(f.producto) + '" style="padding:6px 12px;">Editar</button></div>';
+  }).join('') : '<p class="modal-info">Todavía no hay productos guardados en este equipo. Abrí con señal para bajarlos.</p>';
+  const av = document.getElementById('bano-p-aviso');
+  const sinSenal = !navigator.onLine || !clienteSupabase();
+  av.className = 'ins-aviso' + (sinSenal ? ' ins-offline' : '');
+  av.textContent = sinSenal ? 'Sin señal: podés mirar la lista, pero para agregar o cambiar un producto hace falta señal.' : '';
+  av.style.display = sinSenal ? '' : 'none';
+}
+function banoProdCompletarCatalogo(){
+  const st = banoLeer();
+  document.getElementById('bano-p-catalogo').innerHTML = st.catalogo.filas.map(f => '<option value="' + esc(f.producto) + '"></option>').join('');
+}
+function banoProdFormAbrir(nombre){
+  const f = nombre ? banoFilaConfig(nombre) : null;
+  _banoProdEditando = f ? f.producto : null;
+  const prod = document.getElementById('bano-p-producto');
+  prod.value = f ? f.producto : '';
+  prod.readOnly = !!f;
+  const val = v => v == null ? '' : String(v).replace('.', ',');
+  document.getElementById('bano-p-carga').value = f ? val(f.ml_100l_carga) : '';
+  document.getElementById('bano-p-repos').value = f ? val(f.ml_100l_reposicion) : '';
+  document.getElementById('bano-p-horas').value = f ? val(f.vida_horas) : '';
+  document.getElementById('bano-p-error').textContent = '';
+  document.getElementById('bano-p-form').style.display = '';
+  banoProdCompletarCatalogo();
+}
+async function abrirBanoProductos(){
+  document.getElementById('bano-p-form').style.display = 'none';
+  document.getElementById('modal-bano-productos').style.display = 'flex';
+  banoRenderProductos();
+  if(navigator.onLine && clienteSupabase()){
+    if(await banoRefrescarCatalogo(false)) banoProdCompletarCatalogo();
+  }
+}
+function cerrarBanoProductos(){ document.getElementById('modal-bano-productos').style.display = 'none'; }
+async function banoGuardarProducto(){
+  const err = t => { document.getElementById('bano-p-error').textContent = t || ''; };
+  const client = clienteSupabase();
+  if(!navigator.onLine || !client || typeof client.rpc !== 'function') return err('Sin señal: los productos del baño se cambian con señal. Probá de nuevo cuando haya.');
+  const st = banoLeer();
+  const escrito = document.getElementById('bano-p-producto').value.trim();
+  if(!escrito) return err('Elegí el producto.');
+  let producto = _banoProdEditando;
+  if(!producto){
+    const t = insNorm(escrito);
+    const delCat = st.catalogo.filas.find(f => insNorm(f.producto) === t);
+    if(!delCat && st.catalogo.filas.length) return err('Ese producto no está en el catálogo. Elegilo de las sugerencias.');
+    producto = delCat ? delCat.producto : escrito.slice(0, 120);
+  }
+  const leer = id => { const txt = document.getElementById(id).value.trim(); return txt ? insNumero(txt) : null; };
+  const carga = leer('bano-p-carga'), repos = leer('bano-p-repos'), horas = leer('bano-p-horas');
+  if(carga != null && !(carga > 0)) return err('La dosis de carga tiene que ser un número mayor que 0 (o quedar vacía).');
+  if(repos != null && !(repos > 0)) return err('La dosis de reposición tiene que ser un número mayor que 0 (o quedar vacía).');
+  if(horas == null || !(horas > 0) || Math.round(horas) !== horas) return err('Escribí cuántas horas dura la mezcla (por ejemplo 168 = 7 días).');
+  const actual = banoFilaConfig(producto, st);
+  const btn = document.getElementById('bano-p-guardar');
+  btn.disabled = true;
+  try{
+    let res;
+    try{
+      res = await client.rpc('bano_config_guardar', {
+        p_producto: producto, p_ml_100l_carga: carga, p_ml_100l_reposicion: repos, p_vida_horas: horas,
+        p_l_animal_min: actual && banoNumONull(actual.l_animal_min) != null ? Number(actual.l_animal_min) : 3,
+        p_l_animal_max: actual && banoNumONull(actual.l_animal_max) != null ? Number(actual.l_animal_max) : 5
+      });
+    }catch(e){ res = { error: { message: String((e && e.message) || e), code: '' } }; }
+    const e = res && res.error;
+    if(e){
+      const code = String(e.code || '');
+      if(code === '42501') return err('No se guardó: falta la clave del campo o no sirve (🔑 Clave del campo).');
+      if(code === '22023') return err('No se guardó: ese producto no está en el catálogo de productos.');
+      return err('No se guardó (' + String(e.message || code || 'sin respuesta').slice(0, 100) + '). Probá de nuevo.');
+    }
+    await banoRefrescarServidor();
+    document.getElementById('bano-p-form').style.display = 'none';
+    banoRenderProductos();
+    if(banoAbierta()) banoRender();
+    toast('Producto del baño guardado');
+  }finally{ btn.disabled = false; }
+}
+
+if(BANO_ACTIVO){
+  const bb = document.getElementById('btn-bano');
+  if(bb){
+    bb.style.display = '';
+    bb.addEventListener('click', abrirBano);
+  }
+  const $b = id => document.getElementById(id);
+  $b('bano-cerrar').addEventListener('click', cerrarBano);
+  $b('modal-bano').addEventListener('click', (e)=>{ if(e.target.id === 'modal-bano') cerrarBano(); });
+  $b('bano-actualizar').addEventListener('click', ()=>{
+    if(!navigator.onLine){ toast('Sin señal — no se puede actualizar ahora'); banoRender(); return; }
+    banoActualizarTodo();
+  });
+  $b('bano-productos').addEventListener('click', abrirBanoProductos);
+  $b('bano-nc-productos').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-producto]');
+    if(!b) return;
+    _banoNc.producto = b.getAttribute('data-bano-producto');
+    _banoNc.mlEditado = false;
+    banoRenderSinCiclo(banoLeer());
+  });
+  $b('bano-nc-aguas').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-agua]');
+    if(!b) return;
+    $b('bano-nc-agua').value = b.getAttribute('data-bano-agua');
+    banoNcSugerir();
+  });
+  $b('bano-nc-agua').addEventListener('input', banoNcSugerir);
+  $b('bano-nc-ml').addEventListener('input', ()=>{ _banoNc.mlEditado = $b('bano-nc-ml').value.trim() !== ''; });
+  $b('bano-abrir').addEventListener('click', banoAbrirCiclo);
+  $b('bano-tanda').addEventListener('click', ()=> banoAbrirForm('tanda'));
+  $b('bano-reposicion').addEventListener('click', ()=> banoAbrirForm('reposicion'));
+  $b('bano-fin-dia').addEventListener('click', ()=> banoAbrirForm('fin_dia'));
+  $b('bano-cerrar-ciclo').addEventListener('click', ()=> banoAbrirForm('cierre'));
+  $b('bano-cola').addEventListener('click', (e)=>{
+    const uid = e.target && e.target.getAttribute && e.target.getAttribute('data-bano-quitar');
+    if(!uid) return;
+    const st = banoLeer();
+    const it = st.cola.find(x => x.uid === uid);
+    if(!it) return;
+    const esCiclo = it.clase === 'ciclo';
+    if(!confirm(esCiclo ? '¿Quitar este ciclo de la cola? Se quitan también sus lecturas y nunca se van a mandar.' : '¿Quitar esta lectura de la cola? Nunca se va a mandar.')) return;
+    st.cola = st.cola.filter(x => x.uid !== uid && !(esCiclo && x.ciclo_uid === uid));
+    if(esCiclo && st.ciclo && st.ciclo.ciclo.uid === uid) st.ciclo = null;
+    banoGuardar(st);
+    banoRender();
+  });
+  // formulario
+  $b('bano-f-cancelar').addEventListener('click', cerrarBanoForm);
+  $b('bano-f-guardar').addEventListener('click', banoGuardarForm);
+  $b('bano-t-cats').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-cat]');
+    if(b && _banoForm) banoMarcarCategoria(b.getAttribute('data-bano-cat'));
+  });
+  $b('bano-t-cat-otra').addEventListener('change', ()=>{ if(_banoForm) banoMarcarCategoria($b('bano-t-cat-otra').value || null); });
+  $b('bano-t-baston-si').addEventListener('click', ()=>{ if(_banoForm) banoMarcarBaston(true); });
+  $b('bano-t-baston-no').addEventListener('click', ()=>{ if(_banoForm) banoMarcarBaston(false); });
+  $b('bano-f-tanda').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-delta]');
+    if(!b) return;
+    const campo = $b('bano-t-cant');
+    const actual = /^\d+$/.test(campo.value.trim()) ? Number(campo.value.trim()) : 0;
+    const nuevo = Math.max(0, actual + Number(b.getAttribute('data-bano-delta')));
+    campo.value = nuevo ? String(nuevo) : '';
+  });
+  $b('bano-f-reglas').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-regla]');
+    if(!b) return;
+    $b('bano-f-nivel').value = b.getAttribute('data-bano-regla');
+    banoFormActualizar();
+  });
+  $b('bano-f-nivel').addEventListener('input', banoFormActualizar);
+  $b('bano-r-agua').addEventListener('input', ()=>{ if(_banoForm){ _banoForm.aguaEditada = $b('bano-r-agua').value.trim() !== ''; banoFormActualizar(); } });
+  $b('bano-r-ml').addEventListener('input', ()=>{ if(_banoForm){ _banoForm.mlEditado = $b('bano-r-ml').value.trim() !== ''; } });
+  // productos
+  $b('bano-p-cerrar').addEventListener('click', cerrarBanoProductos);
+  $b('bano-p-nuevo').addEventListener('click', ()=> banoProdFormAbrir(null));
+  $b('bano-p-cancelar-form').addEventListener('click', ()=>{ $b('bano-p-form').style.display = 'none'; });
+  $b('bano-p-guardar').addEventListener('click', banoGuardarProducto);
+  $b('bano-p-lista').addEventListener('click', (e)=>{
+    const nombre = e.target && e.target.getAttribute && e.target.getAttribute('data-bano-editar');
+    if(nombre) banoProdFormAbrir(nombre);
+  });
+  window.addEventListener('online', ()=>{ if(banoAbierta()) banoRender(); if(banoProdAbierta()) banoRenderProductos(); });
+  window.addEventListener('offline', ()=>{ if(banoAbierta()) banoRender(); if(banoProdAbierta()) banoRenderProductos(); });
 }
 
 /* 25/9/2026: "Cargar tratamiento individual" (con caravana) esta disponible
