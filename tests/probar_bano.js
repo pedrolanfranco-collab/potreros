@@ -171,9 +171,9 @@ async function levantar(archivo, servidor){
     from(tabla){
       const filtros = [];
       const q = new Proxy({}, { get(t, prop){
-        if(prop === 'insert') return (row) => servidor.insertar(tabla, row);
+        if(prop === 'insert') return (row) => { const pu = servidor.puertaInsert; servidor.puertaInsert = null; return Promise.resolve(pu).then(() => servidor.insertar(tabla, row)); };
         if(prop === 'eq') return (c, v) => { filtros.push([c, v]); return q; };
-        if(prop === 'then') return (res, rej) => Promise.resolve(servidor.leer(tabla, filtros)).then(res, rej);
+        if(prop === 'then') return (res, rej) => Promise.resolve(tabla === 'bano_lecturas' && servidor.puertaLectura ? servidor.puertaLectura : null).then(() => servidor.leer(tabla, filtros)).then(res, rej);
         return () => q;
       } });
       return q;
@@ -273,6 +273,16 @@ async function probarAbrirYSugerencias(archivo){
   chequear('Aspersin 900 L: sugiere 750 ml', t.$('bano-nc-ml').value === '750' && /Sugerido: 750 ml/.test(t.$('bano-nc-sug').textContent), t.$('bano-nc-ml').value + ' / ' + t.$('bano-nc-sug').textContent);
   t.sel('#bano-nc-aguas [data-bano-agua="600"]').click();
   chequear('600 L: sugiere 500 ml', t.$('bano-nc-ml').value === '500', t.$('bano-nc-ml').value);
+  // pasar de Aspersin (con sugerencia) a CreBio 7 (sin dosis) no deja el ml del anterior
+  t.sel('#bano-nc-productos [data-bano-producto="CreBio 7"]').click();
+  chequear('al pasar a CreBio 7 se vacía el ml sugerido para Aspersin', t.$('bano-nc-ml').value === '', t.$('bano-nc-ml').value);
+  t.click('bano-abrir'); await esperar(30);
+  chequear('y "Abrir ciclo" no lo acepta', !t.guardado().ciclo && s.ciclos.length === 0 && /Falta la dosis/i.test(t.$('bano-nc-error').textContent), t.$('bano-nc-error').textContent);
+  t.llenar('bano-nc-ml', '640');
+  t.sel('#bano-nc-productos [data-bano-producto="CreBio 7"]').click();
+  chequear('un ml escrito a mano no se borra', t.$('bano-nc-ml').value === '640');
+  t.llenar('bano-nc-ml', '');
+  t.sel('#bano-nc-productos [data-bano-producto="Aspersin"]').click();
   t.sel('#bano-nc-aguas [data-bano-agua="900"]').click();
   const antes = Date.now();
   t.click('bano-abrir');
@@ -487,6 +497,15 @@ async function probarReintentoYRechazo(archivo){
   await t.tanda({ cant: 12, baston: true });
   await t.nivel('bano-fin-dia', 700);
   await esperarHasta(() => s.lecturas.some(l => l.tipo === 'fin_dia'), 1500);
+  const intentos12 = () => s.intentos.filter(i => i.row.cantidad_animales === 12).length;
+  chequear('lo rechazado NO se reenvía en el siguiente guardado automático', intentos12() === 1, String(intentos12()));
+  t.setEnLinea(false); t.setEnLinea(true);
+  await esperar(250);
+  chequear('ni en la sincronización automática', intentos12() === 1, String(intentos12()));
+  t.click('bano-actualizar');
+  await esperarHasta(() => intentos12() === 2, 1500);
+  chequear('con "🔄 Actualizar" sí se reintenta', intentos12() === 2, String(intentos12()));
+  await esperarHasta(() => s.lecturas.some(l => l.tipo === 'fin_dia'), 1500);
   await esperar(40);
   const g = t.guardado();
   chequear('la rechazada queda en cola marcada (permanente) con su error', g.cola.length === 1 && g.cola[0].permanente === true && /invalid input/.test(g.cola[0].error || ''), JSON.stringify(g.cola));
@@ -495,6 +514,15 @@ async function probarReintentoYRechazo(archivo){
   t.sel('#bano-cola [data-bano-quitar]').click();
   await esperar(20);
   chequear('"Quitar" la saca de la cola', t.guardado().cola.length === 0 && !t.sel('#bano-cola [data-bano-quitar]'));
+  chequear('y también de las lecturas del ciclo (ya no figura en "Hoy")', !t.guardado().ciclo.lecturas.some(l => l.cantidad_animales === 12) && !/Tanda: 12/.test(t.$('bano-hoy').textContent), t.$('bano-hoy').textContent);
+  // una tanda sin bastón rechazada: al quitarla avisa que su fila de Sanidad ya salió
+  s.rechazar = row => row.cantidad_animales === 13;
+  await t.tanda({ cant: 13, baston: false });
+  await esperarHasta(() => t.sel('#bano-cola [data-bano-quitar]'), 1500);
+  t.sel('#bano-cola [data-bano-quitar]').click();
+  await esperar(20);
+  chequear('quitar una tanda sin bastón avisa que revise Sanidad', /Sanidad/.test(t.$('toast').textContent) && t.guardado().cola.length === 0, t.$('toast').textContent);
+  s.rechazar = null;
   // servidor caído: queda en cola sin marcar como permanente y sale después
   s.modo = 'caido';
   await t.tanda({ cant: 7, baston: true });
@@ -538,6 +566,76 @@ async function probarCicloRechazado(archivo){
   t.sel('#bano-cola [data-bano-quitar="' + g.cola[0].uid + '"]').click();
   await esperar(20);
   chequear('"Quitar" el ciclo saca también sus lecturas y vuelve a "Abrir ciclo nuevo"', t.guardado().cola.length === 0 && !t.guardado().ciclo && t.visible('bano-sin-ciclo'));
+  t.cerrarTodo();
+}
+
+async function probarArreglosRevision(archivo){
+  console.log('\n--- revisión: regla imposible, Sanidad solo si se guardó la tanda, otra pasada de la cola, cierre quitado, carrera con el cierre');
+  const s = servidorFalso();
+  const t = await levantar(archivo, s);
+  if(t.errores.length){ chequear('carga sin errores', false, t.errores[0]); return; }
+  const tabla = t.cfg.tablaSanidad;
+  await t.abrir();
+  await esperarHasta(() => t.sel('#bano-nc-productos [data-bano-producto="Aspersin"]'), 1500);
+  await t.abrirCiclo('Aspersin', 900);
+  await t.nivel('bano-fin-dia', 500);
+  // (5) la regla no puede marcar más que el nivel con que empezó el tramo
+  const n0 = s.lecturas.length;
+  t.click('bano-reposicion'); await esperar(10);
+  t.regla(600); t.llenar('bano-r-agua', '300'); t.llenar('bano-r-ml', '500');
+  t.click('bano-f-guardar'); await esperar(30);
+  chequear('reposición con regla 600 después de un fin del día en 500: no deja', /no puede marcar más/.test(t.$('bano-f-error').textContent) && s.lecturas.length === n0 && t.guardado().cola.length === 0, t.$('bano-f-error').textContent);
+  t.click('bano-f-cancelar');
+  for(const boton of ['bano-fin-dia', 'bano-cerrar-ciclo']){
+    t.click(boton); await esperar(10); t.regla(700); t.click('bano-f-guardar'); await esperar(30);
+    chequear(boton + ' con regla 700 > 500: no deja', /no puede marcar más/.test(t.$('bano-f-error').textContent) && s.lecturas.length === n0, t.$('bano-f-error').textContent);
+    t.click('bano-f-cancelar');
+  }
+  if(s.lecturas.length !== n0 || !t.guardado().ciclo){ chequear('(se corta acá: una regla imposible se guardó)', false); t.cerrarTodo(); return; }
+  // (4) si no se puede guardar la tanda en el equipo, no sale nada a Sanidad
+  const proto = t.win.Storage.prototype, original = proto.setItem;
+  proto.setItem = function(k, v){ if(String(k).endsWith('_bano_v1')) throw new Error('QuotaExceededError'); return original.call(this, k, v); };
+  t.click('bano-tanda'); await esperar(10);
+  t.sel('#bano-t-cats [data-bano-cat="Vacas"]').click();
+  t.$('bano-t-potrero').value = t.$('bano-t-potrero').options[1].value;
+  if(t.cfg.duenoObligatorio) t.$('bano-t-dueno').value = t.$('bano-t-dueno').options[1].value;
+  t.click('bano-t-baston-no'); t.llenar('bano-t-cant', '15');
+  t.click('bano-f-guardar'); await esperar(80);
+  proto.setItem = original;
+  chequear('memoria llena: la tanda no se guarda y avisa', /No se pudo guardar en este equipo/.test(t.$('bano-f-error').textContent), t.$('bano-f-error').textContent);
+  chequear('y no se mandó ni se encoló nada en Sanidad', !(s.sanidad[tabla] || []).length && !(t.win.__ev('estado.colaSanidad') || []).length, JSON.stringify(s.sanidad[tabla]));
+  t.click('bano-f-cancelar');
+  // (6) lo guardado mientras se manda otra cosa sale en la misma vuelta (otra pasada), sin esperar a la sincronización
+  // sin la sincronización automática en el medio (que también vaciaría la cola y taparía el problema)
+  const alSinc = t.win.banoAlSincronizar; t.win.banoAlSincronizar = async () => {};
+  let abrirPuerta; s.puertaInsert = new Promise(r => { abrirPuerta = r; });
+  const n1 = s.lecturas.length;
+  const p1 = t.tanda({ cant: 21, baston: true });
+  await esperar(20);
+  await t.tanda({ cant: 22, baston: true });
+  abrirPuerta(); await p1;
+  await esperarHasta(() => s.lecturas.length === n1 + 2, 1000);
+  chequear('las dos tandas llegaron sin otra sincronización', s.lecturas.length === n1 + 2 && t.guardado().cola.length === 0, (s.lecturas.length - n1) + ' / cola ' + t.guardado().cola.length);
+  t.win.banoAlSincronizar = alSinc;
+  // (3) quitar un cierre rechazado deja el ciclo abierto otra vez
+  s.rechazar = row => row.tipo === 'cierre';
+  await t.nivel('bano-cerrar-ciclo', 400);
+  await esperarHasta(() => t.guardado().cola.some(x => x.permanente), 1500);
+  chequear('el cierre rechazado queda en cola y la pantalla pasó a "sin ciclo"', t.visible('bano-sin-ciclo') && t.guardado().cola[0].fila.tipo === 'cierre');
+  t.sel('#bano-cola [data-bano-quitar]').click();
+  await esperar(20);
+  const g = t.guardado();
+  chequear('al quitar el cierre, el ciclo vuelve a estar abierto (sin esa lectura)', !!g.ciclo && t.visible('bano-en-marcha') && g.cerrados.indexOf(g.ciclo.ciclo.uid) < 0 && !g.ciclo.lecturas.some(l => l.tipo === 'cierre') && g.ciclo.lecturas.length === s.lecturas.length, JSON.stringify(g.ciclo && g.ciclo.lecturas.map(l => l.tipo)));
+  s.rechazar = null;
+  // (2) carrera: "Actualizar" esperando las lecturas del servidor mientras se cierra el ciclo acá
+  let abrirLect; s.puertaLectura = new Promise(r => { abrirLect = r; });
+  t.click('bano-actualizar');
+  await esperar(40);
+  await t.nivel('bano-cerrar-ciclo', 300);
+  await esperarHasta(() => s.lecturas.some(l => l.tipo === 'cierre'), 1500);
+  s.puertaLectura = null; abrirLect();
+  await esperar(150);
+  chequear('el refresco que llega tarde no reabre el ciclo recién cerrado', !t.guardado().ciclo && t.visible('bano-sin-ciclo'), JSON.stringify(t.guardado().ciclo && t.guardado().ciclo.ciclo.uid));
   t.cerrarTodo();
 }
 
@@ -657,6 +755,7 @@ async function probarAvisoDuplicado(archivo){
     await probarOfflineYCola(a);
     await probarReintentoYRechazo(a);
     await probarCicloRechazado(a);
+    await probarArreglosRevision(a);
     await probarOtroEquipo(a);
     await probarProductos(a);
     await probarAvisoDuplicado(a);

@@ -9506,19 +9506,30 @@ function banoFilaParaEnviar(it){
 }
 /* Manda lo pendiente de a uno, en orden. El ciclo siempre va antes que sus lecturas (la base lo exige); si el ciclo quedó
    rechazado, sus lecturas esperan. Devuelve {enviados, pendientes, error}. */
-async function banoVaciarCola(){
+let _banoOtraVuelta = false;              // se guardó algo mientras se mandaba: hay que dar otra pasada
+let _banoOtraVueltaPermanentes = false;
+/* reintentarPermanentes: lo que la base rechazó se reintenta solo al abrir la pantalla o con "🔄 Actualizar", no en cada
+   guardado ni en cada sincronización automática. */
+async function banoVaciarCola(reintentarPermanentes){
   const vacio = { enviados: 0, pendientes: banoLeer().cola.length, error: null };
-  if(!BANO_ACTIVO || _banoEnviando) return vacio;
+  if(!BANO_ACTIVO) return vacio;
+  if(_banoEnviando){ _banoOtraVuelta = true; if(reintentarPermanentes) _banoOtraVueltaPermanentes = true; return vacio; }
   const client = clienteSupabase();
   if(!client || typeof client.from !== 'function' || !navigator.onLine) return vacio;
   _banoEnviando = true;
   let enviados = 0, error = null;
   try{
+   let permanentes = !!reintentarPermanentes;
+   let vueltas = 0;
+   do{
+    _banoOtraVuelta = false; _banoOtraVueltaPermanentes = false;
+    let corte = false;
     const uids = banoLeer().cola.map(it => it.uid);
     for(const uid of uids){
       const st0 = banoLeer();
       const it = st0.cola.find(x => x.uid === uid);
       if(!it) continue;   // otra pestaña ya la mandó
+      if(it.permanente && !permanentes) continue;   // rechazado por la base: espera a "Actualizar" o a abrir la pantalla
       if(it.clase === 'lectura' && st0.cola.some(x => x.clase === 'ciclo' && x.uid === it.ciclo_uid)) continue;   // su ciclo todavía no subió
       let res;
       try{ res = await client.from(it.clase === 'ciclo' ? 'bano_ciclos' : 'bano_lecturas').insert(banoFilaParaEnviar(it)); }
@@ -9530,7 +9541,7 @@ async function banoVaciarCola(){
         const pasajero = insEsPasajero(res, err);
         if(x){ x.error = String(err.message || err.code || 'error').slice(0, 160); x.permanente = !pasajero; x.intentos = (x.intentos || 0) + 1; banoGuardar(st); }
         error = x && x.error;
-        if(pasajero) break;   // sin señal o servidor caído: se sigue en la próxima
+        if(pasajero){ corte = true; break; }   // sin señal o servidor caído: se sigue en la próxima
         continue;             // la base lo rechazó: no frena a las demás
       }
       const st = banoLeer();
@@ -9538,6 +9549,9 @@ async function banoVaciarCola(){
       banoGuardar(st);
       enviados++;
     }
+    permanentes = _banoOtraVueltaPermanentes;
+    if(corte) break;
+   }while(_banoOtraVuelta && ++vueltas < 20 && navigator.onLine);
   }finally{
     _banoEnviando = false;
   }
@@ -9603,8 +9617,12 @@ async function banoRefrescarServidor(){
         const rcic = await client.from('bano_ciclos').select('*').eq('uid', abierto.ciclo_uid).limit(1);
         const rlec = await client.from('bano_lecturas').select('*').eq('ciclo_uid', abierto.ciclo_uid).order('hora', { ascending: true }).order('id', { ascending: true }).limit(1000);
         if(rcic && !rcic.error && Array.isArray(rcic.data) && rcic.data.length && rlec && !rlec.error && Array.isArray(rlec.data)){
-          const st2 = banoLeer();
+          const st2 = banoLeer();   // releído: mientras se esperaba la respuesta pudo cerrarse o abrirse otro ciclo acá
           const fila = limpiarTextoRemoto(rcic.data[0]);
+          const cerradoAca = st2.cerrados.indexOf(fila.uid) >= 0;
+          const otroLocal = st2.ciclo && st2.ciclo.ciclo.uid !== fila.uid;
+          const cerroMientras = !st2.ciclo && local && local.ciclo.uid === fila.uid;
+          if(cerradoAca || otroLocal || cerroMientras){ _banoUltimoError = error; return !error; }
           const vistos = new Set();
           const lecturas = [];
           limpiarTextoRemoto(rlec.data).forEach(l => { if(l && l.uid && !vistos.has(l.uid)){ vistos.add(l.uid); lecturas.push(l); } });
@@ -9682,9 +9700,14 @@ function banoNcSugerir(){
   const sug = document.getElementById('bano-nc-sug');
   const agua = insNumero(document.getElementById('bano-nc-agua').value);
   document.querySelectorAll('#bano-nc-aguas [data-bano-agua]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-bano-agua')) === agua)));
-  if(!_banoNc.producto){ sug.className = 'modal-info'; sug.textContent = 'Elegí el producto.'; return; }
+  if(!_banoNc.producto){
+    if(!_banoNc.mlEditado) document.getElementById('bano-nc-ml').value = '';
+    sug.className = 'modal-info'; sug.textContent = 'Elegí el producto.'; return;
+  }
   const p = banoParams(_banoNc.producto);
   if(p.carga == null){
+    // sin dosis no se sugiere nada: tampoco puede quedar el ml que se sugirió para el producto anterior
+    if(!_banoNc.mlEditado) document.getElementById('bano-nc-ml').value = '';
     sug.className = 'modal-info bano-falta';
     sug.textContent = _banoNc.producto + ': falta la dosis. Escribí cuánto pusiste (la dosis se carga en ⚙ Productos).';
     return;
@@ -9768,7 +9791,7 @@ function banoRenderCola(st){
 }
 async function banoActualizarTodo(){
   const ficha = _banoFicha;
-  await banoVaciarCola();
+  await banoVaciarCola(true);   // al abrir y con "🔄 Actualizar" se reintenta también lo rechazado
   await banoRefrescarServidor();
   await banoRefrescarCatalogo(false);
   if(ficha === _banoFicha && banoAbierta()) banoRender();
@@ -9834,6 +9857,7 @@ function banoRegistrarLectura(fila){
   if(fila.tipo === 'cierre'){
     st.ultimo = { producto: st.ciclo.ciclo.producto, inicio: st.ciclo.ciclo.inicio, cierre: fila.hora };
     st.cerrados = [fila.ciclo_uid].concat(st.cerrados.filter(u => u !== fila.ciclo_uid)).slice(0, 20);
+    st.cicloCerrado = st.ciclo;   // por si hay que "Quitar" este cierre: el ciclo vuelve a quedar abierto
     st.ciclo = null;
   }
   return banoGuardar(st);
@@ -9958,7 +9982,7 @@ async function banoGuardarForm(){
   const c = st.ciclo.ciclo;
   const p = banoParams(c.producto, st);
   const tipo = _banoForm.tipo;
-  let fila, textoOk;
+  let fila, textoOk, registroSanidad = null;
   if(tipo === 'tanda'){
     const cat = _banoForm.cat;
     if(!cat) return err('Elegí la categoría.');
@@ -9987,18 +10011,14 @@ async function banoGuardarForm(){
       if(CONFIG.usaExcelBridge) registro.establecimiento = ESTABLECIMIENTO;
       else registro.dueno = dueno;
       fila.sanidad_id = registro.id;
-      guardarSanidadCarga(registro).catch(e => console.warn('Baño → Sanidad', e));
-      if(CONFIG.usaExcelBridge){
-        estado.historialSanidad = estado.historialSanidad || [];
-        estado.historialSanidad.unshift({ id: registro.id, fecha: registro.fecha, categoria: registro.categoria, potrero: registro.potrero, producto1: registro.producto1, dosis1: registro.dosis1, producto2: null, dosis2: null, cantidad: registro.cantidad });
-        estado.historialSanidad = estado.historialSanidad.slice(0, 15);
-        guardarEstado();
-      }
+      registroSanidad = registro;   // se manda recién cuando la tanda quedó guardada en el equipo (más abajo)
     }
     textoOk = baston ? 'Tanda guardada' : 'Tanda guardada y cargada en Sanidad';
   }else{
     const nivel = insNumero(document.getElementById('bano-f-nivel').value);
     if(!isFinite(nivel) || nivel < 0 || nivel > p.capacidad) return err('Escribí lo que marca la regla, entre 0 y ' + banoFmt(p.capacidad) + ' litros.');
+    const inicioTramo = banoCalcular(c, st.ciclo.lecturas, p).nivelActual;
+    if(nivel > inicioTramo + 0.5) return err('La regla no puede marcar más de lo que había al empezar este tramo (' + banoFmt(inicioTramo) + ' L). Revisá la lectura.');
     const datos = { nivel_l: Math.round(nivel * 10) / 10 };
     if(tipo === 'reposicion'){
       const agua = insNumero(document.getElementById('bano-r-agua').value);
@@ -10014,6 +10034,16 @@ async function banoGuardarForm(){
     textoOk = tipo === 'reposicion' ? 'Reposición guardada' : (tipo === 'fin_dia' ? 'Fin del día guardado' : 'Ciclo cerrado');
   }
   if(!banoRegistrarLectura(fila)) return err('No se pudo guardar en este equipo (memoria llena o navegador bloqueado). No se guardó.');
+  if(registroSanidad){
+    // primero quedó guardada la tanda; recién ahora va el tratamiento a la cola de Sanidad de siempre
+    guardarSanidadCarga(registroSanidad).catch(e => console.warn('Baño → Sanidad', e));
+    if(CONFIG.usaExcelBridge){
+      estado.historialSanidad = estado.historialSanidad || [];
+      estado.historialSanidad.unshift({ id: registroSanidad.id, fecha: registroSanidad.fecha, categoria: registroSanidad.categoria, potrero: registroSanidad.potrero, producto1: registroSanidad.producto1, dosis1: registroSanidad.dosis1, producto2: null, dosis2: null, cantidad: registroSanidad.cantidad });
+      estado.historialSanidad = estado.historialSanidad.slice(0, 15);
+      guardarEstado();
+    }
+  }
   cerrarBanoForm();
   if(tipo === 'cierre') banoResetNuevo();
   banoRender();
@@ -10130,8 +10160,7 @@ if(BANO_ACTIVO){
   $b('bano-nc-productos').addEventListener('click', (e)=>{
     const b = e.target && e.target.closest && e.target.closest('[data-bano-producto]');
     if(!b) return;
-    _banoNc.producto = b.getAttribute('data-bano-producto');
-    _banoNc.mlEditado = false;
+    _banoNc.producto = b.getAttribute('data-bano-producto');   // lo escrito a mano en ml se respeta (vaciarlo vuelve a sugerir)
     banoRenderSinCiclo(banoLeer());
   });
   $b('bano-nc-aguas').addEventListener('click', (e)=>{
@@ -10154,11 +10183,29 @@ if(BANO_ACTIVO){
     const it = st.cola.find(x => x.uid === uid);
     if(!it) return;
     const esCiclo = it.clase === 'ciclo';
-    if(!confirm(esCiclo ? '¿Quitar este ciclo de la cola? Se quitan también sus lecturas y nunca se van a mandar.' : '¿Quitar esta lectura de la cola? Nunca se va a mandar.')) return;
+    const f = it.fila || {};
+    const conSanidad = !esCiclo && f.tipo === 'tanda' && f.con_baston === false && !!f.sanidad_id;
+    const pregunta = esCiclo ? '¿Quitar este ciclo de la cola? Se quitan también sus lecturas y nunca se van a mandar.'
+      : '¿Quitar esta lectura de la cola? Nunca se va a mandar.' + (conSanidad ? ' Ojo: su tratamiento en Sanidad ya se cargó aparte; revisalo en 🏥 Sanidad.' : '');
+    if(!confirm(pregunta)) return;
     st.cola = st.cola.filter(x => x.uid !== uid && !(esCiclo && x.ciclo_uid === uid));
     if(esCiclo && st.ciclo && st.ciclo.ciclo.uid === uid) st.ciclo = null;
+    if(!esCiclo){
+      if(st.ciclo && st.ciclo.ciclo.uid === f.ciclo_uid) st.ciclo.lecturas = st.ciclo.lecturas.filter(l => l.uid !== uid);
+      if(f.tipo === 'cierre'){
+        // sin su cierre el ciclo sigue abierto
+        st.cerrados = st.cerrados.filter(u => u !== f.ciclo_uid);
+        const cc = st.cicloCerrado;
+        if(!st.ciclo && cc && cc.ciclo && cc.ciclo.uid === f.ciclo_uid){
+          st.ciclo = { ciclo: cc.ciclo, lecturas: cc.lecturas.filter(l => l.uid !== uid) };
+          st.ultimo = null;
+        }
+        st.cicloCerrado = null;
+      }
+    }
     banoGuardar(st);
     banoRender();
+    if(conSanidad) toast('La fila de Sanidad de esa tanda ya salió: revisala en 🏥 Sanidad');
   });
   // formulario
   $b('bano-f-cancelar').addEventListener('click', cerrarBanoForm);

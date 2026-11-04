@@ -986,7 +986,12 @@ Pone Chico `false`: botón oculto y ninguna consulta. Sale en las 3 variantes: v
 - **Cola propia** (`banoVaciarCola()`, mismo criterio que Insumos): se guarda antes de mandar, de a uno y en orden; una lectura cuyo ciclo sigue en
   cola espera; 23505 = enviado; sin respuesta / 5xx / 408 / 429 = pasajero; 22 / 23 / 42 / PGRST = permanente (error + "Quitar"; quitar un ciclo
   quita sus lecturas) y sigue con las demás. Se vacía al abrir, al guardar, con "🔄 Actualizar" y en cada `sincronizar()` (`banoAlSincronizar()`, en
-  segundo plano; con la pantalla abierta también la refresca).
+  segundo plano; con la pantalla abierta también la refresca). Lo rechazado se reintenta **solo** al abrir la pantalla o con "🔄 Actualizar"
+  (no en cada guardado ni sincronización). Si se guarda algo mientras se manda, la misma vuelta hace otra pasada (`_banoOtraVuelta`).
+  "Quitar" una lectura la saca también de las lecturas del ciclo; quitar un `cierre` vuelve a abrir el ciclo (`cicloCerrado`); quitar una tanda
+  sin bastón avisa que su fila de Sanidad ya salió. La tanda se guarda en el equipo **antes** de encolar su fila de Sanidad. La regla leída
+  (reposición, fin del día, cierre) no puede ser mayor que el nivel con que empezó el tramo. Un refresco que llega tarde no reabre un ciclo que
+  se cerró acá mientras esperaba.
 - **Otro equipo ve el ciclo**: al abrir con señal se trae `bano_config`, las dos RPC y, del ciclo abierto del campo, `bano_ciclos` + `bano_lecturas`
   (por `ciclo_uid`, orden hora, id), que se juntan con lo local sin duplicar por `uid`. Si el servidor ya no lo tiene abierto y no queda nada en cola,
   se da por cerrado en otro equipo. Un ciclo cerrado acá no se vuelve a tomar del servidor mientras su cierre no subió (`cerrados`).
