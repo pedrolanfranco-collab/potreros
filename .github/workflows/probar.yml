@@ -176,6 +176,9 @@ jobs:
       - name: "Capas de Aguadas e Instalaciones (31/10/2026) -- los botones apagan y prenden solo su tipo de punto; la eleccion queda por equipo y por campo; Ver en el mapa y cargar un punto prenden lo que corresponde; un punto de otro equipo no prende nada; Verificar stock no cambia nada"
         run: node tests/probar_capas_puntos.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 
+      - name: "Potreros dobles (4/11/2026) -- 1+2 y 19+20 de La Vuelta: ocultos vacios, con animales se unen (rayas en las partes), clic y lista, separar, GPS en movil; Maria Laura sin dobles"
+        run: node tests/probar_potreros_dobles.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html
+
       - name: "PC: editar y borrar cualquier evento (3/10/2026) -- historial incluso de otros dispositivos, abortos y eventos climaticos, sincronizado"
         run: node tests/probar_editar_borrar_pc.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 

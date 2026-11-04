@@ -204,6 +204,7 @@
     color:var(--verde-monte);
   }
   .potrero-card .area{font-size:11.5px;color:var(--texto-suave);}
+  .potrero-card .nota-doble{font-size:11.5px;color:var(--texto-suave);margin-top:2px;}
   .badge-total{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
@@ -614,7 +615,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v1.60</div>
+        <div class="sub">v1.61</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -916,9 +917,30 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.21","versionMovil":"2.20","simpleHabilitado":true,"versionMovilSimple":"1.60","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.22","versionMovil":"2.21","simpleHabilitado":true,"versionMovilSimple":"1.61","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
+/* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
+   (La Vuelta: 1+2 y 19+20). El doble es un potrero más de POTREROS_GEO, con el dibujo de los dos juntos;
+   `CONFIG.potrerosDobles` = {doble: [partes]}. Unir = "Mover todo" de las partes al doble; separar = al revés. Sin eventos
+   nuevos. En el mapa el doble se ve solo si tiene animales (o está elegido), y entonces sus partes quedan apagadas. */
+const POTREROS_DOBLES = CONFIG.potrerosDobles || {};
+function esDoble(nombre){ return Object.prototype.hasOwnProperty.call(POTREROS_DOBLES, nombre); }
+function dobleDeParte(nombre){
+  for(const d in POTREROS_DOBLES) if((POTREROS_DOBLES[d] || []).includes(nombre)) return d;
+  return null;
+}
+/* El doble de esta parte, si ese doble tiene animales ahora (la parte está "tapada"); si no, null. */
+function parteTapada(nombre){
+  const d = dobleDeParte(nombre);
+  if(!d || !estado || !estado.potreros || !estado.potreros[d] || totalPotrero(d) === 0) return null;
+  return totalPotrero(nombre) === 0 ? d : null;   // una parte con animales propios sigue a la vista (se puede tocar)
+}
+/* Superficie y cantidad de potreros "de verdad": el doble se pisa con sus partes, así que no se suma (si no, La Vuelta
+   daría 33 potreros y 28 ha de más). Animales y UG sí se suman sobre todos: cada animal está en un solo potrero. */
+function potrerosFisicos(){ return POTREROS_GEO.filter(p => !esDoble(p.nombre)); }
+function haFisicas(){ return potrerosFisicos().reduce((s,p)=> s + areaHa(p.nombre), 0);
+}
 
 /* Categorías por especie con coeficiente de Unidad Ganadera (UG) por defecto.
    Referencia estándar usada en Uruguay (INIA / Plan Agropecuario, base 1 UG = vaca de cría de ~400-450kg).
@@ -1132,7 +1154,7 @@ function detalleAnimales(animales){
    Solo se muestra en establecimientos con más de un dueño obligatorio (ver
    @multiDueno en generar.js) -- hoy únicamente María Laura. */
 function resumenPorDueno(){
-  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  const totalHa = haFisicas();
   // 19/9/2026: se agrega '' (sin asignar) a los grupos -- en La Vuelta la
   // Firma es opcional, así que la mayoría del stock (existencias previas)
   // tiene dueno==='' y antes quedaba totalmente afuera de este reporte.
@@ -1630,7 +1652,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'campo-1.60';
+const VERSION_APP = 'campo-1.61';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -2009,6 +2031,11 @@ function aplicarPendientesDePotrero(nombre, potrerosSucios){
   if(!lista || !lista.length) return;
   delete estado.pendientesPotrero[nombre];
   lista.forEach(r=> aplicarEventoRemoto(r, potrerosSucios));
+}
+function aplicarPendientesYaConocidos(potrerosSucios){
+  for(const nombre of Object.keys(estado.pendientesPotrero || {})){
+    if(estado.potreros[nombre]) aplicarPendientesDePotrero(nombre, potrerosSucios);
+  }
 }
 function aplicarPendientesDePotreroLocal(nombre){
   const sucios = new Set();
@@ -3054,6 +3081,9 @@ async function sincronizar(mostrarToast){
     // estado recién reconstruido.
     const esPrimeraSync = !estado.ultimaSincronizacion;
     const potrerosSucios = new Set();
+    // 4/11/2026: un potrero nuevo que llegó por config (p. ej. los dobles 1+2 / 19+20) no manda potrero_creado: sus eventos
+    // estacionados mientras este equipo tenía la versión vieja se aplican acá, apenas el potrero existe.
+    aplicarPendientesYaConocidos(potrerosSucios);
     await vaciarColaSync();
     await vaciarColaFotos(); // 24/10/2026: fotos de reportes pendientes (después de los movimientos, así reporte_foto sale detrás de su reporte)
     await vaciarColaSanidad();
@@ -3981,7 +4011,8 @@ function puntoEnPoligono(lat, lon, coords){
 }
 function detectarPotreroActual(lat, lon){
   for(const p of POTREROS_GEO){
-    if(puntoEnPoligono(lat, lon, p.coords)) return p.nombre;
+    if(esDoble(p.nombre)) continue;   // el doble se pisa con sus partes: se decide por la parte
+    if(puntoEnPoligono(lat, lon, p.coords)) return parteTapada(p.nombre) || p.nombre;
   }
   return null;
 }
@@ -4141,7 +4172,7 @@ function dibujarPotrero(p){
     if(modoDibujarPotrero){ L.DomEvent.stopPropagation(e); agregarVerticeDibujo(e.latlng); return; }
     poly.setPopupContent(popupContenidoPotrero(p.nombre));
     poly.openPopup(e.latlng);
-    seleccionarPotrero(p.nombre);
+    seleccionarPotrero(parteTapada(p.nombre) || p.nombre);   // una parte de un doble en uso abre el doble
   });
   poly.bindTooltip(esc(p.nombre), {sticky:true});
 
@@ -5000,16 +5031,34 @@ map.on('dblclick', ()=>{
   if(modoDibujarPotrero) terminarDibujoPotrero();
 });
 
+/* Un doble vacío no se dibuja (se pisaría con sus partes): se saca del mapa y se vuelve a poner cuando tiene animales. */
+function mostrarPoligono(item, visible){
+  if(!item || !!item.oculto === !visible) return;
+  if(visible){ item.layer.addTo(map); item.label.addTo(map); }
+  else { map.removeLayer(item.layer); map.removeLayer(item.label); }
+  item.oculto = !visible;
+}
 function refrescarColoresMapa(){
   POTREROS_GEO.forEach(p=>{
-    const total = totalPotrero(p.nombre);
     const item = poligonos[p.nombre];
+    if(!item) return;
+    const total = totalPotrero(p.nombre);
     const activo = seleccionActual === p.nombre;
+    if(esDoble(p.nombre)){
+      mostrarPoligono(item, total !== 0 || activo);
+      if(item.oculto) return;
+    }
+    if(!activo && parteTapada(p.nombre)){
+      // parte de un doble en uso: apagada y punteada, el doble se ve arriba
+      item.layer.setStyle({fillColor:'#8fae72', fillOpacity:0.05, color:'#5c7a4a', weight:1, dashArray:'4 4'});
+      return;
+    }
     item.layer.setStyle({
       fillColor: total>0 ? '#5c7a4a' : '#8fae72',
       fillOpacity: activo ? 0.55 : (total>0 ? 0.4 : 0.2),
       color: activo ? '#c68a3b' : '#5c7a4a',
-      weight: activo ? 3 : 2
+      weight: activo ? 3 : 2,
+      dashArray: null
     });
   });
 }
@@ -5044,6 +5093,7 @@ function renderLista(filtro=''){
         <div class="badge-total ${total===0?'vacio':''}"${total<0?' style="background:#d32f2f;color:#fff;"':''}>${total}</div>
       </div>
       <div class="ocupacion-badge ocupacion-${ocup.tipo}">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
+      ${esDoble(nombre) ? `<div class="nota-doble">🔗 ${total !== 0 ? esc((POTREROS_DOBLES[nombre]||[]).join(' y ')) + ' unidos' : 'Para usar ' + esc((POTREROS_DOBLES[nombre]||[]).join(' y ')) + ' juntos'}</div>` : (parteTapada(nombre) ? `<div class="nota-doble">🔗 Unido en ${esc(parteTapada(nombre))}</div>` : '')}
       ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span${v<0?' style="color:#d32f2f;font-weight:700;"':''}>${esc(k)}: ${v}</span>`).join('')}</div>` : ''}
     `;
     if(casosPotrero.length){
@@ -6055,8 +6105,8 @@ function mostrarFormulario(nombre, accion, prefill){
 
 /* ======================= RESUMEN GENERAL ======================= */
 function actualizarResumen(){
-  document.getElementById('res-potreros').textContent = POTREROS_GEO.length;
-  const ha = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  document.getElementById('res-potreros').textContent = potrerosFisicos().length;
+  const ha = haFisicas();
   document.getElementById('res-ha').textContent = Math.round(ha);
   const porEspecie = POTREROS_GEO.reduce((s,p)=>{
     const e = totalPorEspecie(p.nombre);

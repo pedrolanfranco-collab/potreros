@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">3.82</span></li>
-    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">3.49</span></li>
-    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">2.20</span></li>
+    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">3.83</span></li>
+    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">3.50</span></li>
+    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">2.21</span></li>
   </ul>
   <p class="nota">La versión de tu celular está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.76</b>). Si tu número es más viejo, abrí la app con señal y esperá un momento: se actualiza sola.</p>
 </div>
@@ -123,6 +123,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🔗 Potreros unidos (1+2 y 19+20)</b> <span class="campo">(solo La Vuelta)</span>: cuando la portera está abierta, pasás todo el <b>1</b> y el <b>2</b> al <b>1+2</b> (y el <b>19</b> y el <b>20</b> al <b>19+20</b>). El mapa muestra el potrero unido. Mirá la sección <a href="#unidos">🔗 Potreros unidos</a>.</li>
     <li><b>🧴 Insumos</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva con el stock de los productos veterinarios del galpón, en verde, amarillo o rojo. Desde ahí cargás un conteo, un ajuste o un pasaje al otro campo; sin señal queda “en cola” y se manda solo.</li>
     <li><b>🥩 Consumo (faena)</b> en cada potrero (también en Campo): si faenás algo que la app no tenía cargado, la app resta lo que había, te avisa cuántos faltaban y lo deja anotado. La <b>🤝 hacienda ajena</b> (dueños que no son de la lista) ahora se ve aparte en el potrero y en el reporte por dueño, y cuenta en los UG/ha.</li>
     <li><b>💧 Aguadas</b> y <b>🚧 Instalaciones</b> son ahora <b>capas</b> del mapa: los botones <span class="b">💧 Aguadas</span> y <span class="b">🚧 Instal.</span>, <b>en el borde de arriba del mapa</b> al lado del zoom, las prenden y apagan (apagada, el botón queda gris y tachado). Este celular recuerda la elección.</li>
@@ -151,6 +152,7 @@
       <ul>
         <li><a href="#mover">⇄ Mover una categoría</a></li>
         <li><a href="#mover-todo">⇄⇄ Mover TODO el potrero</a></li>
+        <li><a href="#unidos">🔗 Potreros unidos (1+2 y 19+20)</a></li>
         <li><a href="#nacimiento">🐄 Nacimiento</a></li>
         <li><a href="#muerte">✕ Muerte</a></li>
         <li><a href="#desaparecido">❓ Desaparecido</a></li>
@@ -199,6 +201,7 @@
   <tr><td>Mapa: nombre y total sobre cada potrero, y cartel al tocarlo</td><td data-campo="La Vuelta">No (son 31 potreros)</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico">Sí</td></tr>
   <tr><td>🏥 Sanidad: “Mis cargas recientes”</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No</td><td data-campo="Pone Chico">No</td></tr>
   <tr><td>🧴 Insumos</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>🔗 Potreros unidos (1+2 y 19+20)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura"><b>No está</b></td><td data-campo="Pone Chico"><b>No está</b></td></tr>
 </table>
 <p class="nota">Todo lo demás es igual en los tres campos. En las explicaciones, donde dice “dueño” en La Vuelta es la “firma”.</p>
 
@@ -298,6 +301,17 @@
     <li>Revisá la fecha y tocá <span class="b">Mover todo (N)</span>.</li>
   </ol>
   <p class="nota">No pide otra confirmación: antes de tocar el botón, fijate bien el potrero destino.</p>
+</div>
+
+<div class="fn" id="unidos">
+  <h3>🔗 Potreros unidos (1+2 y 19+20)</h3>
+  <p class="para">Para qué sirve: cuando la portera entre dos potreros está abierta, se usan como un solo potrero. Son el <b>1+2</b> (formado por el <b>1</b> y el <b>2</b>) y el <b>19+20</b> (formado por el <b>19</b> y el <b>20</b>). Solo en La Vuelta.</p>
+  <ol class="pasos">
+    <li>Para unirlos, pasá todos los animales del <b>1</b> al <b>1+2</b>. Tocá <span class="b">⇄⇄ Mover TODO el potrero</span>, elegí el <b>1+2</b> como potrero destino y tocá <span class="b">Mover todo (N)</span>. Después hacé lo mismo con el <b>2</b>.</li>
+    <li>Cuando el <b>1+2</b> tiene animales, el mapa lo muestra como un solo potrero. El <b>1</b> y el <b>2</b> quedan con línea de rayas, apagados.</li>
+    <li>Para separarlos, pasá los animales del <b>1+2</b> al <b>1</b> y al <b>2</b>, con <span class="b">⇄⇄ Mover TODO el potrero</span>, igual que antes.</li>
+  </ol>
+  <p class="nota">Si el <b>1+2</b> está vacío, no se ve en el mapa y el <b>1</b> y el <b>2</b> se usan por separado. Con el <b>19+20</b> es igual.</p>
 </div>
 
 <div class="fn" id="nacimiento">

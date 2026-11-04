@@ -68,6 +68,20 @@ function potrerosDe(campo) {
   return lista;
 }
 
+// Potreros dobles ({doble: [partes]}): de config.js ("dobles") o, si no, del config de las apps (potrerosDobles).
+function doblesDe(campo, potreros) {
+  let d = campo.dobles;
+  if (d == null && campo.potreros && campo.potreros.desdeConfig)
+    d = require(path.join(raiz, 'template', 'configs', String(campo.potreros.desdeConfig) + '.js')).potrerosDobles;
+  d = d || {};
+  const nombres = new Set(potreros.map(p => String(p.nombre)));
+  for (const [doble, partes] of Object.entries(d)) {
+    if (!nombres.has(doble) || !Array.isArray(partes) || !partes.every(x => nombres.has(String(x))))
+      falla('Campo "' + campo.id + '": el potrero doble "' + doble + '" o alguna de sus partes no tiene dibujo.');
+  }
+  return d;
+}
+
 function construir() {
   const rutaCfg = path.join(__dirname, 'config.js');
   if (!fs.existsSync(rutaCfg)) falla('Falta tablero-campos/config.js');
@@ -93,8 +107,9 @@ function construir() {
       if (!ID_RE.test((c && c.id) || '')) falla('config.js: id inválido "' + (c && c.id) + '" (solo minúsculas, números y _, igual que "establecimiento" en Supabase)');
       if (c.id === 'todos' || vistos.has(c.id)) falla('config.js: id repetido o reservado "' + c.id + '"');
       vistos.add(c.id);
+      const potreros = potrerosDe(c);
       return { id: c.id, nombre: String(c.nombre || c.id), usaClave: !!c.usaClave, etiquetaDueno: String(c.etiquetaDueno || 'Dueño'),
-               potreros: potrerosDe(c) };
+               potreros, dobles: doblesDe(c, potreros) };
     }),
   };
   const fuente = fs.readFileSync(path.join(__dirname, 'fuente.html'), 'utf8');

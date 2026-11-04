@@ -36,7 +36,7 @@ ESTABLECIMIENTOS = {
         "nombre": "La Vuelta",
         "potreros": ["CERRO", "14", "EMBARCADERO", "CERRITO", "17", "15", "18", "BOMBA", "23", "7", "8",
                      "9", "OMBU", "10", "PAST", "26", "21", "TRI", "19", "13", "12", "CALLE", "TAJAMAR",
-                     "16", "20", "11", "6", "1", "2", "3", "5"],
+                     "16", "20", "11", "6", "1", "2", "3", "5", "1+2", "19+20"],
         "duenos": ["Pedro Lanfranco", "Silvia Dutra", "Fideicomiso", "Walter Lanfranco"],
         "dueno_obligatorio": False,
         "texto_sin_dueno": "(sin firma)",
