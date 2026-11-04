@@ -39,6 +39,8 @@ jobs:
 
       - name: Template -- los 9 index.html coinciden con lo que generaría el template
         run: node template/generar.js --check
+      - name: Tablero de Campos -- tablero-campos/index.html coincide con fuente.html + potrerosGeo de los configs
+        run: node tablero-campos/generar.js --check
 
       - name: Instalar jsdom
         working-directory: tests
@@ -188,6 +190,8 @@ jobs:
 
       - name: Tablero de Sanidad (solo lectura, tablero-sanidad/)
         run: node tests/probar_tablero_sanidad.js tablero-sanidad/index.html
+      - name: Tablero de Campos (solo lectura, tablero-campos/)
+        run: node tests/probar_tablero_campos.js tablero-campos/index.html
 
       - name: "Completar sanidad del baston (18/10/2026) -- el export de Datamars sale igual, con PRODUCTO/DOSIS/POTRERO del catalogo; nunca escribe"
         run: node tests/probar_completar_sanidad.js completar-sanidad/index.html
