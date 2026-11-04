@@ -161,6 +161,14 @@ theme-color).
   Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
   (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
   no cambian.
+  **PC nueva estilo FieldData, parte 1 (4/11/2026, a pedido de Pedro; bosquejo aprobado, Design canvas
+  `47fe61b2-50ec-4859-8e7f-5c07cea19f26`)**: menú fijo a la izquierda `#pc-rail` (10 secciones `data-pc-seccion`) y
+  tarjetas de totales (`res-cabezas`, `res-con-animales` nuevas). **Los botones de siempre no se mueven**: cada sección
+  abre `#pc-seccion` con atajos `data-pc-ir="<id>"` que hacen `.click()` en el botón original (`SECCIONES_PC`, lista de
+  ids por sección); un botón con `display:none` no se ofrece, una sección sin botones se esconde (`actualizarRailPC()`,
+  también desde `actualizarResumen()`) y una con uno solo lo abre directo. **Un botón nuevo de la PC se agrega también
+  a su sección en `SECCIONES_PC`.** La caja 🛠 Herramientas sigue igual. Partes que siguen (cada una su PR): mapa
+  pintado por carga + ficha al costado, tablas de Resumen, secciones dentro de la página. Test: `tests/probar_pc_menu.js`.
   **Campo (móvil simple), visualización (10/10/2026, a pedido de Pedro)**: todo en bloques `@simple`: mapa a
   45vh en el celular (más lista), total del potrero grande (26 px en la tarjeta, 28 px en el detalle), botones de
   acción y campos de formulario de 48–56 px con letra de 16 px, Muerte/Desaparecido al final y separados,
@@ -706,71 +714,8 @@ tampoco la sabe; una de ficha sin confirmar, como Vaquillona, sigue sin pasar). 
 lecturas con lo que pasó, y la PC la muestra en Herramientas › Consultar › "⚠ Datos faltantes (N)"
 (últimos 60 días, CSV). La app solo lee. Test: `tests/probar_datos_faltantes.js`.
 
-### Lector XRS2 y trabajo desde la nube — lo que conviene saber (18/10/2026)
-
-El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Lector XRS2`;
-`handoff.md` de ese repo tiene el estado detallado). Cómo llega una sanidad hecha con el bastón:
-- Pedro comparte el CSV del Data Link a `…\Lector XRS2\2026-2027 Ejercicio Siguiente\Entrada\` (la carpeta `Entrada` va **dentro** de la del ejercicio).
-  Una tarea de Windows corre `vigilar_entrada.py` cada 10 min: espera a que OneDrive termine, respalda la base, corre `pipeline.py` (lee sesiones →
-  animales → SNIG → publica el padrón en `animales_caravana`) y `sanidad_puente.py` crea las filas de `sanidad_carga` (solo lo que llegó por `Entrada\` y
-  desde el 2/10/2026, tope 40 por corrida, idempotente; `--simular` no escribe). Después `bajar_sanidad_de_potreros.py` (cada hora) las baja a la Planilla.
-- **Qué las traba**: un `PRODUCTO` que no figura en `productos_sanidad.csv` con `confirmado=SI`, o una `CATEGORIA` que no figura en `categorias_sanidad.csv`
-  (sin categoría usa la de la ficha). Lo que no se puede traducir no se manda y se avisa. Los CSV de ese repo (`productos_sanidad`, `categorias_sanidad`,
-  `correcciones`, `sesiones`, `plazos_propuestos`) son **configuración que decide Pedro, no tratamientos**.
-- Los tratamientos que **no** vienen del bastón (un CSV a mano) van por `scripts/sanidad/cargar_sanidad_csv.py` (ver Sanidad, arriba).
-- Una sesión del bastón **sin** sanidad cargada (el operario no completó PRODUCTO/DOSIS/POTRERO) se completa **antes** de ponerla en `Entrada\`
-  con `completar-sanidad/` (abajo). Si ya entró vacía, el archivo completo se guarda **encima** del vacío (mismo nombre, misma carpeta):
-  `procesar()` lo relee porque cambió tamaño/fecha y, con la misma ruta, la huella no lo marca "gemela"; inserta lecturas nuevas con producto
-  (la `clave` de `lecturas` incluye el producto) y `sanidad_puente.py` crea el tratamiento. Las lecturas vacías viejas quedan, sin producto.
-  Una copia **al lado** (otro nombre, p. ej. `…(1).csv`) sí es "gemela" (`huella()` = fecha + cantidad + caravanas, no mira el producto) y se
-  descarta. Si el vacío ya no está, va por `cargar_sanidad_csv.py`. (Verificado en el código de `reconstruir_xrs2.py` el 18/10/2026, caso
-  real: sesiones 1153–1156 con EON.)
-- **Desde la nube no se corre nada de eso**: faltan `xrs2_lecturas.db` y la clave privada, y escribiría en producción. Y **lo que Pedro cambia en su PC no se ve
-  hasta que lo sube a GitHub** (el 18/10 su CSV nuevo no estaba en ningún repo): pedir que lo pegue o que haga `git push`.
-- La nube no llega a `*.supabase.co` ni a `*.github.io` (el proxy contesta 403), así que no se pueden leer las tablas reales: los nombres de columnas y de
-  categorías se infieren del código. **El conector Supabase (`mcp__Supabase__*`, proyecto `skkknfjpwcstefcroqjt`) sí funciona** (18/10/2026): con `execute_sql`
-  se leen las tablas reales. Usarlo **solo para leer** (SELECT); nunca escribir producción desde la nube.
-- *"¿Llegaron las sanidades?"* (consulta de rutina): `sanidad_carga*` de los últimos días por `creado_en` (en `America/Montevideo`). Las columnas son
-  `producto1`/`dosis1`/`producto2`/`dosis2` (no hay `producto`), más `categoria`, `dueno`, `cantidad`, `potrero`, `gen`, `observaciones`, `caravana`,
-  `importado_en` (solo La Vuelta: lleno = ya bajó a la Planilla). `id` `bq_…` = vino del bastón, `sc_…` = cargado en la app, `csv_…` = script CSV. Para
-  saber si entró una sesión nueva del bastón: `max(ultima_lectura)` de `animales_caravana`; y `max(actualizado)` de `sanidad_ultimos` dice cuándo publicó la Planilla.
-- Pedro trabaja en PowerShell, pide los comandos en esa sintaxis y confirma cada `git push`/merge; con los PR de este repo dijo "abrilo y hacé merge" una vez que el CI
-  está en verde (el merge se hace sobre la cabeza que pasó el CI, no sobre un run viejo: los avisos de `check_suite` pueden ser de un commit anterior).
-- **`lector-xrs2` no tiene CI**: antes de abrir el PR se corren a mano en la nube sus pruebas (`python3 probar_*.py`, p. ej. `probar_vigilar.py`) y
-  conviene verificarlas con una mutación. Después del merge el cambio **no llega solo a la PC**: Pedro hace `git pull` en la carpeta del Lector
-  (PowerShell) y corre la prueba ahí; recién con su "todo bien" se da por instalado (así fue la fase 2 el 20/10/2026).
-
-**Incidente 13→18/10/2026: el Lector no publicaba nada (lo que conviene recordar).**
-- *Síntoma*: desde el 13/10 no llegaba a Supabase ni el padrón ni Sanidad (ni `sanidad_ultimos`); la tarea "Potreros - Vigilar entrada del baston"
-  corría cada 10 min con resultado 0, pero el log decía "la publicacion quedo pendiente" y `falta SUPABASE_SECRET_KEY en ~/.potreros/.env`.
-  La causa: el 13/10 (Fase 4) `sanidad_puente.py` / `publicar_animales.py` pasaron a la clave privada y **nunca se había creado
-  `C:\Users\Pedro\.potreros\.env`**. Un resultado 0 de la tarea no prueba que publique: mirar `vigilar_entrada.log`.
-- *Arreglo*: Pedro creó una clave `sb_secret_…` (Project Settings → API Keys → Secret keys; el panel se colgaba y anduvo con el link directo
-  `supabase.com/dashboard/project/skkknfjpwcstefcroqjt/settings/api-keys`) y la guardó con `Read-Host -AsSecureString` +
-  `[System.Net.NetworkCredential]::new('', $s).Password` (`PtrToStringAuto` falló). **Ojo**: `sbp_…` es un token PERSONAL de la cuenta
-  (Account → Access Tokens), no sirve y es mucho más poderoso; se coló una vez. `_clave_privada()` del Lector solo rechaza `sb_publishable_` y JWT
-  sin `service_role`, así que con un `sbp_` dice "CLAVE OK": validar siempre que empiece con `sb_secret_`. Nunca pedir ni mostrar la clave.
-- *Los archivos "reemplazados" seguían vacíos*: Pedro guardó otra vez los vacíos encima. Se detectó por el **tamaño** (vacíos 2552/6639/8310/1056,
-  completos 2744/7104/8880/1147) y con una consulta a `lecturas` (producto `''`). **Los adjuntos que Claude manda en el chat no llegan a la PC**
-  (Descargas no los tenía): conviene dar un script que complete en el lugar y verifique el resultado por SHA-1 contra lo probado en la nube.
-- *Diagnóstico útil en la PC* (solo lee): `$env:PYTHONPATH=(Get-Location).Path` y un script en `$env:TEMP` que consulta `xrs2_lecturas.db`
-  (`lecturas` por `archivo like '%SesionNNNN%'`, `archivos`, `sanidad_enviada`) y corre `sanidad_puente.enviar(simular=True)`. Un `.py` fuera de la
-  carpeta del Lector no encuentra sus módulos sin `PYTHONPATH`.
-- *Resultado*: 17 registros de EON (sesiones 1153–1156: 32+93+114+13 = 252 animales; potreros 14, 8, 8, 16; dosis 9/5/6/12 cc) y padrón al día.
-  Instructivo para Pedro de dónde va cada archivo: artifact privado `claude.ai/artifact/4Zw6aEbz4rgNR4c3uYFMe6`.
-- *Cierre (20/10/2026)*: Pedro borró el token `sbp_`. La caravana 65095381 (sesión 1155, sin categoría ni dueño) se corrigió en
-  `correcciones.csv` del Lector (Ternero, PEDRO) y 66047322/66047327/66047334 de REFUGO_VENTA ganaron propietario PEDRO; verificado en
-  `animales_caravana`. El registro "Sin categoría" (EON 16/10, 1 animal, potrero 8) ya había bajado a la Planilla (`importado_en` lleno), así
-  que se corrige **en el Excel**, no en la app. La Planilla está en
-  `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Sanidad\Planilla_Sanitaria_v22.xlsm`.
-  Pedro la corrigió a Terneros el 20/10 (≈19 h). `sanidad_ultimos` se publica desde el Excel una vez por hora (`actualizado`), así que un
-  cambio en la Planilla tarda hasta una hora en verse en el tablero y la app: antes de eso sigue saliendo el valor viejo. **Caso cerrado.**
-- *Avisos que se repiten y ya están resueltos*: "Sanidad SIN pasar: LOTE_1_SET (EON ×1)" y "REFUGO_VENTA (Ricoverm ×4)" siguen saliendo en cada
-  corrida, pero Pedro los cargó a mano el 12/10 (`sc_1791844254221…` Vacas EON 8 cc pot 14; `sc_1791844163706…` + `sc_1791844209658…` Terneros 3 +
-  Terneras 1, Ricoverm 3 cc pot 18). **No volver a cargarlos.** Son de antes de `FICHA_DESDE` (13/10): `sanidad_puente.py` los bloquea por falta de
-  categoría en la lectura aunque `correcciones.csv` arregle la ficha, y no sabe de las cargas a mano. Silenciarlos sería un cambio en `lector-xrs2`.
-- *Para corregir fichas desde la nube*: identificar el animal con `animales_caravana.faltantes` (jsonb: `a` sesión, `f` fecha, `p` producto, `falta`)
-  y darle a Pedro las líneas de `correcciones.csv` (`id8;campo;valor;por_que;fecha;lectura`, separador `;`) para `Add-Content -Encoding UTF8` + `--forzar`.
+### Lector XRS2 (otro carril)
+El Lector del bastón es otro repo (`lector-xrs2`, carpeta `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Lector XRS2`). Su contexto completo, el flujo `Entrada\` → `vigilar_entrada.py` → `sanidad_puente.py` y el incidente del 13→18/10/2026 viven ahora en el `CLAUDE.md` de esa carpeta. Puntos de contacto con la app: el Lector publica `animales_caravana` y `sanidad_carga*` y la app los lee; la app arma el CSV completado (`completar-sanidad/` y "Completar lectura del bastón") que el Lector toma de `Entrada\`.
 
 ### Completar lectura del bastón (CSV) dentro de Sanidad (20/10/2026, a pedido de Pedro, solo PC de La Vuelta, `CONFIG.completarCsvBaston`)
 
@@ -830,6 +775,25 @@ Los falsos Supabase de la prueba deben atender `sanidad_proximos_hechos` **antes
 - **Cambiar el ícono no actualiza un acceso directo ya instalado** en la pantalla de inicio: hay que borrarlo y volver a agregarlo.
 - Las capturas de la presentación se sacan con Playwright (Chromium ya instalado) y `fetch` interceptado con datos de ejemplo; no
   hay forma de verlas con datos reales hasta que Pedro abre la página.
+
+### Tablero de Campos (`tablero-campos/`, 4/11/2026, a pedido de Pedro)
+
+Página suelta de **solo lectura para la PC**, al estilo del portal de FieldData (`pedrolanfranco-collab.github.io/potreros/tablero-campos/`).
+Botones por campo (hoy **La Vuelta y María Laura**; Pone Chico oculto a pedido de Pedro) + **Todos** si hay más de uno; tarjetas (cabezas, UG, carga UG/ha, potreros con animales, último dato);
+mapa satelital con los potreros pintados por carga (cortes `CORTES_CARGA` = 0,5 / 0,8 / 1,2 UG/ha), cabezas o con/sin animales;
+panel de detalle al hacer clic; tablas de potreros (ordenables) y por categoría; filtro de dueño/firma.
+Lee **solo `stock_potreros`** con `fetch` (paginado de a 1000). La clave del campo funciona igual que en tablero-sanidad
+(`clave_campo_<campo>`, `verificar_clave`, `x-clave-campo`); una lectura vacía de un campo con clave **no pisa** la copia guardada
+salvo que la clave se confirme buena (ahí vacío es vacío). La única llamada que no es GET es `rpc/verificar_clave`.
+**La carga del potrero usa siempre todas las UG del potrero**, aunque haya filtro de dueño (el pasto lo comen todos); la carga total
+es UG de los potreros dibujados / sus ha. Superficie: el `area` del config; si está vacío, se mide del polígono (se muestra con "≈").
+**No es una app generada por `template/generar.js`**: `fuente.html` se escribe a mano; **`tablero-campos/config.js` decide qué campos
+se ven** (id = `establecimiento`, nombre, si usa clave, etiqueta del dueño, de dónde salen los potreros: `desdeConfig` o un `geojson`),
+la URL/clave de Supabase, el título y los cortes de carga. `node tablero-campos/generar.js` pega todo eso como `const TABLERO` en
+`index.html`. Pensado para que otro establecimiento lo reuse cambiando solo `config.js` (ver `tablero-campos/LEEME.md`).
+Si cambian los límites en un config de las apps o `config.js`, correr ese generador (CI corre `--check`). También dibuja los potreros importados en ese navegador (`<campo>_potreros_nuevos`, `<campo>_limites_potreros`,
+validados con `coordsValidas`). Sin `sw.js` ni íconos propios (para no servir datos viejos).
+Test: `tests/probar_tablero_campos.js`.
 
 ### Completar sanidad del bastón (`completar-sanidad/`, 18/10/2026, a pedido de Pedro)
 
@@ -905,6 +869,37 @@ reemplaza por dos scripts de Python que usan **solo la clave pública**:
   `select … from eventos_sync where dispositivo='hermes-script'`.
 - **Cierre de la Fase 4**: estos scripts leen y escriben con la clave pública, así que también necesitan
   `CLAVE_CAMPO_<EST>` (de `~\.potreros\.env`); sumarlos a la lista de scripts a verificar antes de correr el cierre.
+
+### Insumos (3/11/2026, a pedido de Pedro, `CONFIG.insumos`)
+
+Pantalla "🧴 Insumos" (Herramientas; en la PC dentro de Consultar, justo después de Sanidad) con el stock de productos veterinarios del
+galpón. **Solo La Vuelta y María Laura** (`insumos: true`); Pone Chico `false`: el botón queda oculto y no hace ninguna consulta. Sale en
+las 3 variantes (PC, móvil completa y Campo): ventanas `#modal-insumos` y `#modal-insumos-form` sin marcadores, el código está en el
+template bajo el banner `INSUMOS`.
+- **El stock lo calcula Supabase**: RPC `stock_insumos_app()` (sin argumentos; `establecimiento, producto, fecha_conteo, inicial_ml,
+  entradas_ml, salidas_ml, stock_ml, estado`), que respeta la clave del campo. La app filtra por su `ESTABLECIMIENTO` y solo muestra. Los
+  productos sin conteo inicial no aparecen. Colores (`insClasificar()`): rojo si `estado` es 'sin stock' o 'NEGATIVO - revisar' (o el
+  stock es ≤ 0 o falta: texto "sin stock" / "revisar"), amarillo si `stock_ml` < 100 o < 20 % de `inicial_ml + entradas_ml`, verde el resto;
+  el color nunca va solo (siempre el texto ok / poco / sin stock / revisar). Frascos: `productos_catalogo` no trae el tamaño del envase, así
+  que se recuerda en este equipo el "ml por frasco" que se escribe en el formulario y la lista agrega "≈ N frascos de X ml"; sin dato, solo ml.
+- **Se carga en `insumos_ajustes`** (`anon` solo SELECT e INSERT): `tipo` `inicial` (conteo del galpón, lo contado), `ajuste` (+ o −, no 0) o
+  `pasaje_salida` (positivo, `destino` = el otro campo, fijo). **Nunca se inserta `pasaje_entrada`**: la base la genera. `producto` = nombre
+  exacto de `productos_catalogo` (selector con búsqueda, cacheado; sin catálogo guardado se acepta lo escrito). Cada carga lleva `uid` (uuid del
+  cliente), `dispositivo` (`idDispositivo()`) y `autor` ("Quién soy").
+- **Todo vive aparte de `estado`**: en `localStorage[<ESTABLECIMIENTO>_insumos_v1]` = `{stock:{filas,hora}, catalogo:{filas,hora}, cola:[], envases:{}}`
+  (se lee y se escribe siempre fresco, porque PC/móvil/Campo del mismo campo comparten origen). No entra al Backup JSON, a "Verificar stock"
+  ni a la cola de `eventos_sync`, y "Restablecer datos de fábrica" no lo borra. Es a propósito: no se mezcla con la idempotencia de los eventos.
+- **Cola propia** (`insVaciarCola()`): la carga se guarda en el equipo ANTES de mandarse y se manda de a una; se saca solo cuando Supabase
+  confirma. Un **23505 (uid repetido) cuenta como enviado**, así una respuesta perdida no duplica. Sin respuesta / 5xx / 408 / 429 = pasajero
+  (se frena y se reintenta); un rechazo de la base (22…, 23…, 42…, PGRST…) deja esa carga marcada con su error y con "Quitar", y sigue con las
+  demás. Se vacía al abrir la pantalla, al guardar, con "🔄 Actualizar" y en cada `sincronizar()` (`insumosAlSincronizar()`, en segundo plano, no
+  frena ni rompe la sincronización). Lo pendiente se ve como "en cola".
+- **Sin señal** se muestra la última copia con "Sin señal — datos del dd/mm hh:mm"; con señal pero con error del servidor, la copia más
+  "No se pudo actualizar (…) — datos del …".
+- **Si el esquema de Supabase cambia** (columnas de `insumos_ajustes`, nombre o forma de la RPC) hay que tocar `insFilaParaEnviar()` e `insRefrescarStock()`.
+- Tests: `tests/probar_insumos.js` (9 variantes, Supabase falso con `uid` único; en el CI). `probar_clave_campo.js` ahora ignora las RPC que no son
+  `verificar_clave` (antes contaba cualquiera y `stock_insumos_app` lo ponía en rojo). Los instructivos (`instructivo-*`) llevan la sección
+  "🧴 Insumos", la fila de "Según tu campo" y el flag `insumos` en `probar_instructivos.js`.
 
 ### RLS real por tabla (verificado en Supabase el 12/9/2026, no solo leído del repo)
 

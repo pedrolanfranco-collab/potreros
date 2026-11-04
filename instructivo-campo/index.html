@@ -102,9 +102,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: Campo <span class="ver" data-version="la-vuelta">1.59</span></li>
-    <li><b>María Laura</b>: Campo <span class="ver" data-version="maria-laura">1.58</span></li>
-    <li><b>Pone Chico</b>: Campo <span class="ver" data-version="pone-chico">1.59</span></li>
+    <li><b>La Vuelta</b>: Campo <span class="ver" data-version="la-vuelta">1.60</span></li>
+    <li><b>María Laura</b>: Campo <span class="ver" data-version="maria-laura">1.59</span></li>
+    <li><b>Pone Chico</b>: Campo <span class="ver" data-version="pone-chico">1.60</span></li>
   </ul>
   <p class="nota">La versión de tu celular está arriba, debajo del nombre del campo (por ejemplo <b>v1.54</b>). Si tu número es más viejo, abrí la app con señal y esperá un momento: se actualiza sola.</p>
 </div>
@@ -112,6 +112,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🧴 Insumos</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva con el stock de los productos veterinarios del galpón, en verde, amarillo o rojo. Desde ahí cargás un conteo, un ajuste o un pasaje al otro campo; sin señal queda “en cola” y se manda solo.</li>
     <li><b>🥩 Consumo (faena)</b> en cada potrero: si faenás algo que la app no tenía cargado, la app resta lo que había, te avisa cuántos faltaban y lo deja anotado. La <b>🤝 hacienda ajena</b> (dueños que no son de la lista) ahora se ve aparte en el potrero y en el reporte por dueño, y cuenta en los UG/ha.</li>
     <li><b>💧 Aguadas</b> y <b>🚧 Instalaciones</b> son ahora <b>capas</b> del mapa: los botones <span class="b">💧 Aguadas</span> y <span class="b">🚧 Instal.</span>, <b>en el borde de arriba del mapa</b> al lado del zoom, las prenden y apagan (apagada, el botón queda gris y tachado). Este celular recuerda la elección.</li>
     <li><b>📍 Aguadas / instalaciones</b>: ahora está en 🛠 Herramientas. Marcá aguadas, mangas, corrales o el embarcadero en el mapa, con <b>hasta 3 fotos</b>, y mirá cada punto con <span class="b">🗺 Ver en el mapa</span>.</li>
@@ -149,6 +150,7 @@
     <li><a href="#herramientas">4. Herramientas</a>
       <ul>
         <li><a href="#sanidad">🏥 Sanidad</a></li>
+        <li><a href="#insumos">🧴 Insumos</a></li>
         <li><a href="#lluvias">🌧 Lluvias</a></li>
         <li><a href="#desaparecidos">❓ Desaparecidos</a></li>
         <li><a href="#vecinos">🏡 Vecinos</a></li>
@@ -171,6 +173,7 @@
   <tr><td>🔑 Clave del campo</td><td>Sí</td><td>Sí</td><td><b>No se usa</b></td></tr>
   <tr><td>🔎 Buscar caravana</td><td>Sí</td><td>Sí</td><td><b>No está</b></td></tr>
   <tr><td>🔎 Buscar caravana sin señal</td><td>Sí (con la copia guardada en el celular)</td><td>No: necesita señal</td><td><b>No está</b></td></tr>
+  <tr><td>🧴 Insumos</td><td>Sí</td><td>Sí</td><td><b>No está</b></td></tr>
 </table>
 <p class="nota">Todo lo demás es igual en los tres campos. En las explicaciones, donde dice “dueño” en La Vuelta es la “firma”.</p>
 
@@ -377,6 +380,30 @@
     <li>En el individual, al escribir la caravana la app busca de qué animal es y lo muestra: si está <b>NO APTO</b> hasta una fecha o <b>YA NO ESTÁ EN EL CAMPO</b>, lo avisa en la línea de abajo. <b>Avisa pero deja guardar</b>: revisá que el número esté bien. Sin señal avisa que no pudo verificarla (<span class="campo">en La Vuelta</span> usa la copia del padrón y dice de qué fecha es), y en un campo sin padrón como Pone Chico dice que no está en el padrón; en los dos casos se guarda igual.</li>
   </ul>
   <p>Más abajo, la misma ventana tiene tres listas plegadas: <b>Últimos tratamientos</b>, <b>🚫 No aptos</b> (animales que todavía no pueden ir a faena) y <b>🔁 Próximos tratamientos (garrapaticidas)</b>. En esta última, <span class="b">✓ Hecho, ya se trató</span> saca el aviso de la lista en todos los celulares (pide confirmar y no se puede deshacer). Las listas necesitan señal; sin señal se ve lo último que se bajó.</p>
+</div>
+
+<div class="fn" id="insumos">
+  <h3>🧴 Insumos</h3>
+  <p class="para">Para qué sirve: ver cuánto queda de cada producto veterinario en el galpón y anotar lo que se cuenta, lo que se corrige y lo que pasa al otro campo. <span class="campo">Solo en La Vuelta y María Laura.</span> En Campo: <span class="b">🛠 Herramientas</span> › <span class="b">🧴 Insumos</span>.</p>
+  <p>La lista muestra cada producto con sus <b>ml</b> y la fecha del último conteo. El color avisa:</p>
+  <ul>
+    <li><b>Verde</b>: hay stock.</li>
+    <li><b>Amarillo</b>: queda poco (menos de 100 ml o menos del 20 % de lo que hubo).</li>
+    <li><b>Rojo</b>: dice “sin stock” o “revisar” (la cuenta dio negativa: hay que volver a contar).</li>
+  </ul>
+  <p>Para cargar algo, tocá <span class="b">+ Cargar movimiento</span>:</p>
+  <ol class="pasos">
+    <li>Elegí <b>qué cargás</b>: <b>Conteo del galpón</b> (lo que contaste hoy), <b>Ajuste (+ o −)</b> (para corregir) o <b>Pasaje a otro campo</b>.</li>
+    <li>Escribí el <b>producto</b> y elegilo de la lista que aparece.</li>
+    <li>Poné la <b>cantidad en ml</b>. Si contaste frascos, escribí cuántos y de cuántos ml cada uno: la app hace la cuenta. Un ajuste puede ser negativo (por ejemplo −50).</li>
+    <li>Mirá la <b>fecha</b> (viene con hoy) y, si querés, escribí una <b>nota</b>. Tocá <span class="b">Guardar</span>.</li>
+  </ol>
+  <ul>
+    <li>En un <b>pasaje</b> el destino es siempre el otro campo y la cantidad va en positivo: sale de este galpón y entra sola en el otro.</li>
+    <li>Sin producto, sin cantidad o con un ajuste de 0 no guarda y avisa.</li>
+    <li>Sin señal la pantalla muestra lo último que se bajó, con el aviso <b>“Sin señal — datos del …”</b>. Lo que cargues queda <b>“en cola”</b> y se manda solo cuando vuelva la señal, una sola vez.</li>
+    <li><span class="b">🔄 Actualizar</span> baja el stock de nuevo.</li>
+  </ul>
 </div>
 
 <div class="fn" id="lluvias">

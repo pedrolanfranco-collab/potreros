@@ -39,6 +39,8 @@ jobs:
 
       - name: Template -- los 9 index.html coinciden con lo que generaría el template
         run: node template/generar.js --check
+      - name: Tablero de Campos -- tablero-campos/index.html coincide con fuente.html + potrerosGeo de los configs
+        run: node tablero-campos/generar.js --check
 
       - name: Instalar jsdom
         working-directory: tests
@@ -183,6 +185,9 @@ jobs:
       - name: "PC: caja de Herramientas ordenada por funciones (10/10/2026) -- 4 grupos, 5 sub-menus, sin Exportar MD; movil y Campo sin cambios"
         run: node tests/probar_herramientas_pc.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
+      - name: "PC nueva, parte 1 (4/11/2026) -- menu a la izquierda con atajos a los botones de siempre y tarjetas Cabezas / Con animales; movil y Campo sin cambios"
+        run: node tests/probar_pc_menu.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
+
       - name: "Campo: visualizacion (10/10/2026) -- total grande, historial plegado, mapa mas bajo, formulario a la vista; PC y movil sin cambios"
         run: node tests/probar_campo_visualizacion.js la-vuelta-movil-campo/index.html maria-laura-movil-campo/index.html pone-chico-movil-campo/index.html
 
@@ -191,6 +196,8 @@ jobs:
 
       - name: Tablero de Sanidad (solo lectura, tablero-sanidad/)
         run: node tests/probar_tablero_sanidad.js tablero-sanidad/index.html
+      - name: Tablero de Campos (solo lectura, tablero-campos/)
+        run: node tests/probar_tablero_campos.js tablero-campos/index.html
 
       - name: "Completar sanidad del baston (18/10/2026) -- el export de Datamars sale igual, con PRODUCTO/DOSIS/POTRERO del catalogo; nunca escribe"
         run: node tests/probar_completar_sanidad.js completar-sanidad/index.html
@@ -209,6 +216,9 @@ jobs:
 
       - name: "Muertes de terneros en dos grupos, de temporada y marcados (10/10/2026) -- formulario, Stock total, editar/borrar y voz"
         run: node tests/probar_muerte_terneros_grupo.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
+
+      - name: "Insumos (3/11/2026) -- stock de productos veterinarios: colores, copia sin senal, cola con uid, reintento sin duplicar, pasaje al otro campo; Pone Chico no lo muestra"
+        run: node tests/probar_insumos.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 
       - name: "Movil completa y Campo comparten almacenamiento (6/10/2026) -- una pagina abierta se actualiza sola cuando la otra guarda"
         run: node tests/probar_actualizar_solo.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
