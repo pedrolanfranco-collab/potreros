@@ -831,6 +831,23 @@ Los falsos Supabase de la prueba deben atender `sanidad_proximos_hechos` **antes
 - Las capturas de la presentación se sacan con Playwright (Chromium ya instalado) y `fetch` interceptado con datos de ejemplo; no
   hay forma de verlas con datos reales hasta que Pedro abre la página.
 
+### Tablero de Campos (`tablero-campos/`, 4/11/2026, a pedido de Pedro)
+
+Página suelta de **solo lectura para la PC**, al estilo del portal de FieldData (`pedrolanfranco-collab.github.io/potreros/tablero-campos/`).
+Selector La Vuelta / María Laura / Pone Chico / **Todos**; tarjetas (cabezas, UG, carga UG/ha, potreros con animales, último dato);
+mapa satelital con los potreros pintados por carga (cortes `CORTES_CARGA` = 0,5 / 0,8 / 1,2 UG/ha), cabezas o con/sin animales;
+panel de detalle al hacer clic; tablas de potreros (ordenables) y por categoría; filtro de dueño/firma.
+Lee **solo `stock_potreros`** con `fetch` (paginado de a 1000). La clave del campo funciona igual que en tablero-sanidad
+(`clave_campo_<campo>`, `verificar_clave`, `x-clave-campo`); una lectura vacía de un campo con clave **no pisa** la copia guardada
+salvo que la clave se confirme buena (ahí vacío es vacío). La única llamada que no es GET es `rpc/verificar_clave`.
+**La carga del potrero usa siempre todas las UG del potrero**, aunque haya filtro de dueño (el pasto lo comen todos); la carga total
+es UG de los potreros dibujados / sus ha. Superficie: el `area` del config; si está vacío, se mide del polígono (se muestra con "≈").
+**No es una app generada por `template/generar.js`**: `fuente.html` se escribe a mano y `node tablero-campos/generar.js` le pega los
+`potrerosGeo` de `template/configs/*.js` → `index.html`. Si cambian los límites en un config, correr ese generador
+(CI corre `--check`). También dibuja los potreros importados en ese navegador (`<campo>_potreros_nuevos`, `<campo>_limites_potreros`,
+validados con `coordsValidas`). Sin `sw.js` ni íconos propios (para no servir datos viejos).
+Test: `tests/probar_tablero_campos.js`.
+
 ### Completar sanidad del bastón (`completar-sanidad/`, 18/10/2026, a pedido de Pedro)
 
 Página suelta (como el tablero: no generada, sin `sw.js` ni librerías) para cuando en la manga se usó el bastón pero
