@@ -113,7 +113,7 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.86</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.87</span></li>
     <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.53</span></li>
     <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">2.23</span></li>
   </ul>
@@ -123,6 +123,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🐄 Reproducción</b> <span class="campo">(solo La Vuelta)</span>: pantalla nueva con los tactos y los DAO del bastón, por sesión, con porcentajes y cruces. En <span class="b">🔎 Buscar caravana</span>, la ficha muestra el estado reproductivo. Ver <a href="#reproduccion">Reproducción</a>.</li>
     <li><b>Menú a la izquierda</b> (primera parte de la PC nueva): una columna verde con las secciones <span class="b">🗺 Mapa</span>, <span class="b">📊 Stock total</span>, <span class="b">🌾 Potreros</span>, <span class="b">🐄 Hacienda</span>, <span class="b">🏥 Sanidad e insumos</span>, <span class="b">🌧 Lluvias y eventos</span>, <span class="b">📑 Movimientos DICOSE</span>, <span class="b">📍 Puntos y reportes</span>, <span class="b">⬇ Exportar y respaldo</span> y <span class="b">⚙ Este dispositivo</span>. Los números de arriba ahora son tarjetas y suman <b>Cabezas</b> y <b>Con animales</b>. <span class="b">🛠 Herramientas</span> sigue igual. Ver <a href="#menu-izquierda">El menú de la izquierda</a>.</li>
     <li><b>🧴 Insumos</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva con el stock de los productos veterinarios del galpón, en verde, amarillo o rojo. Desde ahí cargás un conteo, un ajuste o un pasaje al otro campo; sin señal queda “en cola” y se manda solo.</li>
     <li><b>🥩 Consumo (faena)</b> en cada potrero (también en Campo): si faenás algo que la app no tenía cargado, la app resta lo que había, te avisa cuántos faltaban y lo deja anotado. La <b>🤝 hacienda ajena</b> (dueños que no son de la lista) ahora se ve aparte en el potrero y en el reporte por dueño, y cuenta en los UG/ha.</li>
@@ -164,6 +165,7 @@
         <li><a href="#vecinos">🏡 Vecinos</a></li>
         <li><a href="#caravana">🔎 Buscar caravana</a></li>
         <li><a href="#pesadas">⚖️ Pesadas</a></li>
+        <li><a href="#reproduccion">🐄 Reproducción</a></li>
         <li><a href="#alertas">🔔 Alertas</a></li>
         <li><a href="#verificar">🔍 Verificar stock</a></li>
         <li><a href="#faltantes">⚠ Datos faltantes</a></li>
@@ -206,6 +208,7 @@
   <tr><td>Compras y ventas</td><td data-campo="La Vuelta"><b>📑 Movimientos DICOSE</b> (formulario completo)</td><td data-campo="María Laura"><b>📑 Movimientos DICOSE</b> (formulario completo)</td><td data-campo="Pone Chico"><b>💰 Compra / Venta</b>, en la ficha del potrero (formulario simple, sin guía)</td></tr>
   <tr><td>🌾 Campo ajeno y 🚚 Traslado a María Laura (dentro de 📑 Movimientos DICOSE)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No</td><td data-campo="Pone Chico">No</td></tr>
   <tr><td>⚖️ Pesadas</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
+  <tr><td>🐄 Reproducción</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>⚠ Datos faltantes</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>📂 Completar lectura del bastón (CSV), dentro de 🏥 Sanidad</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>🏥 Sanidad: “Mis cargas recientes” y tratamientos del Excel de respaldo</td><td data-campo="La Vuelta">Sí. Lo que el Excel ya importó no se edita ni se borra desde la app.</td><td data-campo="María Laura">No: siempre se puede editar y borrar</td><td data-campo="Pone Chico">No: siempre se puede editar y borrar</td></tr>
@@ -574,6 +577,17 @@
     <li>En <b>Comparar con potrero</b> elegí un potrero para ver qué parte de sus animales actuales se pesó (viene elegido el que más se repite en la sesión, si coincide con uno de la app).</li>
   </ol>
   <p>Muestra los animales pesados, el peso promedio, el mayor y el menor (con su caravana), la ganancia diaria promedio y la proporción del lote, y abajo la lista animal por animal. Las pesadas dudosas (fuera de rango) se ven marcadas y no entran en los promedios.</p>
+</div>
+
+<div class="fn" id="reproduccion">
+  <h3>🐄 Reproducción</h3>
+  <p class="para">Para qué sirve: ver los tactos y los DAO (diagnóstico de actividad ovárica) que se hicieron con el bastón. <span class="campo">Solo en La Vuelta.</span> Necesita conexión. Solo cuenta animales con caravana.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">🐄 Reproducción</span>. El tipo de cada sesión sale del nombre del archivo del bastón: TACTO o DAO.</li>
+    <li><b>Tactos y DAO</b>: elegí la sesión y mirá cuántas quedaron preñadas (por tamaño), vacías o, en el DAO, ciclando o en anestro superficial o profundo, con su porcentaje y el detalle por categoría.</li>
+    <li><b>Cruces</b>: cada animal con DAO contra su último tacto posterior (por ejemplo, de los que ciclaban, cuántos quedaron preñados).</li>
+  </ol>
+  <p>En <span class="b">🔎 Buscar caravana</span>, la ficha del animal muestra su estado reproductivo y la línea de tiempo (DAO y tactos, con fecha). Si el nombre de un archivo del bastón no dice el tipo, se corrige en la PC del Lector, no acá.</p>
 </div>
 
 <div class="fn" id="alertas">
