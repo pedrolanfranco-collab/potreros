@@ -9,12 +9,10 @@
   Tablero de Campos (4/11/2026, a pedido de Pedro). Página suelta de SOLO LECTURA para la PC, al estilo del portal
   de FieldData: mapa grande con los potreros pintados por carga, tarjetas de totales, panel de detalle y tabla.
   NO es una app generada por template/generar.js y NO escribe nada en Supabase.
-  Lee `stock_potreros` (la foto del stock que publican las apps) de La Vuelta, María Laura y Pone Chico, y los
-  muestra por campo o todos juntos ("Todos").
-  Clave del campo: igual que tablero-sanidad, toma `clave_campo_<campo>` del localStorage (mismo origen que las apps)
-  o la pide una vez y la comprueba con verificar_clave. Se manda en `x-clave-campo`.
-  Polígonos: GEO está copiado de template/configs/*.js (potrerosGeo). tests/probar_tablero_campos.js falla si se
-  desfasan: si cambian los límites, correr `node tablero-campos/generar.js`.
+  Lee `stock_potreros` (la foto del stock que publican las apps) de los campos de config.js, por campo o todos juntos.
+  Qué campos se ven, sus nombres, la clave, Supabase y los cortes de carga salen de tablero-campos/config.js: para otro
+  establecimiento se cambia ese archivo y se corre `node tablero-campos/generar.js`, que lo pega en index.html (TABLERO)
+  junto con los dibujos de los potreros. tests/probar_tablero_campos.js falla si index.html se desfasa.
   Potreros agregados en un equipo con "Importar KML/KMZ" (localStorage `<campo>_potreros_nuevos` y
   `<campo>_limites_potreros`) también se dibujan si están en este navegador.
 -->
@@ -97,14 +95,9 @@ h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--suav
 <body>
 <header>
   <div class="fila entre">
-    <h1>🗺️ Tablero de Campos <span id="version" class="etq">v1.0</span></h1>
+    <h1>🗺️ <span id="titulo">Tablero de Campos</span> <span id="version" class="etq">v1.0</span></h1>
     <div class="fila">
-      <div class="campos" role="group" aria-label="Campo">
-        <button class="campo-btn" data-campo="la_vuelta">La Vuelta</button>
-        <button class="campo-btn" data-campo="maria_laura">María Laura</button>
-        <button class="campo-btn" data-campo="pone_chico">Pone Chico</button>
-        <button class="campo-btn" data-campo="todos">Todos</button>
-      </div>
+      <div class="campos" id="campos" role="group" aria-label="Campo"></div>
       <select id="dueno" aria-label="Dueño o firma"></select>
       <button id="refrescar" class="icono" title="Actualizar ahora" aria-label="Actualizar ahora">⟳</button>
     </div>
@@ -154,24 +147,28 @@ h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--suav
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha384-NElt3Op+9NBMCYaef5HxeJmU4Xeard/Lku8ek6hoPTvYkQPh3zLIrJP7KiRocsxO" crossorigin="anonymous"></script>
 <script>
-const VERSION = '1.1';
-const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
+const VERSION = '1.2';
+/* TABLERO: lo escribe tablero-campos/generar.js desde config.js (campos, Supabase, cortes) y los dibujos de los potreros.
+   Para otro establecimiento se cambia config.js, no este archivo. */
+const TABLERO = /*__TABLERO__*/{};
+const SUPABASE_URL = TABLERO.supabaseUrl;
+const SUPABASE_ANON_KEY = TABLERO.supabaseKey;
 const REFRESCO_MS = 5 * 60 * 1000;
-const CACHE_LS = 'tablero_campos_v1';
-const ELEGIDO_LS = 'tablero_campos_elegido';
-const CAMPOS = ['la_vuelta', 'maria_laura', 'pone_chico'];
-const NOMBRE_CAMPO = { la_vuelta: 'La Vuelta', maria_laura: 'María Laura', pone_chico: 'Pone Chico', todos: 'Todos' };
-const CON_CLAVE = { la_vuelta: true, maria_laura: true, pone_chico: false };
-const ETQ_DUENO = { la_vuelta: 'Firma', maria_laura: 'Dueño', pone_chico: 'Dueño' };
+/* Prefijo de lo que se guarda en el navegador: cambiarlo en config.js si dos tableros comparten dirección web. */
+const PREFIJO = TABLERO.prefijoAlmacen || 'tablero_campos';
+const CACHE_LS = PREFIJO + '_v1';
+const ELEGIDO_LS = PREFIJO + '_elegido';
+const CAMPOS = (TABLERO.campos || []).map(c => c.id);
+const HAY_TODOS = CAMPOS.length > 1;
+const NOMBRE_CAMPO = { todos: 'Todos' };
+const CON_CLAVE = {}, ETQ_DUENO = {}, GEO = {};
+for(const c of (TABLERO.campos || [])){ NOMBRE_CAMPO[c.id] = c.nombre; CON_CLAVE[c.id] = !!c.usaClave; ETQ_DUENO[c.id] = c.etiquetaDueno; GEO[c.id] = c.potreros || []; }
 const CLAVE_RE = /^[a-z0-9]{8,64}$/;
 /* Cortes de carga en UG/ha (campo natural). Cambiar acá si Pedro quiere otros. */
-const CORTES_CARGA = [0.5, 0.8, 1.2];
+const CORTES_CARGA = TABLERO.cortesCarga || [0.5, 0.8, 1.2];
 const COLORES = ['#cfe3a8', '#7fb04f', '#e0a62a', '#c2452d'];
 const COLOR_VACIO = '#9a9a8c';
 
-/* GEO: copia de template/configs/*.js (potrerosGeo). Lo escribe tablero-campos/generar.js. */
-const GEO = /*__GEO__*/{};
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -321,7 +318,7 @@ async function actualizar(){
 }
 
 /* ---------- cálculo ---------- */
-let elegido = 'la_vuelta';
+let elegido = CAMPOS[0];
 let duenoFiltro = '';
 let seleccion = null;   // {campo, nombre}
 let orden = { col: 'carga', desc: true };
@@ -451,7 +448,7 @@ function tablaCat(filas, conDueno){
 function pintarPanel(lista, t){
   const it = seleccion && lista.find(i => i.campo === seleccion.campo && i.nombre === seleccion.nombre);
   if(!it){
-    const porCampo = elegido === 'todos' ? CAMPOS.map(c => { const tt = totales(lista.filter(i => i.campo === c)); return '<tr class="fila-campo" data-campo="' + c + '"><td>' + NOMBRE_CAMPO[c] + '</td><td class="n">' + fmt(tt.cabezas) + '</td><td class="n">' + fmt(tt.ug, 1) + '</td><td class="n">' + fmt(tt.carga, 2) + '</td></tr>'; }).join('') : '';
+    const porCampo = elegido === 'todos' ? CAMPOS.map(c => { const tt = totales(lista.filter(i => i.campo === c)); return '<tr class="fila-campo" data-campo="' + c + '"><td>' + esc(NOMBRE_CAMPO[c]) + '</td><td class="n">' + fmt(tt.cabezas) + '</td><td class="n">' + fmt(tt.ug, 1) + '</td><td class="n">' + fmt(tt.carga, 2) + '</td></tr>'; }).join('') : '';
     $('panel').innerHTML = '<h2>' + esc(NOMBRE_CAMPO[elegido]) + '</h2><div class="sub">Hacé clic en un potrero del mapa o de la tabla para ver el detalle.</div>' +
       (porCampo ? '<h3>Por campo</h3><table class="tabla"><tr><th>Campo</th><th class="n">Cab.</th><th class="n">UG</th><th class="n">UG/ha</th></tr>' + porCampo + '</table>' : '') +
       '<h3>Potreros con más carga</h3><table class="tabla">' +
@@ -489,7 +486,7 @@ function pintarDuenos(){
   const lista = [...vals].sort((a, b) => a.localeCompare(b, 'es'));
   if(duenoFiltro && !lista.some(d => norm(d) === norm(duenoFiltro))) duenoFiltro = '';
   const etq = elegido === 'todos' ? 'Dueño / firma' : ETQ_DUENO[elegido];
-  $('dueno').innerHTML = '<option value="">' + etq + ': todos</option>' + lista.map(d => '<option' + (d === duenoFiltro ? ' selected' : '') + '>' + esc(d) + '</option>').join('');
+  $('dueno').innerHTML = '<option value="">' + esc(etq) + ': todos</option>' + lista.map(d => '<option' + (d === duenoFiltro ? ' selected' : '') + '>' + esc(d) + '</option>').join('');
   $('dueno').hidden = !lista.length;
 }
 function pintarEstado(){
@@ -528,7 +525,10 @@ function elegirCampo(c){
 
 /* ---------- arranque ---------- */
 function iniciar(){
-  try{ const g = localStorage.getItem(ELEGIDO_LS); if(g && NOMBRE_CAMPO[g]) elegido = g; }catch(e){}
+  try{ const g = localStorage.getItem(ELEGIDO_LS); if(g && (CAMPOS.includes(g) || (g === 'todos' && HAY_TODOS))) elegido = g; }catch(e){}
+  $('titulo').textContent = TABLERO.titulo || 'Tablero de Campos';
+  $('campos').innerHTML = [...CAMPOS, ...(HAY_TODOS ? ['todos'] : [])]
+    .map(c => '<button class="campo-btn" data-campo="' + esc(c) + '">' + esc(NOMBRE_CAMPO[c]) + '</button>').join('');
   $('version').textContent = 'v' + VERSION;
   leerCache();
   try{ iniciarMapa(); }catch(e){ $('map').textContent = 'No se pudo cargar el mapa (sin conexión).'; }

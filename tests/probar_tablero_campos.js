@@ -1,13 +1,15 @@
 /*
- * Tablero de Campos (4/11/2026): abre tablero-campos/index.html en jsdom con un Leaflet falso (el CDN no carga
- * en jsdom) y un fetch falso que devuelve filas de stock_potreros por establecimiento. Verifica: carga sin errores
- * de JS, GEO igual a template/configs/*.js y generar.js --check, que solo se lee (GET) salvo el guardado de una
- * clave (POST a rpc/verificar_clave), que la clave va en x-clave-campo solo a La Vuelta y María Laura, totales
- * (cabezas, UG, dueño, Todos), potrero sin mapa, clic en la tabla y en el polígono, escape de HTML, aviso de clave,
- * y copia guardada cuando la lectura falla o viene vacía.
+ * Tablero de Campos: abre tablero-campos/index.html en jsdom con un Leaflet falso (el CDN no carga en jsdom) y un fetch
+ * falso que devuelve filas de stock_potreros por establecimiento. Verifica: carga sin errores de JS; que TABLERO (embebido
+ * en index.html) coincide con config.js y con potrerosGeo de template/configs/*.js; generar.js --check; que solo se lee
+ * (GET) salvo el guardado de una clave (POST a rpc/verificar_clave); que la clave va en x-clave-campo solo a La Vuelta y
+ * María Laura; que no hay botón ni lectura de Pone Chico (tampoco en Todos); totales, potrero sin mapa, clic en la tabla y
+ * en el polígono, escape de HTML, aviso de clave, copia guardada cuando la lectura falla o viene vacía. Y el generador,
+ * probado en una copia temporal (campo sin clave con GeoJSON, título escapado, ids inválidos o repetidos).
  * Uso: node tests/probar_tablero_campos.js tablero-campos/index.html
  */
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -19,8 +21,8 @@ const dormir = ms => new Promise(r => setTimeout(r, ms));
 const raiz = path.join(__dirname, '..');
 const archivo = process.argv[2] || 'tablero-campos/index.html';
 const html = fs.readFileSync(archivo, 'utf8');
-const CONFIG = { la_vuelta: 'la-vuelta', maria_laura: 'maria-laura', pone_chico: 'pone-chico' };
-const CLAVE = { la_vuelta: 'clavelavuelta1', maria_laura: 'clavemarialaura2', pone_chico: 'clavepone1' };
+const CONFIG = { la_vuelta: 'la-vuelta', maria_laura: 'maria-laura' };
+const CLAVE = { la_vuelta: 'clavelavuelta1', maria_laura: 'clavemarialaura2' };
 const CLAVE_BUENA = 'clavecorrecta1';           // la única que verificar_clave acepta en esta prueba
 const AHORA = new Date().toISOString();
 const respuesta = x => ({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(x)) });
@@ -44,13 +46,14 @@ const STOCK = {
     f('Rincon', 'Ternero', 'Bovino', 'Pedro', 45, 18),
     f('Manantial', 'Vaca', 'Bovino', 'Perico', 10, 10)
   ],
+  // Pone Chico ya no está en config.js: si aparece una lectura de esta fila, la página la está pidiendo mal.
   pone_chico: [f('PC-1', 'Vaca', 'Bovino', '', 15, 15)]
 };
 const sumaCab = filas => filas.filter(x => Number(x.cantidad) !== 0).reduce((s, x) => s + Number(x.cantidad), 0);
 const sumaUG = filas => filas.filter(x => Number(x.cantidad) !== 0).reduce((s, x) => s + Number(x.ug), 0);
 const num = s => parseFloat(String(s).replace(/\./g, '').replace(',', '.').replace(/[^0-9.\-]/g, ''));
 
-const LS_CLAVES = { clave_campo_la_vuelta: CLAVE.la_vuelta, clave_campo_maria_laura: CLAVE.maria_laura, clave_campo_pone_chico: CLAVE.pone_chico };
+const LS_CLAVES = { clave_campo_la_vuelta: CLAVE.la_vuelta, clave_campo_maria_laura: CLAVE.maria_laura };
 
 /* Leaflet falso: registra polígonos (con su handler de clic) en la capa activa. */
 function fakeLeaflet(){
@@ -72,13 +75,14 @@ function fakeLeaflet(){
   return { api, estado };
 }
 
+/* o.html: otro index.html (por defecto el de la prueba). o.stock, o.ls, o.vacio, o.caido, o.sinL: escenas. */
 async function abrir(o = {}){
   const llamadas = [], errores = [], consola = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', e => errores.push(String((e && e.message) || e)));
   vc.on('error', (...a) => consola.push(a.map(String).join(' ')));   // console.error de la página (p. ej. un paso de pintar que falla)
   const fl = fakeLeaflet();
-  const sinLeaflet = html
+  const sinLeaflet = (o.html || html)
     .replace(/<link rel="stylesheet" href="https:\/\/cdnjs[^>]*>/, '')
     .replace(/<script src="https:\/\/cdnjs[^"]*leaflet[^"]*"[^>]*><\/script>/, '');
   const dom = new JSDOM(sinLeaflet, { runScripts: 'dangerously', url: 'https://x.github.io/potreros/tablero-campos/', virtualConsole: vc,
@@ -108,29 +112,66 @@ const filaPot = (a, campo, nombre) => [...a.doc.querySelectorAll('#tabla-pot tr.
 const elegirCampo = async (a, campo) => { a.doc.querySelector('.campo-btn[data-campo="' + campo + '"]').click(); await dormir(80); };
 const llamadasA = (a, campo) => a.llamadas.filter(l => l.url.includes('stock_potreros') && l.url.includes('establecimiento=eq.' + campo));
 
+/* Copia temporal del generador: no toca el repo. Usa su propio fuente.html y generar.js, y un config.js escrito acá. */
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'tablero-campos-prueba-'));
+const GEOJSON_X = { type: 'FeatureCollection', features: [
+  { type: 'Feature', properties: { nombre: 'Potrero A', area: 120 },
+    geometry: { type: 'Polygon', coordinates: [[[-55.10, -31.20], [-55.11, -31.20], [-55.11, -31.21], [-55.10, -31.21], [-55.10, -31.20]]] } },
+  { type: 'Feature', properties: { name: 'Potrero B' },
+    geometry: { type: 'Polygon', coordinates: [[[-55.20, -31.30], [-55.21, -31.30], [-55.21, -31.31], [-55.20, -31.31], [-55.20, -31.30]]] } }
+] };
+const CAMPO_X = { id: 'campo_x', nombre: 'Campo <X>', usaClave: false, etiquetaDueno: 'Dueño', potreros: { geojson: 'x.geojson' } };
+const STOCK_X = [f('Potrero A', 'Vaca', 'Bovino', '', 5, 3), f('Potrero B', 'Novillo', 'Bovino', '', 4, 2)];
+/* cfgTexto: el config.js tal cual (puede ser roto a propósito). archivos: { nombre: texto } extra en tablero-campos/. */
+function generarCon(nombre, cfgTexto, archivos = {}){
+  const dir = path.join(TMP, nombre), tab = path.join(dir, 'tablero-campos');
+  fs.mkdirSync(tab, { recursive: true });
+  fs.mkdirSync(path.join(dir, 'template'), { recursive: true });
+  fs.symlinkSync(path.join(raiz, 'template', 'configs'), path.join(dir, 'template', 'configs'), 'dir');
+  fs.copyFileSync(path.join(raiz, 'tablero-campos', 'fuente.html'), path.join(tab, 'fuente.html'));
+  fs.copyFileSync(path.join(raiz, 'tablero-campos', 'generar.js'), path.join(tab, 'generar.js'));
+  fs.writeFileSync(path.join(tab, 'x.geojson'), JSON.stringify(GEOJSON_X));
+  for(const n in archivos) fs.writeFileSync(path.join(tab, n), archivos[n]);
+  fs.writeFileSync(path.join(tab, 'config.js'), cfgTexto);
+  const gen = spawnSync(process.execPath, [path.join(tab, 'generar.js')], { cwd: dir, encoding: 'utf8' });
+  return { gen, index: path.join(tab, 'index.html') };
+}
+const BASE_CFG = { titulo: 'Tablero de Campos', supabaseUrl: 'https://x.supabase.co', supabaseKey: 'clave-de-prueba', cortesCarga: [0.5, 0.8, 1.2] };
+const aCfgTexto = cfg => 'module.exports = ' + JSON.stringify(cfg, null, 2) + ';\n';
+function generadorTmp(nombre, campos, titulo = 'Tablero de Campos', extra = {}){
+  return generarCon(nombre, aCfgTexto({ ...BASE_CFG, titulo, campos, ...extra }));
+}
+
 (async () => {
   const abiertas = [];
-  const geoEsperado = {};
-  for(const campo of Object.keys(CONFIG)){
-    const c = require(path.join(raiz, 'template', 'configs', CONFIG[campo] + '.js'));
-    geoEsperado[campo] = (c.potrerosGeo || []).map(p => ({ nombre: p.nombre, area: p.area, coords: p.coords }));
-  }
-  const poligono = (a, campo, nombre) => {
-    const p = geoEsperado[campo].find(x => x.nombre === nombre);
-    return a.mapa.capa.capas.find(pol => JSON.stringify(pol.coords) === JSON.stringify(p.coords));
-  };
 
-  console.log('Carga, GEO y generador');
+  console.log('Carga, TABLERO y generador');
   const a = await abrir({ ls: LS_CLAVES }); abiertas.push(a);
   chequear('el <script> de Leaflet del CDN está y se reemplaza por el falso', /<script src="https:\/\/cdnjs[^"]*leaflet/.test(html));
   chequear('la página carga sin errores de JS', a.errores.length === 0, a.errores.join(' | '));
   chequear('la página dibujó los 5 KPI', a.doc.querySelectorAll('#kpis .kpi').length === 5);
-  const geoReal = JSON.parse(a.win.eval('JSON.stringify(GEO)'));
-  for(const campo of Object.keys(CONFIG)){
-    const real = geoReal[campo] || [], esp = geoEsperado[campo], difs = [];
-    if(real.length !== esp.length) difs.push('cantidad ' + real.length + ' vs ' + esp.length);
-    esp.forEach((p, i) => { const r = real[i] || {}; if(r.nombre !== p.nombre || r.area !== p.area || JSON.stringify(r.coords) !== JSON.stringify(p.coords)) difs.push(p.nombre); });
-    chequear('GEO de ' + campo + ' igual a potrerosGeo del config (' + esp.length + ' potreros)', difs.length === 0, difs.join(', '));
+  const botones = [...a.doc.querySelectorAll('.campo-btn')].map(b => b.dataset.campo);
+  chequear('botones de campo: La Vuelta, María Laura y Todos (sin Pone Chico)', botones.join(',') === 'la_vuelta,maria_laura,todos', botones.join(','));
+  chequear('no hay botón de Pone Chico', !a.doc.querySelector('.campo-btn[data-campo="pone_chico"]'));
+
+  const TAB_INI = 'const TABLERO = ';
+  const ini = html.indexOf(TAB_INI), fin = ini === -1 ? -1 : html.indexOf(';\n', ini);
+  let TAB = null;
+  try{ TAB = JSON.parse(html.slice(ini + TAB_INI.length, fin)); }catch(e){ TAB = null; }
+  chequear('index.html trae TABLERO como JSON válido', !!TAB, 'no se pudo leer');
+  const cfgCampos = require(path.join(raiz, 'tablero-campos', 'config.js')).campos;
+  const tabCampos = (TAB && TAB.campos) || [];
+  const idsCfg = cfgCampos.map(c => ({ id: c.id, nombre: c.nombre, usaClave: !!c.usaClave }));
+  const idsTab = tabCampos.map(c => ({ id: c.id, nombre: c.nombre, usaClave: c.usaClave }));
+  chequear('TABLERO: campos (id, nombre, usaClave) = config.js (' + idsCfg.length + ' campos)', JSON.stringify(idsTab) === JSON.stringify(idsCfg),
+    JSON.stringify(idsTab) + ' vs ' + JSON.stringify(idsCfg));
+  for(const cc of cfgCampos){
+    const tab = (tabCampos.find(x => x.id === cc.id) || {}).potreros || [];
+    if(!(cc.potreros && cc.potreros.desdeConfig)){ chequear('TABLERO de ' + cc.id + ': potreros de GeoJSON', Array.isArray(tab)); continue; }
+    const esp = (require(path.join(raiz, 'template', 'configs', cc.potreros.desdeConfig + '.js')).potrerosGeo || [])
+      .map(p => ({ nombre: p.nombre, area: p.area, coords: p.coords }));
+    chequear('TABLERO de ' + cc.id + ' = potrerosGeo de ' + cc.potreros.desdeConfig + ' (' + esp.length + ' potreros)',
+      JSON.stringify(tab) === JSON.stringify(JSON.parse(JSON.stringify(esp))));
   }
   const gen = spawnSync(process.execPath, [path.join(raiz, 'tablero-campos', 'generar.js'), '--check'], { cwd: raiz, encoding: 'utf8' });
   chequear('node tablero-campos/generar.js --check sale con 0', gen.status === 0, (gen.stderr || gen.stdout || '').trim());
@@ -141,9 +182,6 @@ const llamadasA = (a, campo) => a.llamadas.filter(l => l.url.includes('stock_pot
   await elegirCampo(a, 'maria_laura');
   const pedidosML = llamadasA(a, 'maria_laura');
   chequear('María Laura: se manda x-clave-campo con su clave', pedidosML.length > 0 && pedidosML.every(l => l.headers['x-clave-campo'] === CLAVE.maria_laura), JSON.stringify(pedidosML.map(l => l.headers)));
-  await elegirCampo(a, 'pone_chico');
-  const pedidosPC = llamadasA(a, 'pone_chico');
-  chequear('Pone Chico: no se manda clave aunque esté guardada', pedidosPC.length > 0 && pedidosPC.every(l => !('x-clave-campo' in l.headers)), JSON.stringify(pedidosPC.map(l => l.headers)));
   await elegirCampo(a, 'la_vuelta');
 
   console.log('La Vuelta: totales, potrero sin mapa, escape');
@@ -159,7 +197,11 @@ const llamadasA = (a, campo) => a.llamadas.filter(l => l.url.includes('stock_pot
   console.log('Clic en tabla y en polígono');
   filaPot(a, 'la_vuelta', '12').click(); await dormir(80);
   chequear('clic en la fila "12" muestra "12" en el panel', a.doc.querySelector('#panel h2').textContent === '12', a.doc.querySelector('#panel h2').textContent);
-  const p5 = poligono(a, 'la_vuelta', '5');
+  const poligono = (campo, nombre) => {
+    const p = (TAB.campos.find(x => x.id === campo).potreros).find(x => x.nombre === nombre);
+    return a.mapa.capa.capas.find(pol => JSON.stringify(pol.coords) === JSON.stringify(p.coords));
+  };
+  const p5 = poligono('la_vuelta', '5');
   chequear('hay un polígono dibujado para el potrero "5"', !!p5);
   p5.handlers.click(); await dormir(80);
   chequear('clic en el polígono "5" muestra "5" en el panel', a.doc.querySelector('#panel h2').textContent === '5', a.doc.querySelector('#panel h2').textContent);
@@ -174,12 +216,12 @@ const llamadasA = (a, campo) => a.llamadas.filter(l => l.url.includes('stock_pot
   chequear('con dueño Perico, KPI UG = solo sus animales', kpi(a, 1) === sumaUG(perico), 'KPI ' + kpi(a, 1) + ' vs ' + sumaUG(perico));
   dueno.value = ''; dueno.dispatchEvent(new a.win.Event('change')); await dormir(80);
 
-  console.log('Todos');
-  const lsTodos = { ...LS_CLAVES };
-  const b = await abrir({ ls: { ...lsTodos, tablero_campos_elegido: 'todos' } }); abiertas.push(b);
-  const todosCab = sumaCab(STOCK.la_vuelta) + sumaCab(STOCK.maria_laura) + sumaCab(STOCK.pone_chico);
-  chequear('Todos: KPI cabezas = suma de los 3 campos', kpi(b, 0) === todosCab, 'KPI ' + kpi(b, 0) + ' vs ' + todosCab);
-  chequear('Todos: pide stock a los 3 campos', ['la_vuelta', 'maria_laura', 'pone_chico'].every(c => llamadasA(b, c).length > 0));
+  console.log('Todos (solo La Vuelta y María Laura)');
+  const b = await abrir({ ls: { ...LS_CLAVES, tablero_campos_elegido: 'todos' } }); abiertas.push(b);
+  const todosCab = sumaCab(STOCK.la_vuelta) + sumaCab(STOCK.maria_laura);
+  chequear('Todos: KPI cabezas = suma de los 2 campos', kpi(b, 0) === todosCab, 'KPI ' + kpi(b, 0) + ' vs ' + todosCab);
+  chequear('Todos: pide stock a La Vuelta y María Laura', ['la_vuelta', 'maria_laura'].every(c => llamadasA(b, c).length > 0));
+  chequear('Todos: no pide stock de Pone Chico', llamadasA(b, 'pone_chico').length === 0);
   chequear('Todos: la tabla tiene columna Campo', [...b.doc.querySelectorAll('#tabla-pot th')].some(th => th.textContent.trim().startsWith('Campo')));
   chequear('Todos: el filtro de dueño dice "Dueño / firma"', b.doc.querySelector('#dueno option').textContent.includes('Dueño / firma'));
 
@@ -253,8 +295,9 @@ const llamadasA = (a, campo) => a.llamadas.filter(l => l.url.includes('stock_pot
   console.log('Potreros con animales: ocupados <= total');
   const k = await abrir({ ls: LS_CLAVES }); abiertas.push(k);
   const [ocup, tot] = kpiTxt(k, 3).split('/').map(x => Number(x.trim()));
-  const ocupEsp = new Set(LV.filter(x => Number(x.cantidad) !== 0 && geoEsperado.la_vuelta.some(p => p.nombre === x.potrero)).map(x => x.potrero)).size;
-  const totEsp = geoEsperado.la_vuelta.filter(p => p.coords && Number(p.area) > 0).length;
+  const geoLV = TAB.campos.find(x => x.id === 'la_vuelta').potreros;
+  const ocupEsp = new Set(LV.filter(x => Number(x.cantidad) !== 0 && geoLV.some(p => p.nombre === x.potrero)).map(x => x.potrero)).size;
+  const totEsp = geoLV.filter(p => p.coords && Number(p.area) > 0).length;
   chequear('ocupados <= total con un potrero solo en stock ("Piquete")', ocup <= tot, kpiTxt(k, 3));
   chequear('ocupados y total = los esperados (sin contar "Piquete")', ocup === ocupEsp && tot === totEsp, kpiTxt(k, 3) + ' vs ' + ocupEsp + ' / ' + totEsp);
 
@@ -267,16 +310,106 @@ const llamadasA = (a, campo) => a.llamadas.filter(l => l.url.includes('stock_pot
   chequear('nombre con HTML: window.pwn2 no existe', ev.win.pwn2 === undefined);
   chequear('nombre con HTML: ningún <img> dentro de #tabla-pot', ev.doc.querySelectorAll('#tabla-pot img').length === 0);
   chequear('nombre con HTML: la fila existe y muestra el nombre como texto', !!filaEv && filaEv.textContent.includes(EVIL), filaEv ? filaEv.textContent : 'no está');
-  const tips = ev.mapa.poligonos.map(p => String(p.tooltip || ''));
+  const tips = ev.mapa.capa.capas.map(p => String(p.tooltip || ''));
   chequear('tooltips de polígonos sin "<img" crudo', !tips.some(t => t.includes('<img')) && tips.some(t => t.includes('&lt;img')), tips.join(' | ').slice(0, 200));
+
+  console.log('Generador en copia temporal: campo sin clave, GeoJSON, título escapado');
+  const gx = generadorTmp('uno', [CAMPO_X], 'Tablero <Campo> & "X"');
+  chequear('generar.js con un campo GeoJSON sale con 0', gx.gen.status === 0, (gx.gen.stderr || gx.gen.stdout || '').trim());
+  const htmlX = fs.existsSync(gx.index) ? fs.readFileSync(gx.index, 'utf8') : '';
+  const xs = await abrir({ html: htmlX, ls: {}, stock: { campo_x: STOCK_X } }); abiertas.push(xs);
+  chequear('campo_x: la página carga sin errores de JS', xs.errores.length === 0, xs.errores.join(' | '));
+  const botonesX = xs.doc.querySelectorAll('.campo-btn');
+  chequear('campo_x: exactamente un botón de campo', botonesX.length === 1, botonesX.length + ' botones');
+  chequear('campo_x: no hay botón "todos"', !xs.doc.querySelector('.campo-btn[data-campo="todos"]'));
+  chequear('campo_x: el nombre "Campo <X>" se ve como texto y no crea elementos', botonesX.length === 1 && botonesX[0].textContent === 'Campo <X>' && botonesX[0].children.length === 0,
+    botonesX[0] ? botonesX[0].innerHTML : 'sin botón');
+  const polX = xs.mapa.capa ? xs.mapa.capa.capas : [];
+  chequear('campo_x: se dibujan 2 polígonos', polX.length === 2, polX.length + ' polígonos');
+  const lat = (pol, i) => pol.coords[0][i];
+  chequear('campo_x: las coordenadas llegan como [lat, lon] (lat ≈ -31, lon ≈ -55)',
+    polX.length === 2 && Math.abs(lat(polX[0], 0) + 31.2) < 0.5 && Math.abs(lat(polX[0], 1) + 55.1) < 0.5 && Math.abs(lat(polX[1], 0) + 31.3) < 0.5 && Math.abs(lat(polX[1], 1) + 55.2) < 0.5,
+    polX.length ? JSON.stringify(polX[0].coords[0]) : 'sin polígonos');
+  const llX = xs.llamadas.filter(l => l.url.includes('establecimiento=eq.campo_x'));
+  chequear('campo_x: la lectura se hace sin x-clave-campo', llX.length > 0 && llX.every(l => !('x-clave-campo' in l.headers)), JSON.stringify(llX.map(l => l.headers)));
+  chequear('campo_x: <title> con el título escapado', htmlX.includes('<title>Tablero &lt;Campo&gt; &amp; &quot;X&quot;</title>') && xs.doc.title === 'Tablero <Campo> & "X"', xs.doc.title);
+
+  console.log('Generador en copia temporal: ids inválidos o repetidos');
+  const malo = generadorTmp('mal_id', [{ ...CAMPO_X, id: 'Mal Id' }]);
+  chequear('id "Mal Id" hace fallar generar.js', malo.gen.status !== 0, 'sale con ' + malo.gen.status);
+  const dup = generadorTmp('dup', [CAMPO_X, { ...CAMPO_X, nombre: 'Otro' }]);
+  chequear('id repetido "campo_x" hace fallar generar.js', dup.gen.status !== 0, 'sale con ' + dup.gen.status);
+
+  console.log('Dos campos con HTML en nombre y etiqueta; prefijoAlmacen');
+  const dosCampos = [
+    { id: 'a', nombre: 'Santa & <b>Hijos</b>', usaClave: false, etiquetaDueno: 'Dueño <i>x</i>', potreros: { geojson: 'x.geojson' } },
+    { id: 'b', nombre: 'Campo B', usaClave: false, etiquetaDueno: 'Dueño', potreros: { desdeConfig: 'maria-laura' } }
+  ];
+  const gd = generadorTmp('dos_campos', dosCampos, 'Tablero de Campos', { prefijoAlmacen: 'tablero_x' });
+  chequear('dos campos: generar.js sale con 0', gd.gen.status === 0, (gd.gen.stderr || gd.gen.stdout || '').trim());
+  const htmlD = fs.existsSync(gd.index) ? fs.readFileSync(gd.index, 'utf8') : '';
+  const STOCK_DOS = {
+    a: [f('Potrero A', 'Vaca', 'Bovino', 'Juan', 5, 3), f('Potrero B', 'Novillo', 'Bovino', 'Juan', 4, 2)],
+    b: [f('Tajamar', 'Vaca', 'Bovino', 'Silvia', 60, 60), f('Casco', 'Vaquillona 1-2', 'Bovino', 'Perico', 25, 15)]
+  };
+  const dd = await abrir({ html: htmlD, ls: {}, stock: STOCK_DOS }); abiertas.push(dd);
+  chequear('dos campos: la página carga sin errores de JS', dd.errores.length === 0, dd.errores.join(' | '));
+  chequear('prefijoAlmacen tablero_x: el caché va a tablero_x_v1 y no a tablero_campos_v1',
+    dd.win.localStorage.getItem('tablero_x_v1') !== null && dd.win.localStorage.getItem('tablero_campos_v1') === null,
+    Object.keys(dd.win.localStorage).join(', ') || 'localStorage vacío');
+  dd.doc.querySelector('.campo-btn[data-campo="todos"]').click(); await dormir(80);
+  chequear('prefijoAlmacen tablero_x: la elección va a tablero_x_elegido', dd.win.localStorage.getItem('tablero_x_elegido') === 'todos' && dd.win.localStorage.getItem('tablero_campos_elegido') === null,
+    Object.keys(dd.win.localStorage).join(', '));
+  const contenedores = ['#panel', '#dueno', '#tabla-pot', '#campos'];
+  chequear('Todos: ningún <b> ni <i> dentro de #panel, #dueno, #tabla-pot ni #campos',
+    contenedores.every(s => dd.doc.querySelectorAll(s + ' b, ' + s + ' i').length === 0),
+    contenedores.map(s => s + ':' + dd.doc.querySelectorAll(s + ' b, ' + s + ' i').length).join(' '));
+  chequear('Todos: el nombre "Santa & <b>Hijos</b>" se ve como texto en el botón de campo',
+    [...dd.doc.querySelectorAll('#campos .campo-btn')].some(bt => bt.textContent === 'Santa & <b>Hijos</b>'));
+  chequear('Todos: el nombre se ve como texto en #panel (Por campo)', dd.doc.getElementById('panel').textContent.includes('Santa & <b>Hijos</b>'), dd.doc.getElementById('panel').textContent.slice(0, 200));
+  chequear('Todos: el nombre se ve como texto en #tabla-pot (columna Campo)', dd.doc.getElementById('tabla-pot').textContent.includes('Santa & <b>Hijos</b>'));
+  await elegirCampo(dd, 'a');
+  chequear('campo a: la etiqueta del dueño "Dueño <i>x</i>" se ve como texto en #dueno', dd.doc.getElementById('dueno').textContent.includes('Dueño <i>x</i>: todos'), dd.doc.getElementById('dueno').textContent);
+  chequear('campo a: ningún <b> ni <i> en #dueno ni #panel', ['#dueno', '#panel'].every(s => dd.doc.querySelectorAll(s + ' b, ' + s + ' i').length === 0));
+
+  console.log('Generador: errores en español (✗, sin pila) y MultiPolygon (⚠)');
+  const { supabaseUrl: _sinUrl, ...sinUrl } = BASE_CFG;
+  const DUP_GEO = { type: 'FeatureCollection', features: [
+    { type: 'Feature', properties: { nombre: 'Repetido' }, geometry: { type: 'Polygon', coordinates: [[[-55.10, -31.20], [-55.11, -31.20], [-55.11, -31.21], [-55.10, -31.20]]] } },
+    { type: 'Feature', properties: { nombre: 'Repetido' }, geometry: { type: 'Polygon', coordinates: [[[-55.20, -31.30], [-55.21, -31.30], [-55.21, -31.31], [-55.20, -31.30]]] } }
+  ] };
+  const MULTI = { type: 'FeatureCollection', features: [
+    { type: 'Feature', properties: { nombre: 'Multi', area: 50 }, geometry: { type: 'MultiPolygon', coordinates: [
+      [[[-55.10, -31.20], [-55.11, -31.20], [-55.11, -31.21], [-55.10, -31.20]]],
+      [[[-55.20, -31.30], [-55.21, -31.30], [-55.21, -31.31], [-55.20, -31.30]]]
+    ] } }
+  ] };
+  const casos = [
+    ['geojson "../../etc/hostname" (fuera de tablero-campos)', generarCon('err_trav', aCfgTexto({ ...BASE_CFG, campos: [{ ...CAMPO_X, potreros: { geojson: '../../etc/hostname' } }] }))],
+    ['falta supabaseUrl', generarCon('err_url', aCfgTexto({ ...sinUrl, campos: [CAMPO_X] }))],
+    ['cortesCarga [1, 0.5, 2]', generarCon('err_cortes', aCfgTexto({ ...BASE_CFG, cortesCarga: [1, 0.5, 2], campos: [CAMPO_X] }))],
+    ['desdeConfig "zzz"', generarCon('err_zzz', aCfgTexto({ ...BASE_CFG, campos: [{ ...CAMPO_X, potreros: { desdeConfig: 'zzz' } }] }))],
+    ['config.js con error de sintaxis', generarCon('err_sint', 'module.exports = {\n  titulo: "Roto",\n  campos: [\n')],
+    ['dos features con el mismo nombre', generarCon('err_dup', aCfgTexto({ ...BASE_CFG, campos: [{ ...CAMPO_X, potreros: { geojson: 'dup.geojson' } }] }), { 'dup.geojson': JSON.stringify(DUP_GEO) })]
+  ];
+  for(const [nombre, r] of casos){
+    const salida = (r.gen.stderr || '') + (r.gen.stdout || '');
+    chequear('error ' + nombre + ': sale con código distinto de 0, dice ✗ y sin pila', r.gen.status !== 0 && salida.includes('✗') && !/^ {4}at /m.test(salida), 'sale con ' + r.gen.status + ': ' + salida.trim().slice(0, 240));
+  }
+  const mp = generarCon('multi', aCfgTexto({ ...BASE_CFG, campos: [{ ...CAMPO_X, potreros: { geojson: 'multi.geojson' } }] }), { 'multi.geojson': JSON.stringify(MULTI) });
+  const salidaMp = (mp.gen.stderr || '') + (mp.gen.stdout || '');
+  chequear('MultiPolygon de 2 partes: generar.js sale con 0', mp.gen.status === 0, salidaMp.trim());
+  chequear('MultiPolygon de 2 partes: avisa con ⚠', salidaMp.includes('⚠'), salidaMp.trim());
 
   console.log('Solo lectura en todo el recorrido');
   const todas = abiertas.flatMap(x => x.llamadas);
   const noGet = todas.filter(l => l.metodo !== 'GET');
   chequear('solo GET, salvo POST a rpc/verificar_clave', noGet.every(l => l.metodo === 'POST' && l.url.includes('rpc/verificar_clave')), noGet.map(l => l.metodo + ' ' + l.url).join(', '));
+  chequear('ninguna lectura de pone_chico en ninguna escena', todas.every(l => !l.url.includes('establecimiento=eq.pone_chico')));
   chequear('ninguna escena dio errores de JS', abiertas.every(x => x.errores.length === 0), abiertas.map(x => x.errores.join('|')).join(' ; '));
 
   for(const x of abiertas) x.win.close();
+  fs.rmSync(TMP, { recursive: true, force: true });
   console.log(fallas ? '\n' + fallas + ' FALLAS' : '\nTODO OK');
   process.exit(fallas ? 1 : 0);
 })();
