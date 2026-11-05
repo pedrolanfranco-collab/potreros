@@ -275,6 +275,7 @@ async function probarArchivo(archivo){
     chequear('la sincronización previa dejó el stock esperado (ZETA1 y ZETA2 creados)',
       est.potreros[Z1] && est.potreros[Z2] && est.potreros[Z1].animales['Vacas||' + app.D] === 5 && est.potreros[Z2].animales['Terneros||' + app.D] === 3,
       JSON.stringify(est.potreros[Z1] && est.potreros[Z1].animales));
+    est.eventosManejo = [{id:'manejo-local',fecha:'05/11/2026',tipo:'Destete',caravanas:['12345678']}];
     // marcadores que esta PC tiene en el mapa y que el registro borra o resuelve (p. ej. quedaron de antes de un borrado):
     // la reconstrucción los vuelve a "borrar" en SU copia, pero no puede tocar los del mapa de verdad
     app.win.__puntosLayers.pt_2 = app.win.L.marker();
@@ -298,6 +299,7 @@ async function probarArchivo(archivo){
     chequear('"Esta PC" y "Registro" suman lo mismo', t.pc === totalLocal(app.win.__est()) && t.reg === t.pc, JSON.stringify(t));
     chequear('"Potreros distintos": 0 de Y en verde, "Todo coincide"', /^0 de \d+$/.test(t.dif) && t.difOk && /Todo coincide/.test(t.difSub), JSON.stringify(t));
     chequear('la tabla no tiene filas', filasTabla(doc).length === 0, JSON.stringify(filasTabla(doc)));
+    chequear('Verificar stock restaura también eventos de manejo',JSON.stringify(app.win.__est().eventosManejo)===JSON.stringify(antes.estado.eventosManejo));
     chequear('lee el registro paginado (con .range()) y sin cursor', app.servidor.consultas.length > consultasAntes
       && app.servidor.consultas.slice(consultasAntes).every(c => c.rango), JSON.stringify(app.servidor.consultas.slice(consultasAntes)));
     const notas = textoDe(doc.getElementById('vs-notas'));

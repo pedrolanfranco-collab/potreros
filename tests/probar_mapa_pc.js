@@ -90,7 +90,9 @@ async function probarPC(nombre,archivo){
   const selector=doc.getElementById('mapa-pintar-por');
   chequear('tiene selector de modo de pintado',!!selector);
   chequear('el modo inicial es Dotación',!!selector&&selector.value==='dotacion',selector&&selector.value);
-  chequear('Eventos todavía no está habilitado en Etapa 1',!selector||!selector.querySelector('option[value="eventos"]')||selector.querySelector('option[value="eventos"]').disabled);
+  const opcionEventos=selector&&selector.querySelector('option[value="eventos"]');
+  chequear('Eventos está habilitado en La Vuelta y María Laura, y oculto en Pone Chico',
+    nombre==='Pone Chico'?!opcionEventos:!!opcionEventos&&!opcionEventos.disabled);
   chequear('tiene leyenda con rangos escritos',!!doc.getElementById('mapa-leyenda')&&/0,5/.test(doc.getElementById('mapa-leyenda').textContent)&&/1,2/.test(doc.getElementById('mapa-leyenda').textContent));
   if(p.geo.length){
     const nombrePot=p.geo.find(x=>!Object.prototype.hasOwnProperty.call(p.dobles,x.nombre)&&p.areaHa(x.nombre)>0)?.nombre;

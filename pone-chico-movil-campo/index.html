@@ -1103,7 +1103,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.26","versionMovil":"2.22","simpleHabilitado":true,"versionMovilSimple":"1.62","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"bano":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.26","versionMovil":"2.22","manejo":false,"simpleHabilitado":true,"versionMovilSimple":"1.62","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"bano":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -1569,7 +1569,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], pendientesPotrero: {}, transacciones: [], lluvias: [], eventosClima: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], pendientesPotrero: {}, transacciones: [], lluvias: [], eventosClima: [], eventosManejo: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     maestros: {comprador: [], comisionista: [], contraparte: []}, colaMaestros: [],
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
@@ -1614,6 +1614,7 @@ function cargarEstado(){
       if(!parsed.puntos) parsed.puntos = [];
       if(!parsed.transacciones) parsed.transacciones = [];
       if(!parsed.lluvias) parsed.lluvias = [];
+      if(!Array.isArray(parsed.eventosManejo)) parsed.eventosManejo = [];
       if(!parsed.config) parsed.config = {...CONFIG_DEFAULT};
       if(parsed.config.cargaMaxima===undefined) parsed.config.cargaMaxima = CONFIG_DEFAULT.cargaMaxima;
       if(parsed.config.diasOcupacionMax===undefined) parsed.config.diasOcupacionMax = CONFIG_DEFAULT.diasOcupacionMax;
@@ -2240,6 +2241,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'desaparecido', 'encontrado', 'perdida', 'muerte_desaparecido',
   'envio_campo_ajeno', 'retorno_campo_ajeno', 'traslado_salida', 'traslado_entrada', 'movimiento_guia',
   'lluvia', 'lluvia_editada', 'lluvia_eliminada', 'evento_clima', 'evento_clima_editado', 'evento_clima_eliminado',
+  'evento_manejo', 'evento_manejo_editado', 'evento_manejo_eliminado',
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
   'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
@@ -2394,6 +2396,32 @@ function aplicarVecinoLocal(tipo, potrero, d, fechaISO, eventId){
   const entry = ((estado.potreros[potrero] || {}).historial || []).find(h=> h.eventId === eventId);
   if(entry) entry.extra = Object.assign({potrero}, entry.origDatos || {}, {_fechaISO: fechaISO});
 }
+function normalizarCaravanasManejo(lista){
+  if(!Array.isArray(lista)) return [];
+  return [...new Set(lista.map(x=>String(x||'')).filter(x=>/^\d{8}$/.test(x)))].slice(0,1000);
+}
+function normalizarCaravanasEntrada(texto){
+  return [...new Set(String(texto||'').split(/[\s,;]+/).map(normalizarCaravana).filter(Boolean))].slice(0,1000);
+}
+function aplicarEventoManejoRemoto(row, d){
+  estado.eventosManejo = Array.isArray(estado.eventosManejo) ? estado.eventosManejo : [];
+  if(!d.id) return;
+  const previo = estado.eventosManejo.find(x=>x.id===d.id);
+  const marca = String(row.creado_en || '');
+  const esBorrado = row.tipo === 'evento_manejo_eliminado';
+  const base = esBorrado ? {id:d.id, eliminado:true} : {
+    id:d.id, fecha:d.fecha || row.fecha_cliente || fechaHoy(), tipo:String(d.tipo||''), potrero:d.potrero||null,
+    categoria:d.categoria||null, cantidad:d.cantidad != null && Number.isFinite(Number(d.cantidad)) ? Number(d.cantidad) : null,
+    caravanas:normalizarCaravanasManejo(d.caravanas), obs:d.obs||null, usuario:d.usuario||null,
+    dispositivo:row.dispositivo||null, eliminado:false
+  };
+  // El snapshot más nuevo gana; en empate se desempata por event_id, estable entre equipos.
+  if(previo){
+    const anterior = String(previo._creadoEn||'');
+    if(anterior > marca || (anterior === marca && String(previo._ordenId||'') >= String(row.event_id||''))) return;
+    Object.assign(previo, base, {_creadoEn:marca, _ordenId:String(row.event_id||'')});
+  }else estado.eventosManejo.push({...base, _creadoEn:marca, _ordenId:String(row.event_id||'')});
+}
 function aplicarEventoRemoto(row, potrerosSucios){
   const eventIdPrevio = _eventIdRemoto;
   _aplicandoRemoto = true;
@@ -2403,6 +2431,10 @@ function aplicarEventoRemoto(row, potrerosSucios){
   if(eventoEsDesconocido(row)){ guardarEventoDesconocido(row); return; }
   const d = row.detalle || {};
   if(typeof d !== 'object' || !detalleNumericoValido(d)) return; // evento con números que no son números: se descarta
+  if(['evento_manejo','evento_manejo_editado','evento_manejo_eliminado'].includes(row.tipo)){
+    aplicarEventoManejoRemoto(row,d);
+    return;
+  }
   // 10/9/2026: eventos viejos en Supabase todavía dicen "Cerro" (nombre
   // equivocado, renombrado a "Rincon") -- se traducen acá para que una
   // resincronización completa (dispositivo nuevo, "Restablecer datos de
@@ -8092,7 +8124,11 @@ function fichaCaravanaHTML(a){
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${esc(v)}</td></tr>`).join('')}
-    </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}${CONFIG.reproduccion ? reproFichaHTML(a) : ''}`;
+    </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}${CONFIG.reproduccion ? reproFichaHTML(a) : ''}${CONFIG.manejo ? eventosManejoFichaHTML(a.id8) : ''}`;
+}
+function eventosManejoFichaHTML(id8){
+  const lista=(estado.eventosManejo||[]).filter(e=>!e.eliminado&&(e.caravanas||[]).includes(id8)).sort((a,b)=>parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha));
+  return `<details class="historial-det"><summary>Eventos de manejo (${lista.length})</summary>${lista.length?lista.map(e=>`<div>${esc(e.fecha)} · ${esc(e.tipo)}${e.obs?` — ${esc(e.obs)}`:''}</div>`).join(''):'<p>Sin eventos de manejo para esta caravana.</p>'}</details>`;
 }
 
 async function ejecutarBusquedaCaravana(){
@@ -9804,6 +9840,103 @@ function renderLluviasResumen(){
         <tbody>${filas.map(f=>`<tr><td>${f.anio}</td>${f.meses.map(mm=>`<td class="num">${mm?mm.toFixed(1):'—'}</td>`).join('')}<td class="num"><strong>${f.total.toFixed(1)}</strong></td></tr>`).join('')}</tbody>
       </table>
     </div>`;
+}
+function parsearCsvDatamars(texto){
+  const bom=texto.charCodeAt(0)===0xFEFF?'\uFEFF':'';if(bom)texto=texto.slice(1);
+  const eol=texto.indexOf('\r\n')>=0?'\r\n':(texto.indexOf('\r')>=0?'\r':'\n');
+  const primera=texto.split(/\r\n|\r|\n/)[0]||'';
+  const delim=[',',';','\t'].reduce((a,b)=>primera.split(b).length>primera.split(a).length?b:a);
+  const filas=[];let fila=[],crudo='',valor='',comillas=false,i=0;
+  const cerrarCelda=()=>{fila.push({crudo,valor});crudo='';valor='';};
+  while(i<texto.length){const c=texto[i];if(comillas){if(c==='"'&&texto[i+1]==='"'){crudo+='""';valor+='"';i+=2;continue;}if(c==='"'){comillas=false;crudo+=c;i++;continue;}crudo+=c;valor+=c;i++;continue;}if(c==='"'){comillas=true;crudo+=c;i++;continue;}if(c===delim){cerrarCelda();i++;continue;}if(c==='\r'||c==='\n'){cerrarCelda();filas.push(fila);fila=[];i+=(c==='\r'&&texto[i+1]==='\n')?2:1;continue;}crudo+=c;valor+=c;i++;}
+  const finalConSalto=/[\r\n]$/.test(texto);if(!finalConSalto&&(crudo!==''||fila.length)){cerrarCelda();filas.push(fila);}
+  return {bom,eol,delim,finalConSalto,encabezado:filas[0]||[],filas:filas.slice(1).filter(f=>f.some(c=>c.valor.trim()!==''))};
+}
+function leerCaravanasDeCsv(texto){
+  const d=parsearCsvDatamars(String(texto||''));if(!d.encabezado.length)return {caravanas:[]};
+  const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const h=d.encabezado.map(c=>norm(c.valor)), eid=h.findIndex(x=>['EID','IDE'].includes(x)), vid=h.findIndex(x=>['VID','IDV'].includes(x));
+  if(eid<0&&vid<0)return {caravanas:[],error:'No se encontró columna EID/IDE ni VID/IDV'};
+  const caravanas=[...new Set(d.filas.map(r=>{const e=eid>=0&&r[eid]?r[eid].valor.trim():'';const v=vid>=0&&r[vid]?r[vid].valor.trim():'';return e||v;}).map(normalizarCaravana).filter(Boolean))].slice(0,1000);
+  return {caravanas};
+}
+function decodificarCsvDatamars(buffer){
+  const bytes=buffer instanceof Uint8Array?buffer:new Uint8Array(buffer);
+  let texto=new TextDecoder('utf-8').decode(bytes);
+  if(texto.includes('\uFFFD')) texto=new TextDecoder('windows-1252').decode(bytes);
+  return texto;
+}
+let editandoEventoManejoId=null;
+const emEl=id=>document.getElementById(id);
+function renderEventosManejo(){
+  const el=emEl('eventos-manejo-lista'); if(!el)return;
+  [['em-filtro-tipo',[...new Set((estado.eventosManejo||[]).filter(e=>!e.eliminado).map(e=>e.tipo).filter(Boolean))].sort()],['em-filtro-potrero',[...new Set((estado.eventosManejo||[]).filter(e=>!e.eliminado).map(e=>e.potrero).filter(Boolean))].sort()]].forEach(([id,valores])=>{
+    const s=emEl(id);if(!s)return;const v=s.value;s.innerHTML='<option value="">Todos</option>';valores.forEach(x=>s.add(new Option(x,x)));s.value=v;
+  });
+  const filtroTipo=emEl('em-filtro-tipo')?.value||'', filtroPotrero=emEl('em-filtro-potrero')?.value||'';
+  const lista=(estado.eventosManejo||[]).filter(e=>!e.eliminado&&(!filtroTipo||e.tipo===filtroTipo)&&(!filtroPotrero||e.potrero===filtroPotrero)).sort((a,b)=>parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha));
+  let fechaGrupo='';
+  el.innerHTML=lista.length?lista.map(e=>{const encabezado=e.fecha!==fechaGrupo?(fechaGrupo=e.fecha,`<h4>${esc(e.fecha)}</h4>`):'';return `${encabezado}<article class="hist-item"><strong>${esc(e.tipo)}</strong>${e.potrero?` · ${esc(e.potrero)}`:''}${e.categoria?` · ${esc(e.categoria)}`:''}${e.cantidad?` · ${e.cantidad} animales`:''}${e.caravanas&&e.caravanas.length?` · <details><summary>${e.caravanas.length} caravanas</summary>${esc(e.caravanas.join(', '))}</details>`:''}${e.obs?`<div>${esc(e.obs)}</div>`:''}<!-- @pc:start --><button data-evento-editar="${esc(e.id)}">✏️</button><button data-evento-borrar="${esc(e.id)}">🗑</button><!-- @pc:end --></article>`;}).join(''):'<p>Sin eventos cargados.</p>';
+  el.querySelectorAll('[data-evento-editar]').forEach(b=>b.addEventListener('click',()=>editarEventoManejo(b.dataset.eventoEditar)));
+  el.querySelectorAll('[data-evento-borrar]').forEach(b=>b.addEventListener('click',()=>borrarEventoManejo(b.dataset.eventoBorrar)));
+}
+function abrirEventosManejo(){
+  if(!CONFIG.manejo)return;
+  const modal=emEl('modal-eventos-manejo'); if(!modal)return;
+  const p=emEl('em-potrero'); if(p&&p.options.length===1) POTREROS_GEO.forEach(x=>p.add(new Option(x.nombre,x.nombre)));
+  const c=emEl('em-categoria'); if(c&&c.options.length===1) CATEGORIAS.forEach(x=>c.add(new Option(x,x)));
+  const tiposFiltro=[...new Set((estado.eventosManejo||[]).filter(e=>!e.eliminado).map(e=>e.tipo).filter(Boolean))].sort();
+  const potrosFiltro=[...new Set((estado.eventosManejo||[]).filter(e=>!e.eliminado).map(e=>e.potrero).filter(Boolean))].sort();
+  const ft=emEl('em-filtro-tipo'), fp=emEl('em-filtro-potrero');
+  if(ft){const v=ft.value;ft.innerHTML='<option value="">Todos</option>';tiposFiltro.forEach(x=>ft.add(new Option(x,x)));ft.value=v;}
+  if(fp){const v=fp.value;fp.innerHTML='<option value="">Todos</option>';potrosFiltro.forEach(x=>fp.add(new Option(x,x)));fp.value=v;}
+  const tiposPrevios=[...new Set((estado.eventosManejo||[]).filter(e=>!['Destete','Caravaneo','IATF','Pesada','Recuento'].includes(e.tipo)).map(e=>e.tipo).filter(Boolean))];
+  tiposPrevios.forEach(t=>{if(!Array.from(emEl('em-tipo').options).some(o=>o.value===t))emEl('em-tipo').add(new Option(t,t));});
+  emEl('em-fecha').value=fechaISOHoy(); emEl('em-tipo').value='Destete'; emEl('em-tipo-otro').value='';emEl('em-guardar').textContent='Registrar evento';emEl('em-cancelar').style.display='none';
+  emEl('em-potrero').value='';emEl('em-categoria').value='';emEl('em-cantidad').value='';emEl('em-caravanas').value='';emEl('em-obs').value='';
+  modal.style.display='flex';renderEventosManejo();
+}
+function guardarEventoManejo(){
+  const fecha=emEl('em-fecha').value, select=emEl('em-tipo').value, tipo=select==='Otro…'?emEl('em-tipo-otro').value.trim():select;
+  const caravanas=normalizarCaravanasEntrada(emEl('em-caravanas').value);
+  const raw=emEl('em-cantidad').value, cantidad=raw?Number(raw):(caravanas.length?caravanas.length:null);
+  if(!fecha||!tipo|| (raw&&(!Number.isInteger(Number(raw))||Number(raw)<1))){toast('Completá fecha, tipo y una cantidad válida.');return;}
+  const detalle={id:editandoEventoManejoId||crypto.randomUUID(),tipo,potrero:emEl('em-potrero').value||null,categoria:emEl('em-categoria').value||null,cantidad,caravanas,obs:emEl('em-obs').value.trim()||null,usuario:usuarioActual()||null};
+  const fechaDisplay=fecha.split('-').reverse().join('/');
+  if(editandoEventoManejoId){
+    const ev=estado.eventosManejo.find(x=>x.id===editandoEventoManejoId); if(ev)Object.assign(ev,detalle,{fecha:fechaDisplay,eliminado:false});
+    guardarEstado();enviarEvento('evento_manejo_editado',ESTABLECIMIENTO,{...detalle,fecha:fechaDisplay});
+  }else{
+    aplicarEventoManejoRemoto({tipo:'evento_manejo',detalle,fecha_cliente:fechaDisplay,creado_en:new Date().toISOString(),event_id:crypto.randomUUID(),dispositivo:idDispositivo()},detalle);
+    guardarEstado();enviarEvento('evento_manejo',ESTABLECIMIENTO,detalle,fechaDisplay);
+  }
+  if(tipo!=='Destete'&&tipo!=='Caravaneo'&&tipo!=='IATF'&&tipo!=='Pesada'&&tipo!=='Recuento'&&select==='Otro…'){
+    const op=new Option(tipo,tipo);emEl('em-tipo').add(op);emEl('em-tipo').value=tipo;
+  }
+  editandoEventoManejoId=null;
+  emEl('modal-eventos-manejo').style.display='none';renderEventosManejo();actualizarTodo();
+}
+function editarEventoManejo(id){
+  const ev=estado.eventosManejo.find(x=>x.id===id&&!x.eliminado);if(!ev)return;editandoEventoManejoId=id;
+  const [d,m,y]=ev.fecha.split('/');emEl('em-fecha').value=`${y}-${m}-${d}`;
+  if(!Array.from(emEl('em-tipo').options).some(o=>o.value===ev.tipo)){emEl('em-tipo').add(new Option(ev.tipo,ev.tipo));}
+  emEl('em-tipo').value=ev.tipo;emEl('em-potrero').value=ev.potrero||'';emEl('em-categoria').value=ev.categoria||'';emEl('em-cantidad').value=ev.cantidad||'';
+  emEl('em-caravanas').value=(ev.caravanas||[]).join('\n');emEl('em-obs').value=ev.obs||'';emEl('em-guardar').textContent='Guardar corrección';emEl('em-cancelar').style.display='';
+}
+function borrarEventoManejo(id){
+  const ev=estado.eventosManejo.find(x=>x.id===id);if(!ev||!confirm(`¿Borrar el evento ${ev.tipo} del ${ev.fecha}?`))return;
+  const row={tipo:'evento_manejo_eliminado',detalle:{id},creado_en:new Date().toISOString(),event_id:crypto.randomUUID()};aplicarEventoManejoRemoto(row,row.detalle);guardarEstado();enviarEvento('evento_manejo_eliminado',ESTABLECIMIENTO,row.detalle);renderEventosManejo();
+}
+if(emEl('btn-eventos-manejo')){
+  if(!CONFIG.manejo)emEl('btn-eventos-manejo').style.display='none';
+  emEl('btn-eventos-manejo').addEventListener('click',abrirEventosManejo);
+  emEl('em-guardar').addEventListener('click',guardarEventoManejo);
+  emEl('em-cerrar-x').addEventListener('click',()=>emEl('modal-eventos-manejo').style.display='none');
+  emEl('em-cancelar').addEventListener('click',()=>{editandoEventoManejoId=null;emEl('em-guardar').textContent='Registrar evento';emEl('em-cancelar').style.display='none';});
+  emEl('em-tipo').addEventListener('change',()=>emEl('em-otro-wrap').style.display=emEl('em-tipo').value==='Otro…'?'':'none');
+  emEl('em-filtro-tipo').addEventListener('change',renderEventosManejo);emEl('em-filtro-potrero').addEventListener('change',renderEventosManejo);
+  emEl('em-caravanas').addEventListener('input',()=>{const n=normalizarCaravanasEntrada(emEl('em-caravanas').value).length;if(n)emEl('em-cantidad').value=n;});
+  emEl('em-csv').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const x=leerCaravanasDeCsv(decodificarCsvDatamars(r.result));if(x.error){toast(x.error);return;}emEl('em-caravanas').value=x.caravanas.join('\n');emEl('em-cantidad').value=x.caravanas.length;};r.readAsArrayBuffer(f);});
 }
 document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ll-fecha').value = fechaISOHoy();
