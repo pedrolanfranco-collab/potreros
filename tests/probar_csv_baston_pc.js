@@ -23,6 +23,8 @@
 const fs = require('fs');
 const { TextDecoder, TextEncoder } = require('util');
 const { JSDOM, VirtualConsole } = require('jsdom');
+// Cantidad de potreros de La Vuelta, de la config (incluye los dobles 1+2 y 19+20; no se hardcodea).
+const POTREROS_LV = require('../template/configs/la-vuelta.js').potrerosGeo.length;
 
 let fallas = 0;
 const chequear = (n, c, d) => { console.log((c ? '  OK  ' : '  MAL ') + n + (c ? '' : ' — ' + (d || ''))); if(!c) fallas++; };
@@ -191,7 +193,7 @@ async function probarArchivo(archivo){
   chequear('el catalogo trae los productos de productos_catalogo y NO ofrece "Otro"',
     [...doc.getElementById('cb-p1').options].map(o => o.value).filter(Boolean).join('|') === CATALOGO.join('|'),
     [...doc.getElementById('cb-p1').options].map(o => o.value).join('|'));
-  chequear('el potrero se elige de los 31 de La Vuelta', doc.getElementById('cb-pot').options.length === 32, doc.getElementById('cb-pot').options.length);
+  chequear('el potrero se elige de los ' + POTREROS_LV + ' de La Vuelta (config) + el vacio', doc.getElementById('cb-pot').options.length === POTREROS_LV + 1, doc.getElementById('cb-pot').options.length);
   chequear('el potrero arranca sin elegir', doc.getElementById('cb-pot').value === '');
 
   // ---------- leer el archivo ----------
@@ -283,7 +285,7 @@ async function probarArchivo(archivo){
   chequear('con el catalogo colgado, el formulario se muestra igual con el catalogo guardado y los potreros',
     d.win.document.getElementById('form-csv-baston').style.display !== 'none'
       && d.win.document.getElementById('cb-p1').options.length === CATALOGO.length + 1
-      && d.win.document.getElementById('cb-pot').options.length === 32,
+      && d.win.document.getElementById('cb-pot').options.length === POTREROS_LV + 1,
     d.win.document.getElementById('cb-p1').options.length + ' / ' + d.win.document.getElementById('cb-pot').options.length);
   chequear('y avisa que esta actualizando el catalogo', /Actualizando el catálogo/.test(texto(d.win, 'cb-msg-catalogo')), texto(d.win, 'cb-msg-catalogo'));
 

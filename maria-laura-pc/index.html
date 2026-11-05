@@ -204,6 +204,7 @@
     color:var(--verde-monte);
   }
   .potrero-card .area{font-size:11.5px;color:var(--texto-suave);}
+  .potrero-card .nota-doble{font-size:11.5px;color:var(--texto-suave);margin-top:2px;}
   .badge-total{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
@@ -382,6 +383,28 @@
   #menu-herramientas .hg-grid .btn{margin-bottom:0;font-size:15px;padding:12px 10px;}
   #menu-herramientas .hg-grid .hg-ancho{grid-column:1 / -1;}
   #menu-herramientas .hsub .btn-secundario{background:#efe7cf;color:var(--texto);}
+  /* ---------- PC NUEVA ESTILO FIELDDATA, parte 1 (4/11/2026, a pedido de Pedro) ----------
+     Menú fijo a la izquierda (#pc-rail) y totales del encabezado como tarjetas. Los botones de siempre no se
+     mueven: cada sección del menú abre #pc-seccion con atajos que aprietan el botón original. */
+  body{display:flex;}
+  #app{flex:1;min-width:0;}
+  #pc-rail{width:212px;flex:none;height:100vh;background:var(--verde-monte);color:var(--crema-alta);display:flex;flex-direction:column;gap:2px;padding:14px 10px;overflow-y:auto;border-right:3px solid var(--ocre);}
+  #pc-rail .pr-campo{font-family:'Fraunces',serif;font-weight:700;font-size:18px;padding:4px 10px 12px;}
+  #pc-rail button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:transparent;color:var(--crema-alta);border:none;border-radius:10px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:14.5px;font-weight:500;cursor:pointer;}
+  #pc-rail button:hover{background:rgba(255,255,255,0.10);}
+  #pc-rail button.activo{background:#e3ecd6;color:var(--verde-monte);font-weight:700;}
+  #pc-rail button:focus-visible{outline:3px solid var(--ocre);outline-offset:1px;}
+  #pc-rail .pr-pie{margin-top:auto;padding:10px 10px 0;font-size:11.5px;color:#cfd8bd;}
+  @media (max-width:1100px){
+    #pc-rail{width:60px;padding:14px 6px;}
+    #pc-rail .pr-campo,#pc-rail .pr-pie,#pc-rail .pr-txt{display:none;}
+    #pc-rail button{justify-content:center;padding:10px 0;font-size:18px;}
+  }
+  header .resumen{gap:8px;}
+  header .resumen .stat{text-align:left;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:10px;padding:6px 12px;min-width:86px;}
+  header .resumen .stat .num{font-size:20px;}
+  #pc-seccion-lista{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  #pc-seccion-lista .btn{margin-bottom:0;font-size:15px;padding:12px 10px;}
   /* 12/10/2026: ventana "🔍 Verificar stock" (Fase 3, paso 5). Solo la PC. */
   #modal-verificar-stock .modal-box{max-width:680px;}
   .vs-tarjetas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px;}
@@ -601,12 +624,26 @@
 </style>
 </head>
 <body>
+<nav id="pc-rail" aria-label="Menú principal">
+  <div class="pr-campo">María Laura</div>
+  <button class="activo" data-pc-seccion="mapa" title="Mapa"><span aria-hidden="true">🗺</span> <span class="pr-txt">Mapa</span></button>
+  <button data-pc-seccion="stock" title="Stock total"><span aria-hidden="true">📊</span> <span class="pr-txt">Stock total</span></button>
+  <button data-pc-seccion="potreros" title="Potreros"><span aria-hidden="true">🌾</span> <span class="pr-txt">Potreros</span></button>
+  <button data-pc-seccion="hacienda" title="Hacienda"><span aria-hidden="true">🐄</span> <span class="pr-txt">Hacienda</span></button>
+  <button data-pc-seccion="sanidad" title="Sanidad e insumos"><span aria-hidden="true">🏥</span> <span class="pr-txt">Sanidad e insumos</span></button>
+  <button data-pc-seccion="lluvias" title="Lluvias y eventos"><span aria-hidden="true">🌧</span> <span class="pr-txt">Lluvias y eventos</span></button>
+  <button data-pc-seccion="dicose" title="Movimientos DICOSE"><span aria-hidden="true">📑</span> <span class="pr-txt">Movimientos DICOSE</span></button>
+  <button data-pc-seccion="puntos" title="Puntos y reportes"><span aria-hidden="true">📍</span> <span class="pr-txt">Puntos y reportes</span></button>
+  <button data-pc-seccion="exportar" title="Exportar y respaldo"><span aria-hidden="true">⬇</span> <span class="pr-txt">Exportar y respaldo</span></button>
+  <button data-pc-seccion="dispositivo" title="Este dispositivo"><span aria-hidden="true">⚙</span> <span class="pr-txt">Este dispositivo</span></button>
+  <div class="pr-pie">v3.55 (completa)</div>
+</nav>
 <div id="app">
   <header>
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.52 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.55 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -618,6 +655,8 @@
       <div class="stat stat-especie"><div class="num" id="res-equinos">0</div><div class="lbl">Equinos</div></div>
       <div class="stat"><div class="num" id="res-ug">0</div><div class="lbl">UG totales</div></div>
       <div class="stat"><div class="num" id="res-dotacion">0</div><div class="lbl">UG / ha</div></div>
+      <div class="stat"><div class="num" id="res-cabezas">0</div><div class="lbl">Cabezas</div></div>
+      <div class="stat"><div class="num" id="res-con-animales">0</div><div class="lbl">Con animales</div></div>
     </div>
   </header>
 
@@ -678,6 +717,7 @@
             <button class="btn btn-json" id="btn-vecinos">🏡 Vecinos</button>
             <button class="btn btn-json" id="btn-caravana" style="display:none;">🔎 Buscar caravana</button>
             <button class="btn btn-json" id="btn-pesadas" style="display:none;">⚖️ Pesadas</button>
+            <button class="btn btn-json" id="btn-reproduccion" style="display:none;">🐄 Reproducción</button>
             <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
             <button class="btn btn-json" id="btn-verificar-stock">🔍 Verificar stock</button>
             <button class="btn btn-json" id="btn-faltantes" style="display:none;">⚠ Datos faltantes</button>
@@ -748,6 +788,14 @@
     </div>
     <div class="nota-guardado">Los datos se guardan solos en este navegador. El backup JSON es para pasarlos a otro dispositivo (guardalo en tu carpeta de OneDrive).</div>
     <div class="form-botones"><button class="btn btn-secundario" id="herramientas-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="pc-seccion" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3 id="pc-seccion-titulo"></h3>
+    <button class="btn-cerrar-x" id="pc-seccion-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <div id="pc-seccion-lista"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="pc-seccion-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="modal-voz" class="modal-overlay" style="display:none;">
@@ -1255,6 +1303,23 @@
     </div>
   </div>
 </div>
+<div id="modal-reproduccion" class="modal-overlay" style="display:none;">
+  <div class="modal-box" style="max-width:720px;">
+    <h3>🐄 Reproducción</h3>
+    <button class="btn-cerrar-x" id="repro-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Tacto y DAO (diagnóstico de actividad ovárica) de los animales con caravana, tal como los lee el bastón. Solo animales con caravana: no es todo el stock.</p>
+    <div id="repro-mensaje"></div>
+    <div id="repro-cuerpo" style="display:none;">
+      <div class="form-botones" style="margin-bottom:8px;">
+        <button class="btn btn-secundario" data-repro-tab="tacto">Tactos y DAO</button>
+        <button class="btn btn-secundario" data-repro-tab="cruces">Cruces</button>
+      </div>
+      <div id="repro-tab-tacto"><div class="form-row"><label>Sesión</label><select id="repro-sesion"></select></div><div id="repro-resumen"></div></div>
+      <div id="repro-tab-cruces" style="display:none;"><div id="repro-cruces"></div></div>
+    </div>
+    <div class="form-botones"><button class="btn btn-secundario" id="repro-cerrar">Cerrar</button></div>
+  </div>
+</div>
 <div id="modal-bano" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <h3>🛁 Baño</h3>
@@ -1528,9 +1593,30 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.52","versionMovil":"3.50","simpleHabilitado":true,"versionMovilSimple":"1.60","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.55","versionMovil":"3.51","simpleHabilitado":true,"versionMovilSimple":"1.61","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
+/* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
+   (La Vuelta: 1+2 y 19+20). El doble es un potrero más de POTREROS_GEO, con el dibujo de los dos juntos;
+   `CONFIG.potrerosDobles` = {doble: [partes]}. Unir = "Mover todo" de las partes al doble; separar = al revés. Sin eventos
+   nuevos. En el mapa el doble se ve solo si tiene animales (o está elegido), y entonces sus partes quedan apagadas. */
+const POTREROS_DOBLES = CONFIG.potrerosDobles || {};
+function esDoble(nombre){ return Object.prototype.hasOwnProperty.call(POTREROS_DOBLES, nombre); }
+function dobleDeParte(nombre){
+  for(const d in POTREROS_DOBLES) if((POTREROS_DOBLES[d] || []).includes(nombre)) return d;
+  return null;
+}
+/* El doble de esta parte, si ese doble tiene animales ahora (la parte está "tapada"); si no, null. */
+function parteTapada(nombre){
+  const d = dobleDeParte(nombre);
+  if(!d || !estado || !estado.potreros || !estado.potreros[d] || totalPotrero(d) === 0) return null;
+  return totalPotrero(nombre) === 0 ? d : null;   // una parte con animales propios sigue a la vista (se puede tocar)
+}
+/* Superficie y cantidad de potreros "de verdad": el doble se pisa con sus partes, así que no se suma (si no, La Vuelta
+   daría 33 potreros y 28 ha de más). Animales y UG sí se suman sobre todos: cada animal está en un solo potrero. */
+function potrerosFisicos(){ return POTREROS_GEO.filter(p => !esDoble(p.nombre)); }
+function haFisicas(){ return potrerosFisicos().reduce((s,p)=> s + areaHa(p.nombre), 0);
+}
 /* Fase 3, paso 5 (12/10/2026, "Verificar stock", solo PC): los potreros TAL COMO VIENEN EN EL ARCHIVO. POTREROS_GEO es este
    mismo arreglo y objetos, y más abajo se le suman los potreros creados a mano (POTREROS_NUEVOS_KEY) y se le pisan los
    límites importados (LIMITES_KEY): la reconstrucción en memoria arranca de esta copia, como un equipo recién instalado. */
@@ -1748,7 +1834,7 @@ function detalleAnimales(animales){
    Solo se muestra en establecimientos con más de un dueño obligatorio (ver
    @multiDueno en generar.js) -- hoy únicamente María Laura. */
 function resumenPorDueno(){
-  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  const totalHa = haFisicas();
   // 19/9/2026: se agrega '' (sin asignar) a los grupos -- en La Vuelta la
   // Firma es opcional, así que la mayoría del stock (existencias previas)
   // tiene dueno==='' y antes quedaba totalmente afuera de este reporte.
@@ -2252,7 +2338,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-3.52';
+const VERSION_APP = 'pc-3.55';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = false;
@@ -2631,6 +2717,11 @@ function aplicarPendientesDePotrero(nombre, potrerosSucios){
   if(!lista || !lista.length) return;
   delete estado.pendientesPotrero[nombre];
   lista.forEach(r=> aplicarEventoRemoto(r, potrerosSucios));
+}
+function aplicarPendientesYaConocidos(potrerosSucios){
+  for(const nombre of Object.keys(estado.pendientesPotrero || {})){
+    if(estado.potreros[nombre]) aplicarPendientesDePotrero(nombre, potrerosSucios);
+  }
 }
 function aplicarPendientesDePotreroLocal(nombre){
   const sucios = new Set();
@@ -3686,6 +3777,9 @@ async function sincronizar(mostrarToast){
     // estado recién reconstruido.
     const esPrimeraSync = !estado.ultimaSincronizacion;
     const potrerosSucios = new Set();
+    // 4/11/2026: un potrero nuevo que llegó por config (p. ej. los dobles 1+2 / 19+20) no manda potrero_creado: sus eventos
+    // estacionados mientras este equipo tenía la versión vieja se aplican acá, apenas el potrero existe.
+    aplicarPendientesYaConocidos(potrerosSucios);
     await vaciarColaSync();
     await vaciarColaFotos(); // 24/10/2026: fotos de reportes pendientes (después de los movimientos, así reporte_foto sale detrás de su reporte)
     await vaciarColaSanidad();
@@ -5103,7 +5197,7 @@ function dibujarPotrero(p){
     if(modoDibujarPotrero){ L.DomEvent.stopPropagation(e); agregarVerticeDibujo(e.latlng); return; }
     poly.setPopupContent(popupContenidoPotrero(p.nombre));
     poly.openPopup(e.latlng);
-    seleccionarPotrero(p.nombre);
+    seleccionarPotrero(parteTapada(p.nombre) || p.nombre);   // una parte de un doble en uso abre el doble
   });
   poly.bindTooltip(esc(p.nombre), {sticky:true});
 
@@ -5962,16 +6056,34 @@ map.on('dblclick', ()=>{
   if(modoDibujarPotrero) terminarDibujoPotrero();
 });
 
+/* Un doble vacío no se dibuja (se pisaría con sus partes): se saca del mapa y se vuelve a poner cuando tiene animales. */
+function mostrarPoligono(item, visible){
+  if(!item || !!item.oculto === !visible) return;
+  if(visible){ item.layer.addTo(map); item.label.addTo(map); }
+  else { map.removeLayer(item.layer); map.removeLayer(item.label); }
+  item.oculto = !visible;
+}
 function refrescarColoresMapa(){
   POTREROS_GEO.forEach(p=>{
-    const total = totalPotrero(p.nombre);
     const item = poligonos[p.nombre];
+    if(!item) return;
+    const total = totalPotrero(p.nombre);
     const activo = seleccionActual === p.nombre;
+    if(esDoble(p.nombre)){
+      mostrarPoligono(item, total !== 0 || activo);
+      if(item.oculto) return;
+    }
+    if(!activo && parteTapada(p.nombre)){
+      // parte de un doble en uso: apagada y punteada, el doble se ve arriba
+      item.layer.setStyle({fillColor:'#8fae72', fillOpacity:0.05, color:'#5c7a4a', weight:1, dashArray:'4 4'});
+      return;
+    }
     item.layer.setStyle({
       fillColor: total>0 ? '#5c7a4a' : '#8fae72',
       fillOpacity: activo ? 0.55 : (total>0 ? 0.4 : 0.2),
       color: activo ? '#c68a3b' : '#5c7a4a',
-      weight: activo ? 3 : 2
+      weight: activo ? 3 : 2,
+      dashArray: null
     });
   });
 }
@@ -6007,6 +6119,7 @@ function renderLista(filtro=''){
         <div class="badge-total ${total===0?'vacio':''}"${total<0?' style="background:#d32f2f;color:#fff;"':''}>${total}</div>
       </div>
       <div class="ocupacion-badge ocupacion-${ocup.tipo}">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
+      ${esDoble(nombre) ? `<div class="nota-doble">🔗 ${total !== 0 ? esc((POTREROS_DOBLES[nombre]||[]).join(' y ')) + ' unidos' : 'Para usar ' + esc((POTREROS_DOBLES[nombre]||[]).join(' y ')) + ' juntos'}</div>` : (parteTapada(nombre) ? `<div class="nota-doble">🔗 Unido en ${esc(parteTapada(nombre))}</div>` : '')}
       ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span${v<0?' style="color:#d32f2f;font-weight:700;"':''}>${esc(k)}: ${v}</span>`).join('')}</div>` : ''}
     `;
     if(casosPotrero.length){
@@ -6292,6 +6405,87 @@ document.getElementById('btn-herramientas').addEventListener('click', ()=>{
 document.getElementById('herramientas-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-herramientas').style.display = 'none';
 });
+/* Menú de la izquierda de la PC (4/11/2026, parte 1 de la PC nueva). Cada sección lista los botones de
+   siempre (por id): el atajo aprieta el botón original, así cada función sigue haciendo exactamente lo
+   mismo. Un botón oculto por la configuración del campo (display:none) no se ofrece; una sección sin
+   ningún botón se esconde, y una con uno solo lo abre directo. */
+const SECCIONES_PC = {
+  stock:       { titulo: '📊 Stock total', ids: ['btn-stock'] },
+  potreros:    { titulo: '🌾 Potreros', ids: ['btn-importar-kml', 'btn-dibujar-potrero', 'btn-coeficientes'] },
+  hacienda:    { titulo: '🐄 Hacienda', ids: ['btn-desaparecidos', 'btn-vecinos', 'btn-caravana', 'btn-pesadas', 'btn-alertas', 'btn-verificar-stock', 'btn-faltantes'] },
+  sanidad:     { titulo: '🏥 Sanidad e insumos', ids: ['btn-sanidad', 'btn-insumos', 'btn-bano'] },
+  lluvias:     { titulo: '🌧 Lluvias y eventos', ids: ['btn-lluvias'] },
+  dicose:      { titulo: '📑 Movimientos DICOSE', ids: ['btn-guias'] },
+  puntos:      { titulo: '📍 Puntos y reportes', ids: ['btn-puntos', 'btn-resync-puntos', 'btn-infraestructura', 'btn-capin-annoni'] },
+  exportar:    { titulo: '⬇ Exportar y respaldo', ids: ['btn-exportar-kmz', 'btn-exportar-pdf', 'btn-exportar-pdf-animales', 'btn-exportar-pdf-historial', 'btn-exportar-excel', 'btn-exportar-json', 'btn-importar-json'] },
+  dispositivo: { titulo: '⚙ Este dispositivo', ids: ['btn-sincronizar', 'btn-usuario', 'btn-clave-campo', 'btn-instructivo', 'btn-restablecer', 'btn-herramientas'] }
+};
+function botonesSeccionPC(sec){
+  const def = SECCIONES_PC[sec];
+  if(!def) return [];
+  return def.ids.map(id => document.getElementById(id)).filter(b => b && b.style.display !== 'none');
+}
+function marcarSeccionPC(sec){
+  document.querySelectorAll('#pc-rail [data-pc-seccion]').forEach(b => {
+    const activo = b.getAttribute('data-pc-seccion') === sec;
+    b.classList.toggle('activo', activo);
+    if(activo) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+}
+function cerrarSeccionPC(){
+  document.getElementById('pc-seccion').style.display = 'none';
+  marcarSeccionPC('mapa');
+}
+function abrirSeccionPC(sec){
+  if(sec === 'mapa'){
+    cerrarSeccionPC();
+    try { map.invalidateSize(); } catch(e){}
+    return;
+  }
+  const botones = botonesSeccionPC(sec);
+  if(!botones.length) return;
+  if(botones.length === 1){ botones[0].click(); return; }
+  document.getElementById('pc-seccion-titulo').textContent = SECCIONES_PC[sec].titulo;
+  const lista = document.getElementById('pc-seccion-lista');
+  lista.innerHTML = '';
+  botones.forEach(orig => {
+    const b = document.createElement('button');
+    b.className = 'btn ' + (orig.classList.contains('btn-kmz') ? 'btn-kmz' : 'btn-json');
+    b.textContent = orig.textContent.replace(/\s*›\s*$/, '').trim();
+    b.setAttribute('data-pc-ir', orig.id);
+    if(orig.style.color) b.style.color = orig.style.color;
+    lista.appendChild(b);
+  });
+  marcarSeccionPC(sec);
+  document.getElementById('pc-seccion').style.display = 'flex';
+}
+/* Se esconden las secciones sin botones para este campo (por ejemplo DICOSE en María Laura). */
+function actualizarRailPC(){
+  document.querySelectorAll('#pc-rail [data-pc-seccion]').forEach(b => {
+    const sec = b.getAttribute('data-pc-seccion');
+    b.style.display = (sec === 'mapa' || botonesSeccionPC(sec).length) ? '' : 'none';
+  });
+}
+document.getElementById('pc-rail').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pc-seccion]');
+  if(b) abrirSeccionPC(b.getAttribute('data-pc-seccion'));
+});
+document.getElementById('pc-seccion-lista').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pc-ir]');
+  if(!b) return;
+  const orig = document.getElementById(b.getAttribute('data-pc-ir'));
+  cerrarSeccionPC();
+  if(orig) orig.click();
+});
+document.getElementById('pc-seccion-cerrar').addEventListener('click', cerrarSeccionPC);
+document.getElementById('pc-seccion-cerrar-x').addEventListener('click', cerrarSeccionPC);
+document.getElementById('pc-seccion').addEventListener('click', (e) => {
+  if(e.target.id === 'pc-seccion') cerrarSeccionPC();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && document.getElementById('pc-seccion').style.display === 'flex') cerrarSeccionPC();
+});
+setTimeout(actualizarRailPC, 0);
 document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   if(e.target.id === 'modal-herramientas') document.getElementById('modal-herramientas').style.display = 'none';
 });
@@ -7297,8 +7491,8 @@ function mostrarFormulario(nombre, accion, prefill){
 
 /* ======================= RESUMEN GENERAL ======================= */
 function actualizarResumen(){
-  document.getElementById('res-potreros').textContent = POTREROS_GEO.length;
-  const ha = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  document.getElementById('res-potreros').textContent = potrerosFisicos().length;
+  const ha = haFisicas();
   document.getElementById('res-ha').textContent = Math.round(ha);
   const porEspecie = POTREROS_GEO.reduce((s,p)=>{
     const e = totalPorEspecie(p.nombre);
@@ -7311,6 +7505,10 @@ function actualizarResumen(){
   const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
   document.getElementById('res-ug').textContent = totalUGCampo.toFixed(1);
   document.getElementById('res-dotacion').textContent = ha>0 ? (totalUGCampo/ha).toFixed(2) : '0';
+  document.getElementById('res-cabezas').textContent = porEspecie.bovino + porEspecie.ovino + porEspecie.equino;
+  document.getElementById('res-con-animales').textContent =
+    POTREROS_GEO.filter(p => estado.potreros[p.nombre] && totalPotrero(p.nombre) > 0).length + ' de ' + POTREROS_GEO.length;
+  try { actualizarRailPC(); } catch(e){}   // la primera vez corre antes de que exista SECCIONES_PC
 }
 
 function actualizarTodo(){
@@ -7406,7 +7604,7 @@ function escaparXML(str){
 /* ======================= EXPORTAR MARKDOWN ======================= */
 function construirMD(){
   const hoy = fechaHoy();
-  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  const totalHa = haFisicas();
   const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
   const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
   const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
@@ -7416,7 +7614,7 @@ function construirMD(){
   md += `## Resumen general\n\n`;
   md += `| Potreros | Hectáreas | Animales | UG totales | Dotación (UG/ha) |\n`;
   md += `|---|---|---|---|---|\n`;
-  md += `| ${POTREROS_GEO.length} | ${totalHa.toFixed(1)} | ${totalAnimales} | ${totalUGCampo.toFixed(1)} | ${dotacionGeneral.toFixed(2)} |\n\n`;
+  md += `| ${potrerosFisicos().length} | ${totalHa.toFixed(1)} | ${totalAnimales} | ${totalUGCampo.toFixed(1)} | ${dotacionGeneral.toFixed(2)} |\n\n`;
 
   md += `## Stock por dueño\n\n`;
   md += `| ${CONFIG.duenoLabel} | Animales | UG |\n|---|---|---|\n`;
@@ -7503,7 +7701,7 @@ function construirMD(){
 
 /* ======================= DATOS COMPARTIDOS PARA PDF / EXCEL ======================= */
 function reunirDatosReporte(){
-  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  const totalHa = haFisicas();
   const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
   const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
   const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
@@ -7561,7 +7759,7 @@ function reunirDatosReporte(){
 
   return {
     fecha: fechaHoy(),
-    resumen: [POTREROS_GEO.length, totalHa.toFixed(1), totalAnimales, totalUGCampo.toFixed(1), dotacionGeneral.toFixed(2)],
+    resumen: [potrerosFisicos().length, totalHa.toFixed(1), totalAnimales, totalUGCampo.toFixed(1), dotacionGeneral.toFixed(2)],
     potrerosRows, animalesRows, duenosRows, aguaRows, instalRows, historialRows,
     transaccionesRows, totalComprado, totalVendido
   };
@@ -7983,12 +8181,12 @@ async function cargarStock(){
   cambiarPestanaStock(0);
   document.querySelectorAll('#modal-stock [data-panel]').forEach(el=> el.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>');
 
-  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  const totalHa = haFisicas();
   const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
   const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
   const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
   document.getElementById('stock-resumen').textContent =
-    `${POTREROS_GEO.length} potreros · ${totalHa.toFixed(1)} ha · ${totalAnimales} animales · ${totalUGCampo.toFixed(1)} UG · ${dotacionGeneral.toFixed(2)} UG/ha`;
+    `${potrerosFisicos().length} potreros · ${totalHa.toFixed(1)} ha · ${totalAnimales} animales · ${totalUGCampo.toFixed(1)} UG · ${dotacionGeneral.toFixed(2)} UG/ha`;
 
   const casosStock = listarCasosDesaparecidos();
   const avisoDesap = document.getElementById('stock-desaparecidos-aviso');
@@ -10689,6 +10887,9 @@ function pesadasFichaHTML(a){
     </details>`;
 }
 
+/* Fase reproductiva: solo la PC la define (bloque @pc de abajo); en las demás no se llama (CONFIG.reproduccion apagado). */
+let reproFichaHTML = () => '';
+
 function fichaCaravanaHTML(a){
   const filas = [
     ['Categoría', a.categoria],
@@ -10759,7 +10960,7 @@ function fichaCaravanaHTML(a){
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${esc(v)}</td></tr>`).join('')}
-    </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}`;
+    </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}${CONFIG.reproduccion ? reproFichaHTML(a) : ''}`;
 }
 
 async function ejecutarBusquedaCaravana(){
@@ -11370,6 +11571,182 @@ if(INSUMOS_ACTIVO){
   });
   window.addEventListener('online', ()=>{ if(insAbierta()) insRender(); });
   window.addEventListener('offline', ()=>{ if(insAbierta()) insRender(); });
+}
+/* 3/11/2026 (a pedido de Pedro): fase reproductiva (tacto y DAO, sin IATF), solo PC de La Vuelta
+   (CONFIG.reproduccion). La PC (repro.py, carpeta del lector XRS2) clasifica cada sesión por el
+   nombre del archivo y publica en animales_caravana.repro (jsonb, una lista por animal):
+     {f:fecha, t:'TACTO'|'DAO', r:resultado, p:productos, s:sesión, o:potrero}
+   más estado_repro y repro_fecha. Si la lista trae otro tipo (por ejemplo IATF), la app lo ignora:
+   Pedro pidió solo tacto y DAO. La app SOLO LEE y no recalcula la clasificación: si el nombre
+   de un archivo no se reconoce, se corrige allá (repro_sesiones.csv). Un tacto/DAO NO es un
+   evento de stock: nunca pasa por eventos_sync. Resultados: PRENEZ_GRANDE/MEDIA/CHICA, PRENEZ (sin
+   tamaño), VACIA, DUDA, CICLANDO, ANESTRO_SUP, ANESTRO_PROF, ANESTRO. Un valor desconocido llega
+   crudo y se muestra tal cual. */
+const REPRO_ROTULOS = {
+  PRENEZ_GRANDE: 'Preñez grande', PRENEZ_MEDIA: 'Preñez media', PRENEZ_CHICA: 'Preñez chica',
+  PRENEZ: 'Preñada (sin tamaño)', VACIA: 'Vacía', DUDA: 'Duda',
+  CICLANDO: 'Ciclando', ANESTRO_SUP: 'Anestro superficial', ANESTRO_PROF: 'Anestro profundo', ANESTRO: 'Anestro'
+};
+const REPRO_ORDEN_TACTO = ['PRENEZ_GRANDE', 'PRENEZ_MEDIA', 'PRENEZ_CHICA', 'PRENEZ', 'VACIA', 'DUDA'];
+const REPRO_ORDEN_DAO = ['CICLANDO', 'ANESTRO_SUP', 'ANESTRO_PROF', 'ANESTRO'];
+const REPRO_TIPOS = ['TACTO', 'DAO'];
+function reproRotulo(r){
+  if(!r) return '—';
+  return REPRO_ROTULOS[r] || String(r);
+}
+function reproDeAnimal(a){
+  if(!a || !Array.isArray(a.repro)) return [];
+  return a.repro.filter(x => x && typeof x === 'object' && x.f && REPRO_TIPOS.indexOf(x.t) >= 0);
+}
+function reproFilasPorTipo(animales, tipos){
+  const por = {};
+  animales.forEach(an => reproDeAnimal(an).forEach(x => {
+    if(tipos.indexOf(x.t) < 0) return;
+    const k = x.f + '|' + (x.s || '');
+    const g = por[k] = por[k] || {clave: k, f: x.f, s: x.s || '', t: x.t, items: []};
+    g.items.push({id8: an.id8, categoria: an.categoria || '', r: x.r || '', p: x.p || ''});
+  }));
+  return Object.values(por).sort((a, b) => String(b.f).localeCompare(String(a.f)) || String(a.s).localeCompare(String(b.s)));
+}
+function reproContar(items){
+  const c = {};
+  items.forEach(x => { c[x.r || '—'] = (c[x.r || '—'] || 0) + 1; });
+  return c;
+}
+function reproPct(n, total){ return total ? Math.round(n * 100 / total) + '%' : '—'; }
+function reproResumenSesionHTML(g){
+  const n = g.items.length, c = reproContar(g.items);
+  const orden = (g.t === 'DAO' ? REPRO_ORDEN_DAO : REPRO_ORDEN_TACTO);
+  const extra = Object.keys(c).filter(k => orden.indexOf(k) < 0);
+  const claves = orden.filter(k => c[k]).concat(extra);
+  let cab = '';
+  if(g.t === 'TACTO'){
+    const pren = Object.keys(c).filter(k => k.indexOf('PRENEZ') === 0).reduce((s, k) => s + c[k], 0);
+    cab = `<p class="modal-info"><b>${n}</b> tactados · preñadas <b>${pren}</b> (${reproPct(pren, n)}) · vacías <b>${c.VACIA || 0}</b> (${reproPct(c.VACIA || 0, n)})</p>`;
+  }else{
+    cab = `<p class="modal-info"><b>${n}</b> con DAO · ciclando <b>${c.CICLANDO || 0}</b> (${reproPct(c.CICLANDO || 0, n)})</p>`;
+  }
+  const filas = claves.map(k => `<tr><td style="padding:3px 6px;color:#5a6572;">${esc(reproRotulo(k))}</td><td style="padding:3px 6px;font-weight:600;">${c[k]}</td><td style="padding:3px 6px;">${reproPct(c[k], n)}</td></tr>`).join('');
+  const cats = [...new Set(g.items.map(x => x.categoria || 'Sin categoría'))].sort();
+  const porCat = cats.map(cat => {
+    const its = g.items.filter(x => (x.categoria || 'Sin categoría') === cat);
+    const cc = reproContar(its);
+    return `<tr><td style="padding:2px 6px;">${esc(cat)}</td><td style="padding:2px 6px;">${its.length}</td><td style="padding:2px 6px;">${claves.filter(k => cc[k]).map(k => esc(reproRotulo(k)) + ' ' + cc[k]).join(' · ')}</td></tr>`;
+  }).join('');
+  return cab + `<table style="width:100%;border-collapse:collapse;font-size:13px;">${filas}</table>
+    <details class="historial-det historial-det-lista"><summary>Por categoría (${cats.length})</summary>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:#5a6572;"><td style="padding:2px 6px;">Categoría</td><td style="padding:2px 6px;">Animales</td><td style="padding:2px 6px;">Resultado</td></tr>${porCat}</table></details>`;
+}
+/* Cruces: DAO -> último tacto posterior a ese DAO (el último es el que importa).
+   Sin tacto posterior: "sin tacto". */
+function reproCruces(animales){
+  const filas = {};
+  animales.forEach(an => {
+    const ev = reproDeAnimal(an).slice().sort((x, y) => String(x.f).localeCompare(String(y.f)));
+    const dao = ev.filter(x => x.t === 'DAO').pop();
+    if(!dao || !dao.r) return;
+    const tac = ev.filter(x => x.t === 'TACTO' && String(x.f) > String(dao.f)).pop();
+    const f = filas[dao.r] = filas[dao.r] || {n: 0, res: {}};
+    f.n++;
+    const k = tac ? (tac.r || '—') : 'SIN_TACTO';
+    f.res[k] = (f.res[k] || 0) + 1;
+  });
+  return filas;
+}
+function reproCrucesHTML(animales){
+  const filas = reproCruces(animales);
+  const claves = REPRO_ORDEN_DAO.filter(k => filas[k]).concat(Object.keys(filas).filter(k => REPRO_ORDEN_DAO.indexOf(k) < 0));
+  if(!claves.length) return '<p class="modal-info">Todavía no hay animales con DAO.</p>';
+  const cuerpo = claves.map(k => {
+    const f = filas[k];
+    const pren = Object.keys(f.res).filter(x => x.indexOf('PRENEZ') === 0).reduce((s, x) => s + f.res[x], 0);
+    const det = Object.keys(f.res).sort().map(x => (x === 'SIN_TACTO' ? 'sin tacto posterior' : esc(reproRotulo(x))) + ' ' + f.res[x]).join(' · ');
+    return `<tr><td style="padding:3px 6px;font-weight:600;">${esc(reproRotulo(k))}</td><td style="padding:3px 6px;">${f.n}</td><td style="padding:3px 6px;">${pren} (${reproPct(pren, f.n)})</td><td style="padding:3px 6px;font-size:12px;">${det}</td></tr>`;
+  }).join('');
+  return `<p class="modal-info">Cada animal con DAO, contra su último tacto posterior.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="color:#5a6572;"><td style="padding:3px 6px;">DAO</td><td style="padding:3px 6px;">Animales</td><td style="padding:3px 6px;">Preñadas</td><td style="padding:3px 6px;">Detalle</td></tr>${cuerpo}</table>`;
+}
+reproFichaHTML = function(a){
+  const ev = reproDeAnimal(a).slice().sort((x, y) => String(y.f).localeCompare(String(x.f)));
+  if(!ev.length) return '';
+  // Si el estado publicado es de IATF (no se muestra), se usa el último tacto o DAO.
+  const deIatf = !a.estado_repro || String(a.estado_repro).indexOf('IATF') === 0;
+  const estado = deIatf ? (ev[0].r ? reproRotulo(ev[0].r) : '—') : reproRotulo(a.estado_repro);
+  const fechaEstado = deIatf ? (ev[0].r ? ev[0].f : '') : a.repro_fecha;
+  const filas = ev.map(x => {
+    const que = x.t === 'DAO' ? 'DAO' : 'Tacto';
+    const det = reproRotulo(x.r);
+    return `<tr><td style="padding:2px 6px;">${esc(x.f)}</td><td style="padding:2px 6px;font-weight:600;">${esc(que)}</td><td style="padding:2px 6px;">${esc(det)}</td><td style="padding:2px 6px;color:#5a6572;">${esc(x.s || '')}</td></tr>`;
+  }).join('');
+  return `<div class="modal-info" style="margin-top:10px;"><b>🐄 Reproducción</b> (${ev.length})<br>Estado: <b>${esc(estado)}</b>${fechaEstado ? ' (' + esc(fechaEstado) + ')' : ''}</div>
+    <details class="historial-det historial-det-lista"><summary>Línea de tiempo reproductiva (${ev.length})</summary>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:#5a6572;"><td style="padding:2px 6px;">Fecha</td><td style="padding:2px 6px;">Evento</td><td style="padding:2px 6px;">Resultado / productos</td><td style="padding:2px 6px;">Sesión</td></tr>${filas}</table></details>`;
+};
+let REPRO_ANIMALES = [], REPRO_TACTOS = [];
+async function cargarReproduccion(){
+  const client = clienteSupabase();
+  if(!client) return {error: 'sin conexión'};
+  const filas = [];
+  try{
+    // PostgREST corta en 1000 filas sin avisar: se pagina.
+    for(let desde = 0; ; desde += 1000){
+      const res = await client.from(TABLA_CARAVANAS)
+        .select('id8,categoria,estado_vida,estado_repro,repro_fecha,repro')
+        .eq('establecimiento', ESTABLECIMIENTO).not('repro', 'is', null).order('id8')
+        .range(desde, desde + 999);
+      if(res.error) return {error: res.error.message || 'error de consulta'};
+      const lote = limpiarTextoRemoto(res.data || []);
+      filas.push(...lote);
+      if(lote.length < 1000) break;
+    }
+  }catch(e){
+    return {error: 'sin señal'};
+  }
+  return {animales: filas};
+}
+function reproPintarTacto(){
+  const g = REPRO_TACTOS.find(x => x.clave === document.getElementById('repro-sesion').value);
+  document.getElementById('repro-resumen').innerHTML = g ? reproResumenSesionHTML(g) : '<p class="modal-info">No hay sesiones de tacto o DAO.</p>';
+}
+function reproElegirTab(tab){
+  ['tacto', 'cruces'].forEach(t => { document.getElementById('repro-tab-' + t).style.display = t === tab ? '' : 'none'; });
+}
+async function abrirReproduccion(){
+  const modal = document.getElementById('modal-reproduccion');
+  const cuerpo = document.getElementById('repro-cuerpo');
+  const msg = document.getElementById('repro-mensaje');
+  modal.style.display = 'flex';
+  cuerpo.style.display = 'none';
+  msg.innerHTML = '<p class="modal-info">Cargando reproducción…</p>';
+  const r = await cargarReproduccion();
+  if(r.error){
+    msg.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">No se pudo consultar (${esc(String(r.error).slice(0, 120))}). Necesitás señal para ver la reproducción.</p>`;
+    return;
+  }
+  REPRO_ANIMALES = r.animales;
+  REPRO_TACTOS = reproFilasPorTipo(REPRO_ANIMALES, ['TACTO', 'DAO']);
+  if(!REPRO_ANIMALES.length){
+    msg.innerHTML = '<p class="modal-info">Todavía no hay datos reproductivos publicados.</p>';
+    return;
+  }
+  msg.innerHTML = '';
+  cuerpo.style.display = '';
+  document.getElementById('repro-sesion').innerHTML = REPRO_TACTOS.map(g =>
+    `<option value="${esc(g.clave)}">${esc(g.f)} · ${g.t === 'DAO' ? 'DAO' : 'Tacto'} · ${esc(g.s || 'sin nombre')} · ${g.items.length} animales</option>`).join('');
+  document.getElementById('repro-cruces').innerHTML = reproCrucesHTML(REPRO_ANIMALES);
+  reproPintarTacto();
+  reproElegirTab('tacto');
+}
+if(CONFIG.reproduccion && document.getElementById('modal-reproduccion')){
+  const br = document.getElementById('btn-reproduccion');
+  if(br){
+    br.style.display = '';
+    br.addEventListener('click', abrirReproduccion);
+  }
+  document.getElementById('repro-sesion').addEventListener('change', reproPintarTacto);
+  document.querySelectorAll('[data-repro-tab]').forEach(b => b.addEventListener('click', () => reproElegirTab(b.getAttribute('data-repro-tab'))));
+  document.getElementById('repro-cerrar').addEventListener('click', () => { document.getElementById('modal-reproduccion').style.display = 'none'; });
+  document.getElementById('repro-cerrar-x').addEventListener('click', () => document.getElementById('repro-cerrar').click());
 }
 
 /* ======================= BAÑO DE ASPERSIÓN (control del baño) =======================

@@ -204,6 +204,7 @@
     color:var(--verde-monte);
   }
   .potrero-card .area{font-size:11.5px;color:var(--texto-suave);}
+  .potrero-card .nota-doble{font-size:11.5px;color:var(--texto-suave);margin-top:2px;}
   .badge-total{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
@@ -575,7 +576,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.50</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.51</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1263,9 +1264,30 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.52","versionMovil":"3.50","simpleHabilitado":true,"versionMovilSimple":"1.60","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Pedro","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.55","versionMovil":"3.51","simpleHabilitado":true,"versionMovilSimple":"1.61","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
+/* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
+   (La Vuelta: 1+2 y 19+20). El doble es un potrero más de POTREROS_GEO, con el dibujo de los dos juntos;
+   `CONFIG.potrerosDobles` = {doble: [partes]}. Unir = "Mover todo" de las partes al doble; separar = al revés. Sin eventos
+   nuevos. En el mapa el doble se ve solo si tiene animales (o está elegido), y entonces sus partes quedan apagadas. */
+const POTREROS_DOBLES = CONFIG.potrerosDobles || {};
+function esDoble(nombre){ return Object.prototype.hasOwnProperty.call(POTREROS_DOBLES, nombre); }
+function dobleDeParte(nombre){
+  for(const d in POTREROS_DOBLES) if((POTREROS_DOBLES[d] || []).includes(nombre)) return d;
+  return null;
+}
+/* El doble de esta parte, si ese doble tiene animales ahora (la parte está "tapada"); si no, null. */
+function parteTapada(nombre){
+  const d = dobleDeParte(nombre);
+  if(!d || !estado || !estado.potreros || !estado.potreros[d] || totalPotrero(d) === 0) return null;
+  return totalPotrero(nombre) === 0 ? d : null;   // una parte con animales propios sigue a la vista (se puede tocar)
+}
+/* Superficie y cantidad de potreros "de verdad": el doble se pisa con sus partes, así que no se suma (si no, La Vuelta
+   daría 33 potreros y 28 ha de más). Animales y UG sí se suman sobre todos: cada animal está en un solo potrero. */
+function potrerosFisicos(){ return POTREROS_GEO.filter(p => !esDoble(p.nombre)); }
+function haFisicas(){ return potrerosFisicos().reduce((s,p)=> s + areaHa(p.nombre), 0);
+}
 
 /* Categorías por especie con coeficiente de Unidad Ganadera (UG) por defecto.
    Referencia estándar usada en Uruguay (INIA / Plan Agropecuario, base 1 UG = vaca de cría de ~400-450kg).
@@ -1479,7 +1501,7 @@ function detalleAnimales(animales){
    Solo se muestra en establecimientos con más de un dueño obligatorio (ver
    @multiDueno en generar.js) -- hoy únicamente María Laura. */
 function resumenPorDueno(){
-  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  const totalHa = haFisicas();
   // 19/9/2026: se agrega '' (sin asignar) a los grupos -- en La Vuelta la
   // Firma es opcional, así que la mayoría del stock (existencias previas)
   // tiene dueno==='' y antes quedaba totalmente afuera de este reporte.
@@ -1977,7 +1999,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'movil-3.50';
+const VERSION_APP = 'movil-3.51';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -2356,6 +2378,11 @@ function aplicarPendientesDePotrero(nombre, potrerosSucios){
   if(!lista || !lista.length) return;
   delete estado.pendientesPotrero[nombre];
   lista.forEach(r=> aplicarEventoRemoto(r, potrerosSucios));
+}
+function aplicarPendientesYaConocidos(potrerosSucios){
+  for(const nombre of Object.keys(estado.pendientesPotrero || {})){
+    if(estado.potreros[nombre]) aplicarPendientesDePotrero(nombre, potrerosSucios);
+  }
 }
 function aplicarPendientesDePotreroLocal(nombre){
   const sucios = new Set();
@@ -3402,6 +3429,9 @@ async function sincronizar(mostrarToast){
     // estado recién reconstruido.
     const esPrimeraSync = !estado.ultimaSincronizacion;
     const potrerosSucios = new Set();
+    // 4/11/2026: un potrero nuevo que llegó por config (p. ej. los dobles 1+2 / 19+20) no manda potrero_creado: sus eventos
+    // estacionados mientras este equipo tenía la versión vieja se aplican acá, apenas el potrero existe.
+    aplicarPendientesYaConocidos(potrerosSucios);
     await vaciarColaSync();
     await vaciarColaFotos(); // 24/10/2026: fotos de reportes pendientes (después de los movimientos, así reporte_foto sale detrás de su reporte)
     await vaciarColaSanidad();
@@ -4329,7 +4359,8 @@ function puntoEnPoligono(lat, lon, coords){
 }
 function detectarPotreroActual(lat, lon){
   for(const p of POTREROS_GEO){
-    if(puntoEnPoligono(lat, lon, p.coords)) return p.nombre;
+    if(esDoble(p.nombre)) continue;   // el doble se pisa con sus partes: se decide por la parte
+    if(puntoEnPoligono(lat, lon, p.coords)) return parteTapada(p.nombre) || p.nombre;
   }
   return null;
 }
@@ -4489,7 +4520,7 @@ function dibujarPotrero(p){
     if(modoDibujarPotrero){ L.DomEvent.stopPropagation(e); agregarVerticeDibujo(e.latlng); return; }
     poly.setPopupContent(popupContenidoPotrero(p.nombre));
     poly.openPopup(e.latlng);
-    seleccionarPotrero(p.nombre);
+    seleccionarPotrero(parteTapada(p.nombre) || p.nombre);   // una parte de un doble en uso abre el doble
   });
   poly.bindTooltip(esc(p.nombre), {sticky:true});
 
@@ -5346,16 +5377,34 @@ map.on('dblclick', ()=>{
   if(modoDibujarPotrero) terminarDibujoPotrero();
 });
 
+/* Un doble vacío no se dibuja (se pisaría con sus partes): se saca del mapa y se vuelve a poner cuando tiene animales. */
+function mostrarPoligono(item, visible){
+  if(!item || !!item.oculto === !visible) return;
+  if(visible){ item.layer.addTo(map); item.label.addTo(map); }
+  else { map.removeLayer(item.layer); map.removeLayer(item.label); }
+  item.oculto = !visible;
+}
 function refrescarColoresMapa(){
   POTREROS_GEO.forEach(p=>{
-    const total = totalPotrero(p.nombre);
     const item = poligonos[p.nombre];
+    if(!item) return;
+    const total = totalPotrero(p.nombre);
     const activo = seleccionActual === p.nombre;
+    if(esDoble(p.nombre)){
+      mostrarPoligono(item, total !== 0 || activo);
+      if(item.oculto) return;
+    }
+    if(!activo && parteTapada(p.nombre)){
+      // parte de un doble en uso: apagada y punteada, el doble se ve arriba
+      item.layer.setStyle({fillColor:'#8fae72', fillOpacity:0.05, color:'#5c7a4a', weight:1, dashArray:'4 4'});
+      return;
+    }
     item.layer.setStyle({
       fillColor: total>0 ? '#5c7a4a' : '#8fae72',
       fillOpacity: activo ? 0.55 : (total>0 ? 0.4 : 0.2),
       color: activo ? '#c68a3b' : '#5c7a4a',
-      weight: activo ? 3 : 2
+      weight: activo ? 3 : 2,
+      dashArray: null
     });
   });
 }
@@ -5391,6 +5440,7 @@ function renderLista(filtro=''){
         <div class="badge-total ${total===0?'vacio':''}"${total<0?' style="background:#d32f2f;color:#fff;"':''}>${total}</div>
       </div>
       <div class="ocupacion-badge ocupacion-${ocup.tipo}">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
+      ${esDoble(nombre) ? `<div class="nota-doble">🔗 ${total !== 0 ? esc((POTREROS_DOBLES[nombre]||[]).join(' y ')) + ' unidos' : 'Para usar ' + esc((POTREROS_DOBLES[nombre]||[]).join(' y ')) + ' juntos'}</div>` : (parteTapada(nombre) ? `<div class="nota-doble">🔗 Unido en ${esc(parteTapada(nombre))}</div>` : '')}
       ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span${v<0?' style="color:#d32f2f;font-weight:700;"':''}>${esc(k)}: ${v}</span>`).join('')}</div>` : ''}
     `;
     if(casosPotrero.length){
@@ -6666,8 +6716,8 @@ function mostrarFormulario(nombre, accion, prefill){
 
 /* ======================= RESUMEN GENERAL ======================= */
 function actualizarResumen(){
-  document.getElementById('res-potreros').textContent = POTREROS_GEO.length;
-  const ha = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  document.getElementById('res-potreros').textContent = potrerosFisicos().length;
+  const ha = haFisicas();
   document.getElementById('res-ha').textContent = Math.round(ha);
   const porEspecie = POTREROS_GEO.reduce((s,p)=>{
     const e = totalPorEspecie(p.nombre);
@@ -8599,6 +8649,9 @@ function pesadasFichaHTML(a){
     </details>`;
 }
 
+/* Fase reproductiva: solo la PC la define (bloque @pc de abajo); en las demás no se llama (CONFIG.reproduccion apagado). */
+let reproFichaHTML = () => '';
+
 function fichaCaravanaHTML(a){
   const filas = [
     ['Categoría', a.categoria],
@@ -8669,7 +8722,7 @@ function fichaCaravanaHTML(a){
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${esc(v)}</td></tr>`).join('')}
-    </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}`;
+    </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}${CONFIG.reproduccion ? reproFichaHTML(a) : ''}`;
 }
 
 async function ejecutarBusquedaCaravana(){
@@ -11762,12 +11815,12 @@ async function cargarStock(){
   cambiarPestanaStock(0);
   document.querySelectorAll('#modal-stock [data-panel]').forEach(el=> el.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>');
 
-  const totalHa = POTREROS_GEO.reduce((s,p)=> s + areaHa(p.nombre), 0);
+  const totalHa = haFisicas();
   const totalAnimales = POTREROS_GEO.reduce((s,p)=> s + totalPotrero(p.nombre), 0);
   const totalUGCampo = POTREROS_GEO.reduce((s,p)=> s + totalUG(p.nombre), 0);
   const dotacionGeneral = totalHa>0 ? (totalUGCampo/totalHa) : 0;
   document.getElementById('stock-resumen').textContent =
-    `${POTREROS_GEO.length} potreros · ${totalHa.toFixed(1)} ha · ${totalAnimales} animales · ${totalUGCampo.toFixed(1)} UG · ${dotacionGeneral.toFixed(2)} UG/ha`;
+    `${potrerosFisicos().length} potreros · ${totalHa.toFixed(1)} ha · ${totalAnimales} animales · ${totalUGCampo.toFixed(1)} UG · ${dotacionGeneral.toFixed(2)} UG/ha`;
 
   const casosStock = listarCasosDesaparecidos();
   const avisoDesap = document.getElementById('stock-desaparecidos-aviso');

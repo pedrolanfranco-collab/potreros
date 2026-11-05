@@ -76,7 +76,7 @@ const PAGINAS = [
     encabezado: v => `· v${v} (completa)</div>`,
     excepciones: {},
     ocultoPorConfig: { 'btn-caravana': 'caravanasHabilitado', 'btn-guias': 'guiasHabilitado', 'btn-pesadas': 'pesadasHistorial',
-      'btn-faltantes': 'datosFaltantes', 'btn-csv-baston': 'completarCsvBaston', 'btn-voz': 'siempre', 'btn-insumos': 'insumos', 'btn-bano': 'bano',
+      'btn-faltantes': 'datosFaltantes', 'btn-reproduccion': 'reproduccion', 'btn-csv-baston': 'completarCsvBaston', 'btn-voz': 'siempre', 'btn-insumos': 'insumos', 'btn-bano': 'bano',
       'vs-csv': 'siempre', 'df-csv': 'datosFaltantes' },
     esperado: {
       'la-vuelta':   { claveCampo: true, insumos: true,  bano: true, caravanasHabilitado: true,  duenoLabel: 'Firma',  duenoObligatorio: false, guiasHabilitado: true,  dicoseHabilitado: true,  trasladoHabilitado: true,  pesadasHistorial: true,  datosFaltantes: true,  completarCsvBaston: true,  usaExcelBridge: true,  mapLabels: false, puntosSeed: true },

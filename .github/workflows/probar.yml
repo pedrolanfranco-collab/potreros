@@ -160,6 +160,9 @@ jobs:
       - name: "Completar lectura del baston (CSV) en Sanidad, solo la PC de La Vuelta -- mismo archivo con producto/dosis/potrero, guardar en Entrada, sin escribir en Supabase"
         run: node tests/probar_csv_baston_pc.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html
 
+      - name: "Reproduccion (PC de La Vuelta) -- tacto y DAO desde animales_caravana.repro (IATF ignorado); ficha con linea de tiempo; cruces; paginacion; texto de afuera escapado"
+        run: node tests/probar_reproduccion.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html pone-chico-pc/index.html
+
       - name: "Pesadas (solo La Vuelta) -- historial en la ficha, resumen por lote de la sesion del baston, proporcion contra el stock"
         run: node tests/probar_pesadas.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-movil/index.html pone-chico-movil/index.html
 
@@ -176,11 +179,17 @@ jobs:
       - name: "Capas de Aguadas e Instalaciones (31/10/2026) -- los botones apagan y prenden solo su tipo de punto; la eleccion queda por equipo y por campo; Ver en el mapa y cargar un punto prenden lo que corresponde; un punto de otro equipo no prende nada; Verificar stock no cambia nada"
         run: node tests/probar_capas_puntos.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 
+      - name: "Potreros dobles (4/11/2026) -- 1+2 y 19+20 de La Vuelta: ocultos vacios, con animales se unen (rayas en las partes), clic y lista, separar, GPS en movil; Maria Laura sin dobles"
+        run: node tests/probar_potreros_dobles.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html
+
       - name: "PC: editar y borrar cualquier evento (3/10/2026) -- historial incluso de otros dispositivos, abortos y eventos climaticos, sincronizado"
         run: node tests/probar_editar_borrar_pc.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
       - name: "PC: caja de Herramientas ordenada por funciones (10/10/2026) -- 4 grupos, 5 sub-menus, sin Exportar MD; movil y Campo sin cambios"
         run: node tests/probar_herramientas_pc.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
+
+      - name: "PC nueva, parte 1 (4/11/2026) -- menu a la izquierda con atajos a los botones de siempre y tarjetas Cabezas / Con animales; movil y Campo sin cambios"
+        run: node tests/probar_pc_menu.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
       - name: "Campo: visualizacion (10/10/2026) -- total grande, historial plegado, mapa mas bajo, formulario a la vista; PC y movil sin cambios"
         run: node tests/probar_campo_visualizacion.js la-vuelta-movil-campo/index.html maria-laura-movil-campo/index.html pone-chico-movil-campo/index.html
