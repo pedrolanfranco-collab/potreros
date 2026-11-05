@@ -303,17 +303,28 @@ def mostrar_simulacion(est, evento_, stock_antes, stock_despues, ops, titulo):
     print("Evento que se cargaría en eventos_sync:")
     print(json.dumps(evento_, ensure_ascii=False, indent=2))
     print("")
-    print("Efecto en el stock (según stock_potreros: es la foto de las apps, puede estar atrasada):")
-    vistos = []
-    for potrero, cat, dueno, _delta in ops:
-        k = (potrero, clave_de(cat, dueno))
-        if k not in vistos:
-            vistos.append(k)
-    for k in vistos:
-        potrero, clave = k
-        cat, _, dueno = clave.partition("||")
-        print("  %s — %s%s: %d → %d" % (potrero, cat, texto_firma(est, dueno),
-                                       stock_antes.get(k, 0), stock_despues.get(k, 0)))
+    print("Stock del potrero (según stock_potreros: es la foto que publican las apps, puede estar atrasada):")
+    potreros = []
+    for potrero, _cat, _dueno, _delta in ops:
+        if potrero not in potreros:
+            potreros.append(potrero)
+    origen = evento_.get("potrero")
+    destino = (evento_.get("detalle") or {}).get("destino")
+    for potrero in potreros:
+        rol = ""
+        if destino and destino != origen:
+            rol = " (salida)" if potrero == origen else (" (entrada)" if potrero == destino else "")
+        print("")
+        print("  %s%s:" % (potrero, rol))
+        claves = sorted({k[1] for k in list(stock_antes) + list(stock_despues) if k[0] == potrero})
+        for clave in claves:
+            k = (potrero, clave)
+            cat, _, dueno = clave.partition("||")
+            print("    %s%s: %d → %d" % (cat, texto_firma(est, dueno),
+                                         stock_antes.get(k, 0), stock_despues.get(k, 0)))
+        antes = sum(v for (p, _c), v in stock_antes.items() if p == potrero)
+        despues = sum(v for (p, _c), v in stock_despues.items() if p == potrero)
+        print("    *Total: %d → %d animales*" % (antes, despues))
 
 
 def escribir(est, evento_, pedir_fn):
