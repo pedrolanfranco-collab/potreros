@@ -86,7 +86,7 @@ const SUBMENUS = {
   backup:   ['btn-exportar-json', 'btn-importar-json']
 };
 const DIRECTOS = ['btn-stock', 'btn-sanidad', 'btn-lluvias', 'btn-desaparecidos', 'btn-alertas', 'btn-verificar-stock',
-  'btn-eventos-manejo', 'btn-tareas', 'btn-coeficientes', 'btn-sincronizar', 'btn-usuario', 'btn-clave-campo', 'btn-instructivo', 'btn-restablecer'];
+  'btn-eventos-manejo', 'btn-tareas', 'btn-calendario', 'btn-coeficientes', 'btn-sincronizar', 'btn-usuario', 'btn-clave-campo', 'btn-instructivo', 'btn-restablecer'];
 
 async function probarPc(archivo){
   console.log('\n=== ' + archivo + ' ===');
@@ -111,11 +111,12 @@ async function probarPc(archivo){
     Object.values(SUBMENUS).flat().every(id => !visible(doc.getElementById(id))));
   // Pone Chico no usa clave del campo (17/10/2026): su botón está oculto a propósito
   const poneChico = /pone-chico/.test(archivo);
-  const directos = poneChico ? DIRECTOS.filter(id => id !== 'btn-clave-campo' && id !== 'btn-eventos-manejo' && id !== 'btn-tareas') : DIRECTOS;
+  const directos = poneChico ? DIRECTOS.filter(id => id !== 'btn-clave-campo' && id !== 'btn-eventos-manejo' && id !== 'btn-tareas' && id !== 'btn-calendario') : DIRECTOS;
   chequear('los botones directos siguen a la vista', directos.every(id => doc.getElementById(id) && visible(doc.getElementById(id))),
     directos.filter(id => !doc.getElementById(id) || !visible(doc.getElementById(id))).join(','));
   if(poneChico) chequear('Eventos queda oculto cuando CONFIG.manejo=false',!!doc.getElementById('btn-eventos-manejo')&&!visible(doc.getElementById('btn-eventos-manejo')));
   if(poneChico) chequear('Tareas queda oculta cuando CONFIG.manejo=false',!!doc.getElementById('btn-tareas')&&!visible(doc.getElementById('btn-tareas')));
+  if(poneChico) chequear('Calendario queda oculto cuando CONFIG.manejo=false',!!doc.getElementById('btn-calendario')&&!visible(doc.getElementById('btn-calendario')));
   chequear('"Restablecer" va aparte, ocupando las dos columnas', doc.getElementById('btn-restablecer').classList.contains('hg-ancho'));
   // 30/10/2026: "📖 Instructivo" vive en el grupo "Este dispositivo" (junto a Sincronizar, Quién soy y Clave del campo)
   const grupoDispositivo = Array.from(menu.querySelectorAll('#hmenu-grupos .hg')).find(g => g.querySelector('.hg-titulo').textContent.trim() === 'Este dispositivo');
