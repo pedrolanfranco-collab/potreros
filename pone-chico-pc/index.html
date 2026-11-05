@@ -89,6 +89,12 @@
   .capas-puntos{position:absolute;top:10px;left:54px;z-index:800;display:flex;gap:6px;}
   .capas-puntos button{border:none;border-radius:20px;padding:7px 10px;font-family:'Inter',sans-serif;font-weight:600;font-size:11.5px;color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);white-space:nowrap;}
   .capa-off{background:#8c8c8c !important;text-decoration:line-through;opacity:0.9;}
+  #mapa-pintar-control{position:absolute;top:54px;right:14px;z-index:800;display:flex;align-items:center;gap:7px;background:rgba(250,246,234,.96);border:1px solid var(--linea);border-radius:8px;padding:7px 9px;box-shadow:0 2px 8px rgba(0,0,0,.25);font-size:12px;font-weight:600;}
+  #mapa-pintar-control select{border:1px solid var(--linea);border-radius:5px;background:#fff;color:var(--texto);font:inherit;padding:5px 7px;}
+  #mapa-leyenda{position:absolute;bottom:14px;left:54px;z-index:800;display:flex;flex-wrap:wrap;gap:5px 9px;max-width:calc(100% - 68px);background:rgba(250,246,234,.94);border:1px solid var(--linea);border-radius:8px;padding:6px 9px;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:11px;line-height:1.25;}
+  #mapa-leyenda span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+  #mapa-leyenda i{display:inline-block;width:12px;height:12px;border:1px solid rgba(36,31,22,.35);border-radius:3px;flex:none;}
+  @media (max-width:600px){#mapa-pintar-control{top:48px;right:8px;font-size:11px;}#mapa-pintar-control select{padding:5px;}#mapa-leyenda{left:8px;right:8px;bottom:8px;max-width:none;gap:4px 7px;font-size:10px;}}
   /* pantallas muy angostas (≤345 px): no entran entre el zoom y Satelital, van debajo del zoom */
   @media (max-width:345px){ .capas-puntos{top:84px;left:10px;} }
   #sidebar{
@@ -636,14 +642,14 @@
   <button data-pc-seccion="puntos" title="Puntos y reportes"><span aria-hidden="true">📍</span> <span class="pr-txt">Puntos y reportes</span></button>
   <button data-pc-seccion="exportar" title="Exportar y respaldo"><span aria-hidden="true">⬇</span> <span class="pr-txt">Exportar y respaldo</span></button>
   <button data-pc-seccion="dispositivo" title="Este dispositivo"><span aria-hidden="true">⚙</span> <span class="pr-txt">Este dispositivo</span></button>
-  <div class="pr-pie">v2.25 (completa)</div>
+  <div class="pr-pie">v2.26 (completa)</div>
 </nav>
 <div id="app">
   <header>
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.25 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v2.26 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -667,6 +673,15 @@
         <button id="btn-capa-agua" style="background:#3f6b8f;" title="Aguadas: ON" aria-pressed="true">💧 Aguadas</button>
         <button id="btn-capa-instalacion" style="background:#7a5236;" title="Instalaciones: ON" aria-pressed="true">🚧 Instal.</button>
       </div>
+      <div id="mapa-pintar-control">
+        <label for="mapa-pintar-por">Pintar por:</label>
+        <select id="mapa-pintar-por" aria-label="Pintar potreros por">
+          <option value="dotacion">Dotación (UG/ha)</option>
+          <option value="eventos" disabled title="Disponible al habilitar Eventos de manejo">Eventos</option>
+          <option value="ocupado">Ocupado</option>
+        </select>
+      </div>
+      <div id="mapa-leyenda" aria-live="polite"></div>
     </div>
     <div id="sidebar">
       <div style="position:relative;">
@@ -1593,7 +1608,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.25","versionMovil":"2.22","simpleHabilitado":true,"versionMovilSimple":"1.62","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"bano":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.26","versionMovil":"2.22","simpleHabilitado":true,"versionMovilSimple":"1.62","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"bano":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -2338,7 +2353,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-2.25';
+const VERSION_APP = 'pc-2.26';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = false;
@@ -4328,6 +4343,16 @@ function cargaPotrero(nombre){
   if(!ha) return 0;
   return totalUG(nombre) / ha;
 }
+function tooltipPotreroPC(nombre){
+  const datosNombre = parteTapada(nombre) || nombre;
+  const total = totalPotrero(datosNombre);
+  const ug = totalUG(datosNombre);
+  const ha = areaHa(datosNombre);
+  const carga = ha > 0 ? cargaPotrero(datosNombre).toFixed(2).replace('.', ',') + ' UG/ha' : '—';
+  const area = ha > 0 ? ha.toFixed(1).replace('.', ',') + ' ha' : 'sin dato';
+  const avisoDoble = datosNombre !== nombre ? ' <small>(doble en uso)</small>' : '';
+  return `<strong>${esc(datosNombre)}</strong>${avisoDoble}<br>Animales: ${total}<br>UG: ${ug.toFixed(2).replace('.', ',')}<br>Área: ${area}<br>Carga: ${carga}`;
+}
 /* Área geométrica aproximada en hectáreas a partir de coordenadas [lat,lon],
    usando proyección equirectangular simple (suficiente para la escala de un potrero). */
 function calcAreaHa(coords){
@@ -5199,7 +5224,7 @@ function dibujarPotrero(p){
     poly.openPopup(e.latlng);
     seleccionarPotrero(parteTapada(p.nombre) || p.nombre);   // una parte de un doble en uso abre el doble
   });
-  poly.bindTooltip(esc(p.nombre), {sticky:true});
+  poly.bindTooltip(()=>tooltipPotreroPC(p.nombre), {sticky:true});
 
   poligonos[p.nombre] = {layer: poly, label, area: p.area};
 }
@@ -6063,6 +6088,53 @@ function mostrarPoligono(item, visible){
   else { map.removeLayer(item.layer); map.removeLayer(item.label); }
   item.oculto = !visible;
 }
+const CORTES_DOTACION_MAPA = [0.5, 0.8, 1.2];
+const COLORES_DOTACION_MAPA = ['#cfe3a8','#7fb04f','#e0a62a','#c2452d'];
+const COLOR_VACIO_MAPA = '#9a9a8c';
+const CLAVE_PINTAR_MAPA = ESTABLECIMIENTO + '_pintar_por';
+function leerModoPintarMapa(){
+  try { return ['dotacion','ocupado'].includes(localStorage.getItem(CLAVE_PINTAR_MAPA)) ? localStorage.getItem(CLAVE_PINTAR_MAPA) : 'dotacion'; }
+  catch(e){ return 'dotacion'; }
+}
+let modoPintarMapa = leerModoPintarMapa();
+function colorDotacionMapa(nombre){
+  const ha = areaHa(nombre);
+  const total = totalPotrero(nombre);
+  if(total === 0 || !ha) return COLOR_VACIO_MAPA;
+  const carga = cargaPotrero(nombre);
+  const i = CORTES_DOTACION_MAPA.findIndex(c => carga < c);
+  return COLORES_DOTACION_MAPA[i === -1 ? COLORES_DOTACION_MAPA.length - 1 : i];
+}
+function actualizarLeyendaMapa(){
+  const el = document.getElementById('mapa-leyenda');
+  if(!el) return;
+  const cuad = (color, texto) => `<span><i style="background:${color}"></i>${texto}</span>`;
+  if(modoPintarMapa === 'ocupado'){
+    el.innerHTML = cuad(COLOR_VACIO_MAPA, 'Sin animales') + cuad('#5c7a4a', 'Con animales');
+  } else {
+    el.innerHTML = cuad(COLOR_VACIO_MAPA, 'Sin animales / sin área')
+      + cuad(COLORES_DOTACION_MAPA[0], 'menos de 0,5 UG/ha')
+      + cuad(COLORES_DOTACION_MAPA[1], '0,5–0,79 UG/ha')
+      + cuad(COLORES_DOTACION_MAPA[2], '0,8–1,19 UG/ha')
+      + cuad(COLORES_DOTACION_MAPA[3], '1,2 o más UG/ha');
+  }
+}
+const selectorPintarMapa = document.getElementById('mapa-pintar-por');
+if(selectorPintarMapa){
+  selectorPintarMapa.value = modoPintarMapa;
+  selectorPintarMapa.addEventListener('change', ()=>{
+    const nuevo = selectorPintarMapa.value;
+    if(!['dotacion','ocupado'].includes(nuevo)){
+      selectorPintarMapa.value = modoPintarMapa;
+      return;
+    }
+    modoPintarMapa = nuevo;
+    try { localStorage.setItem(CLAVE_PINTAR_MAPA, modoPintarMapa); } catch(e){}
+    actualizarLeyendaMapa();
+    refrescarColoresMapa();
+  });
+}
+actualizarLeyendaMapa();
 function refrescarColoresMapa(){
   POTREROS_GEO.forEach(p=>{
     const item = poligonos[p.nombre];
@@ -6079,7 +6151,7 @@ function refrescarColoresMapa(){
       return;
     }
     item.layer.setStyle({
-      fillColor: total>0 ? '#5c7a4a' : '#8fae72',
+      fillColor: modoPintarMapa === 'dotacion' ? colorDotacionMapa(p.nombre) : (total>0 ? '#5c7a4a' : '#8fae72'),
       fillOpacity: activo ? 0.55 : (total>0 ? 0.4 : 0.2),
       color: activo ? '#c68a3b' : '#5c7a4a',
       weight: activo ? 3 : 2,
