@@ -86,7 +86,7 @@ const SUBMENUS = {
   backup:   ['btn-exportar-json', 'btn-importar-json']
 };
 const DIRECTOS = ['btn-stock', 'btn-sanidad', 'btn-lluvias', 'btn-desaparecidos', 'btn-alertas', 'btn-verificar-stock',
-  'btn-coeficientes', 'btn-sincronizar', 'btn-usuario', 'btn-clave-campo', 'btn-instructivo', 'btn-restablecer'];
+  'btn-eventos-manejo', 'btn-coeficientes', 'btn-sincronizar', 'btn-usuario', 'btn-clave-campo', 'btn-instructivo', 'btn-restablecer'];
 
 async function probarPc(archivo){
   console.log('\n=== ' + archivo + ' ===');
@@ -102,7 +102,7 @@ async function probarPc(archivo){
   chequear('hay 4 grupos con título', menu.querySelectorAll('#hmenu-grupos .hg').length === 4 && menu.querySelectorAll('.hg-titulo').length >= 4);
   chequear('"Exportar MD" ya no existe', !doc.getElementById('btn-exportar-md'));
 
-  // botones a la vista (los de siempre menos los ocultos por configuración; 21 desde el 30/10/2026 con "📖 Instructivo",
+  // botones a la vista (los de siempre menos los ocultos por configuración; 22 desde el 5/11/2026 con "📋 Eventos de manejo",
   // sin contar "⚠ Datos faltantes", que solo está en La Vuelta)
   const enVista = Array.from(menu.querySelectorAll('button')).filter(b => visible(b));
   const grupos = enVista.filter(b => b.hasAttribute('data-sub'));
@@ -110,9 +110,11 @@ async function probarPc(archivo){
   chequear('ningún botón de sub-menú está a la vista de entrada',
     Object.values(SUBMENUS).flat().every(id => !visible(doc.getElementById(id))));
   // Pone Chico no usa clave del campo (17/10/2026): su botón está oculto a propósito
-  const directos = /pone-chico/.test(archivo) ? DIRECTOS.filter(id => id !== 'btn-clave-campo') : DIRECTOS;
+  const poneChico = /pone-chico/.test(archivo);
+  const directos = poneChico ? DIRECTOS.filter(id => id !== 'btn-clave-campo' && id !== 'btn-eventos-manejo') : DIRECTOS;
   chequear('los botones directos siguen a la vista', directos.every(id => doc.getElementById(id) && visible(doc.getElementById(id))),
     directos.filter(id => !doc.getElementById(id) || !visible(doc.getElementById(id))).join(','));
+  if(poneChico) chequear('Eventos queda oculto cuando CONFIG.manejo=false',!!doc.getElementById('btn-eventos-manejo')&&!visible(doc.getElementById('btn-eventos-manejo')));
   chequear('"Restablecer" va aparte, ocupando las dos columnas', doc.getElementById('btn-restablecer').classList.contains('hg-ancho'));
   // 30/10/2026: "📖 Instructivo" vive en el grupo "Este dispositivo" (junto a Sincronizar, Quién soy y Clave del campo)
   const grupoDispositivo = Array.from(menu.querySelectorAll('#hmenu-grupos .hg')).find(g => g.querySelector('.hg-titulo').textContent.trim() === 'Este dispositivo');

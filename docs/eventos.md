@@ -104,14 +104,16 @@ Registros del establecimiento (no tocan el stock):
 | `evento_clima` | `{id, tipo, obs, usuario}` |
 | `evento_clima_editado` | `{id, fecha, tipo, obs}` |
 | `evento_clima_eliminado` | `{id}` |
-| `evento_manejo` | `{id, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?, usuario}`; fecha en `fecha_cliente`; alta idempotente por id; no modifica stock |
-| `evento_manejo_editado` | snapshot `{id, fecha, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?}`; reemplaza el registro por id; no modifica stock |
-| `evento_manejo_eliminado` | `{id}`; conserva tombstone por id para impedir que una alta tardía lo reviva |
+| `evento_manejo` | `{id, ts?, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?, usuario}`; fecha en `fecha_cliente`; alta idempotente por id; no modifica stock |
+| `evento_manejo_editado` | snapshot `{id, ts?, fecha, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?}`; reemplaza el registro por id; no modifica stock |
+| `evento_manejo_eliminado` | `{id, ts?}`; conserva tombstone por id para impedir que una alta tardía lo reviva |
 
 `evento_manejo` es el mismo registro para lote y animal: sin `caravanas` se carga por lote (la cantidad es opcional);
 con `caravanas` lleva hasta 1000 valores únicos `id8` de ocho dígitos y la cantidad se completa con ese total,
 pero se puede ajustar. `evento_manejo` usa `detalle.id` UUID como identidad. Altas repetidas hacen upsert por ese id;
-ediciones y bajas son snapshots/tombstones y gana `creado_en` más nuevo (empate estable por `event_id`). Las
+ediciones y bajas son snapshots/tombstones. Los registros nuevos llevan `detalle.ts`, un ISO del momento de la acción;
+se ordenan por `(detalle.ts, event_id)` en todos los dispositivos, y las filas antiguas sin `ts` usan `creado_en`.
+Las
 caravanas que llegan de un dispositivo remoto se aceptan solo si ya son `id8` válidos. El CSV de Datamars no crea
 eventos: se lee para extraer EID/IDE, usando VID/IDV si la columna EID/IDE está vacía, y rellenar el formulario.
 | `aborto` | `{id, motivo, cantidad, obs, usuario}` |

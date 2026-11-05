@@ -57,7 +57,7 @@ async function levantar(archivo){
   win.HTMLElement.prototype.scrollIntoView=function(){};
   win.HTMLAnchorElement.prototype.click=function(){};
   const codigo=Array.from(win.document.querySelectorAll('script')).map(s=>s.textContent).filter(Boolean).join('\n');
-  try{win.eval(codigo+`;window.__manejo={estado:()=>estado,geo:POTREROS_GEO,poligonos,config:CONFIG,aplicarEventoRemoto,normalizarCaravana,leerCaravanasDeCsv,decodificarCsvDatamars,renderEventosManejo,tooltipPotreroPC:typeof tooltipPotreroPC==='function'?tooltipPotreroPC:null,colorEventosMapa:typeof colorEventosMapa==='function'?colorEventosMapa:null,refrescarColoresMapa,estadoInicial};`);}
+  try{win.eval(codigo+`;window.__manejo={estado:()=>estado,geo:POTREROS_GEO,poligonos,config:CONFIG,aplicarEventoRemoto,normalizarCaravana,leerCaravanasDeCsv:typeof leerCaravanasDeCsv==='function'?leerCaravanasDeCsv:null,decodificarCsvDatamars:typeof decodificarCsvDatamars==='function'?decodificarCsvDatamars:null,renderEventosManejo:typeof renderEventosManejo==='function'?renderEventosManejo:null,accionesPC:typeof accionesEventoManejoPC!=='undefined'&&accionesEventoManejoPC,editar:typeof editarEventoManejo==='function'?editarEventoManejo:null,borrar:typeof borrarEventoManejo==='function'?borrarEventoManejo:null,tooltipPotreroPC:typeof tooltipPotreroPC==='function'?tooltipPotreroPC:null,colorEventosMapa:typeof colorEventosMapa==='function'?colorEventosMapa:null,refrescarColoresMapa,estadoInicial};`);}
   catch(e){errores.push('ERROR AL CARGAR: '+e.stack);}
   await esperar(60);
   // La app deja timers de sincronización/avisos. El proceso termina explícitamente
@@ -79,6 +79,7 @@ async function probarConfig(nombre,pc,movil,campo){
   const visible = (doc,id)=>{const el=doc.getElementById(id);return !!el&&el.style.display!=='none';};
   chequear('botón Eventos visible solo en PC/móvil completa habilitados',
     visible(P.win.document,'btn-eventos-manejo')===habilitado && visible(M.win.document,'btn-eventos-manejo')===habilitado && !visible(C.win.document,'btn-eventos-manejo'));
+  chequear('Campo conserva su pantalla sin el módulo de Eventos',!C.win.document.getElementById('modal-eventos-manejo')&&!c.renderEventosManejo&&!c.leerCaravanasDeCsv);
   chequear('mapa ofrece Eventos solo si está habilitado',
     habilitado ? !!P.win.document.querySelector('#mapa-pintar-por option[value="eventos"]') && !P.win.document.querySelector('#mapa-pintar-por option[value="eventos"]').disabled
       : !P.win.document.querySelector('#mapa-pintar-por option[value="eventos"]'));
@@ -86,7 +87,7 @@ async function probarConfig(nombre,pc,movil,campo){
     const doc=P.win.document, dM=M.win.document;
     chequear('estado.eventosManejo existe y arranca vacío',Array.isArray(p.estado().eventosManejo)&&p.estado().eventosManejo.length===0);
     chequear('móvil tiene formulario y selector CSV para caravanas',!!dM.getElementById('em-caravanas')&&!!dM.getElementById('em-csv'));
-    chequear('edición y borrado solo aparecen en PC',!dM.querySelector('[data-evento-editar]')&&!dM.querySelector('[data-evento-borrar]'));
+    chequear('acciones y funciones de edición solo existen en PC',p.accionesPC&&!!p.editar&&!!p.borrar&&!m.accionesPC&&!m.editar&&!m.borrar);
     const stockAntes=JSON.stringify(p.estado().potreros);
     doc.getElementById('btn-eventos-manejo').click();
     doc.getElementById('em-fecha').value='2026-11-05';
@@ -100,6 +101,10 @@ async function probarConfig(nombre,pc,movil,campo){
     chequear('cantidad se completa con las caravanas',!!ev&&ev.cantidad===2);
     chequear('no modifica el stock',JSON.stringify(p.estado().potreros)===stockAntes);
     chequear('se agrega el evento a la cola de sync',p.estado().colaSync.some(x=>x.tipo==='evento_manejo'&&x.detalle.id===ev.id));
+    chequear('el historial de PC sí tiene botones de edición y borrado',!!doc.querySelector('[data-evento-editar]')&&!!doc.querySelector('[data-evento-borrar]'));
+    m.aplicarEventoRemoto(filaEvento(ev.id,'evento_manejo',{fecha:ev.fecha,tipo:ev.tipo,potrero:ev.potrero,cantidad:ev.cantidad,caravanas:ev.caravanas,obs:ev.obs,ts:ev.ts},ev._creadoEn),new Set());
+    m.renderEventosManejo();M.win.document.getElementById('btn-eventos-manejo').click();
+    chequear('móvil sin botones de edición después de mostrar un evento',!dM.querySelector('[data-evento-editar]')&&!dM.querySelector('[data-evento-borrar]'));
     chequear('la lista muestra el número de caravanas',/2 caravanas/.test(doc.getElementById('eventos-manejo-lista').textContent));
     doc.getElementById('btn-eventos-manejo').click();doc.getElementById('em-tipo').value='Recuento';doc.getElementById('em-cantidad').value='7';doc.getElementById('em-guardar').click();
     const lote=p.estado().eventosManejo.find(x=>x.tipo==='Recuento'&&!x.eliminado);
@@ -124,9 +129,19 @@ async function probarConfig(nombre,pc,movil,campo){
     p.aplicarEventoRemoto(filaEvento('orden-1','evento_manejo_editado',{tipo:'Pesada',fecha:'03/11/2026',caravanas:[]},'2026-11-03T12:00:00Z'),new Set());
     p.aplicarEventoRemoto(filaEvento('orden-1','evento_manejo',{tipo:'IATF',fecha:'02/11/2026',caravanas:[]},'2026-11-02T12:00:00Z'),new Set());
     chequear('edición remota antes del alta conserva la revisión más nueva',p.estado().eventosManejo.find(x=>x.id==='orden-1').tipo==='Pesada');
-    p.aplicarEventoRemoto(filaEvento('borrado-1','evento_manejo_eliminado',{},'2026-11-05T12:00:00Z'),new Set());
-    p.aplicarEventoRemoto(filaEvento('borrado-1','evento_manejo',{tipo:'Recuento',fecha:'05/11/2026'},'2026-11-04T12:00:00Z'),new Set());
+    const altaReloj=filaEvento('reloj-1','evento_manejo',{fecha:'05/11/2026',tipo:'Destete',obs:'alta',ts:'2026-11-05T16:50:00.000Z'},'2026-11-05T16:55:00.000Z');
+    const edicionReloj=filaEvento('reloj-1','evento_manejo_editado',{fecha:'05/11/2026',tipo:'Pesada',obs:'edición posterior',ts:'2026-11-05T16:51:00.000Z'},'2026-11-05T16:45:00.000Z');
+    p.aplicarEventoRemoto(altaReloj,new Set());p.aplicarEventoRemoto(edicionReloj,new Set());
+    m.aplicarEventoRemoto(edicionReloj,new Set());m.aplicarEventoRemoto(altaReloj,new Set());
+    const relojP=p.estado().eventosManejo.find(x=>x.id==='reloj-1'), relojM=m.estado().eventosManejo.find(x=>x.id==='reloj-1');
+    chequear('dos dispositivos convergen por ts aunque creado_en llegue en otro orden',relojP.tipo==='Pesada'&&JSON.stringify({tipo:relojP.tipo,obs:relojP.obs,ts:relojP._ts})===JSON.stringify({tipo:relojM.tipo,obs:relojM.obs,ts:relojM._ts}));
+    p.aplicarEventoRemoto(filaEvento('borrado-1','evento_manejo_eliminado',{ts:'2026-11-05T16:55:00.000Z'},'2026-11-05T16:01:00.000Z'),new Set());
+    p.aplicarEventoRemoto(filaEvento('borrado-1','evento_manejo',{tipo:'Recuento',fecha:'05/11/2026',ts:'2026-11-05T16:54:00.000Z'},'2026-11-05T16:58:00.000Z'),new Set());
     chequear('borrado remoto deja tombstone y no revive con alta tardía',p.estado().eventosManejo.find(x=>x.id==='borrado-1').eliminado===true);
+    p.aplicarEventoRemoto(filaEvento('texto-remoto','evento_manejo',{fecha:'05/11/2026',tipo:'<img src=x>'.repeat(12),potrero:'POTRERO INVENTADO',categoria:'CATEGORÍA INVENTADA',obs:'<svg>'+('x'.repeat(600))},'2026-11-05T16:56:00.000Z'),new Set());
+    p.renderEventosManejo();const textoRemoto=p.estado().eventosManejo.find(x=>x.id==='texto-remoto');
+    chequear('campos remotos se limpian y limitan; potrero/categoría inválidos se descartan',textoRemoto.tipo.length<=60&&!textoRemoto.tipo.includes('<')&&textoRemoto.obs.length===500&&!textoRemoto.obs.includes('<')&&textoRemoto.potrero===null&&textoRemoto.categoria===null);
+    chequear('el texto remoto se muestra escapado sin crear elementos HTML',!doc.getElementById('eventos-manejo-lista').querySelector('img')&&!doc.getElementById('eventos-manejo-lista').querySelector('svg'));
 
     // El modo Eventos colorea por recencia y el tooltip explica el último.
     const hoy=p.estado().eventosManejo.find(x=>x.id===ev.id); hoy.fecha='05/11/2026';

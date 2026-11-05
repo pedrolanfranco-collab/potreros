@@ -113,8 +113,8 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">3.84</span></li>
-    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">3.51</span></li>
+    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">3.85</span></li>
+    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">3.52</span></li>
     <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">2.22</span></li>
   </ul>
   <p class="nota">La versión de tu celular está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.76</b>). Si tu número es más viejo, abrí la app con señal y esperá un momento: se actualiza sola.</p>
@@ -133,6 +133,7 @@
     <li><b>🏡 Vecinos</b>: <span class="b">🏡 Al vecino</span> y <span class="b">↩ Volvió</span> aceptan <b>varias categorías</b> en un solo registro.</li>
     <li><b>Muertes</b>: en <span class="b">✕ Muerte</span> y en <span class="b">🪦 Dar muerte</span> (dentro de ❓ Desaparecidos) podés sacar <b>hasta 3 fotos</b> y marcar <b>dónde se encontró</b> el animal.</li>
     <li><b>📖 Instructivo</b>: este botón nuevo en 🛠 Herramientas abre esta página.</li>
+    <li><b>📋 Eventos de manejo</b> <span class="campo">(La Vuelta y María Laura)</span>: registrá una tarea hecha en un potrero o a un animal. Podés cargar fecha, tipo, potrero, categoría, cantidad, caravanas y observaciones, o importar un CSV Datamars. El historial permite filtrar los eventos. Pone Chico todavía no tiene esta opción.</li>
   </ul>
 </div>
 
@@ -169,6 +170,7 @@
         <li><a href="#sanidad">🏥 Sanidad</a></li>
         <li><a href="#insumos">🧴 Insumos</a></li>
         <li><a href="#bano">🛁 Baño</a></li>
+        <li><a href="#eventos-manejo">📋 Eventos de manejo</a></li>
         <li><a href="#lluvias">🌧 Lluvias y otros eventos</a></li>
         <li><a href="#dicose">📑 Movimientos DICOSE</a></li>
         <li><a href="#desaparecidos">❓ Desaparecidos</a></li>
@@ -204,6 +206,7 @@
   <tr><td>🏥 Sanidad: “Mis cargas recientes”</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No</td><td data-campo="Pone Chico">No</td></tr>
   <tr><td>🧴 Insumos</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>🛁 Baño</td><td data-campo="La Vuelta">Sí. La tanda viene con bastón “Sí”.</td><td data-campo="María Laura">Sí. La tanda viene con bastón “No”.</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>📋 Eventos de manejo</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>🔗 Potreros unidos (1+2 y 19+20)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura"><b>No está</b></td><td data-campo="Pone Chico"><b>No está</b></td></tr>
 </table>
 <p class="nota">Todo lo demás es igual en los tres campos. En las explicaciones, donde dice “dueño” en La Vuelta es la “firma”.</p>
@@ -526,6 +529,18 @@
     <li>Otro equipo del mismo campo ve el mismo ciclo al abrir la pantalla con señal. <span class="b">🔄 Actualizar</span> lo trae de nuevo.</li>
     <li><span class="b">⚙ Productos</span>: lista de productos del baño con su dosis de carga y de reposición (ml cada 100 L) y cuánto dura. <b>+ Agregar producto</b> (del catálogo) y <b>Editar</b> necesitan señal.</li>
   </ul>
+</div>
+
+<div class="fn" id="eventos-manejo">
+  <h3>📋 Eventos de manejo</h3>
+  <p class="para">Para qué sirve: dejar registrado un trabajo o tratamiento hecho en un lote o a un animal. <span class="campo">Disponible en La Vuelta y María Laura; Pone Chico todavía no tiene esta opción.</span> Abrí <span class="b">🛠 Herramientas</span> › <span class="b">📋 Eventos</span>.</p>
+  <ol class="pasos">
+    <li>Tocá <b>Nuevo evento</b> y completá la <b>fecha</b>, el <b>tipo</b>, el <b>potrero</b> y la <b>categoría</b>. La fecha empieza con hoy.</li>
+    <li>Para un trabajo sobre animales, indicá la <b>cantidad</b> y, si corresponde, sus <b>caravanas</b>. También podés escribir <b>observaciones</b>.</li>
+    <li>Para cargar caravanas desde el bastón, elegí <b>Importar CSV Datamars</b>, seleccioná el archivo y revisá los datos antes de guardar.</li>
+    <li>Tocá <b>Guardar evento</b>. El historial permite filtrar por fecha, tipo, potrero o categoría.</li>
+  </ol>
+  <p>La lista muestra el tipo, fecha, potrero y detalle. Los registros se sincronizan con los demás equipos del campo; sin señal quedan pendientes para enviarse cuando vuelva.</p>
 </div>
 
 <div class="fn" id="lluvias">
