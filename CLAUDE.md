@@ -161,6 +161,14 @@ theme-color).
   Los botones conservan su `id` y su listener (solo cambiaron de lugar); "Exportar MD" se sacó
   (`construirMD()` queda: la usan las pruebas). Test: `tests/probar_herramientas_pc.js`. La móvil y Campo
   no cambian.
+  **PC nueva estilo FieldData, parte 1 (4/11/2026, a pedido de Pedro; bosquejo aprobado, Design canvas
+  `47fe61b2-50ec-4859-8e7f-5c07cea19f26`)**: menú fijo a la izquierda `#pc-rail` (10 secciones `data-pc-seccion`) y
+  tarjetas de totales (`res-cabezas`, `res-con-animales` nuevas). **Los botones de siempre no se mueven**: cada sección
+  abre `#pc-seccion` con atajos `data-pc-ir="<id>"` que hacen `.click()` en el botón original (`SECCIONES_PC`, lista de
+  ids por sección); un botón con `display:none` no se ofrece, una sección sin botones se esconde (`actualizarRailPC()`,
+  también desde `actualizarResumen()`) y una con uno solo lo abre directo. **Un botón nuevo de la PC se agrega también
+  a su sección en `SECCIONES_PC`.** La caja 🛠 Herramientas sigue igual. Partes que siguen (cada una su PR): mapa
+  pintado por carga + ficha al costado, tablas de Resumen, secciones dentro de la página. Test: `tests/probar_pc_menu.js`.
   **Campo (móvil simple), visualización (10/10/2026, a pedido de Pedro)**: todo en bloques `@simple`: mapa a
   45vh en el celular (más lista), total del potrero grande (26 px en la tarjeta, 28 px en el detalle), botones de
   acción y campos de formulario de 48–56 px con letra de 16 px, Muerte/Desaparecido al final y separados,
@@ -718,71 +726,8 @@ tampoco la sabe; una de ficha sin confirmar, como Vaquillona, sigue sin pasar). 
 lecturas con lo que pasó, y la PC la muestra en Herramientas › Consultar › "⚠ Datos faltantes (N)"
 (últimos 60 días, CSV). La app solo lee. Test: `tests/probar_datos_faltantes.js`.
 
-### Lector XRS2 y trabajo desde la nube — lo que conviene saber (18/10/2026)
-
-El Lector del bastón es **otro repo privado, `lector-xrs2`** (en la PC: `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Lector XRS2`;
-`handoff.md` de ese repo tiene el estado detallado). Cómo llega una sanidad hecha con el bastón:
-- Pedro comparte el CSV del Data Link a `…\Lector XRS2\2026-2027 Ejercicio Siguiente\Entrada\` (la carpeta `Entrada` va **dentro** de la del ejercicio).
-  Una tarea de Windows corre `vigilar_entrada.py` cada 10 min: espera a que OneDrive termine, respalda la base, corre `pipeline.py` (lee sesiones →
-  animales → SNIG → publica el padrón en `animales_caravana`) y `sanidad_puente.py` crea las filas de `sanidad_carga` (solo lo que llegó por `Entrada\` y
-  desde el 2/10/2026, tope 40 por corrida, idempotente; `--simular` no escribe). Después `bajar_sanidad_de_potreros.py` (cada hora) las baja a la Planilla.
-- **Qué las traba**: un `PRODUCTO` que no figura en `productos_sanidad.csv` con `confirmado=SI`, o una `CATEGORIA` que no figura en `categorias_sanidad.csv`
-  (sin categoría usa la de la ficha). Lo que no se puede traducir no se manda y se avisa. Los CSV de ese repo (`productos_sanidad`, `categorias_sanidad`,
-  `correcciones`, `sesiones`, `plazos_propuestos`) son **configuración que decide Pedro, no tratamientos**.
-- Los tratamientos que **no** vienen del bastón (un CSV a mano) van por `scripts/sanidad/cargar_sanidad_csv.py` (ver Sanidad, arriba).
-- Una sesión del bastón **sin** sanidad cargada (el operario no completó PRODUCTO/DOSIS/POTRERO) se completa **antes** de ponerla en `Entrada\`
-  con `completar-sanidad/` (abajo). Si ya entró vacía, el archivo completo se guarda **encima** del vacío (mismo nombre, misma carpeta):
-  `procesar()` lo relee porque cambió tamaño/fecha y, con la misma ruta, la huella no lo marca "gemela"; inserta lecturas nuevas con producto
-  (la `clave` de `lecturas` incluye el producto) y `sanidad_puente.py` crea el tratamiento. Las lecturas vacías viejas quedan, sin producto.
-  Una copia **al lado** (otro nombre, p. ej. `…(1).csv`) sí es "gemela" (`huella()` = fecha + cantidad + caravanas, no mira el producto) y se
-  descarta. Si el vacío ya no está, va por `cargar_sanidad_csv.py`. (Verificado en el código de `reconstruir_xrs2.py` el 18/10/2026, caso
-  real: sesiones 1153–1156 con EON.)
-- **Desde la nube no se corre nada de eso**: faltan `xrs2_lecturas.db` y la clave privada, y escribiría en producción. Y **lo que Pedro cambia en su PC no se ve
-  hasta que lo sube a GitHub** (el 18/10 su CSV nuevo no estaba en ningún repo): pedir que lo pegue o que haga `git push`.
-- La nube no llega a `*.supabase.co` ni a `*.github.io` (el proxy contesta 403), así que no se pueden leer las tablas reales: los nombres de columnas y de
-  categorías se infieren del código. **El conector Supabase (`mcp__Supabase__*`, proyecto `skkknfjpwcstefcroqjt`) sí funciona** (18/10/2026): con `execute_sql`
-  se leen las tablas reales. Usarlo **solo para leer** (SELECT); nunca escribir producción desde la nube.
-- *"¿Llegaron las sanidades?"* (consulta de rutina): `sanidad_carga*` de los últimos días por `creado_en` (en `America/Montevideo`). Las columnas son
-  `producto1`/`dosis1`/`producto2`/`dosis2` (no hay `producto`), más `categoria`, `dueno`, `cantidad`, `potrero`, `gen`, `observaciones`, `caravana`,
-  `importado_en` (solo La Vuelta: lleno = ya bajó a la Planilla). `id` `bq_…` = vino del bastón, `sc_…` = cargado en la app, `csv_…` = script CSV. Para
-  saber si entró una sesión nueva del bastón: `max(ultima_lectura)` de `animales_caravana`; y `max(actualizado)` de `sanidad_ultimos` dice cuándo publicó la Planilla.
-- Pedro trabaja en PowerShell, pide los comandos en esa sintaxis y confirma cada `git push`/merge; con los PR de este repo dijo "abrilo y hacé merge" una vez que el CI
-  está en verde (el merge se hace sobre la cabeza que pasó el CI, no sobre un run viejo: los avisos de `check_suite` pueden ser de un commit anterior).
-- **`lector-xrs2` no tiene CI**: antes de abrir el PR se corren a mano en la nube sus pruebas (`python3 probar_*.py`, p. ej. `probar_vigilar.py`) y
-  conviene verificarlas con una mutación. Después del merge el cambio **no llega solo a la PC**: Pedro hace `git pull` en la carpeta del Lector
-  (PowerShell) y corre la prueba ahí; recién con su "todo bien" se da por instalado (así fue la fase 2 el 20/10/2026).
-
-**Incidente 13→18/10/2026: el Lector no publicaba nada (lo que conviene recordar).**
-- *Síntoma*: desde el 13/10 no llegaba a Supabase ni el padrón ni Sanidad (ni `sanidad_ultimos`); la tarea "Potreros - Vigilar entrada del baston"
-  corría cada 10 min con resultado 0, pero el log decía "la publicacion quedo pendiente" y `falta SUPABASE_SECRET_KEY en ~/.potreros/.env`.
-  La causa: el 13/10 (Fase 4) `sanidad_puente.py` / `publicar_animales.py` pasaron a la clave privada y **nunca se había creado
-  `C:\Users\Pedro\.potreros\.env`**. Un resultado 0 de la tarea no prueba que publique: mirar `vigilar_entrada.log`.
-- *Arreglo*: Pedro creó una clave `sb_secret_…` (Project Settings → API Keys → Secret keys; el panel se colgaba y anduvo con el link directo
-  `supabase.com/dashboard/project/skkknfjpwcstefcroqjt/settings/api-keys`) y la guardó con `Read-Host -AsSecureString` +
-  `[System.Net.NetworkCredential]::new('', $s).Password` (`PtrToStringAuto` falló). **Ojo**: `sbp_…` es un token PERSONAL de la cuenta
-  (Account → Access Tokens), no sirve y es mucho más poderoso; se coló una vez. `_clave_privada()` del Lector solo rechaza `sb_publishable_` y JWT
-  sin `service_role`, así que con un `sbp_` dice "CLAVE OK": validar siempre que empiece con `sb_secret_`. Nunca pedir ni mostrar la clave.
-- *Los archivos "reemplazados" seguían vacíos*: Pedro guardó otra vez los vacíos encima. Se detectó por el **tamaño** (vacíos 2552/6639/8310/1056,
-  completos 2744/7104/8880/1147) y con una consulta a `lecturas` (producto `''`). **Los adjuntos que Claude manda en el chat no llegan a la PC**
-  (Descargas no los tenía): conviene dar un script que complete en el lugar y verifique el resultado por SHA-1 contra lo probado en la nube.
-- *Diagnóstico útil en la PC* (solo lee): `$env:PYTHONPATH=(Get-Location).Path` y un script en `$env:TEMP` que consulta `xrs2_lecturas.db`
-  (`lecturas` por `archivo like '%SesionNNNN%'`, `archivos`, `sanidad_enviada`) y corre `sanidad_puente.enviar(simular=True)`. Un `.py` fuera de la
-  carpeta del Lector no encuentra sus módulos sin `PYTHONPATH`.
-- *Resultado*: 17 registros de EON (sesiones 1153–1156: 32+93+114+13 = 252 animales; potreros 14, 8, 8, 16; dosis 9/5/6/12 cc) y padrón al día.
-  Instructivo para Pedro de dónde va cada archivo: artifact privado `claude.ai/artifact/4Zw6aEbz4rgNR4c3uYFMe6`.
-- *Cierre (20/10/2026)*: Pedro borró el token `sbp_`. La caravana 65095381 (sesión 1155, sin categoría ni dueño) se corrigió en
-  `correcciones.csv` del Lector (Ternero, PEDRO) y 66047322/66047327/66047334 de REFUGO_VENTA ganaron propietario PEDRO; verificado en
-  `animales_caravana`. El registro "Sin categoría" (EON 16/10, 1 animal, potrero 8) ya había bajado a la Planilla (`importado_en` lleno), así
-  que se corrige **en el Excel**, no en la app. La Planilla está en
-  `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Sanidad\Planilla_Sanitaria_v22.xlsm`.
-  Pedro la corrigió a Terneros el 20/10 (≈19 h). `sanidad_ultimos` se publica desde el Excel una vez por hora (`actualizado`), así que un
-  cambio en la Planilla tarda hasta una hora en verse en el tablero y la app: antes de eso sigue saliendo el valor viejo. **Caso cerrado.**
-- *Avisos que se repiten y ya están resueltos*: "Sanidad SIN pasar: LOTE_1_SET (EON ×1)" y "REFUGO_VENTA (Ricoverm ×4)" siguen saliendo en cada
-  corrida, pero Pedro los cargó a mano el 12/10 (`sc_1791844254221…` Vacas EON 8 cc pot 14; `sc_1791844163706…` + `sc_1791844209658…` Terneros 3 +
-  Terneras 1, Ricoverm 3 cc pot 18). **No volver a cargarlos.** Son de antes de `FICHA_DESDE` (13/10): `sanidad_puente.py` los bloquea por falta de
-  categoría en la lectura aunque `correcciones.csv` arregle la ficha, y no sabe de las cargas a mano. Silenciarlos sería un cambio en `lector-xrs2`.
-- *Para corregir fichas desde la nube*: identificar el animal con `animales_caravana.faltantes` (jsonb: `a` sesión, `f` fecha, `p` producto, `falta`)
-  y darle a Pedro las líneas de `correcciones.csv` (`id8;campo;valor;por_que;fecha;lectura`, separador `;`) para `Add-Content -Encoding UTF8` + `--forzar`.
+### Lector XRS2 (otro carril)
+El Lector del bastón es otro repo (`lector-xrs2`, carpeta `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Lector XRS2`). Su contexto completo, el flujo `Entrada\` → `vigilar_entrada.py` → `sanidad_puente.py` y el incidente del 13→18/10/2026 viven ahora en el `CLAUDE.md` de esa carpeta. Puntos de contacto con la app: el Lector publica `animales_caravana` y `sanidad_carga*` y la app los lee; la app arma el CSV completado (`completar-sanidad/` y "Completar lectura del bastón") que el Lector toma de `Entrada\`.
 
 ### Completar lectura del bastón (CSV) dentro de Sanidad (20/10/2026, a pedido de Pedro, solo PC de La Vuelta, `CONFIG.completarCsvBaston`)
 

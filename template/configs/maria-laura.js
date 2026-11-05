@@ -251,7 +251,7 @@ module.exports = {
   "themeColor": "#7a5236",
   "nombre": "María Laura",
   "subtitulo": "Gestión de hacienda por potrero y dueño",
-  "versionPc": "3.52",
+  "versionPc": "3.54",
   "versionMovil": "3.50",
   "simpleHabilitado": true,
   "versionMovilSimple": "1.60",

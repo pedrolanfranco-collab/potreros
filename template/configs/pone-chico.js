@@ -17,7 +17,7 @@ module.exports = {
   "themeColor": "#1d4fa8",
   "nombre": "Pone Chico",
   "subtitulo": "Gestión de hacienda por potrero y dueño",
-  "versionPc": "2.22",
+  "versionPc": "2.24",
   "versionMovil": "2.21",
   "simpleHabilitado": true,
   "versionMovilSimple": "1.61",
