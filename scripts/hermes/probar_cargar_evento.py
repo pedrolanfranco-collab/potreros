@@ -145,9 +145,13 @@ def prueba_simulacion():
     chequear("simular NO hace ningun POST", fake.posts() == [], fake.llamadas)
     chequear("muestra el evento (tipo movimiento_multi y destino)",
              '"tipo": "movimiento_multi"' in out and '"destino": "6"' in out, out)
-    chequear("muestra el efecto: 10 pasa de 1 a 0 y 6 pasa de 0 a 1 en Vaquillonas 1-2 años",
-             "10 — Vaquillonas 1-2 años (sin firma): 1 → 0" in out and "6 — Vaquillonas 1-2 años (sin firma): 0 → 1" in out,
-             out)
+    chequear("muestra el efecto por potrero: 10 (salida) pasa de 1 a 0 y 6 (entrada) pasa de 0 a 1 en Vaquillonas 1-2 años",
+             "10 (salida):" in out and "6 (entrada):" in out
+             and "Vaquillonas 1-2 años (sin firma): 1 → 0" in out
+             and "Vaquillonas 1-2 años (sin firma): 0 → 1" in out, out)
+    chequear("y lista las otras categorias del potrero con su total (10: 6 → 5, 6: 2 → 3)",
+             "*Total: 6 → 5 animales*" in out and "*Total: 2 → 3 animales*" in out
+             and "Vacas de Pedro Lanfranco: 5 → 5" in out and "Vacas (sin firma): 2 → 2" in out, out)
     chequear("dice que no escribio nada", "Nada se escribió" in out, out)
 
 
@@ -325,8 +329,8 @@ def prueba_eliminar():
     fake = FakeSupa(eventos=eventos)
     codigo, out, err = correr(["eliminar", "--event-id-original", eid_muerte], fake)
     chequear("simular la anulacion de una muerte: codigo 0 sin POST", codigo == 0 and fake.posts() == [], err)
-    chequear("la simulacion muestra que la muerte vuelve: Terneros 10 → 12 en 14",
-             "14 — Terneros (sin firma): 10 → 12" in out, out)
+    chequear("la simulacion muestra que la muerte vuelve: Terneros 10 → 12 en 14 (y su total)",
+             "14:" in out and "Terneros (sin firma): 10 → 12" in out and "*Total: 10 → 12 animales*" in out, out)
     codigo, out, err = correr(["eliminar", "--event-id-original", eid_muerte, "--aplicar", "--si"], fake)
     posts = fake.posts()
     chequear("anular la muerte escribe 1 correccion", codigo == 0 and len(posts) == 1, (codigo, err))
