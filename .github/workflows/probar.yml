@@ -197,6 +197,9 @@ jobs:
       - name: "Eventos de manejo por lote y animal (5/11/2026) -- sincronizacion, caravanas Datamars y mapa"
         run: node tests/probar_eventos_manejo.js
 
+      - name: "Etapa 3 — Tareas: cronograma, repetición, reportes, aguadas, sync y visibilidad por campo"
+        run: node tests/probar_tareas.js
+
       - name: "Campo: visualizacion (10/10/2026) -- total grande, historial plegado, mapa mas bajo, formulario a la vista; PC y movil sin cambios"
         run: node tests/probar_campo_visualizacion.js la-vuelta-movil-campo/index.html maria-laura-movil-campo/index.html pone-chico-movil-campo/index.html
 

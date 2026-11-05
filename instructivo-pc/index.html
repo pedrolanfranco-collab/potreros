@@ -135,6 +135,7 @@
     <li><b>Muertes</b>: en <span class="b">✕ Muerte</span> y en <span class="b">🪦 Dar muerte</span> (dentro de ❓ Desaparecidos) podés sumar <b>hasta 3 fotos</b> y marcar <b>dónde se encontró</b> el animal en el mapa.</li>
     <li><b>📖 Instructivo</b>: este botón nuevo en 🛠 Herramientas › Este dispositivo abre esta página.</li>
     <li><b>📋 Eventos de manejo</b> <span class="campo">(La Vuelta y María Laura)</span>: registrá trabajos por lote o animal, importá caravanas desde CSV Datamars y filtrá el historial. En PC también podés editar o borrar eventos. Pone Chico todavía no tiene esta opción.</li>
+    <li><b>✅ Tareas</b> <span class="campo">(La Vuelta y María Laura)</span>: cronograma sincronizado, repetición, reportes de infraestructura y limpieza de aguadas. En PC se pueden editar o borrar; en móvil completa también se marcan como cumplidas.</li>
   </ul>
 </div>
 
@@ -165,6 +166,7 @@
         <li><a href="#insumos">🧴 Insumos</a></li>
         <li><a href="#bano">🛁 Baño</a></li>
         <li><a href="#eventos-manejo">📋 Eventos de manejo</a></li>
+        <li><a href="#tareas">✅ Tareas</a></li>
         <li><a href="#csv-baston">📂 Completar lectura del bastón (CSV)</a></li>
         <li><a href="#lluvias">🌧 Lluvias y otros eventos</a></li>
         <li><a href="#dicose">📑 Movimientos DICOSE</a></li>
@@ -226,6 +228,7 @@
   <tr><td>🧴 Insumos</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>🛁 Baño</td><td data-campo="La Vuelta">Sí. La tanda viene con bastón “Sí”.</td><td data-campo="María Laura">Sí. La tanda viene con bastón “No”.</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>📋 Eventos de manejo</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>✅ Tareas</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>🔗 Potreros unidos (1+2 y 19+20)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura"><b>No está</b></td><td data-campo="Pone Chico"><b>No está</b></td></tr>
 </table>
 <p class="nota">Todo lo demás es igual en los tres campos. En las explicaciones, donde dice “dueño” en La Vuelta es la “firma”.</p>
@@ -549,6 +552,25 @@
   </ol>
   <p>Los registros se sincronizan con los demás equipos del campo; sin señal quedan pendientes para enviarse cuando vuelva.</p>
 </div>
+
+<div class="fn" id="tareas">
+  <h3>✅ Tareas</h3>
+  <p class="para">Para qué sirve: ordenar los trabajos futuros, consultar qué está pendiente y compartir los cambios entre equipos. <span class="campo">Disponible en PC y móvil completa de La Vuelta y María Laura; Pone Chico no tiene esta opción y Campo no cambia.</span></p>
+  <p>En PC abrí <span class="b">🛠 Herramientas › Consultar › ✅ Tareas</span> o la sección Tareas del menú izquierdo. En el celular abrí <span class="b">🛠 Herramientas › ✅ Tareas</span>.</p>
+  <ol class="pasos">
+    <li>Elegí el <b>Tema</b>: Ganado, Infraestructura, Mantenimiento u Otras. Después seleccioná el tipo correspondiente. Con <b>Otra…</b>, escribí una descripción.</li>
+    <li>Indicá la <b>fecha prevista</b>. El potrero y el punto son opcionales; el punto puede ser una aguada o instalación ya guardada. Agregá observaciones si sirven para quien hará el trabajo.</li>
+    <li>Para una tarea periódica, completá <b>Repetir cada (días)</b> con un número de 1 a 730. Cada vez que se marque cumplida, la app creará una sola próxima tarea de la serie.</li>
+    <li>Tocá <b>Guardar tarea</b>. El cronograma ordena primero por fecha; las vencidas aparecen en rojo, las que vencen dentro de 15 días en ocre y las que no tienen fecha al final. El botón indica cuántas están vencidas.</li>
+  </ol>
+  <p>Desde PC o móvil completa podés marcar una tarea como cumplida. En la PC también se puede editar, borrar o deshacer una marca de cumplimiento.</p>
+  <h4>Reportes de infraestructura</h4>
+  <p>Los reportes que ya están en <span class="b">🔧 Infraestructura</span> aparecen en Tareas con su foto y el botón <span class="b">🗺 Ver en el mapa</span>. Elegí <b>Programar un reporte de infraestructura</b> para fijar la fecha prevista. <span class="b">✓ Cumplida</span> usa la resolución habitual del reporte y conserva la foto del arreglo; no crea una copia de la tarea.</p>
+  <h4>Aguadas e instalaciones</h4>
+  <p>Las tareas <b>Limpieza de tanque</b> y <b>Limpieza de bebedero</b> vinculadas a un punto aparecen en <span class="b">📍 Aguadas / instalaciones</span>, con la última limpieza, la próxima fecha y el historial plegado. Si se borra el punto, la tarea conserva el nombre que tenía.</p>
+  <p>Al completar <b>Destete final</b> o <b>Fin destete temporario (DT)</b>, la app ofrece abrir el formulario de Eventos de manejo con “Destete” cargado. Revisá el formulario y guardalo si corresponde; la tarea no registra ese evento por su cuenta.</p>
+</div>
+
 
 <div class="fn" id="lluvias">
   <h3>🌧 Lluvias y otros eventos</h3>

@@ -642,6 +642,7 @@
       <button class="btn btn-json" id="btn-bano" style="display:none;">🛁 Baño</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
       <button class="btn btn-json" id="btn-eventos-manejo" style="display:none;">📋 Eventos de manejo</button>
+      <button class="btn btn-json" id="btn-tareas" style="display:none;">✅ Tareas</button>
       <button class="btn btn-json" id="btn-guias" style="display:none;">📑 Movimientos DICOSE</button>
       <button class="btn btn-json" id="btn-desaparecidos">❓ Desaparecidos</button>
       <button class="btn btn-json" id="btn-vecinos">🏡 Vecinos</button>
@@ -845,6 +846,35 @@
       <div class="form-row"><label>Filtrar por potrero</label><select id="em-filtro-potrero"><option value="">Todos</option></select></div>
       <div id="eventos-manejo-lista"></div>
     </details>
+  </div>
+</div>
+<div id="modal-tareas" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>✅ Tareas</h3>
+    <button class="btn-cerrar-x" id="tareas-cerrar-x" aria-label="Cerrar">✕</button>
+    <p class="modal-info">Organizá el cronograma de trabajos del campo. Las tareas y sus cambios se sincronizan entre equipos.</p>
+    <div class="form-row"><label>Fecha prevista</label><input id="tarea-fecha" type="date"></div>
+    <div class="form-row"><label>Potrero (opcional)</label><select id="tarea-potrero"><option value="">— Sin potrero —</option></select></div>
+    <div class="form-row"><label>Punto (opcional)</label><select id="tarea-punto"><option value="">— Sin punto —</option></select></div>
+    <div class="form-row"><label>Tema</label><select id="tarea-tema-grupo"><option>Ganado</option><option>Infraestructura</option><option>Mantenimiento</option><option>Otras</option></select></div>
+    <div class="form-row"><label>Tipo</label><select id="tarea-tipo"></select></div>
+    <div class="form-row" id="tarea-otro-wrap" style="display:none;"><label>Especificar</label><input id="tarea-otro" maxlength="160" placeholder="Describí la tarea"></div>
+    <div class="form-row"><label>Repetir cada (días, opcional)</label><input id="tarea-cada-dias" type="number" min="1" max="730" placeholder="Ej: 30"></div>
+    <div class="form-row"><label>Observaciones (opcional)</label><textarea id="tarea-obs" rows="2" maxlength="500"></textarea></div>
+    <div class="form-botones"><button id="tarea-guardar" class="btn btn-agregar">Guardar tarea</button><button id="tarea-cancelar" class="btn btn-secundario" style="display:none">Cancelar edición</button></div>
+    <details class="historial-det"><summary>Programar un reporte de infraestructura</summary>
+      <div class="form-row"><label>Reporte pendiente</label><select id="tarea-reporte"><option value="">Elegí un reporte</option></select></div>
+      <div class="form-row"><label>Fecha prevista</label><input id="tarea-reporte-fecha" type="date"></div>
+      <button id="tarea-reporte-programar" class="btn btn-secundario">Programar</button>
+    </details>
+    <details class="historial-det historial-det-lista" open><summary>Tareas del campo</summary>
+      <div class="form-row"><label>Mostrar</label><select id="tarea-filtro-estado"><option value="pendientes">Pendientes</option><option value="todas">Todas</option><option value="hechas">Hechas</option></select></div>
+      <div class="form-row"><label>Tema</label><select id="tarea-filtro-tema"><option value="">Todos</option><option>Ganado</option><option>Infraestructura</option><option>Mantenimiento</option><option>Otras</option></select></div>
+      <div class="form-row"><label>Potrero</label><select id="tarea-filtro-potrero"><option value="">Todos</option></select></div>
+      <div class="form-row"><label>Tipo</label><select id="tarea-filtro-tipo"><option value="">Todos</option></select></div>
+      <div id="tareas-lista"></div>
+    </details>
+    <div class="form-botones"><button id="tareas-cerrar" class="btn btn-secundario">Cerrar</button></div>
   </div>
 </div>
 <div id="modal-stock" class="modal-overlay" style="display:none;">
@@ -1752,7 +1782,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], pendientesPotrero: {}, transacciones: [], lluvias: [], eventosClima: [], eventosManejo: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], reportesProgramados: {}, pendientesPotrero: {}, transacciones: [], lluvias: [], eventosClima: [], eventosManejo: [], tareas: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     maestros: {comprador: [], comisionista: [], contraparte: []}, colaMaestros: [],
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
@@ -1798,6 +1828,8 @@ function cargarEstado(){
       if(!parsed.transacciones) parsed.transacciones = [];
       if(!parsed.lluvias) parsed.lluvias = [];
       if(!Array.isArray(parsed.eventosManejo)) parsed.eventosManejo = [];
+      if(!Array.isArray(parsed.tareas)) parsed.tareas = [];
+      if(!parsed.reportesProgramados || typeof parsed.reportesProgramados!=='object') parsed.reportesProgramados = {};
       if(!parsed.config) parsed.config = {...CONFIG_DEFAULT};
       if(parsed.config.cargaMaxima===undefined) parsed.config.cargaMaxima = CONFIG_DEFAULT.cargaMaxima;
       if(parsed.config.diasOcupacionMax===undefined) parsed.config.diasOcupacionMax = CONFIG_DEFAULT.diasOcupacionMax;
@@ -2425,6 +2457,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'envio_campo_ajeno', 'retorno_campo_ajeno', 'traslado_salida', 'traslado_entrada', 'movimiento_guia',
   'lluvia', 'lluvia_editada', 'lluvia_eliminada', 'evento_clima', 'evento_clima_editado', 'evento_clima_eliminado',
   'evento_manejo', 'evento_manejo_editado', 'evento_manejo_eliminado',
+  'tarea_creada', 'tarea_editada', 'tarea_hecha', 'tarea_eliminada', 'reporte_programado',
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
   'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
@@ -2602,6 +2635,63 @@ function fechaDisplayManejo(valor,row){
   if(/^\d{4}-\d{2}-\d{2}$/.test(f))f=f.split('-').reverse().join('/');
   return /^\d{2}\/\d{2}\/\d{4}$/.test(f)?f:(textoManejoSeguro(row&&row.fecha_cliente,10)||fechaHoy());
 }
+function textoTareaSeguro(valor,max){
+  if(valor==null)return null;
+  const limpio=String(limpiarTextoRemoto(String(valor))).trim().slice(0,max);
+  return limpio||null;
+}
+function fechaTareaVisible(fecha){
+  const f=textoTareaSeguro(fecha,10)||'';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(f))return f.split('-').reverse().join('/');
+  return /^\d{2}\/\d{2}\/\d{4}$/.test(f)?f:'';
+}
+function fechaOrdenTarea(row,d){
+  const candidata=d&&typeof d.ts==='string'?d.ts:'';
+  const fuente=Number.isFinite(Date.parse(candidata))?candidata:(row&&row.creado_en)||'';
+  const ms=Date.parse(fuente);
+  return Number.isFinite(ms)?new Date(ms).toISOString():String(fuente);
+}
+function compararOrdenTarea(tsA,idA,tsB,idB){
+  const a=String(tsA||''),b=String(tsB||'');
+  return a===b?String(idA||'').localeCompare(String(idB||'')):a.localeCompare(b);
+}
+/* Tareas se guardan como snapshots locales, pero el stream conserva eventos inmutables.
+   Una tarea_hecha es monotónica: entre duplicados/conflictos gana la primera por (ts,event_id). */
+function aplicarTareaRemota(row,d){
+  estado.tareas=Array.isArray(estado.tareas)?estado.tareas:[];
+  const id=textoTareaSeguro(d.id,80);if(!id)return;
+  const marca=fechaOrdenTarea(row,d),ordenId=String(row.event_id||'');
+  if(row.tipo==='reporte_programado'){
+    const previo=(estado.reportesProgramados||{})[id];
+    if(previo&&compararOrdenTarea(marca,ordenId,previo._ts,previo._ordenId)<=0)return;
+    estado.reportesProgramados=estado.reportesProgramados||{};
+    estado.reportesProgramados[id]={id,fechaPrevista:fechaTareaVisible(d.fechaPrevista),_ts:marca,_ordenId:ordenId};return;
+  }
+  let t=estado.tareas.find(x=>x.id===id);
+  if(!t){t={id,temaGrupo:'Otras',tipo:'Otra…',tema:'',obs:null,potrero:null,puntoId:null,puntoNombre:null,cadaDias:null,serieId:id,serieN:0,usuario:null,fechaPrevista:null,fechaHecha:null,hecha:false,eliminada:false,_ts:'',_ordenId:'',_hechaTs:null,_hechaOrdenId:null};estado.tareas.push(t);}
+  if(row.tipo==='tarea_hecha'){
+    if(!t.hecha||compararOrdenTarea(marca,ordenId,t._hechaTs,t._hechaOrdenId)<0){
+      t.hecha=true;t.fechaHecha=fechaTareaVisible(d.fechaHecha)||fechaTareaVisible(row.fecha_cliente)||fechaISOaDisplay(fechaISOHoy());t._hechaTs=marca;t._hechaOrdenId=ordenId;if(d.siguiente)t._siguienteHecha=d.siguiente;
+      if(d.siguiente&&typeof d.siguiente==='object'){
+        const sig={...d.siguiente,temaGrupo:t.temaGrupo,tema:t.tema,tipo:t.tipo,potrero:t.potrero,puntoId:t.puntoId,puntoNombre:t.puntoNombre,cadaDias:t.cadaDias,serieId:t.serieId||t.id,serieFuenteTs:marca,serieFuenteEventId:ordenId,obs:t.obs,usuario:textoTareaSeguro(d.usuario,80)||t.usuario};
+        aplicarTareaRemota({tipo:'tarea_creada',detalle:{...sig,ts:marca},event_id:ordenId+':siguiente',creado_en:row.creado_en,fecha_cliente:sig.fechaPrevista},sig);
+      }
+    }
+    return;
+  }
+  if(d.serieFuenteTs&&t.serieFuenteTs){if(compararOrdenTarea(d.serieFuenteTs,d.serieFuenteEventId,t.serieFuenteTs,t.serieFuenteEventId)>=0)return;}
+  else if(compararOrdenTarea(marca,ordenId,t._ts,t._ordenId)<0)return;
+  if(row.tipo==='tarea_eliminada'){t.eliminada=true;t._ts=marca;t._ordenId=ordenId;return;}
+  if(row.tipo==='tarea_editada'&&d.fechaHecha===null){t.hecha=false;t.fechaHecha=null;t._hechaTs=null;t._hechaOrdenId=null;}
+  t.temaGrupo=['Ganado','Infraestructura','Mantenimiento','Otras'].includes(d.temaGrupo)?d.temaGrupo:'Otras';
+  t.tipo=textoTareaSeguro(d.tipo,80)||'Otra…';t.tema=textoTareaSeguro(d.tema,160)||t.tipo;t.obs=textoTareaSeguro(d.obs,500);
+  t.potrero=textoTareaSeguro(d.potrero,80);t.puntoId=textoTareaSeguro(d.puntoId,80);t.puntoNombre=textoTareaSeguro(d.puntoNombre,80);
+  t.fechaPrevista=fechaTareaVisible(d.fechaPrevista)||null;t.cadaDias=Number.isInteger(Number(d.cadaDias))&&Number(d.cadaDias)>=1&&Number(d.cadaDias)<=730?Number(d.cadaDias):null;
+  t.serieId=textoTareaSeguro(d.serieId,80)||t.serieId||t.id;t.serieN=Number.isInteger(Number(d.serieN))&&Number(d.serieN)>=0?Number(d.serieN):0;t.usuario=textoTareaSeguro(d.usuario,80);
+  if(d.serieFuenteTs){t.serieFuenteTs=textoTareaSeguro(d.serieFuenteTs,40);t.serieFuenteEventId=textoTareaSeguro(d.serieFuenteEventId,80);}
+  t.eliminada=false;t._ts=marca;t._ordenId=ordenId;
+  if(t.hecha&&t._siguienteHecha){const siguiente={...t._siguienteHecha,temaGrupo:t.temaGrupo,tema:t.tema,tipo:t.tipo,potrero:t.potrero,puntoId:t.puntoId,puntoNombre:t.puntoNombre,cadaDias:t.cadaDias,serieId:t.serieId||t.id,serieFuenteTs:t._hechaTs,serieFuenteEventId:t._hechaOrdenId,obs:t.obs,usuario:t.usuario};aplicarTareaRemota({tipo:'tarea_creada',detalle:{...siguiente,ts:t._hechaTs},event_id:t._hechaOrdenId+':siguiente',creado_en:t._hechaTs,fecha_cliente:siguiente.fechaPrevista},siguiente);}
+}
 function aplicarEventoManejoRemoto(row, d){
   estado.eventosManejo = Array.isArray(estado.eventosManejo) ? estado.eventosManejo : [];
   const id=textoManejoSeguro(d.id,80);if(!id)return;
@@ -2636,6 +2726,10 @@ function aplicarEventoRemoto(row, potrerosSucios){
   if(typeof d !== 'object' || !detalleNumericoValido(d)) return; // evento con números que no son números: se descarta
   if(['evento_manejo','evento_manejo_editado','evento_manejo_eliminado'].includes(row.tipo)){
     aplicarEventoManejoRemoto(row,d);
+    return;
+  }
+  if(['tarea_creada','tarea_editada','tarea_hecha','tarea_eliminada','reporte_programado'].includes(row.tipo)){
+    aplicarTareaRemota(row,d);
     return;
   }
   // 10/9/2026: eventos viejos en Supabase todavía dicen "Cerro" (nombre
@@ -5826,6 +5920,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['vecinos-cerrar-x', 'vecinos-cerrar'],
   ['sanidad-cerrar-x', 'sanidad-cerrar'],
   ['lluvias-cerrar-x', 'lluvias-cerrar'],
+  ['tareas-cerrar-x', 'tareas-cerrar'],
   ['stock-cerrar-x', 'stock-cerrar'],
   ['usuario-cerrar-x', 'usuario-guardar'],
   ['clave-cerrar-x', 'clave-mas-tarde'],
@@ -7170,6 +7265,13 @@ function poblarSelectSubtipo(){
   const sel = document.getElementById('np-subtipo');
   sel.innerHTML = TIPOS_PUNTO[tipo].subtipos.map(s=>`<option value="${s}">${s}</option>`).join('');
 }
+function bloqueLimpiezaPunto(p){
+  if(!CONFIG.manejo) return '';
+  const tareasPunto=(estado.tareas||[]).filter(t=>!t.eliminada&&t.puntoId===p.id&&['Limpieza de tanque','Limpieza de bebedero'].includes(t.tipo));
+  const ultima=tareasPunto.filter(t=>t.hecha).sort((a,b)=>compararOrdenTarea(b._hechaTs,b.id,a._hechaTs,a.id))[0];
+  const proxima=tareasPunto.filter(t=>!t.hecha).sort(ordenarTareas)[0];
+  return `<div class="rp-bloque"><b>Última limpieza:</b> ${esc(ultima?.fechaHecha||'sin registrar')} · <b>Próxima:</b> ${esc(proxima?.fechaPrevista||'sin programar')}<details class="historial-det"><summary>Historial de limpieza (${tareasPunto.length})</summary>${tareasPunto.sort((a,b)=>compararOrdenTarea(b._hechaTs||b._ts,b.id,a._hechaTs||a._ts,a.id)).map(t=>`<div>${t.hecha?'✅':'○'} ${esc(t.fechaHecha||t.fechaPrevista||'sin fecha')} · ${esc(t.tipo)}</div>`).join('')}</details></div>`;
+}
 function renderListaPuntos(){
   const cont = document.getElementById('lista-puntos');
   if(!estado.puntos.length){
@@ -7184,6 +7286,7 @@ function renderListaPuntos(){
         <span class="icono">${esc((TIPOS_PUNTO[p.tipo]||{}).icono||'📍')}</span>
         <span>${esc(p.nombre || p.subtipo)} <span class="txt-sub">(${esc(p.subtipo)})</span></span>
       </div>
+      ${bloqueLimpiezaPunto(p)}
       <div class="acciones">
         <button data-ver-punto="${esc(p.id)}" style="color:#1d4fa8;">🗺 Ver en el mapa</button>
         <button data-foto-punto="${esc(p.id)}" style="color:#8a6d1f;"${nFotos >= FOTOS_MAX_REPORTE ? ' disabled' : ''}>📷 Agregar foto</button>
@@ -10763,6 +10866,47 @@ if(emEl('btn-eventos-manejo')){
   emEl('em-caravanas').addEventListener('input',()=>{const n=normalizarCaravanasEntrada(emEl('em-caravanas').value).length;if(n)emEl('em-cantidad').value=n;});
   emEl('em-csv').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const x=leerCaravanasDeCsv(decodificarCsvDatamars(r.result));if(x.error){toast(x.error);return;}emEl('em-caravanas').value=x.caravanas.join('\n');emEl('em-cantidad').value=x.caravanas.length;};r.readAsArrayBuffer(f);});
 }
+let editandoTareaId=null;
+let accionesTareaPC=false;
+const TEMAS_TAREA={
+  'Ganado':['Inicio de entore','Fin de entore','Inicio destete temporario (DT)','Fin destete temporario (DT)','Destete final','Otra…'],
+  'Infraestructura':['Alambrado','Bebedero','Tajamar','Portera','Otra…'],
+  'Mantenimiento':['Limpieza de tanque','Limpieza de bebedero','Otra…'],
+  'Otras':['Otra…']
+};
+const tareaEl=id=>document.getElementById(id);
+function potreroTareaVisible(nombre){const p=textoTareaSeguro(nombre,80);return POTREROS_GEO.some(x=>x.nombre===p)?p:null;}
+function emitirEventoTarea(tipo,detalle,fecha){const eventId=crypto.randomUUID(),fechaCliente=fecha||fechaISOaDisplay(fechaISOHoy());aplicarTareaRemota({tipo,detalle,fecha_cliente:fechaCliente,creado_en:new Date().toISOString(),event_id:eventId,dispositivo:idDispositivo()},detalle);guardarEstado();if(tipo==='tarea_creada')enviarEvento('tarea_creada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_editada')enviarEvento('tarea_editada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_hecha')enviarEvento('tarea_hecha',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_eliminada')enviarEvento('tarea_eliminada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='reporte_programado')enviarEvento('reporte_programado',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});}
+function fechaSiguienteTarea(fecha,dias){const [d,m,y]=String(fecha||'').split('/').map(Number);if(!d||!m||!y)return '';const x=new Date(Date.UTC(y,m-1,d+Number(dias)));return `${String(x.getUTCDate()).padStart(2,'0')}/${String(x.getUTCMonth()+1).padStart(2,'0')}/${x.getUTCFullYear()}`;}
+function diasHastaTarea(fecha){const f=fechaTareaVisible(fecha);if(!f)return null;const [d,m,y]=f.split('/').map(Number);return Math.round((Date.UTC(y,m-1,d)-Date.UTC(...fechaISOHoy().split('-').map(Number)))/86400000);}
+function ordenarTareas(a,b){const da=diasHastaTarea(a.fechaPrevista),db=diasHastaTarea(b.fechaPrevista);if(da===null&&db!==null)return 1;if(db===null&&da!==null)return -1;return (da??0)-(db??0)||compararOrdenTarea(a._ts,a.id,b._ts,b.id);}
+function tareaTipoActualizar(valor){const grupo=valor||tareaEl('tarea-tema-grupo').value,sel=tareaEl('tarea-tipo'),prev=sel.value;sel.innerHTML='';(TEMAS_TAREA[grupo]||TEMAS_TAREA.Otras).forEach(x=>sel.add(new Option(x,x)));sel.value=(TEMAS_TAREA[grupo]||[]).includes(prev)?prev:sel.options[0].value;tareaEl('tarea-otro-wrap').style.display=sel.value==='Otra…'?'':'none';}
+function fechaCortaTarea(fecha){const n=diasHastaTarea(fecha);return n===null?'sin fecha':n<0?'vencida':n===0?'hoy':`en ${n} días`;}
+function renderTareas(){
+  const el=tareaEl('tareas-lista');if(!el)return;
+  const filtroEstado=tareaEl('tarea-filtro-estado').value,filtroTema=tareaEl('tarea-filtro-tema').value;
+  const tareasBase=(estado.tareas||[]).filter(t=>!t.eliminada&&t.tema),potrerosTarea=[...new Set(tareasBase.map(t=>textoTareaSeguro(t.potrero,80)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  const selPotrero=tareaEl('tarea-filtro-potrero'),prevPotrero=selPotrero.value;selPotrero.innerHTML='<option value="">Todos</option>';potrerosTarea.forEach(x=>selPotrero.add(new Option(x,x)));selPotrero.value=potrerosTarea.includes(prevPotrero)?prevPotrero:'';
+  const tareas=tareasBase.filter(t=>(!filtroTema||t.temaGrupo===filtroTema)&&(!selPotrero.value||t.potrero===selPotrero.value));
+  const pendientes=tareas.filter(t=>!t.hecha&&(filtroEstado!=='hechas'&&filtroEstado!=='todas')).sort(ordenarTareas), hechas=tareas.filter(t=>t.hecha&&(filtroEstado!=='pendientes')).sort((a,b)=>compararOrdenTarea(b._hechaTs,b.id,a._hechaTs,a.id));
+  const reportes=(estado.reportes||[]).filter(r=>!r.resuelto).map(r=>({r,fecha:(estado.reportesProgramados||{})[r.id]?.fechaPrevista||null})).sort((a,b)=>ordenarTareas({fechaPrevista:a.fecha,id:a.r.id},{fechaPrevista:b.fecha,id:b.r.id}));
+  const hechasRep=(estado.reportes||[]).filter(r=>r.resuelto);
+  const tareaHtml=t=>{const dias=diasHastaTarea(t.fechaPrevista),clase=dias!==null&&dias<0?'color:var(--rojo-hacienda);font-weight:700;':dias!==null&&dias<=15?'color:#8a6d1f;font-weight:700;':'';return `<article class="potrero-card"><div class="nombre">${esc(t.tema)}<span class="hist-acciones"><button class="hist-btn" data-tarea-hecha="${esc(t.id)}" ${t.hecha?'disabled':''}>${t.hecha?'✓':'☐ Cumplir'}</button>${accionesTareaPC?`<button class="hist-btn" data-tarea-editar="${esc(t.id)}">✏️</button><button class="hist-btn" data-tarea-borrar="${esc(t.id)}">🗑</button>`:''}</span></div><div style="font-size:12px;margin-top:4px;">${esc(t.temaGrupo)} · ${esc(t.tipo)} · ${esc(t.fechaPrevista||'sin fecha')} · <span style="${clase}">${esc(fechaCortaTarea(t.fechaPrevista))}</span>${t.potrero?` · Potrero ${esc(t.potrero)}`:''}${t.puntoNombre?` · ${esc(t.puntoNombre)}${(estado.puntos||[]).some(p=>p.id===t.puntoId)?'':' (punto borrado)'}`:''}</div>${t.obs?`<div>${esc(t.obs)}</div>`:''}${t.cadaDias?`<small>Repite cada ${t.cadaDias} días</small>`:''}</article>`;};
+  const reporteHtml=(r,fecha,hecho=false)=>`<article class="potrero-card"><div class="nombre">${esc(REPORTE_CATEGORIAS[r.categoria]?.etiqueta||'Reporte')} · ${esc(r.subtipo||'Infraestructura')}${hecho?' ✅':''}</div><div>${hecho?`Cumplido ${esc(fechaTareaVisible(r.fechaResuelto)||'')}`:`${esc(fechaCortaTarea(fecha))}${fecha?` · prevista ${esc(fecha)}`:''}`}</div>${r.obs?`<div>${esc(textoTareaSeguro(r.obs,500))}</div>`:''}${r.fotos?.length?`<div class="rp-fotos">${thumbsFotosHTML(r,'reporte')}</div>`:''}${!hecho?`<div class="acciones"><button data-tarea-ver-reporte="${esc(r.id)}">🗺 Ver en el mapa</button><button data-tarea-reporte-hecho="${esc(r.id)}" data-categoria="${esc(r.categoria)}">✓ Cumplida</button></div>`:''}</article>`;
+  const vencidas=(estado.tareas||[]).filter(t=>!t.eliminada&&!t.hecha&&(diasHastaTarea(t.fechaPrevista)??0)<0).length+reportes.filter(x=>(diasHastaTarea(x.fecha)??0)<0).length;const botonTareas=tareaEl('btn-tareas');if(botonTareas)botonTareas.textContent=`✅ Tareas (${vencidas} vencidas)`;const railTareas=document.querySelector('#pc-rail [data-pc-seccion="tareas"] .pr-txt');if(railTareas)railTareas.textContent=`Tareas (${vencidas} vencidas)`;
+  el.innerHTML=`<div class="stats"><div class="stat"><div class="stat-n">${pendientes.length+reportes.length}</div><div class="stat-l">Pendientes</div></div><div class="stat"><div class="stat-n">${hechas.length+hechasRep.length}</div><div class="stat-l">Cumplidas</div></div></div><h4>Cronograma</h4>${pendientes.map(tareaHtml).join('')||'<p>No hay tareas pendientes.</p>'}${reportes.map(x=>reporteHtml(x.r,x.fecha)).join('')}<details class="historial-det"><summary>Historial de cumplidas (${hechas.length+hechasRep.length})</summary>${hechas.map(t=>`<article class="potrero-card">${tareaHtml(t)}<small>Cumplida ${esc(t.fechaHecha||'')}</small></article>`).join('')}${hechasRep.map(r=>reporteHtml(r,null,true)).join('')||(!hechas.length?'<p>Sin tareas cumplidas.</p>':'')}</details>`;
+  if(accionesTareaPC)el.querySelectorAll('[data-tarea-hecha][disabled]').forEach(b=>{const x=document.createElement('button');x.className='hist-btn';x.dataset.tareaDeshacer=b.dataset.tareaHecha;x.textContent='↶ Deshacer hecha';b.after(x);});
+  el.querySelectorAll('[data-tarea-hecha]').forEach(b=>b.addEventListener('click',()=>marcarTareaHecha(b.dataset.tareaHecha)));el.querySelectorAll('[data-tarea-deshacer]').forEach(b=>b.addEventListener('click',()=>deshacerTareaHecha(b.dataset.tareaDeshacer)));el.querySelectorAll('[data-tarea-editar]').forEach(b=>b.addEventListener('click',()=>editarTarea(b.dataset.tareaEditar)));el.querySelectorAll('[data-tarea-borrar]').forEach(b=>b.addEventListener('click',()=>borrarTarea(b.dataset.tareaBorrar)));el.querySelectorAll('[data-tarea-ver-reporte]').forEach(b=>b.addEventListener('click',()=>verReporteEnMapa(b.dataset.tareaVerReporte)));el.querySelectorAll('[data-tarea-reporte-hecho]').forEach(b=>b.addEventListener('click',()=>abrirResolverReporteTarea(b.dataset.tareaReporteHecho,b.dataset.categoria)));
+}
+function abrirResolverReporteTarea(id,categoria){tareaEl('modal-tareas').style.display='none';tareaEl('modal-reporte').style.display='flex';abrirFormResolver(id,categoria);}
+function poblarPuntosTarea(){const sel=tareaEl('tarea-punto');if(!sel)return;const v=sel.value;sel.innerHTML='<option value="">— Sin punto —</option>';(estado.puntos||[]).forEach(p=>sel.add(new Option(textoTareaSeguro(p.nombre||p.subtipo,80),p.id)));sel.value=v;}
+function poblarReportesProgramables(){const sel=tareaEl('tarea-reporte');if(!sel)return;const valor=sel.value;sel.innerHTML='<option value="">Elegí un reporte</option>';(estado.reportes||[]).filter(r=>!r.resuelto).forEach(r=>sel.add(new Option(`${REPORTE_CATEGORIAS[r.categoria]?.etiqueta||'Reporte'} · ${r.subtipo||'infraestructura'} (${r.fecha||''})`,r.id)));sel.value=valor;}
+function programarReporteInfraestructura(){const id=tareaEl('tarea-reporte').value,fechaPrevista=fechaTareaVisible(tareaEl('tarea-reporte-fecha').value);if(!id||!fechaPrevista){toast('Elegí un reporte y una fecha prevista.');return;}emitirEventoTarea('reporte_programado',{id,fechaPrevista,ts:new Date().toISOString()},fechaPrevista);renderTareas();toast('Reporte programado');}
+function abrirTareas(){if(!CONFIG.manejo)return;const modal=tareaEl('modal-tareas');if(!modal)return;const p=tareaEl('tarea-potrero');if(p.options.length===1)POTREROS_GEO.forEach(x=>p.add(new Option(x.nombre,x.nombre)));poblarPuntosTarea();poblarReportesProgramables();modal.style.display='flex';if(!editandoTareaId){tareaEl('tarea-fecha').value=fechaISOHoy();tareaTipoActualizar();}renderTareas();}
+function limpiarFormularioTarea(){editandoTareaId=null;tareaEl('tarea-fecha').value=fechaISOHoy();tareaEl('tarea-potrero').value='';tareaEl('tarea-punto').value='';tareaEl('tarea-tema-grupo').value='Ganado';tareaTipoActualizar();tareaEl('tarea-otro').value='';tareaEl('tarea-cada-dias').value='';tareaEl('tarea-obs').value='';tareaEl('tarea-guardar').textContent='Guardar tarea';tareaEl('tarea-cancelar').style.display='none';}
+function guardarTarea(){const fechaPrevista=fechaTareaVisible(tareaEl('tarea-fecha').value),temaGrupo=tareaEl('tarea-tema-grupo').value,select=tareaEl('tarea-tipo').value,tipo=textoTareaSeguro(select==='Otra…'?tareaEl('tarea-otro').value:select,80),cadaRaw=tareaEl('tarea-cada-dias').value,cadaDias=cadaRaw?Number(cadaRaw):null;if(!fechaPrevista||!tipo||(cadaRaw&&(!Number.isInteger(cadaDias)||cadaDias<1||cadaDias>730))){toast('Completá la tarea y revisá la fecha y la repetición (1–730 días).');return;}const previa=editandoTareaId?(estado.tareas||[]).find(x=>x.id===editandoTareaId):null,punto=(estado.puntos||[]).find(x=>x.id===tareaEl('tarea-punto').value),detalle={id:editandoTareaId||crypto.randomUUID(),ts:new Date().toISOString(),temaGrupo,tipo,tema:tipo==='Otra…'?textoTareaSeguro(tareaEl('tarea-otro').value,160):tipo,fechaPrevista,potrero:potreroTareaVisible(tareaEl('tarea-potrero').value),puntoId:punto?.id||null,puntoNombre:textoTareaSeguro(punto?.nombre||punto?.subtipo,80),cadaDias,serieId:previa?.serieId||editandoTareaId||undefined,serieN:previa?.serieN||0,obs:textoTareaSeguro(tareaEl('tarea-obs').value,500),usuario:textoTareaSeguro(usuarioActual(),80)};if(!detalle.tema){toast('Especificá la tarea.');return;}emitirEventoTarea(editandoTareaId?'tarea_editada':'tarea_creada',detalle,fechaPrevista);const editando=!!editandoTareaId;limpiarFormularioTarea();renderTareas();toast(editando?'Tarea actualizada':'Tarea guardada');}
+function marcarTareaHecha(id){const t=(estado.tareas||[]).find(x=>x.id===id&&!x.eliminada);if(!t||t.hecha)return;const fechaHecha=fechaISOaDisplay(fechaISOHoy()),serieId=t.serieId||t.id,serieN=(Number(t.serieN)||0)+1,siguiente=t.cadaDias?{id:`${serieId}#${serieN}`,serieId,serieN,fechaPrevista:fechaSiguienteTarea(fechaHecha,t.cadaDias)}:null;emitirEventoTarea('tarea_hecha',{id,ts:new Date().toISOString(),fechaHecha,siguiente,usuario:textoTareaSeguro(usuarioActual(),80)},fechaHecha);renderTareas();const mereceDestete=['Destete final','Fin destete temporario (DT)'].includes(t.tipo);if(mereceDestete&&confirm('¿Querés registrar también el evento Destete? Se abrirá el formulario para que lo revises.')){abrirEventosManejo();emEl('em-tipo').value='Destete';emEl('em-fecha').value=fechaISOHoy();emEl('em-potrero').value=t.potrero||'';emEl('em-obs').value=t.obs||'';}}
+if(CONFIG.manejo){tareaEl('btn-tareas').style.display='';tareaEl('btn-tareas').addEventListener('click',abrirTareas);tareaEl('tarea-guardar').addEventListener('click',guardarTarea);tareaEl('tarea-cancelar').addEventListener('click',limpiarFormularioTarea);tareaEl('tarea-tema-grupo').addEventListener('change',()=>tareaTipoActualizar());tareaEl('tarea-tipo').addEventListener('change',()=>{tareaEl('tarea-otro-wrap').style.display=tareaEl('tarea-tipo').value==='Otra…'?'':'none';});tareaEl('tarea-reporte-programar').addEventListener('click',programarReporteInfraestructura);tareaEl('tareas-cerrar-x').addEventListener('click',()=>tareaEl('modal-tareas').style.display='none');tareaEl('tareas-cerrar').addEventListener('click',()=>tareaEl('modal-tareas').style.display='none');tareaEl('modal-tareas').addEventListener('click',e=>{if(e.target.id==='modal-tareas')e.target.style.display='none';});['tarea-filtro-estado','tarea-filtro-potrero','tarea-filtro-tema'].forEach(id=>tareaEl(id).addEventListener('change',renderTareas));renderTareas();}else{const rail=document.querySelector('#pc-rail [data-pc-seccion="tareas"]');if(rail)rail.style.display='none';}
 document.getElementById('btn-lluvias').addEventListener('click', ()=>{
   document.getElementById('ll-fecha').value = fechaISOHoy();
   document.getElementById('ll-fecha').max = fechaISOHoy();
