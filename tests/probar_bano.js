@@ -376,7 +376,13 @@ async function probarCasoCompleto(archivo){
   chequear('"Hoy" lista lo de hoy con hora', (t.$('bano-hoy').textContent.match(/\d\d:\d\d/g) || []).length >= 8, t.$('bano-hoy').textContent);
   // cerrar ciclo: regla 650 → resumen + tramos
   t.click('bano-cerrar-ciclo'); await esperar(10);
-  t.regla(650);
+  // la regla marca cada 100; lo de arriba se estima de a 25: 700 → +50 → 600 (mantiene el +50) = 650
+  t.regla(700);
+  t.sel('#bano-f-cuartos [data-bano-cuarto="50"]').click();
+  chequear('regla 700 y +50: queda 750', t.$('bano-f-nivel').value === '750', t.$('bano-f-nivel').value);
+  t.regla(600);
+  chequear('cambio la marca a 600: mantiene el +50 (650)', t.$('bano-f-nivel').value === '650', t.$('bano-f-nivel').value);
+  chequear('botones marcados: 600 y +50', t.sel('#bano-f-reglas [data-bano-regla="600"]').getAttribute('aria-pressed') === 'true' && t.sel('#bano-f-cuartos [data-bano-cuarto="50"]').getAttribute('aria-pressed') === 'true' && t.sel('#bano-f-cuartos [data-bano-cuarto="0"]').getAttribute('aria-pressed') === 'false');
   const est = Array.from(t.win.document.querySelectorAll('#bano-f-preview .bano-tramo')).map(e => e.getAttribute('data-estado'));
   const txt = Array.from(t.win.document.querySelectorAll('#bano-f-preview .bano-tramo')).map(e => e.textContent);
   chequear('4 tramos: sin conteo, ok, sin conteo, ok', JSON.stringify(est) === JSON.stringify(['sin_conteo', 'ok', 'sin_conteo', 'ok']), JSON.stringify(est));

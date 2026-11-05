@@ -998,6 +998,13 @@
           <button type="button" class="bano-chip" data-bano-regla="800">800</button>
           <button type="button" class="bano-chip" data-bano-regla="900">900</button>
         </div>
+        <p class="modal-info">La regla marca cada 100. Lo de arriba de la marca, estimalo:</p>
+        <div class="bano-chips" id="bano-f-cuartos" role="group" aria-label="Estimado arriba de la marca">
+          <button type="button" class="bano-chip" data-bano-cuarto="0">+0</button>
+          <button type="button" class="bano-chip" data-bano-cuarto="25">+25</button>
+          <button type="button" class="bano-chip" data-bano-cuarto="50">+50</button>
+          <button type="button" class="bano-chip" data-bano-cuarto="75">+75</button>
+        </div>
         <input type="text" id="bano-f-nivel" inputmode="numeric" autocomplete="off" placeholder="Otro: escribí los litros">
       </div>
     </div>
@@ -9333,7 +9340,11 @@ function banoFormActualizar(){
   const tipo = _banoForm.tipo;
   if(tipo === 'tanda'){ prev.innerHTML = ''; return; }
   const nivel = insNumero(document.getElementById('bano-f-nivel').value);
-  document.querySelectorAll('#bano-f-reglas [data-bano-regla]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-bano-regla')) === nivel)));
+  const nOk = isFinite(nivel) && document.getElementById('bano-f-nivel').value.trim() !== '';
+  const base = nOk ? Math.floor(nivel / 100) * 100 : NaN;
+  const resto = nOk ? nivel - base : NaN;
+  document.querySelectorAll('#bano-f-reglas [data-bano-regla]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-bano-regla')) === base)));
+  document.querySelectorAll('#bano-f-cuartos [data-bano-cuarto]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-bano-cuarto')) === resto)));
   const valido = isFinite(nivel) && nivel >= 0 && nivel <= p.capacidad;
   if(tipo === 'reposicion'){
     const aguaIn = document.getElementById('bano-r-agua');
@@ -9620,7 +9631,20 @@ if(BANO_ACTIVO){
   $b('bano-f-reglas').addEventListener('click', (e)=>{
     const b = e.target && e.target.closest && e.target.closest('[data-bano-regla]');
     if(!b) return;
-    $b('bano-f-nivel').value = b.getAttribute('data-bano-regla');
+    // Marca de la regla (cada 100). Si ya había un estimado de +25/+50/+75, se mantiene.
+    const v = insNumero($b('bano-f-nivel').value);
+    const resto = isFinite(v) && $b('bano-f-nivel').value.trim() !== '' ? v - Math.floor(v / 100) * 100 : 0;
+    const cuarto = [0, 25, 50, 75].indexOf(resto) >= 0 ? resto : 0;
+    $b('bano-f-nivel').value = String(Number(b.getAttribute('data-bano-regla')) + cuarto);
+    banoFormActualizar();
+  });
+  $b('bano-f-cuartos').addEventListener('click', (e)=>{
+    const b = e.target && e.target.closest && e.target.closest('[data-bano-cuarto]');
+    if(!b) return;
+    // Estimado arriba de la marca: 625 = marca 600 + 25. Sin marca elegida, toma 0.
+    const v = insNumero($b('bano-f-nivel').value);
+    const base = isFinite(v) && $b('bano-f-nivel').value.trim() !== '' ? Math.floor(v / 100) * 100 : 0;
+    $b('bano-f-nivel').value = String(base + Number(b.getAttribute('data-bano-cuarto')));
     banoFormActualizar();
   });
   $b('bano-f-nivel').addEventListener('input', banoFormActualizar);
