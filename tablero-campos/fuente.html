@@ -147,7 +147,7 @@ h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--suav
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha384-NElt3Op+9NBMCYaef5HxeJmU4Xeard/Lku8ek6hoPTvYkQPh3zLIrJP7KiRocsxO" crossorigin="anonymous"></script>
 <script>
-const VERSION = '1.2';
+const VERSION = '1.3';
 /* TABLERO: lo escribe tablero-campos/generar.js desde config.js (campos, Supabase, cortes) y los dibujos de los potreros.
    Para otro establecimiento se cambia config.js, no este archivo. */
 const TABLERO = /*__TABLERO__*/{};
@@ -162,7 +162,8 @@ const CAMPOS = (TABLERO.campos || []).map(c => c.id);
 const HAY_TODOS = CAMPOS.length > 1;
 const NOMBRE_CAMPO = { todos: 'Todos' };
 const CON_CLAVE = {}, ETQ_DUENO = {}, GEO = {};
-for(const c of (TABLERO.campos || [])){ NOMBRE_CAMPO[c.id] = c.nombre; CON_CLAVE[c.id] = !!c.usaClave; ETQ_DUENO[c.id] = c.etiquetaDueno; GEO[c.id] = c.potreros || []; }
+const DOBLES = {};
+for(const c of (TABLERO.campos || [])){ DOBLES[c.id] = c.dobles || {}; NOMBRE_CAMPO[c.id] = c.nombre; CON_CLAVE[c.id] = !!c.usaClave; ETQ_DUENO[c.id] = c.etiquetaDueno; GEO[c.id] = c.potreros || []; }
 const CLAVE_RE = /^[a-z0-9]{8,64}$/;
 /* Cortes de carga en UG/ha (campo natural). Cambiar acá si Pedro quiere otros. */
 const CORTES_CARGA = TABLERO.cortesCarga || [0.5, 0.8, 1.2];
@@ -346,7 +347,17 @@ function armarPotreros(){
       it.filas.push(f);
     }
     /* La carga del potrero es SIEMPRE con todos los animales, aunque haya filtro de dueño: el pasto lo comen todos. */
-    for(const f of todasFilasDe(campo)){ const it = porNombre[norm(f.potrero)]; if(it) it.ugTotal += Number(f.ug) || 0; }
+    for(const f of todasFilasDe(campo)){ const it = porNombre[norm(f.potrero)]; if(it){ it.ugTotal += Number(f.ug) || 0; it.cabezasTotal = (it.cabezasTotal || 0) + (Number(f.cantidad) || 0); } }
+    /* Potreros dobles (1+2, 19+20): el doble solo cuenta si tiene animales; entonces sus partes quedan "tapadas" (apagadas en
+       el mapa y fuera de la superficie total, que ya suma el doble). Un doble vacío no aparece. */
+    const dobles = DOBLES[campo] || {};
+    for(const d of Object.keys(dobles)){
+      const it = porNombre[norm(d)];
+      if(!it) continue;
+      it.partes = dobles[d];
+      if(!it.cabezasTotal){ lista.splice(lista.indexOf(it), 1); continue; }
+      for(const parte of dobles[d]){ const pt = porNombre[norm(parte)]; if(pt && !pt.cabezasTotal) pt.tapada = it.nombre; }   // una parte con animales propios sigue contando
+    }
   }
   for(const it of lista) it.carga = it.ha > 0 ? it.ugTotal / it.ha : null;
   return lista;
@@ -355,6 +366,7 @@ function totales(lista){
   const t = { cabezas: 0, ug: 0, ha: 0, ugMapa: 0, ocupados: 0, total: 0, sinMapa: 0 };
   for(const it of lista){
     t.cabezas += it.cabezas; t.ug += it.ug;
+    if(it.tapada) continue;   // parte de un doble en uso: el doble ya cuenta su superficie
     if(it.coords && it.ha > 0){ t.ha += it.ha; t.ugMapa += it.ugTotal; t.total++; if(it.cabezas > 0) t.ocupados++; }
     else if(it.cabezas) t.sinMapa++;
   }
@@ -401,7 +413,10 @@ function pintarMapa(lista){
     if(!it.coords) continue;
     try{
     const sel = seleccion && seleccion.campo === it.campo && seleccion.nombre === it.nombre;
-    const pol = L.polygon(it.coords, { color: sel ? '#ffffff' : '#1d2418', weight: sel ? 4 : 1.5, fillColor: colorDe(it, maxCab), fillOpacity: .6 });
+    const pol = it.tapada && !sel
+      ? L.polygon(it.coords, { color: '#1d2418', weight: 1, dashArray: '4 4', fillColor: COLOR_VACIO, fillOpacity: .08 })
+      : L.polygon(it.coords, { color: sel ? '#ffffff' : '#1d2418', weight: sel ? 4 : 1.5, fillColor: colorDe(it, maxCab), fillOpacity: .6 });
+    if(it.tapada && !sel){ pol.on('click', () => elegirPotrero(it.campo, it.tapada)); capa.addLayer(pol); limites.push(...it.coords); continue; }
     pol.on('click', () => elegirPotrero(it.campo, it.nombre));
     pol.bindTooltip(esc(it.nombre) + (elegido === 'todos' ? ' (' + esc(NOMBRE_CAMPO[it.campo]) + ')' : '') + (it.cabezas ? ' · ' + fmt(it.cabezas) : ''), etiquetas ? { permanent: true, direction: 'center', className: 'etiqueta' } : { sticky: true });
     capa.addLayer(pol);
@@ -475,7 +490,7 @@ function pintarTablaPot(lista){
   $('tabla-pot').innerHTML = '<tr>' + cols.map(([c, t, n]) => '<th data-col="' + c + '"' + (n ? ' class="n"' : '') + '>' + t + flecha(c) + '</th>').join('') + '</tr>' +
     (s.length ? s.map(i => {
       const sel = seleccion && seleccion.campo === i.campo && seleccion.nombre === i.nombre;
-      return '<tr class="fila-pot' + (sel ? ' sel' : '') + '" data-campo="' + i.campo + '" data-nombre="' + esc(i.nombre) + '"><td><span class="punto" style="background:' + colorDe(i, maxCab) + '"></span>' + esc(i.nombre) + (!i.coords ? ' <span class="etq ocre">sin mapa</span>' : '') + '</td>' +
+      return '<tr class="fila-pot' + (sel ? ' sel' : '') + '" data-campo="' + i.campo + '" data-nombre="' + esc(i.nombre) + '"><td><span class="punto" style="background:' + colorDe(i, maxCab) + '"></span>' + esc(i.nombre) + (!i.coords ? ' <span class="etq ocre">sin mapa</span>' : '') + (i.partes ? ' <span class="etq">🔗 ' + esc(i.partes.join(' y ')) + ' unidos</span>' : '') + (i.tapada ? ' <span class="etq">🔗 unido en ' + esc(i.tapada) + '</span>' : '') + '</td>' +
         (elegido === 'todos' ? '<td>' + esc(NOMBRE_CAMPO[i.campo]) + '</td>' : '') +
         '<td class="n">' + haTxt(i) + '</td><td class="n">' + fmt(i.cabezas) + '</td><td class="n">' + fmt(i.ug, 1) + '</td><td class="n">' + fmt(i.carga, 2) + '</td></tr>';
     }).join('') : '<tr><td class="vacio" colspan="6">Sin potreros cargados</td></tr>');

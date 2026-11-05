@@ -113,10 +113,10 @@ Solo La Vuelta.</p>
 <script>
 const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
-/* Los 31 potreros de La Vuelta (potrerosGeo de template/configs/la-vuelta.js): son contra los que valida sanidad_puente.py.
+/* Los 33 potreros de La Vuelta (31 + los dobles 1+2 y 19+20; potrerosGeo de template/configs/la-vuelta.js): son contra los que valida sanidad_puente.py.
    tests/probar_completar_sanidad.js falla si dejan de coincidir. */
 const POTREROS = ["CERRO","14","EMBARCADERO","CERRITO","17","15","18","BOMBA","23","7","8","9","OMBU","10","PAST","26","21","TRI",
-  "19","13","12","CALLE","TAJAMAR","16","20","11","6","1","2","3","5"];
+  "19","13","12","CALLE","TAJAMAR","16","20","11","6","1","2","3","5","1+2","19+20"];
 /* Copia del catálogo (productos_catalogo, 18/10/2026): se usa si no hay señal o la lectura falla. */
 const CATALOGO_GUARDADO = ["Aftosa","Altis","Aspersin","Bonlam","Bopriva","Bovisan lepto 8","Bovisan Total Se","Carbazol","Clostrisan",
   "Clostrisan 9+T","Combo","CreBio 7","Cydectin","Di-Oxi-Forte","Ectima","Ectoraz","EON","Epmox","Eprinoline","Exzolt","Forcer","Fusion",

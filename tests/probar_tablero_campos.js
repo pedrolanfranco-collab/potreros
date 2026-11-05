@@ -297,9 +297,41 @@ function generadorTmp(nombre, campos, titulo = 'Tablero de Campos', extra = {}){
   const [ocup, tot] = kpiTxt(k, 3).split('/').map(x => Number(x.trim()));
   const geoLV = TAB.campos.find(x => x.id === 'la_vuelta').potreros;
   const ocupEsp = new Set(LV.filter(x => Number(x.cantidad) !== 0 && geoLV.some(p => p.nombre === x.potrero)).map(x => x.potrero)).size;
-  const totEsp = geoLV.filter(p => p.coords && Number(p.area) > 0).length;
+  // Dobles (1+2, 19+20): con animales cuentan como uno (sus partes no); sin animales no aparecen y sus partes cuentan solas.
+  const dobleLV = TAB.campos.find(x => x.id === 'la_vuelta').dobles || {};
+  const dobles = Object.keys(dobleLV);
+  const esperadoLV = filas => {
+    const conStock = n => filas.some(x => x.potrero === n && Number(x.cantidad) !== 0);
+    const enUso = new Set(dobles.filter(conStock).flatMap(d => dobleLV[d]));
+    const cuenta = p => !!p.coords && Number(p.area) > 0 && !(dobles.includes(p.nombre) && !conStock(p.nombre)) && !enUso.has(p.nombre);
+    const ocupados = new Set(filas.filter(x => Number(x.cantidad) !== 0).map(x => x.potrero)
+      .filter(n => geoLV.some(p => p.nombre === n && cuenta(p)))).size;
+    const total = geoLV.filter(cuenta).length;
+    const ha = geoLV.filter(cuenta).reduce((sum, p) => sum + Number(p.area), 0);
+    return { ocupados, total, ha };
+  };
+  const esp = esperadoLV(LV);
   chequear('ocupados <= total con un potrero solo en stock ("Piquete")', ocup <= tot, kpiTxt(k, 3));
-  chequear('ocupados y total = los esperados (sin contar "Piquete")', ocup === ocupEsp && tot === totEsp, kpiTxt(k, 3) + ' vs ' + ocupEsp + ' / ' + totEsp);
+  chequear('ocupados y total = los esperados (sin contar "Piquete" ni dobles vacios)', ocup === esp.ocupados && tot === esp.total, kpiTxt(k, 3) + ' vs ' + esp.ocupados + ' / ' + esp.total);
+  chequear('sin animales en 1+2: no aparece la fila del doble', !filaPot(k, 'la_vuelta', '1+2'));
+  chequear('sin animales en 1+2: las partes 1 y 2 aparecen sin etiqueta de unión', !!filaPot(k, 'la_vuelta', '1') && !!filaPot(k, 'la_vuelta', '2')
+    && !/unido/.test(filaPot(k, 'la_vuelta', '1').textContent + filaPot(k, 'la_vuelta', '2').textContent));
+
+  console.log('Potreros dobles con animales en 1+2');
+  const LVdc = [...LV, f('1+2', 'Vaca', 'Bovino', 'Pedro Lanfranco', 14, 14)];
+  const dc = await abrir({ ls: LS_CLAVES, stock: { ...STOCK, la_vuelta: LVdc } }); abiertas.push(dc);
+  const filaDoble = filaPot(dc, 'la_vuelta', '1+2');
+  chequear('con animales en 1+2: aparece la fila del doble', !!filaDoble, 'no está');
+  chequear('la fila del doble dice "1 y 2 unidos"', !!filaDoble && filaDoble.textContent.includes('1 y 2 unidos'), filaDoble ? filaDoble.textContent : '');
+  const filaP1 = filaPot(dc, 'la_vuelta', '1'), filaP2 = filaPot(dc, 'la_vuelta', '2');
+  chequear('la parte "1" dice "unido en 1+2"', !!filaP1 && filaP1.textContent.includes('unido en 1+2'), filaP1 ? filaP1.textContent : 'no está');
+  chequear('la parte "2" dice "unido en 1+2"', !!filaP2 && filaP2.textContent.includes('unido en 1+2'), filaP2 ? filaP2.textContent : 'no está');
+  chequear('sin animales en 19+20: no aparece su fila', !filaPot(dc, 'la_vuelta', '19+20'));
+  const espDc = esperadoLV(LVdc);
+  const haTxt = /sobre ([\d.,]+) ha/.exec(dc.doc.querySelectorAll('#kpis .kpi')[2].querySelector('small').textContent);
+  const haMost = haTxt ? num(haTxt[1]) : NaN;
+  chequear('superficie total = suma de lo que cuenta (el doble una vez, sus partes no)', Math.abs(haMost - espDc.ha) <= 0.5, 'KPI ' + (haTxt && haTxt[1]) + ' vs ' + espDc.ha);
+  chequear('potreros con animales y total con el doble 1+2 (no sus partes)', kpiTxt(dc, 3) === espDc.ocupados + ' / ' + espDc.total, kpiTxt(dc, 3) + ' vs ' + espDc.ocupados + ' / ' + espDc.total);
 
   console.log('Nombre de potrero con HTML');
   const EVIL = '"><img src=x onerror=window.pwn2=1>';

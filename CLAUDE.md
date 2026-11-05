@@ -481,6 +481,18 @@ prueba armaba los datos con esa columna ya presente (`select=*`, o
 reconstruidos a mano) en vez de reproducir la consulta exacta — ver la
 memoria `verificar-select-exacto-no-reconstruir-datos.md`.
 
+### Potreros dobles (4/11/2026, a pedido de Pedro, `CONFIG.potrerosDobles`, hoy solo La Vuelta)
+
+A veces el 1 y el 2 (y el 19 y el 20) se usan juntos con la portera abierta. El doble (`"1+2"`, `"19+20"`) es **un potrero más de
+`potrerosGeo`** (al final, con el contorno de los dos juntos calculado con shapely; `area` = suma de las de las partes: 15 y 13 ha) y
+`potrerosDobles` = `{doble: [partes]}` (María Laura y Pone Chico: `{}`). **No hay eventos nuevos**: unir = "Mover todo" de las partes al
+doble; separar = mover del doble a cada parte. En el mapa (`refrescarColoresMapa()`), un doble vacío se saca del mapa (`mostrarPoligono()`,
+`item.oculto`) salvo que esté elegido; con animales se ve arriba y sus partes quedan punteadas (`parteTapada()`); tocar una parte tapada
+abre el doble y el GPS de la móvil devuelve el doble. La tarjeta de la lista dice "🔗 1 y 2 unidos" / "🔗 Unido en 1+2".
+El Lector (`sanidad_puente.py`) toma los nombres de `template/configs/la-vuelta.js` de `~/repos/potreros`: después del merge, Pedro hace
+`git pull` ahí para que acepte "1+2". Copias de la lista que hay que tocar si se agrega otro doble: `completar-sanidad/index.html` y
+`scripts/hermes/consultar_stock.py`. El tablero de campos (`tablero-campos/`) los toma solo (`dobles`). Test: `tests/probar_potreros_dobles.js`.
+
 ### Vecinos (29/10/2026, a pedido de Pedro)
 
 Animales nuestros que están en el campo de un vecino: un potrero virtual "Vecino". No es un potrero: no está en

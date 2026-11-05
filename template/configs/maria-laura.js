@@ -189,6 +189,7 @@ module.exports = {
       ]
     }
   ],
+  "potrerosDobles": {},
   "puntosSeed": [],
   "duenos": [
     "Silvia",
@@ -250,10 +251,10 @@ module.exports = {
   "themeColor": "#7a5236",
   "nombre": "María Laura",
   "subtitulo": "Gestión de hacienda por potrero y dueño",
-  "versionPc": "3.53",
-  "versionMovil": "3.49",
+  "versionPc": "3.54",
+  "versionMovil": "3.50",
   "simpleHabilitado": true,
-  "versionMovilSimple": "1.59",
+  "versionMovilSimple": "1.60",
   "duenoLabel": "Dueño",
   "duenoObligatorio": true,
   "guiasHabilitado": true,
