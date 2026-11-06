@@ -371,6 +371,26 @@ requieren que el potrero ya exista localmente (`lluvia`,
 `potrero_creado`) se procesan **antes** del guard `if(!potrero ||
 !estado.potreros[potrero]) return;`, no después.
 
+**Mapa por dotación, Eventos de manejo, Tareas y Calendario (5/11/2026).**
+`CONFIG.manejo` está activo en La Vuelta y María Laura, y apagado en Pone
+Chico. Eventos de manejo, Tareas y Calendario aparecen solo en PC y móvil
+completa de La Vuelta y María Laura; Campo y Pone Chico no muestran esas
+opciones. Los tipos nuevos de `eventos_sync` son `evento_manejo`,
+`evento_manejo_editado`, `evento_manejo_eliminado`, `tarea_creada`,
+`tarea_editada`, `tarea_hecha`, `tarea_eliminada` y `reporte_programado`.
+Eventos de manejo y tareas usan `detalle.ts` y `event_id` para converger en
+el mismo orden `(ts, event_id)`. Las bajas conservan tombstones por id para
+que una alta o edición tardía no resucite el registro. El Calendario es de
+solo lectura: deriva sus entradas de `estado.eventosManejo`, `estado.tareas`,
+`estado.reportes` y `estado.reportesProgramados`, y no emite eventos. Editar y
+borrar eventos de manejo o tareas solo está disponible en PC; el móvil puede
+marcar una tarea como cumplida.
+
+Al editar `template/potreros.template.html`, no pongas marcadores `@pc`,
+`@completo` ni otros marcadores de generación dentro de un template literal,
+ni en la misma línea que código. Deben quedar en líneas propias para que
+`template/generar.js` pueda reconocerlos y retirar los bloques correctamente.
+
 **Editar/borrar en la PC (3/10/2026, a pedido de Pedro).** En las 3 apps PC
 (solo ahí: móvil completa y Campo no ganan botones) cualquier registro se
 puede editar y borrar, siempre con `confirm()`:

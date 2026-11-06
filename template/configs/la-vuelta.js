@@ -2612,7 +2612,7 @@ module.exports = {
   "versionMovil": "3.85",
   "manejo": true,
   "simpleHabilitado": true,
-  "versionMovilSimple": "1.62",
+  "versionMovilSimple": "1.64",
   "duenoLabel": "Firma",
   "duenoObligatorio": false,
   "textoSinAsignar": "(sin firma)",

@@ -509,12 +509,18 @@
   input[type=file]{display:none;}
 
   /* toast */
+  #aviso-guardado{
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:var(--verde-monte); color:#fff; font-size:22px; font-weight:700;
+    text-align:center; padding:24px 30px; max-width:90vw; border-radius:16px;
+    box-shadow:0 8px 32px rgba(0,0,0,.35); z-index:100002; cursor:pointer;
+  }
   #toast{
     position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
     background:var(--verde-monte);color:#fff;padding:10px 18px;border-radius:6px;
     font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,0.25);
     opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
-    z-index:9999;
+    z-index:100001;
   }
   #toast.mostrar{opacity:1;transform:translateX(-50%) translateY(-6px);}
 
@@ -1805,6 +1811,7 @@
   </div>
 </div>
 <div id="toast"></div>
+<div id="aviso-guardado" role="status" aria-live="polite" hidden>✅ Evento guardado</div>
 <!-- @pc:start -->
 <div id="modal-coef" class="modal-overlay" style="display:none;">
   <div class="modal-box">
@@ -2735,9 +2742,13 @@ function enviarEvento(tipo, potrero, detalle, fecha, opciones){
     // mandarlo (si Android cierra la app durante el envío, no se pierde) y sale por vaciarColaSync(),
     // detrás de lo que ya estaba esperando. Devuelve true cuando Supabase confirmó ESTE evento.
     estado.colaSync.push(evento); guardarEstado(); actualizarEstadoSync();
+    if(!(opciones && opciones.silencioso)) avisarEventoGuardado();
     return vaciarColaSync().then(()=> !(estado.colaSync||[]).some(e => e.event_id === eventId));
   }
-  return pushEventoRemoto(evento);
+  return pushEventoRemoto(evento).then(ok=>{
+    if(!(opciones && opciones.silencioso)) avisarEventoGuardado();
+    return ok;
+  });
 }
 /* Un insert en eventos_sync. No toca la cola: devuelve {ok} o {ok:false, error}. */
 async function insertarEventoRemoto(client, evento){
@@ -2874,20 +2885,21 @@ async function vaciarColaSyncSinOrden(){
    sanidad-vista-celular) o una tabla propia nativa sin Excel (María
    Laura/Pone Chico) -- la diferencia es solo de config, no de código. */
 const TABLA_SANIDAD = CONFIG.tablaSanidad;
-async function guardarSanidadCarga(registro){
+async function guardarSanidadCarga(registro, opciones){
+  const avisar = ()=>{ if(!(opciones && opciones.silencioso)) avisarEventoGuardado(); };
   const client = clienteSupabase();
   if(CONFIG.colaOrdenada){
     // Fase 3 (11/10/2026): como los movimientos, primero a la cola y guardado en el equipo, después el envío
     estado.colaSanidad = estado.colaSanidad || [];
     estado.colaSanidad.push(registro);
-    guardarEstado(); actualizarEstadoSync();
+    guardarEstado(); actualizarEstadoSync(); avisar();
     await vaciarColaSanidad();
     return !(estado.colaSanidad||[]).some(x => x === registro || (registro.id && x.id === registro.id));
   }
   if(!client || !navigator.onLine){
     estado.colaSanidad = estado.colaSanidad || [];
     estado.colaSanidad.push(registro);
-    guardarEstado();
+    guardarEstado(); avisar();
     return false;
   }
   try{
@@ -2895,14 +2907,15 @@ async function guardarSanidadCarga(registro){
     if(error){
       estado.colaSanidad = estado.colaSanidad || [];
       estado.colaSanidad.push(registro);
-      guardarEstado();
+      guardarEstado(); avisar();
       return false;
     }
+    avisar();
     return true;
   }catch(e){
     estado.colaSanidad = estado.colaSanidad || [];
     estado.colaSanidad.push(registro);
-    guardarEstado();
+    guardarEstado(); avisar();
     return false;
   }
 }
@@ -2939,7 +2952,7 @@ async function vaciarColaSanidadSinOrden(){
   const pendientes = estado.colaSanidad;
   estado.colaSanidad = [];
   for(let i=0;i<pendientes.length;i++){
-    const ok = await guardarSanidadCarga(pendientes[i]);
+    const ok = await guardarSanidadCarga(pendientes[i], {silencioso:true});
     if(!ok){ estado.colaSanidad.push(...pendientes.slice(i+1)); break; }
   }
   guardarEstado();
@@ -5114,6 +5127,17 @@ function toast(msg){
   clearTimeout(toast._timer);
   toast._timer = setTimeout(()=>t.classList.remove('mostrar'), 2200);
 }
+/* Una ráfaga (varias categorías) comparte un solo cartel y un solo plazo.
+   Se confirma el guardado local; el pie sigue mostrando lo que falta sincronizar. */
+function avisarEventoGuardado(){
+  if(_noGuardado) return;
+  const aviso = document.getElementById('aviso-guardado');
+  if(!aviso || !aviso.hidden) return;
+  aviso.hidden = false;
+  const cerrar = ()=>{ aviso.hidden = true; clearTimeout(avisarEventoGuardado._timer); };
+  aviso.onclick = cerrar;
+  avisarEventoGuardado._timer = setTimeout(cerrar, 2500);
+}
 function generarIdHistorial(){
   return 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
 }
@@ -6503,7 +6527,7 @@ async function vaciarColaFotosUnaVuelta(){
     limpiarFalloCola('fotos');
     if(!(r.fotos||[]).some(f => f.fotoId === rec.fotoId)){
       r.fotos = [...(r.fotos || []), {fotoId: rec.fotoId, path, momento: rec.momento, fecha: rec.fecha}];
-      enviarEvento(T.evento, ESTABLECIMIENTO, {id: rec.reporteId, fotoId: rec.fotoId, path, momento: rec.momento, fecha: rec.fecha});
+      enviarEvento(T.evento, ESTABLECIMIENTO, {id: rec.reporteId, fotoId: rec.fotoId, path, momento: rec.momento, fecha: rec.fecha}, undefined, {silencioso:true});
     }
     guardarEstado();
     await fotosPendientes.sacar(rec.fotoId);
@@ -8428,6 +8452,7 @@ function mostrarFormulario(nombre, accion, prefill){
         <button type="button" class="btn btn-secundario btn-full" id="vec-agregar-fila" style="margin-bottom:8px;">＋ Otra categoría</button>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: pasó por el alambrado del norte"></div>
+        <div id="vec-error" role="alert" style="color:#b42318;font-weight:700;margin:8px 0;" hidden></div>
         <div class="form-botones">
           <button class="btn btn-muerte" id="f-confirmar">Registrar</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -8443,6 +8468,9 @@ function mostrarFormulario(nombre, accion, prefill){
     });
     actualizarQuitarFilasVecino(filasVec);
     document.getElementById('f-confirmar').addEventListener('click', ()=>{
+      const error = document.getElementById('vec-error');
+      error.textContent = ''; error.hidden = true;
+      const avisarError = msg=>{ error.textContent = msg; error.hidden = false; toast(msg); };
       const vecino = normalizarVecino(document.getElementById('f-vecino').value);
       const fechaISO = document.getElementById('f-fecha').value;
       const obs = document.getElementById('f-obs').value.trim();
@@ -8453,12 +8481,12 @@ function mostrarFormulario(nombre, accion, prefill){
         caravana: f.querySelector('[data-vp="caravana"]').value.trim()
       }));
       // se valida TODO (todas las filas) antes de tocar stock o mandar nada
-      if(!vecino){ toast('Escribí el nombre del vecino'); return; }
-      if(items.some(it=> !it.cantidad || it.cantidad < 1)){ toast('Ingresá una cantidad válida en cada categoría'); return; }
-      if(items.some(it=> it.caravana && !/^\d{8,}$/.test(it.caravana))){ toast('La caravana debe tener al menos 8 dígitos numéricos'); return; }
+      if(!vecino){ avisarError('Escribí el nombre del vecino'); return; }
+      if(items.some(it=> !it.cantidad || it.cantidad < 1)){ avisarError('Ingresá una cantidad válida en cada categoría'); return; }
+      if(items.some(it=> it.caravana && !/^\d{8,}$/.test(it.caravana))){ avisarError('La caravana debe tener al menos 8 dígitos numéricos'); return; }
       const falta = faltanteFilasVecino(items, estado.potreros[nombre].animales);
-      if(falta){ toast(`Solo hay ${falta.hay} ${falta.categoria}${falta.dueno?' de '+falta.dueno:''} en ${nombre} y pedís ${falta.pide}`); return; }
-      if(!fechaISO){ toast('Elegí una fecha'); return; }
+      if(falta){ avisarError(`Solo hay ${falta.hay} ${falta.categoria}${falta.dueno?' de '+falta.dueno:''} en ${nombre} y pedís ${falta.pide}`); return; }
+      if(!fechaISO){ avisarError('Elegí una fecha'); return; }
       const fecha = fechaISOaDisplay(fechaISO);
       items.forEach(it=>{
         const eventId = crypto.randomUUID();
@@ -10047,7 +10075,7 @@ document.getElementById('btn-resync-puntos').addEventListener('click', async ()=
   if(!confirm(`Se van a reenviar ${estado.puntos.length} puntos a los demás dispositivos. Si ya estaban sincronizados no pasa nada (se ignoran duplicados). ¿Continuar?`)) return;
   let enviados = 0;
   for(const p of estado.puntos){
-    await enviarEvento('punto_creado', ESTABLECIMIENTO, {id: p.id, tipo: p.tipo, subtipo: p.subtipo, nombre: p.nombre, lat: p.lat, lon: p.lon});
+    await enviarEvento('punto_creado', ESTABLECIMIENTO, {id: p.id, tipo: p.tipo, subtipo: p.subtipo, nombre: p.nombre, lat: p.lat, lon: p.lon}, undefined, {silencioso:true});
     enviados++;
   }
   toast(`Se reenviaron ${enviados} puntos`);
@@ -11461,6 +11489,7 @@ async function guardarCorreccionTratamiento(registro){
   sanidadEditandoId = null; sanidadEditandoEnCola = false;
   document.getElementById('sc-guardar').textContent = 'Guardar';
   document.getElementById('form-sanidad').style.display = 'none';
+  avisarEventoGuardado();
   toast('Tratamiento corregido');
   await refrescarSanidadTrasCambio();
 }

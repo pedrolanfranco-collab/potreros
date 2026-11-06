@@ -224,6 +224,7 @@ async function levantar(archivo, enLinea, cache) {
     }
     const cajaNovedades = (pagina.match(/id="novedades"[\s\S]*?<\/div>/) || [''])[0];   // solo la caja, no un <li> cualquiera más abajo
     chequear('hay una sección "Novedades de esta versión" con al menos un renglón', /<h2>Novedades de esta versión<\/h2>/.test(cajaNovedades) && /<li>/.test(cajaNovedades));
+    if (P.id === 'campo') chequear('Campo aclara que Eventos, Tareas y Calendario son de las apps completas', /Eventos de manejo,.*Tareas y.*Calendario[\s\S]*?Esta app Campo no incluye esas ventanas/.test(cajaNovedades));
     chequear('el <title> dice que es el instructivo', /<title>Instructivo de [^<]+<\/title>/.test(pagina));
 
     // ---- 3. Enlaces internos ----
