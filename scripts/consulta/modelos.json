@@ -1,0 +1,33 @@
+{
+  "_leeme": "Modelos externos que se pueden consultar. Cada uno habla el formato 'compatible con OpenAI' (POST <base_url>/chat/completions). Las claves NO van aca: van en ~/.potreros/.env con el nombre de 'variable_clave'. El host de base_url tiene que estar tambien en HOSTS_PERMITIDOS de consultar.py (a proposito: un JSON cambiado no puede mandar una clave a otro lado). Precios en dolares por millon de tokens: confirmarlos en la pagina oficial y poner 'verificado': true.",
+  "presupuesto_diario_usd": 2.0,
+  "max_bytes_entrada": 200000,
+  "modelos": {
+    "gemini": {
+      "proveedor": "Google",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "modelo": "gemini-2.5-pro",
+      "variable_clave": "GEMINI_API_KEY",
+      "campo_max_tokens": "max_tokens",
+      "max_tokens_salida": 8000,
+      "precio_entrada_usd_millon": 1.25,
+      "precio_salida_usd_millon": 10.0,
+      "en_todos": true,
+      "verificado": false,
+      "verificar_en": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    "openai": {
+      "proveedor": "OpenAI",
+      "base_url": "https://api.openai.com/v1",
+      "modelo": "gpt-5",
+      "variable_clave": "OPENAI_API_KEY",
+      "campo_max_tokens": "max_completion_tokens",
+      "max_tokens_salida": 8000,
+      "precio_entrada_usd_millon": 1.25,
+      "precio_salida_usd_millon": 10.0,
+      "en_todos": true,
+      "verificado": false,
+      "verificar_en": "https://platform.openai.com/docs/pricing"
+    }
+  }
+}
