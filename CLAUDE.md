@@ -37,21 +37,21 @@ eventos). El `index.html`, `potreros.html` y `manifest.json` de la raíz son res
 Cada una salió de un error real. El porqué y el detalle están en el archivo de `docs/guia/` que se indica.
 
 **Template y versiones** (`02-template-y-variantes.md`)
-1. **Nunca editar un `index.html` a mano**: se edita `template/potreros.template.html` o `template/configs/<campo>.js`
-   y se regenera. Las diferencias entre variantes van con marcadores `@pc`/`@movil`/`@simple`/`@completo`…
-   (JS: `// @x:start` y `// @x:end` con la misma sangría).
+1. **Nunca editar a mano un `index.html` de las 9 apps** (las páginas sueltas sí se editan a mano): se edita `template/potreros.template.html` o `template/configs/<campo>.js`
+   y se regenera. Las diferencias entre variantes van con marcadores: `@pc`/`@movil` eligen PC o móvil, y dentro de la
+   móvil `@simple`/`@completo` eligen Campo o móvil completa (JS: `// @x:start` y `// @x:end` con la misma sangría).
 2. **Todo cambio que se publica sube la versión** (`versionPc` / `versionMovil` / `versionMovilSimple` del config) y se
-   regenera; si no, los celulares con la app instalada siguen con la vieja.
+   regenera; si no, los celulares con la app instalada siguen con la vieja. Del `sw.js` el generador escribe solo el `CACHE`.
 3. **Todo cambio visible actualiza su instructivo** (`instructivo-*`) y su "Novedades" en el mismo PR, con las
    versiones de "Actualizado para" (`05-instructivos.md`). Un botón nuevo de la PC va también en `SECCIONES_PC`.
 4. Mostrar el dueño/firma siempre con `textoFirma(dueno)`, nunca `${dueno}` suelto (en La Vuelta puede ser `""`).
 5. Lo que corre al cargar y usa un `const` va **después** de su declaración (un `TIPOS_FOTO` usado antes dejó la app
-   sin cargar; jsdom no lo detectó, Chromium sí).
+   sin cargar; jsdom no lo detectó, Chromium sí). jsdom tampoco cubre service worker, GPS, voz ni IndexedDB real.
 
 **Eventos y sincronización** (`03-sincronizacion-y-eventos.md`, `docs/eventos.md`)
 6. Es un **registro de eventos de solo agregar** (`eventos_sync`): borrar o editar = un evento `correccion`, nunca
-   DELETE/UPDATE. Cada evento lleva `event_id` = `crypto.randomUUID()` (**no** `generarIdHistorial()`: no es un uuid y
-   rompió todos los inserts). Un sitio nuevo que crea un renglón de historial le pone ese `eventId` y lo pasa a
+   DELETE/UPDATE. Cada evento lleva `event_id` (la columna) = `crypto.randomUUID()` (**no** `generarIdHistorial()`: no es un uuid y
+   rompió todos los inserts). Un sitio nuevo que crea un renglón de historial le pone ese uuid en el campo `eventId` del historial y lo pasa a
    `enviarEvento(..., {eventId})`.
 7. **Un tipo de evento nuevo va en tres lugares:** `docs/eventos.md`, `TIPOS_EVENTO_CONOCIDOS` /
    `ACCIONES_CORRECCION_CONOCIDAS` y el código que lo aplica en `aplicarEventoRemoto()`.
@@ -63,10 +63,10 @@ Cada una salió de un error real. El porqué y el detalle están en el archivo d
 
 **Supabase y seguridad** (`11-seguridad-supabase.md`)
 11. **El SQL (tablas, columnas, políticas, funciones) se corre antes de publicar el código que lo usa.** Pasó tres
-    veces al revés.
+    veces al revés. Mientras haya equipos con versión vieja, el SQL es **aditivo**: columnas opcionales, sin renombrar ni borrar.
 12. **RLS que bloquea contesta 200 con lista vacía**, no un error: para un UPDATE/DELETE pedir la fila de vuelta
     (`.select('id')`) y dar por hecho solo si volvió.
-13. Desde el 27/10/2026 las tablas operativas exigen la **clave del campo** (`x-clave-campo`); Pone Chico queda abierto
+13. Desde la Fase 4 de la auditoría las tablas operativas exigen la **clave del campo** (`x-clave-campo`); Pone Chico queda abierto
     a propósito. La llave pública está en este repo público: nunca alcanza para proteger nada.
 14. La **clave privada** de Supabase (y cualquier otra) nunca va al repo, a un log ni a un chat; vive en
     `~/.potreros/.env` de la PC.
