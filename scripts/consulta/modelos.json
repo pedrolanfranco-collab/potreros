@@ -26,7 +26,7 @@
       "precio_entrada_usd_millon": 1.25,
       "precio_salida_usd_millon": 10.0,
       "en_todos": true,
-      "verificado": false,
+      "verificado": true,
       "verificar_en": "https://platform.openai.com/docs/pricing"
     }
   }
