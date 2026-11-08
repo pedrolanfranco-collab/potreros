@@ -314,6 +314,9 @@ jobs:
       - name: "Hermes -- cargar eventos (simula por defecto, SI antes de escribir, stock insuficiente frena, 409 cuenta como cargado, eliminar no se hace dos veces) con red falsa"
         run: python3 scripts/hermes/probar_cargar_evento.py
 
+      - name: "Hermes -- perfiles de consulta (solo lectura, basico sin costos ni pesos, campos fijados por entorno) con red falsa"
+        run: python3 scripts/hermes/probar_consultar_mcp.py
+
       - name: "Consulta a modelos externos (scripts/consulta) -- filtro de claves, tope de tamaño, presupuesto diario, cada clave solo a su proveedor, un reintento si es pasajero, registro sin material ni claves, con red falsa"
         run: python3 scripts/consulta/probar_consultar.py
 

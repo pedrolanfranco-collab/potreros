@@ -42,6 +42,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import sys
 import time
 import urllib.error
@@ -267,6 +268,25 @@ def totales_anteriores(destino, excluir):
     return out
 
 
+def borrar_carpeta(ruta):
+    """Borra una carpeta vieja de backup aunque OneDrive la haya dejado en solo lectura.
+
+    Las carpetas que OneDrive ya subio quedan marcadas ReadOnly + ReparsePoint y `rmtree` falla
+    con "Acceso denegado" (WinError 5); hay que limpiar el atributo antes de borrar.
+    """
+    for base, _, archivos in os.walk(ruta, topdown=False):
+        for nombre in archivos:
+            try:
+                os.chmod(os.path.join(base, nombre), stat.S_IWRITE)
+            except OSError:
+                pass
+    try:
+        os.chmod(ruta, stat.S_IWRITE)
+    except OSError:
+        pass
+    shutil.rmtree(ruta)
+
+
 def main(argv=None, tablas=None, base=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--destino", default=DESTINO_DEFECTO)
@@ -348,13 +368,23 @@ def main(argv=None, tablas=None, base=None):
 
     # Limpieza: solo carpetas con nombre de backup, y nunca las 3 mas recientes.
     # Si hubo alerta no se borra nada: los viejos pueden ser lo unico sano que queda.
+    # OneDrive a veces tiene una carpeta vieja tomada (WinError 5: acceso denegado) y eso NO puede
+    # romper la corrida: antes tiraba abajo el script entero, la tarea terminaba en error (codigo 1)
+    # y la corrida quedaba sin linea en el log (paso del 1 al 5/11/2026).
+    no_borradas = []
     if not alertas:
         todas = carpetas_backup(args.destino)
         for viejo in todas[:-conservar]:
-            shutil.rmtree(os.path.join(args.destino, viejo))
+            try:
+                borrar_carpeta(os.path.join(args.destino, viejo))
+            except OSError as e:
+                no_borradas.append(f"{viejo} ({e.strerror or e})")
 
     estado = "ALERTA" if alertas else ("ERRORES" if errores else "OK")
     resumen = "; ".join(alertas + errores)
+    if no_borradas:
+        aviso_limpieza = "no se pudieron borrar backups viejos: " + ", ".join(no_borradas)
+        resumen = (resumen + "; " if resumen else "") + aviso_limpieza
     with open(os.path.join(args.destino, "backup.log"), "a", encoding="utf-8") as f:
         f.write(f"{manifest['creado']} {estado} {nombre} {resumen}\n")
     print(f"{estado}: {carpeta}" + (f"\n  {resumen}" if resumen else ""))
@@ -364,4 +394,8 @@ def main(argv=None, tablas=None, base=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as e:          # una caida inesperada NO es "no pudo leer una tabla"
+        print(f"error inesperado: {e}", file=sys.stderr)
+        sys.exit(3)
