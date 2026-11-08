@@ -1,3 +1,10 @@
+> **Histórico.** El Agent Bridge se retiró el 8/11/2026 (plan v2): la colaboración entre agentes pasa por PR + CI y
+> la segunda opinión por `scripts/consulta/` (ver `CLAUDE.md`, regla 16). En la PC de Pedro quedó deshabilitado sin
+> borrar: tarea programada "AgentBridge Local Coordinator" deshabilitada, servidor global quitado de `~/.claude.json`
+> (copia en `~/.claude.json.bak-agentbridge`) y sección comentada en `~/.codex/config.toml` (copia en
+> `config.toml.bak-agentbridge`). La carpeta del proyecto y su base SQLite siguen en la PC hasta la Fase 1b.
+> Este archivo se conserva como lección: el fallo vino de una definición global que pisaba la del proyecto.
+
 # Handoff: reparar Agent Bridge (Claude Code ↔ Codex)
 
 Fecha: 2026-11-02. Estado: **diagnóstico hecho (Fases A y B), nada modificado todavía.**
