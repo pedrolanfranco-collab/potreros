@@ -104,6 +104,15 @@ Registros del establecimiento (no tocan el stock):
 | `evento_clima` | `{id, tipo, obs, usuario}` |
 | `evento_clima_editado` | `{id, fecha, tipo, obs}` |
 | `evento_clima_eliminado` | `{id}` |
+| `evento_manejo` | `{id, ts?, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?, usuario}`; fecha en `fecha_cliente`; alta idempotente por id; no modifica stock |
+| `evento_manejo_editado` | snapshot `{id, ts?, fecha, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?}`; reemplaza el registro por id; no modifica stock |
+| `evento_manejo_eliminado` | `{id, ts?}`; conserva tombstone por id para impedir que una alta tardía lo reviva |
+| `tarea_creada` | `{id, ts, temaGrupo, tema, tipo, fechaPrevista, potrero?, puntoId?, puntoNombre?, cadaDias?, obs?, usuario?}`; crea una tarea pendiente |
+| `tarea_editada` | snapshot igual a `tarea_creada`; reemplaza los datos por id; solo la PC puede editar o deshacer una tarea hecha (`fechaHecha:null`) |
+| `tarea_hecha` | `{id, ts, fechaHecha, siguiente?:{id, serieId, serieN, fechaPrevista}, usuario?}`; marca la tarea hecha; entre acciones concurrentes gana la primera por `(ts, event_id)` |
+| `tarea_eliminada` | `{id, ts}`; conserva tombstone por id para impedir que una creación o edición anterior la resucite |
+| `reporte_programado` | `{id, ts, fechaPrevista}`; agrega una fecha prevista a un reporte de infraestructura ya existente, sin duplicar sus datos ni sus fotos |
+
 | `aborto` | `{id, motivo, cantidad, obs, usuario}` |
 | `aborto_editado` | `{id, fecha, motivo, cantidad, obs}` |
 | `aborto_eliminado` | `{id}` |
@@ -135,6 +144,39 @@ Correcciones:
 |---|---|
 | `correccion` | `{tipoOriginal, accion, fechaOriginal, …}`: ver la sección siguiente |
 <!-- tipos:end -->
+
+`evento_manejo` es el mismo registro para lote y animal: sin `caravanas` se carga por lote (la cantidad es opcional);
+con `caravanas` lleva hasta 1000 valores únicos `id8` de ocho dígitos y la cantidad se completa con ese total,
+pero se puede ajustar. `evento_manejo` usa `detalle.id` UUID como identidad. Altas repetidas hacen upsert por ese id;
+ediciones y bajas son snapshots/tombstones. Los registros nuevos llevan `detalle.ts`, un ISO del momento de la acción;
+se ordenan por `(detalle.ts, event_id)` en todos los dispositivos, y las filas antiguas sin `ts` usan `creado_en`.
+Las
+caravanas que llegan de un dispositivo remoto se aceptan solo si ya son `id8` válidos. El CSV de Datamars no crea
+eventos: se lee para extraer EID/IDE, usando VID/IDV si la columna EID/IDE está vacía, y rellenar el formulario.
+
+Los eventos de tareas no modifican stock. La opción está disponible en PC y móvil completa de La Vuelta y María Laura
+(`CONFIG.manejo=true`); Pone Chico la mantiene oculta y Campo no agrega pantalla. `detalle.id` identifica la tarea y
+cada evento tiene su propio `event_id`. Las acciones llevan `detalle.ts` ISO y se ordenan por `(ts,event_id)`. Si
+`tarea_hecha` llega antes del alta, se conserva hasta que llegue la tarea. En completados concurrentes gana el primero;
+la PC puede deshacerlo enviando `tarea_editada` con `fechaHecha:null`.
+
+Los temas son Ganado, Infraestructura, Mantenimiento y Otras. Ganado incluye Inicio/Fin de entore, Inicio/Fin de
+destete temporario (DT), Destete final y Otra; Infraestructura incluye Alambrado, Bebedero, Tajamar, Portera y Otra;
+Mantenimiento incluye Limpieza de tanque, Limpieza de bebedero y Otra. La repetición opcional `cadaDias` acepta 1–730.
+Al completar una tarea repetida, el evento contiene el siguiente id de serie (`<serieId>#<serieN>`) y su
+`fechaPrevista`; solo la primera completación aceptada genera la siguiente tarea. El origen de la serie también se
+ordena por `(ts,event_id)`, por lo que un segundo cierre que llegue primero no deja su tarea siguiente cuando después
+llega el cierre ganador.
+
+La columna `potrero` de `eventos_sync` usa el nombre del establecimiento; el lote opcional va en `detalle.potrero`.
+`fecha_cliente` contiene `fechaPrevista`. `puntoId` identifica un punto de `estado.puntos`; se guarda también
+`puntoNombre` para conservar la referencia si el punto se borra. Los reportes pendientes y resueltos se muestran desde
+`estado.reportes` con sus fotos existentes. `reporte_programado` guarda la fecha por separado en
+`estado.reportesProgramados[id]`; cumplirlo usa el evento `reporte_resuelto` ya existente. Las tareas de limpieza se
+relacionan con puntos de agua por `puntoId` y alimentan su resumen e historial.
+
+Los campos remotos se limpian con `limpiarTextoRemoto` y se limitan antes de guardarse: `temaGrupo` 40, `tipo` 80,
+`tema` 160, `obs` 500, `potrero`/`puntoId`/`puntoNombre` 80 y `usuario` 80 caracteres.
 
 ## Correcciones
 

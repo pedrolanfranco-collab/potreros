@@ -63,11 +63,11 @@ const PAGINAS = [
     variante: c => c + '-movil',
     encabezado: v => `· v${v}</div>`,
     excepciones: SOLO_PC,
-    ocultoPorConfig: { 'btn-caravana': 'caravanasHabilitado', 'btn-guias': 'guiasHabilitado', 'btn-pesadas': 'pesadasHistorial', 'btn-voz': 'siempre', 'btn-insumos': 'insumos', 'btn-bano': 'bano' },
+    ocultoPorConfig: { 'btn-caravana': 'caravanasHabilitado', 'btn-guias': 'guiasHabilitado', 'btn-pesadas': 'pesadasHistorial', 'btn-voz': 'siempre', 'btn-insumos': 'insumos', 'btn-bano': 'bano', 'btn-eventos-manejo': 'manejo', 'btn-tareas': 'manejo', 'btn-calendario': 'manejo' },
     esperado: {
-      'la-vuelta':   { claveCampo: true, insumos: true,  bano: true, completarCsvBaston: true, caravanasHabilitado: true,  duenoLabel: 'Firma',  duenoObligatorio: false, guiasHabilitado: true,  dicoseHabilitado: true,  trasladoHabilitado: true,  pesadasHistorial: true,  usaExcelBridge: true,  mapLabels: false, padronOffline: true },
-      'maria-laura': { claveCampo: true, insumos: true,  bano: true, completarCsvBaston: false, caravanasHabilitado: true,  duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: true,  dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, usaExcelBridge: false, mapLabels: true, padronOffline: false },
-      'pone-chico':  { claveCampo: false, insumos: false, bano: false, completarCsvBaston: false, caravanasHabilitado: false, duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: false, dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, usaExcelBridge: false, mapLabels: true, padronOffline: false },
+      'la-vuelta':   { claveCampo: true, insumos: true,  bano: true, manejo: true, completarCsvBaston: true, caravanasHabilitado: true,  duenoLabel: 'Firma',  duenoObligatorio: false, guiasHabilitado: true,  dicoseHabilitado: true,  trasladoHabilitado: true,  pesadasHistorial: true,  usaExcelBridge: true,  mapLabels: false, padronOffline: true },
+      'maria-laura': { claveCampo: true, insumos: true,  bano: true, manejo: true, completarCsvBaston: false, caravanasHabilitado: true,  duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: true,  dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, usaExcelBridge: false, mapLabels: true, padronOffline: false },
+      'pone-chico':  { claveCampo: false, insumos: false, bano: false, manejo: false, completarCsvBaston: false, caravanasHabilitado: false, duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: false, dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, usaExcelBridge: false, mapLabels: true, padronOffline: false },
     },
   },
   {
@@ -77,11 +77,11 @@ const PAGINAS = [
     excepciones: {},
     ocultoPorConfig: { 'btn-caravana': 'caravanasHabilitado', 'btn-guias': 'guiasHabilitado', 'btn-pesadas': 'pesadasHistorial',
       'btn-faltantes': 'datosFaltantes', 'btn-reproduccion': 'reproduccion', 'btn-lecturas-stock': 'lecturaStock', 'btn-csv-baston': 'completarCsvBaston', 'btn-voz': 'siempre', 'btn-insumos': 'insumos', 'btn-bano': 'bano',
-      'vs-csv': 'siempre', 'df-csv': 'datosFaltantes' },
+      'vs-csv': 'siempre', 'df-csv': 'datosFaltantes', 'btn-eventos-manejo': 'manejo', 'btn-tareas': 'manejo', 'btn-calendario': 'manejo' },
     esperado: {
-      'la-vuelta':   { claveCampo: true, insumos: true,  bano: true, caravanasHabilitado: true,  duenoLabel: 'Firma',  duenoObligatorio: false, guiasHabilitado: true,  dicoseHabilitado: true,  trasladoHabilitado: true,  pesadasHistorial: true,  datosFaltantes: true,  completarCsvBaston: true,  usaExcelBridge: true,  mapLabels: false, puntosSeed: true, lecturaStock: true },
-      'maria-laura': { claveCampo: true, insumos: true,  bano: true, caravanasHabilitado: true,  duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: true,  dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, datosFaltantes: false, completarCsvBaston: false, usaExcelBridge: false, mapLabels: true,  puntosSeed: false, lecturaStock: true },
-      'pone-chico':  { claveCampo: false, insumos: false, bano: false, caravanasHabilitado: false, duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: false, dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, datosFaltantes: false, completarCsvBaston: false, usaExcelBridge: false, mapLabels: true,  puntosSeed: false, lecturaStock: false },
+      'la-vuelta':   { claveCampo: true, insumos: true,  bano: true, manejo: true, caravanasHabilitado: true,  duenoLabel: 'Firma',  duenoObligatorio: false, guiasHabilitado: true,  dicoseHabilitado: true,  trasladoHabilitado: true,  pesadasHistorial: true,  datosFaltantes: true,  completarCsvBaston: true,  usaExcelBridge: true,  mapLabels: false, puntosSeed: true, lecturaStock: true },
+      'maria-laura': { claveCampo: true, insumos: true,  bano: true, manejo: true, caravanasHabilitado: true,  duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: true,  dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, datosFaltantes: false, completarCsvBaston: false, usaExcelBridge: false, mapLabels: true,  puntosSeed: false, lecturaStock: true },
+      'pone-chico':  { claveCampo: false, insumos: false, bano: false, manejo: false, caravanasHabilitado: false, duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: false, dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, datosFaltantes: false, completarCsvBaston: false, usaExcelBridge: false, mapLabels: true,  puntosSeed: false, lecturaStock: false },
     },
   },
 ];
@@ -224,6 +224,7 @@ async function levantar(archivo, enLinea, cache) {
     }
     const cajaNovedades = (pagina.match(/id="novedades"[\s\S]*?<\/div>/) || [''])[0];   // solo la caja, no un <li> cualquiera más abajo
     chequear('hay una sección "Novedades de esta versión" con al menos un renglón', /<h2>Novedades de esta versión<\/h2>/.test(cajaNovedades) && /<li>/.test(cajaNovedades));
+    if (P.id === 'campo') chequear('Campo aclara que Eventos, Tareas y Calendario son de las apps completas', /Eventos de manejo,.*Tareas y.*Calendario[\s\S]*?Esta app Campo no incluye esas ventanas/.test(cajaNovedades));
     chequear('el <title> dice que es el instructivo', /<title>Instructivo de [^<]+<\/title>/.test(pagina));
 
     // ---- 3. Enlaces internos ----

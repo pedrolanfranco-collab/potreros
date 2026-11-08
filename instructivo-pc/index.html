@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.91</span></li>
-    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.57</span></li>
-    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">2.26</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.92</span></li>
+    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.58</span></li>
+    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">2.27</span></li>
   </ul>
   <p class="nota">La versión de tu PC está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.81 (completa)</b>). Si tu número es más viejo, abrí la app con conexión y esperá un momento: se actualiza sola.</p>
 </div>
@@ -123,6 +123,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🗺 Mapa por dotación</b>: elegí <span class="b">Dotación (UG/ha)</span> para ver los potreros coloreados por carga; la leyenda muestra los rangos. El gris indica que está vacío o no tiene área. Al pasar el mouse por un potrero, el tooltip muestra animales, UG, hectáreas y carga. El borde naranja sigue marcando el potrero elegido. También podés cambiar a <span class="b">Ocupado</span>; cada equipo recuerda el modo elegido.</li>
     <li><b>✅ Evento guardado</b>: un cartel grande confirma lo que guardaste en este equipo y se cierra solo o al tocarlo. El pie sigue mostrando si falta sincronizar. En <b>🏡 Al vecino</b>, los errores también aparecen en rojo dentro del formulario.</li>
     <li><b>🛁 Baño</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva para el control del baño de aspersión. Abrís el ciclo con el agua y el producto, anotás cada tanda, las reposiciones, el fin del día y el cierre, y la app calcula los litros por animal y avisa cuándo toca reponer. Anda sin señal.</li>
     <li><b>🔗 Potreros unidos (1+2 y 19+20)</b> <span class="campo">(solo La Vuelta)</span>: cuando la portera está abierta, pasás todo el <b>1</b> y el <b>2</b> al <b>1+2</b> (y el <b>19</b> y el <b>20</b> al <b>19+20</b>). El mapa muestra el potrero unido. Mirá la sección <a href="#unidos">🔗 Potreros unidos</a>.</li>
@@ -135,6 +136,8 @@
     <li><b>🏡 Vecinos</b>: <span class="b">🏡 Al vecino</span> y <span class="b">↩ Volvió</span> aceptan <b>varias categorías</b> en un solo registro; cada una se puede borrar con su 🗑.</li>
     <li><b>Muertes</b>: en <span class="b">✕ Muerte</span> y en <span class="b">🪦 Dar muerte</span> (dentro de ❓ Desaparecidos) podés sumar <b>hasta 3 fotos</b> y marcar <b>dónde se encontró</b> el animal en el mapa.</li>
     <li><b>📖 Instructivo</b>: este botón nuevo en 🛠 Herramientas › Este dispositivo abre esta página.</li>
+    <li><b>📋 Eventos de manejo</b> <span class="campo">(La Vuelta y María Laura)</span>: registrá trabajos por lote o animal, importá caravanas desde CSV Datamars y filtrá el historial. En PC también podés editar o borrar eventos. Pone Chico todavía no tiene esta opción.</li>
+    <li><b>✅ Tareas</b> <span class="campo">(La Vuelta y María Laura)</span>: cronograma sincronizado, repetición, reportes de infraestructura y limpieza de aguadas. En PC se pueden editar o borrar; en móvil completa también se marcan como cumplidas.</li>
   </ul>
 </div>
 
@@ -164,6 +167,9 @@
         <li><a href="#sanidad">🏥 Sanidad</a></li>
         <li><a href="#insumos">🧴 Insumos</a></li>
         <li><a href="#bano">🛁 Baño</a></li>
+        <li><a href="#eventos-manejo">📋 Eventos de manejo</a></li>
+        <li><a href="#tareas">✅ Tareas</a></li>
+        <li><a href="#calendario">📅 Calendario</a></li>
         <li><a href="#csv-baston">📂 Completar lectura del bastón (CSV)</a></li>
         <li><a href="#lluvias">🌧 Lluvias y otros eventos</a></li>
         <li><a href="#dicose">📑 Movimientos DICOSE</a></li>
@@ -226,6 +232,9 @@
   <tr><td>Potreros de partida</td><td data-campo="La Vuelta">31</td><td data-campo="María Laura">5</td><td data-campo="Pone Chico">Ninguno: se agregan con ➕ Agregar potrero</td></tr>
   <tr><td>🧴 Insumos</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>🛁 Baño</td><td data-campo="La Vuelta">Sí. La tanda viene con bastón “Sí”.</td><td data-campo="María Laura">Sí. La tanda viene con bastón “No”.</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>📋 Eventos de manejo</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>✅ Tareas</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>📅 Calendario</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>🔗 Potreros unidos (1+2 y 19+20)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura"><b>No está</b></td><td data-campo="Pone Chico"><b>No está</b></td></tr>
 </table>
 <p class="nota">Todo lo demás es igual en los tres campos. En las explicaciones, donde dice “dueño” en La Vuelta es la “firma”.</p>
@@ -538,6 +547,49 @@
   </ul>
 </div>
 
+<div class="fn" id="eventos-manejo">
+  <h3>📋 Eventos de manejo</h3>
+  <p class="para">Para qué sirve: dejar registrado un trabajo o tratamiento hecho en un lote o a un animal. <span class="campo">Disponible en La Vuelta y María Laura; Pone Chico todavía no tiene esta opción.</span> Abrí <span class="b">🛠 Herramientas</span> › <b>Consultar</b> › <span class="b">📋 Eventos</span>.</p>
+  <ol class="pasos">
+    <li>Tocá <b>Nuevo evento</b> y completá la <b>fecha</b>, el <b>tipo</b>, el <b>potrero</b> y la <b>categoría</b>.</li>
+    <li>Indicá la <b>cantidad</b> y, si corresponde, las <b>caravanas</b> de los animales; agregá <b>observaciones</b> si necesitás detalle.</li>
+    <li>También podés importar caravanas desde un <b>CSV Datamars</b>. Revisá los datos y guardá el evento.</li>
+    <li>En el historial, filtrá por fecha, tipo, potrero o categoría. Cada evento tiene <b>✏️ Editar</b> y <b>🗑 Borrar</b>; ambas acciones piden confirmación. Estos botones solo aparecen en PC.</li>
+  </ol>
+  <p>Los registros se sincronizan con los demás equipos del campo; sin señal quedan pendientes para enviarse cuando vuelva.</p>
+</div>
+
+<div class="fn" id="tareas">
+  <h3>✅ Tareas</h3>
+  <p class="para">Para qué sirve: ordenar los trabajos futuros, consultar qué está pendiente y compartir los cambios entre equipos. <span class="campo">Disponible en PC y móvil completa de La Vuelta y María Laura; Pone Chico no tiene esta opción y Campo no cambia.</span></p>
+  <p>En PC abrí <span class="b">🛠 Herramientas › Consultar › ✅ Tareas</span> o la sección Tareas del menú izquierdo. En el celular abrí <span class="b">🛠 Herramientas › ✅ Tareas</span>.</p>
+  <ol class="pasos">
+    <li>Elegí el <b>Tema</b>: Ganado, Infraestructura, Mantenimiento u Otras. Después seleccioná el tipo correspondiente. Con <b>Otra…</b>, escribí una descripción.</li>
+    <li>Indicá la <b>fecha prevista</b>. El potrero y el punto son opcionales; el punto puede ser una aguada o instalación ya guardada. Agregá observaciones si sirven para quien hará el trabajo.</li>
+    <li>Para una tarea periódica, completá <b>Repetir cada (días)</b> con un número de 1 a 730. Cada vez que se marque cumplida, la app creará una sola próxima tarea de la serie.</li>
+    <li>Tocá <b>Guardar tarea</b>. El cronograma ordena primero por fecha; las vencidas aparecen en rojo, las que vencen dentro de 15 días en ocre y las que no tienen fecha al final. El botón indica cuántas están vencidas.</li>
+  </ol>
+  <p>Desde PC o móvil completa podés marcar una tarea como cumplida. En la PC también se puede editar, borrar o deshacer una marca de cumplimiento.</p>
+  <h4>Reportes de infraestructura</h4>
+  <p>Los reportes que ya están en <span class="b">🔧 Infraestructura</span> aparecen en Tareas con su foto y el botón <span class="b">🗺 Ver en el mapa</span>. Elegí <b>Programar un reporte de infraestructura</b> para fijar la fecha prevista. <span class="b">✓ Cumplida</span> usa la resolución habitual del reporte y conserva la foto del arreglo; no crea una copia de la tarea.</p>
+  <h4>Aguadas e instalaciones</h4>
+  <p>Las tareas <b>Limpieza de tanque</b> y <b>Limpieza de bebedero</b> vinculadas a un punto aparecen en <span class="b">📍 Aguadas / instalaciones</span>, con la última limpieza, la próxima fecha y el historial plegado. Si se borra el punto, la tarea conserva el nombre que tenía.</p>
+  <p>Al completar <b>Destete final</b> o <b>Fin destete temporario (DT)</b>, la app ofrece abrir el formulario de Eventos de manejo con “Destete” cargado. Revisá el formulario y guardalo si corresponde; la tarea no registra ese evento por su cuenta.</p>
+</div>
+
+<div class="fn" id="calendario">
+  <h3>📅 Calendario</h3>
+  <p class="para">Consulta mensual de Eventos de manejo, tareas y reportes programados. Está disponible en PC y móvil completa de La Vuelta y María Laura; Campo y Pone Chico no cambian.</p>
+  <p>En la PC abrí <span class="b">🛠 Herramientas › Consultar › 📅 Calendario</span> o la sección Calendario del menú izquierdo. También se abre desde Eventos de manejo o Tareas. En el celular, abrí 📅 Calendario desde cualquiera de esas dos ventanas.</p>
+  <ol class="pasos">
+    <li>Usá <b>◀</b> y <b>▶</b> para cambiar de mes; <b>Hoy</b> vuelve al mes actual y marca el día de hoy.</li>
+    <li>La grilla empieza el lunes. 📋 identifica eventos de manejo; ✅ muestra tareas pendientes, con vencidas en rojo y las cumplidas tachadas en gris. En el celular cada día muestra la cantidad de registros.</li>
+    <li>Filtrá por <b>Eventos</b>, <b>Tareas</b> o <b>Todo</b>, y por tema. Tocá un día para ver sus registros; <b>Abrir</b> lleva al evento o tarea correspondiente. En PC podés editarlo desde ahí.</li>
+    <li>Los registros sin fecha aparecen en <b>Sin fecha asignada</b>. El calendario solo consulta la información sincronizada: no crea ni modifica eventos.</li>
+  </ol>
+</div>
+
+
 <div class="fn" id="lluvias">
   <h3>🌧 Lluvias y otros eventos</h3>
   <p class="para">Para qué sirve: anotar lo que pasa en todo el campo (no en un potrero): lluvias, heladas, abortos, señaladas y los animales que se faenan para consumo. En la PC todos los registros se corrigen con ✏️ y 🗑.</p>
@@ -702,6 +754,11 @@
 </div>
 
 <h2 id="mapa-potreros">4. Herramientas › Mapa y potreros</h2>
+
+<div class="fn" id="mapa-dotacion">
+  <h3>🗺 Mapa por dotación</h3>
+  <p class="para">El selector <span class="b">Pintar por</span>, arriba a la derecha del mapa, cambia cómo se ven los potreros. <span class="b">Dotación (UG/ha)</span> usa cuatro rangos de carga, explicados en la leyenda del mapa; el gris significa sin animales o sin área. <span class="b">Ocupado</span> distingue los potreros con animales de los vacíos. El borde naranja señala el potrero elegido. Al dejar el mouse sobre un potrero, el tooltip muestra animales, UG, hectáreas y UG/ha. La app recuerda el modo en cada equipo.</p>
+</div>
 
 <div class="fn" id="agregar-potrero">
   <h3>➕ Agregar potrero</h3>

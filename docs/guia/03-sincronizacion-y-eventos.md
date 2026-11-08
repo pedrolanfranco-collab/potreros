@@ -251,3 +251,33 @@ filas — y el cálculo daba un número real pero equivocado (71 en vez de
 prueba armaba los datos con esa columna ya presente (`select=*`, o
 reconstruidos a mano) en vez de reproducir la consulta exacta — ver la
 memoria `verificar-select-exacto-no-reconstruir-datos.md`.
+
+
+### Eventos de manejo, Tareas y Calendario (5/11/2026, a pedido de Pedro, `CONFIG.manejo`)
+
+Registro de los trabajos del campo **sin tocar el stock**. `CONFIG.manejo` es `true` en La Vuelta y María Laura y `false` en Pone Chico
+(botones ocultos, nada se consulta). Aparecen solo en la **PC y la móvil completa** (módulo dentro de `@completo`): Campo no tiene botones,
+aunque recibe y guarda los eventos. Botones en Herramientas (en la PC dentro de Consultar y en `SECCIONES_PC`): "📋 Eventos de manejo",
+"✅ Tareas (N vencidas)" y "📅 Calendario".
+- **Eventos de manejo** (`evento_manejo`, `_editado`, `_eliminado`; `estado.eventosManejo`): tipo (Destete, Caravaneo, IATF, Pesada, Recuento u
+  "Otro…" libre), fecha, potrero / categoría / cantidad / observaciones opcionales y **caravanas** opcionales (`id8` de 8 dígitos, hasta 1000,
+  pegadas o leídas de un CSV de Datamars con `leerCaravanasDeCsv()`). Lote y animal son el mismo evento: con caravanas la cantidad se completa
+  sola. La ficha de "🔎 Buscar caravana" lista los eventos de esa caravana.
+- **Tareas** (`tarea_creada`, `_editada`, `_hecha`, `_eliminada` y `reporte_programado`; `estado.tareas`, `estado.reportesProgramados`): temas
+  Ganado / Infraestructura / Mantenimiento / Otras (`TEMAS_TAREA`), fecha prevista, cronograma (vencida en rojo, 15 días o menos en ocre, siempre con
+  texto) e historial plegado. Los reportes de campo de Infraestructura se muestran como tareas leyendo `estado.reportes` (cumplirlos usa el
+  resolver de siempre, no hay una tarea paralela) y `reporte_programado` les pone fecha. **Mantenimiento que se repite** (`cadaDias` 1–730,
+  `puntoId` / `puntoNombre`): al cumplirla, un solo `tarea_hecha` trae `siguiente {id "<serie>#<n>", fechaPrevista}` y **cada equipo** deriva la
+  próxima con ese id, así no se duplica. En "📍 Aguadas / instalaciones" cada punto muestra su última y próxima limpieza
+  (`bloqueLimpiezaPunto()`, solo en completo). Cumplir un Destete final o un Fin DT **ofrece** registrar el evento Destete; no lo crea solo.
+- **Orden y borrado (vale para ambos)**: `detalle.id` es la identidad y cada acción lleva `detalle.ts`; todos los equipos ordenan por
+  `(ts, event_id)` (las filas viejas sin `ts` usan `creado_en`), sin mezclar el reloj del equipo con el del servidor. Borrar deja un **tombstone**
+  por id (una alta o edición tardía no lo revive). Un `_editado` o un `tarea_hecha` que llega antes que su alta se guarda y se muestra cuando
+  llega el alta; entre dos `tarea_hecha` de la misma tarea gana el primero. El texto remoto pasa por `limpiarTextoRemoto()` con tope por campo;
+  potrero y categoría se validan al **mostrar**, no al guardar.
+- **Editar, borrar y deshacer "hecha": solo la PC** (`accionesEventoManejoPC` / `accionesTareaPC`, definidos con marcadores en líneas propias);
+  la móvil crea y marca hecha.
+- **Calendario**: ventana de solo lectura (`#modal-calendario`) que junta eventos, tareas y reportes del mes (lunes a domingo, filtro por
+  Eventos / Tareas y por tema, lista de "Sin fecha asignada"); **no emite eventos**. Las fechas se manejan como texto `dd/mm/aaaa` o
+  `aaaa-mm-dd`, sin pasar por `Date` en UTC.
+- Tests: `tests/probar_eventos_manejo.js`, `tests/probar_tareas.js` y `tests/probar_calendario.js` (en el workflow).

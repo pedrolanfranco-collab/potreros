@@ -40,6 +40,9 @@ Cada una salió de un error real. El porqué y el detalle están en el archivo d
 1. **Nunca editar a mano un `index.html` de las 9 apps** (las páginas sueltas sí se editan a mano): se edita `template/potreros.template.html` o `template/configs/<campo>.js`
    y se regenera. Las diferencias entre variantes van con marcadores: `@pc`/`@movil` eligen PC o móvil, y dentro de la
    móvil `@simple`/`@completo` eligen Campo o móvil completa (JS: `// @x:start` y `// @x:end` con la misma sangría).
+   **Los marcadores van siempre en línea propia: nunca dentro de un template literal ni en la misma línea que código**
+   (el generador no los ve y quedan como texto en todas las variantes); para variar algo dentro de un literal se usa un
+   flag en tiempo de ejecución definido con marcadores en líneas propias.
 2. **Todo cambio que se publica sube la versión** (`versionPc` / `versionMovil` / `versionMovilSimple` del config) y se
    regenera; si no, los celulares con la app instalada siguen con la vieja. Del `sw.js` el generador escribe solo el `CACHE`.
 3. **Todo cambio visible actualiza su instructivo** (`instructivo-*`) y su "Novedades" en el mismo PR, con las
@@ -90,8 +93,8 @@ Leer el archivo **antes** de tocar ese tema. Son el texto completo de la guía a
 |---|---|---|
 | `01-estructura-y-comandos.md` | Carpetas por campo, `la-vuelta-test`, vista local, deploy, CI, subir versión | tocar el CI, el deploy o las carpetas |
 | `02-template-y-variantes.md` | Marcadores y generador, PC/móvil/Campo, menú de la PC, `CONFIG`, claves `categoría\|\|dueño`, `textoFirma` | cualquier cambio en el template o los configs |
-| `03-sincronizacion-y-eventos.md` | `eventos_sync`, cola ordenada, errores visibles, paginación, corrección por id, Verificar stock, idempotencia, editar/borrar en la PC, potrero desconocido, muertes de terneros, UG por temporada, consumos, historial plegado | todo lo que envía, recibe o corrige eventos |
-| `04-potreros-y-mapa.md` | Potreros dobles (1+2, 19+20), Vecinos, importar KML/KMZ, renombrar potreros | el mapa, potreros nuevos o vecinos |
+| `03-sincronizacion-y-eventos.md` | `eventos_sync`, cola ordenada, errores visibles, paginación, corrección por id, Verificar stock, idempotencia, editar/borrar en la PC, potrero desconocido, muertes de terneros, UG por temporada, consumos, historial plegado, Eventos de manejo, Tareas y Calendario (`CONFIG.manejo`) | todo lo que envía, recibe o corrige eventos |
+| `04-potreros-y-mapa.md` | Potreros dobles (1+2, 19+20), Vecinos, importar KML/KMZ, renombrar potreros, mapa de la PC (tooltip y "Pintar por") | el mapa, potreros nuevos o vecinos |
 | `05-instructivos.md` | Las 3 páginas de instructivos y su prueba | cualquier cambio visible |
 | `06-sanidad-y-baston.md` | Sanidad por campo, catálogo y carencias, editar/borrar tratamientos, CSV a mano, pesadas, rodeo/nota, padrón sin señal, datos faltantes, lector XRS2, completar lectura del bastón | Sanidad, caravanas o el bastón |
 | `07-tableros.md` | `tablero-sanidad/` y `tablero-campos/` (páginas a mano, clave del campo, "Ya se hizo") | los tableros |

@@ -88,3 +88,13 @@ a device with no local cache replaying historical events that still say
 `"Cerro"` redirects them to `"Rincon"` instead of silently dropping them).
 Any future paddock rename is a one-line addition to that establishment's
 `configs/<name>.js` — no code changes.
+
+
+### Mapa de la PC: tooltip y "Pintar por" (5/11/2026, a pedido de Pedro)
+
+En las 3 PC (bloques `@pc`): al pasar el mouse por un potrero, `tooltipPotreroPC()` muestra animales, UG, hectáreas y carga UG/ha (una parte
+tapada de un doble en uso muestra los datos del doble; sin área dice "sin dato" y "—"). El selector **"Pintar por"** (arriba a la derecha del
+mapa) elige **Dotación (UG/ha)** (por defecto; cortes 0,5 / 0,8 / 1,2 UG/ha, gris sin animales o sin área), **Eventos de manejo** (potreros con
+eventos en los últimos 30 días; solo con `CONFIG.manejo`) u **Ocupado**. La elección se acuerda en
+`localStorage['<ESTABLECIMIENTO>_pintar_por']` y la leyenda (abajo a la izquierda) explica los colores con texto. La móvil no cambia.
+Test: `tests/probar_mapa_pc.js`.

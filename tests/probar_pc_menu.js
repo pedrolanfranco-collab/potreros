@@ -89,7 +89,7 @@ async function probarPc(archivo){
   chequear('existe el menú de la izquierda', !!rail);
   if(!rail) return;
   const item = sec => rail.querySelector(`[data-pc-seccion="${sec}"]`);
-  chequear('10 secciones', rail.querySelectorAll('[data-pc-seccion]').length === 10);
+  chequear('12 secciones', rail.querySelectorAll('[data-pc-seccion]').length === 12);
   chequear('"🗺 Mapa" arranca marcado', item('mapa').classList.contains('activo'));
 
   // tarjetas nuevas: Cabezas = vacunos + ovinos + equinos; Con animales = "N de M"
@@ -136,6 +136,12 @@ async function probarPc(archivo){
   // DICOSE: se ve solo si el campo usa Movimientos DICOSE
   const guiasVisible = doc.getElementById('btn-guias').style.display !== 'none';
   chequear('[dicose] la sección se ve solo si el campo usa Movimientos DICOSE', (item('dicose').style.display !== 'none') === guiasVisible);
+  const tareasVisible = doc.getElementById('btn-tareas').style.display !== 'none';
+  chequear('[tareas] la sección sigue CONFIG.manejo', (item('tareas').style.display !== 'none') === tareasVisible);
+  if(tareasVisible){click(win,item('tareas'));chequear('[tareas] el atajo abre Tareas directamente',panel.style.display==='none'&&doc.getElementById('modal-tareas').style.display==='flex');doc.querySelectorAll('.modal-overlay').forEach(m=>{m.style.display='none';});}
+  const calendarioVisible = doc.getElementById('btn-calendario').style.display !== 'none';
+  chequear('[calendario] la sección sigue CONFIG.manejo', (item('calendario').style.display !== 'none') === calendarioVisible);
+  if(calendarioVisible){click(win,item('calendario'));chequear('[calendario] el atajo abre el calendario directamente',panel.style.display==='none'&&doc.getElementById('modal-calendario').style.display==='flex');doc.querySelectorAll('.modal-overlay').forEach(m=>{m.style.display='none';});}
   // Sanidad: con Insumos son 2 botones (ventana); sin Insumos, 1 (directo)
   const insumos = doc.getElementById('btn-insumos').style.display !== 'none';
   let sanidad = false;
