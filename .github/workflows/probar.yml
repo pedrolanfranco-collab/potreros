@@ -163,6 +163,9 @@ jobs:
       - name: "Reproduccion (PC de La Vuelta) -- tacto y DAO desde animales_caravana.repro (IATF ignorado); ficha con linea de tiempo; cruces; paginacion; texto de afuera escapado"
         run: node tests/probar_reproduccion.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
+      - name: "Lecturas vs stock (PC de La Vuelta y María Laura) -- sesiones del bastón desde sesiones_baston contra el stock en vivo; faltantes con caravanas; sin comparar con motivo; potrero inexistente; texto escapado; pagina"
+        run: node tests/probar_lectura_stock.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html la-vuelta-movil/index.html maria-laura-movil-campo/index.html
+
       - name: "Pesadas (solo La Vuelta) -- historial en la ficha, resumen por lote de la sesion del baston, proporcion contra el stock"
         run: node tests/probar_pesadas.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-movil/index.html pone-chico-movil/index.html
 

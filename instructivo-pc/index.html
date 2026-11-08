@@ -113,8 +113,8 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.91</span></li>
-    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.57</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">3.92</span></li>
+    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">3.58</span></li>
     <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">2.27</span></li>
   </ul>
   <p class="nota">La versión de tu PC está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.81 (completa)</b>). Si tu número es más viejo, abrí la app con conexión y esperá un momento: se actualiza sola.</p>
@@ -128,6 +128,7 @@
     <li><b>🛁 Baño</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva para el control del baño de aspersión. Abrís el ciclo con el agua y el producto, anotás cada tanda, las reposiciones, el fin del día y el cierre, y la app calcula los litros por animal y avisa cuándo toca reponer. Anda sin señal.</li>
     <li><b>🔗 Potreros unidos (1+2 y 19+20)</b> <span class="campo">(solo La Vuelta)</span>: cuando la portera está abierta, pasás todo el <b>1</b> y el <b>2</b> al <b>1+2</b> (y el <b>19</b> y el <b>20</b> al <b>19+20</b>). El mapa muestra el potrero unido. Mirá la sección <a href="#unidos">🔗 Potreros unidos</a>.</li>
     <li><b>🐄 Reproducción</b> <span class="campo">(solo La Vuelta)</span>: pantalla nueva con los tactos y los DAO del bastón, por sesión, con porcentajes y cruces. En <span class="b">🔎 Buscar caravana</span>, la ficha muestra el estado reproductivo. Ver <a href="#reproduccion">Reproducción</a>.</li>
+    <li><b>📋 Lecturas vs stock</b> <span class="campo">(La Vuelta y María Laura)</span>: elegís una sesión del bastón y la app la compara con el stock de ese potrero: cuántos leyó de cuántos hay, las caravanas que no vinieron y las categorías que difieren. Solo lee, no cambia nada. Ver <a href="#lecturas-stock">Lecturas vs stock</a>.</li>
     <li><b>Menú a la izquierda</b> (primera parte de la PC nueva): una columna verde con las secciones <span class="b">🗺 Mapa</span>, <span class="b">📊 Stock total</span>, <span class="b">🌾 Potreros</span>, <span class="b">🐄 Hacienda</span>, <span class="b">🏥 Sanidad e insumos</span>, <span class="b">🌧 Lluvias y eventos</span>, <span class="b">📑 Movimientos DICOSE</span>, <span class="b">📍 Puntos y reportes</span>, <span class="b">⬇ Exportar y respaldo</span> y <span class="b">⚙ Este dispositivo</span>. Los números de arriba ahora son tarjetas y suman <b>Cabezas</b> y <b>Con animales</b>. <span class="b">🛠 Herramientas</span> sigue igual. Ver <a href="#menu-izquierda">El menú de la izquierda</a>.</li>
     <li><b>🧴 Insumos</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva con el stock de los productos veterinarios del galpón, en verde, amarillo o rojo. Desde ahí cargás un conteo, un ajuste o un pasaje al otro campo; sin señal queda “en cola” y se manda solo.</li>
     <li><b>🥩 Consumo (faena)</b> en cada potrero (también en Campo): si faenás algo que la app no tenía cargado, la app resta lo que había, te avisa cuántos faltaban y lo deja anotado. La <b>🤝 hacienda ajena</b> (dueños que no son de la lista) ahora se ve aparte en el potrero y en el reporte por dueño, y cuenta en los UG/ha.</li>
@@ -179,6 +180,7 @@
         <li><a href="#reproduccion">🐄 Reproducción</a></li>
         <li><a href="#alertas">🔔 Alertas</a></li>
         <li><a href="#verificar">🔍 Verificar stock</a></li>
+        <li><a href="#lecturas-stock">📋 Lecturas vs stock</a></li>
         <li><a href="#faltantes">⚠ Datos faltantes</a></li>
       </ul>
     </li>
@@ -220,6 +222,7 @@
   <tr><td>🌾 Campo ajeno y 🚚 Traslado a María Laura (dentro de 📑 Movimientos DICOSE)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No</td><td data-campo="Pone Chico">No</td></tr>
   <tr><td>⚖️ Pesadas</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>🐄 Reproducción</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
+  <tr><td>📋 Lecturas vs stock</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>⚠ Datos faltantes</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>📂 Completar lectura del bastón (CSV), dentro de 🏥 Sanidad</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
   <tr><td>🏥 Sanidad: “Mis cargas recientes” y tratamientos del Excel de respaldo</td><td data-campo="La Vuelta">Sí. Lo que el Excel ya importó no se edita ni se borra desde la app.</td><td data-campo="María Laura">No: siempre se puede editar y borrar</td><td data-campo="Pone Chico">No: siempre se puede editar y borrar</td></tr>
@@ -259,7 +262,7 @@
   <li><span class="b">🗺 Mapa</span>: vuelve a la pantalla del mapa y cierra la ventana de sección.</li>
   <li><span class="b">📊 Stock total</span>: abre <a href="#stock">📊 Stock total</a>.</li>
   <li><span class="b">🌾 Potreros</span>: Importar KML/KMZ, Dibujar potrero y Coeficientes UG.</li>
-  <li><span class="b">🐄 Hacienda</span>: Desaparecidos, Vecinos, Buscar caravana, Pesadas, Alertas, Verificar stock y Datos faltantes.</li>
+  <li><span class="b">🐄 Hacienda</span>: Desaparecidos, Vecinos, Buscar caravana, Pesadas, Alertas, Verificar stock, Lecturas vs stock y Datos faltantes.</li>
   <li><span class="b">🏥 Sanidad e insumos</span>: Sanidad e Insumos.</li>
   <li><span class="b">🌧 Lluvias y eventos</span>: abre <a href="#lluvias">🌧 Lluvias y otros eventos</a>.</li>
   <li><span class="b">📑 Movimientos DICOSE</span>: abre <a href="#dicose">📑 Movimientos DICOSE</a>.</li>
@@ -725,6 +728,21 @@
   </ul>
 </div>
 
+<div class="fn" id="lecturas-stock">
+  <h3>📋 Lecturas vs stock</h3>
+  <p class="para">Para qué sirve: ver si lo que leyó el bastón en una sesión coincide con lo que la app tiene en stock en ese potrero. <span class="campo">Solo en La Vuelta y María Laura.</span> Necesita conexión. <b>Solo compara: no cambia nada</b>.</p>
+  <ol class="pasos">
+    <li>Tocá <span class="b">📋 Lecturas vs stock</span>. Elegí la sesión en la lista: cada una muestra fecha, nombre del archivo y cuántos leyó.</li>
+    <li>Arriba sale <b>Leyó X de Y en el potrero P</b>, con el estado: ✅ coincide, ⚠ faltan N (hay animales del stock que no se leyeron) o ⚠ leyó N más que el stock.</li>
+    <li>La tabla <b>Categoría | Leídos | Stock | Diferencia</b> marca en rojo las categorías que no coinciden.</li>
+    <li>Debajo, <b>Caravanas que no vinieron</b> lista la caravana y la categoría de cada animal del potrero que no se leyó (plegado).</li>
+  </ol>
+  <ul>
+    <li>Si una sesión dice “No se pudo comparar”, el motivo viene escrito (por ejemplo, que no traía potrero). Si el potrero de la sesión no existe en la app, avisa y no compara.</li>
+    <li>Ovejas, corderos, carneros, caballos, yeguas, padrillos y capones no cuentan: el bastón se usa con vacunos.</li>
+  </ul>
+</div>
+
 <div class="fn" id="faltantes">
   <h3>⚠ Datos faltantes</h3>
   <p class="para">Para qué sirve: ver las lecturas del bastón que llegaron <b>sin categoría</b> (últimos 60 días) y qué pasó con su tratamiento en Sanidad. <span class="campo">Solo en La Vuelta.</span> Necesita conexión. El botón muestra el número entre paréntesis: <b>⚠ Datos faltantes (N)</b>.</p>
@@ -872,7 +890,7 @@
 <ul>
   <li><b>Cargá normalmente.</b> Todo se guarda en la PC y sale solo cuando vuelva la conexión. <b>No lo cargues dos veces</b> por miedo a que no se mandó.</li>
   <li>Con conexión, arriba dice <b>“🟢 En línea”</b>. Sin conexión dice <b>“⚪ Sin conexión — los datos se siguen guardando en este dispositivo”</b>.</li>
-  <li>Sin conexión no se ven las imágenes del mapa satelital, y no andan la <a href="#voz">🎤 carga por voz</a>, <a href="#caravana">🔎 Buscar caravana</a>, <a href="#pesadas">⚖️ Pesadas</a>, <a href="#verificar">🔍 Verificar stock</a>, <a href="#faltantes">⚠ Datos faltantes</a>, corregir un tratamiento ya subido ni el registro de muertes. Las listas de Sanidad, <a href="#stock">📊 Stock total</a> y los consumos muestran lo último que se bajó. Lo demás anda.</li>
+  <li>Sin conexión no se ven las imágenes del mapa satelital, y no andan la <a href="#voz">🎤 carga por voz</a>, <a href="#caravana">🔎 Buscar caravana</a>, <a href="#pesadas">⚖️ Pesadas</a>, <a href="#verificar">🔍 Verificar stock</a>, <a href="#lecturas-stock">📋 Lecturas vs stock</a>, <a href="#faltantes">⚠ Datos faltantes</a>, corregir un tratamiento ya subido ni el registro de muertes. Las listas de Sanidad, <a href="#stock">📊 Stock total</a> y los consumos muestran lo último que se bajó. Lo demás anda.</li>
 </ul>
 <p>Al pie de la columna de la derecha, la app muestra cómo viene el envío:</p>
 <table>

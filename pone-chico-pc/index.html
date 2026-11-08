@@ -781,6 +781,7 @@
             <button class="btn btn-json" id="btn-reproduccion" style="display:none;">🐄 Reproducción</button>
             <button class="btn btn-json" id="btn-alertas">🔔 Alertas</button>
             <button class="btn btn-json" id="btn-verificar-stock">🔍 Verificar stock</button>
+            <button class="btn btn-json" id="btn-lecturas-stock" style="display:none;">📋 Lecturas vs stock</button>
             <button class="btn btn-json" id="btn-faltantes" style="display:none;">⚠ Datos faltantes</button>
           </div>
         </div>
@@ -1443,6 +1444,19 @@
       <div id="repro-tab-cruces" style="display:none;"><div id="repro-cruces"></div></div>
     </div>
     <div class="form-botones"><button class="btn btn-secundario" id="repro-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-lecturas-stock" class="modal-overlay" style="display:none;">
+  <div class="modal-box" style="max-width:720px;">
+    <h3>📋 Lecturas vs stock</h3>
+    <button class="btn-cerrar-x" id="lecturas-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Cada sesión del bastón contra el stock de la app en su potrero. Solo las sesiones de este campo.</p>
+    <div id="lecturas-mensaje"></div>
+    <div id="lecturas-cuerpo" style="display:none;">
+      <div class="form-row"><label>Sesión</label><select id="lecturas-sesion"></select></div>
+      <div id="lecturas-resumen"></div>
+    </div>
+    <div class="form-botones"><button class="btn btn-secundario" id="lecturas-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="modal-bano" class="modal-overlay" style="display:none;">
@@ -6743,7 +6757,7 @@ document.getElementById('herramientas-cerrar').addEventListener('click', ()=>{
 const SECCIONES_PC = {
   stock:       { titulo: '📊 Stock total', ids: ['btn-stock'] },
   potreros:    { titulo: '🌾 Potreros', ids: ['btn-importar-kml', 'btn-dibujar-potrero', 'btn-coeficientes'] },
-  hacienda:    { titulo: '🐄 Hacienda', ids: ['btn-desaparecidos', 'btn-vecinos', 'btn-caravana', 'btn-pesadas', 'btn-alertas', 'btn-verificar-stock', 'btn-faltantes'] },
+  hacienda:    { titulo: '🐄 Hacienda', ids: ['btn-desaparecidos', 'btn-vecinos', 'btn-caravana', 'btn-pesadas', 'btn-alertas', 'btn-verificar-stock', 'btn-lecturas-stock', 'btn-faltantes'] },
   sanidad:     { titulo: '🏥 Sanidad e insumos', ids: ['btn-sanidad', 'btn-insumos', 'btn-bano'] },
   lluvias:     { titulo: '🌧 Lluvias y eventos', ids: ['btn-lluvias'] },
   tareas:      { titulo: '✅ Tareas', ids: ['btn-tareas'] },
@@ -12074,6 +12088,135 @@ if(CONFIG.reproduccion && document.getElementById('modal-reproduccion')){
   document.querySelectorAll('[data-repro-tab]').forEach(b => b.addEventListener('click', () => reproElegirTab(b.getAttribute('data-repro-tab'))));
   document.getElementById('repro-cerrar').addEventListener('click', () => { document.getElementById('modal-reproduccion').style.display = 'none'; });
   document.getElementById('repro-cerrar-x').addEventListener('click', () => document.getElementById('repro-cerrar').click());
+}
+/* 8/11/2026 (a pedido de Pedro): lecturas del bastón contra el stock de la app. Solo PC de La Vuelta y María Laura
+   (CONFIG.lecturaStock). El Lector publica en sesiones_baston una fila por sesión (con la clave del campo); la app
+   SOLO LEE. Si la sesión no trae un potrero conocido (comparado = false), se muestra el motivo y no se compara.
+   El stock que cuenta es el de las categorías bovinas (ESPECIES.bovino) más las que la sesión leyó: ovinos y equinos
+   no se leen con bastón. El Lector usa la MISMA regla (BOVINOS en lectura_stock.py): si cambia una, cambia la otra. */
+let LECTURAS_SESIONES = [];
+async function cargarLecturasStock(){
+  const client = clienteSupabase();
+  if(!client) return {error: 'sin conexión'};
+  const filas = [];
+  try{
+    // PostgREST corta en 1000 filas sin avisar: se pagina. sesion es única por establecimiento (clave primaria).
+    for(let desde = 0; ; desde += 1000){
+      const res = await client.from('sesiones_baston')
+        .select('sesion,fecha,archivo,potrero,comparado,motivo,leidos,por_categoria,faltan')
+        .eq('establecimiento', ESTABLECIMIENTO).order('fecha', {ascending: false}).order('sesion')
+        .range(desde, desde + 999);
+      if(res.error) return {error: res.error.message || 'error de consulta'};
+      const lote = limpiarTextoRemoto(res.data || []);
+      filas.push(...lote);
+      if(lote.length < 1000) break;
+    }
+  }catch(e){
+    return {error: 'sin señal'};
+  }
+  return {sesiones: filas};
+}
+/* Comparación de una sesión con el stock en vivo. Devuelve null si la sesión no se puede comparar. */
+function lecturasComparar(s){
+  const porCat = (s.por_categoria && typeof s.por_categoria === 'object') ? s.por_categoria : {};
+  const faltan = Array.isArray(s.faltan) ? s.faltan : [];
+  const nombre = nombrePotreroApp(s.potrero);
+  if(!nombre) return {error: 'el potrero ' + (s.potrero || '(sin nombre)') + ' no existe en la app'};
+  const animales = estado.potreros[nombre].animales;
+  const stock = {};
+  Object.entries(animales).forEach(([key, cant]) => {
+    const cat = partesClave(key).cat;
+    if(!Number(cant)) return;
+    if(!(cat in ESPECIES.bovino) && !(cat in porCat)) return;
+    stock[cat] = (stock[cat] || 0) + Number(cant);
+  });
+  const cats = [...new Set([...Object.keys(porCat), ...Object.keys(stock)])].sort();
+  const filas = cats.map(cat => {
+    const leidos = Number(porCat[cat] || 0), st = stock[cat] || 0;
+    return {cat, leidos, stock: st, dif: leidos - st};
+  });
+  const X = Number(s.leidos || 0);
+  const Y = filas.reduce((t, f) => t + f.stock, 0);
+  // "Faltan" = animales de categorías de las que se leyó algo. Una categoría con 0 leídos (los terneros
+  // cuando solo se vacunaron las vacas) es un lote parcial: se informa aparte, sin alarma.
+  const faltanN = filas.reduce((t, f) => t + (f.leidos > 0 && f.stock > f.leidos ? f.stock - f.leidos : 0), 0);
+  const sinLeer = filas.filter(f => f.leidos === 0 && f.stock > 0);
+  let estadoTxt;
+  if(X > Y) estadoTxt = {tipo: 'mas', txt: '⚠ leyó ' + (X - Y) + ' más que el stock'};
+  else if(faltanN > 0) estadoTxt = {tipo: 'faltan', txt: '⚠ faltan ' + faltanN};
+  else estadoTxt = {tipo: 'ok', txt: '✅ coincide'};
+  return {potrero: nombre, filas, X, Y, faltanN, sinLeer, faltan, estado: estadoTxt};
+}
+function lecturasSesionTxt(s){
+  const archivo = String(s.archivo || s.sesion || '').replace(/\.[^.\\/]+$/, '');
+  return (s.fecha ? s.fecha : 'sin fecha') + ' · ' + archivo + ' · ' + Number(s.leidos || 0) + ' leídos';
+}
+function pintarLecturasSesion(){
+  const caja = document.getElementById('lecturas-resumen');
+  const s = LECTURAS_SESIONES.find(x => x.sesion === document.getElementById('lecturas-sesion').value);
+  if(!s){ caja.innerHTML = ''; return; }
+  const fila = (td) => `<td style="padding:2px 6px;">${td}</td>`;
+  if(!s.comparado){
+    caja.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">No se pudo comparar: ${esc(s.motivo || 'sin motivo')}</p>`;
+    return;
+  }
+  const r = lecturasComparar(s);
+  if(r.error){
+    caja.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">${esc(r.error)}. No se compara.</p>`;
+    return;
+  }
+  const color = r.estado.tipo === 'ok' ? '' : 'color:var(--rojo-hacienda);';
+  const sinLeerTxt = r.sinLeer.length
+    ? `<p class="modal-info">Lote parcial: no se leyeron ${r.sinLeer.map(f => esc(f.cat) + ' (' + esc(f.stock) + ')').join(', ')}.</p>` : '';
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const dias = s.fecha ? Math.round((hoy - new Date(String(s.fecha) + 'T00:00:00')) / 86400000) : 0;
+  const viejaTxt = dias > 2
+    ? '<p class="modal-info">Esta sesión es de hace ' + esc(dias) + ' días: se compara con el stock de hoy, que puede haber cambiado desde entonces.</p>' : '';
+  const tabla = r.filas.map(f => {
+    const dif = f.dif === 0 ? '0' : (f.dif > 0 ? '+' : '') + f.dif;
+    const marca = f.dif !== 0 ? 'color:var(--rojo-hacienda);font-weight:600;' : '';
+    return `<tr style="${marca}">${fila(esc(f.cat))}${fila(esc(f.leidos))}${fila(esc(f.stock))}${fila(esc(dif))}</tr>`;
+  }).join('');
+  const lista = r.faltan.length
+    ? r.faltan.map(x => `<tr>${fila(esc(x && x.id8 || '—'))}${fila(esc(x && x.c || '—'))}</tr>`).join('')
+    : '';
+  caja.innerHTML = `<p class="modal-info" style="${color}"><b>Leyó ${r.X} de ${r.Y} en el potrero ${esc(r.potrero)}</b> · ${esc(r.estado.txt)}</p>${sinLeerTxt}${viejaTxt}
+    <table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="color:#5a6572;">${fila('Categoría')}${fila('Leídos')}${fila('Stock')}${fila('Diferencia')}</tr>${tabla}</table>
+    <details class="historial-det historial-det-lista"><summary>Caravanas que figuraban en el potrero y no se leyeron (${r.faltan.length})</summary>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="color:#5a6572;">${fila('Caravana (id8)')}${fila('Categoría')}</tr>${lista}</table></details>`;
+}
+async function abrirLecturasStock(){
+  const modal = document.getElementById('modal-lecturas-stock');
+  const cuerpo = document.getElementById('lecturas-cuerpo');
+  const msg = document.getElementById('lecturas-mensaje');
+  modal.style.display = 'flex';
+  cuerpo.style.display = 'none';
+  msg.innerHTML = '<p class="modal-info">Cargando lecturas…</p>';
+  const r = await cargarLecturasStock();
+  if(r.error){
+    msg.innerHTML = `<p class="modal-info" style="color:var(--rojo-hacienda);">No se pudo consultar (${esc(String(r.error).slice(0, 120))}). Necesitás señal para ver las lecturas.</p>`;
+    return;
+  }
+  LECTURAS_SESIONES = r.sesiones;
+  if(!LECTURAS_SESIONES.length){
+    msg.innerHTML = '<p class="modal-info">Todavía no hay sesiones del bastón publicadas.</p>';
+    return;
+  }
+  msg.innerHTML = '';
+  cuerpo.style.display = '';
+  document.getElementById('lecturas-sesion').innerHTML = LECTURAS_SESIONES.map(s =>
+    `<option value="${esc(s.sesion)}">${esc(lecturasSesionTxt(s))}</option>`).join('');
+  pintarLecturasSesion();
+}
+if(CONFIG.lecturaStock && document.getElementById('modal-lecturas-stock')){
+  const bl = document.getElementById('btn-lecturas-stock');
+  if(bl){
+    bl.style.display = '';
+    bl.addEventListener('click', abrirLecturasStock);
+  }
+  document.getElementById('lecturas-sesion').addEventListener('change', pintarLecturasSesion);
+  document.getElementById('lecturas-cerrar').addEventListener('click', () => { document.getElementById('modal-lecturas-stock').style.display = 'none'; });
+  document.getElementById('lecturas-cerrar-x').addEventListener('click', () => document.getElementById('lecturas-cerrar').click());
 }
 
 /* ======================= BAÑO DE ASPERSIÓN (control del baño) =======================

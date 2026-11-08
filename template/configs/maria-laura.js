@@ -251,7 +251,7 @@ module.exports = {
   "themeColor": "#7a5236",
   "nombre": "María Laura",
   "subtitulo": "Gestión de hacienda por potrero y dueño",
-  "versionPc": "3.57",
+  "versionPc": "3.58",
   "versionMovil": "3.53",
   "manejo": true,
   "simpleHabilitado": true,
@@ -269,6 +269,7 @@ module.exports = {
   "insumos": true,
   "bano": true,
   "caravanasHabilitado": true,
+  "lecturaStock": true,
   "fixFechaIngreso": {
     "potreros": [
       "Tajamar",
