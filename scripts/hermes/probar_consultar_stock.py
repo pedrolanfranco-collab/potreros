@@ -304,6 +304,31 @@ def prueba_normalizar():
     chequear("canonico de algo que no existe es None", CS.canonico(CS.CATEGORIAS, "vacas flacas") is None)
 
 
+def prueba_ajenos():
+    print("Ajenos (hacienda de vecinos)")
+    filas = [
+        fila("10", "Vacas", "", 20, 20.0),                 # sin firma: no es ajeno
+        fila("10", "Vacas", "Pedro Lanfranco", 5, 5.0),     # firma de la casa: no es ajeno
+        fila("10", "Vacas", "Perez", 4, 4.0),               # firma desconocida: ajeno
+        fila("10", "Terneros", "Perez", 2, 0.0),            # ajeno, en otra categoria
+        fila("10", "Vacas", "Silvia Dutra", 3, 3.0),        # firma de la casa
+    ]
+    codigo, out, err = correr(["--potrero", "10"], FakeStock(filas))
+    chequear("marca el renglon ajeno con '(ajeno)'", "Vacas — Perez (ajeno): 4" in out, out)
+    chequear("no marca al que no tiene firma ni a las firmas de la casa",
+             "(sin firma) (ajeno)" not in out and "Pedro Lanfranco (ajeno)" not in out, out)
+    chequear("los ajenos van aparte, con el vecino y su total",
+             "De esos, ajenos (de vecinos): 6 animales (Perez: 6)" in out, out)
+    chequear("el total del potrero sigue contando a los ajenos",
+             "Total del potrero: 34 animales" in out, out)
+    codigo, out, err = correr(["--potrero", "10", "--json"], FakeStock(filas))
+    datos = json.loads(out)
+    pot = datos["potreros"][0]
+    chequear("el JSON marca la fila y trae el bloque 'ajenos'",
+             pot["ajenos"]["animales"] == 6 and pot["ajenos"]["por_dueno"] == {"Perez": 6}
+             and [r["ajeno"] for r in pot["filas"]] == [True, False, False, True, False], pot)
+
+
 def main():
     prueba_paginacion()
     prueba_potrero_sin_filas()
@@ -312,6 +337,7 @@ def main():
     prueba_transporte()
     prueba_listas_contra_la_app()
     prueba_normalizar()
+    prueba_ajenos()
     print("")
     if fallas:
         print("FALLARON %d: %s" % (len(fallas), "; ".join(fallas)))

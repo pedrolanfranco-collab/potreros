@@ -179,7 +179,17 @@ def pedir(metodo, ruta, cuerpo=None, establecimiento=None, extra=None):
 
 
 # ---------------------------------------------------------------- lectura
-def normalizar_fila(f):
+def es_dueno_ajeno(dueno, establecimiento):
+    """Ajeno = cualquier firma con nombre que NO este en la lista del campo (igual que la app).
+
+    Son animales de los vecinos que entraron al campo: cuentan en el stock mientras estan y salen
+    cuando se van."""
+    if not dueno:
+        return False
+    return dueno not in ESTABLECIMIENTOS[establecimiento]["duenos"]
+
+
+def normalizar_fila(f, establecimiento="la_vuelta"):
     cantidad = int(f.get("cantidad") or 0)
     ug = f.get("ug")
     dueno = f.get("dueno") or ""
@@ -191,6 +201,7 @@ def normalizar_fila(f):
         "clave": categoria + "||" + dueno,
         "cantidad": cantidad,
         "ug": float(ug) if ug is not None else None,
+        "ajeno": es_dueno_ajeno(dueno, establecimiento),
     }
 
 
@@ -214,7 +225,7 @@ def leer_stock(establecimiento, potrero=None, pedir_fn=None):
         if status != 200:
             raise RuntimeError("Supabase contesto %s al leer stock_potreros" % status)
         lote = json.loads(cuerpo or "[]")
-        filas.extend(normalizar_fila(f) for f in lote)
+        filas.extend(normalizar_fila(f, establecimiento) for f in lote)
         if len(lote) < TAM_PAGINA:
             return filas
         desde += TAM_PAGINA
@@ -251,10 +262,16 @@ def agrupar(filas, potrero=None, categoria=None, establecimiento="la_vuelta"):
         salida.append({
             "potrero": nombre,
             "sin_filas": not renglones,
-            "filas": [{"categoria": r["categoria"], "dueno": r["dueno"] or None, "cantidad": r["cantidad"], "ug": r["ug"]}
+            "filas": [{"categoria": r["categoria"], "dueno": r["dueno"] or None, "cantidad": r["cantidad"],
+                       "ug": r["ug"], "ajeno": bool(r.get("ajeno"))}
                       for r in renglones],
             "animales": animales,
             "ug": round(ug, 4),
+            "ajenos": {
+                "animales": sum(r["cantidad"] for r in renglones if r.get("ajeno")),
+                "por_dueno": {d: sum(r["cantidad"] for r in renglones if r.get("ajeno") and r["dueno"] == d)
+                              for d in sorted({r["dueno"] for r in renglones if r.get("ajeno")})},
+            },
             "_texto_sin": texto_sin,
         })
     return salida
@@ -276,8 +293,12 @@ def imprimir_texto(establecimiento, grupos, categoria=None):
             continue
         for r in g["filas"]:
             firma = r["dueno"] if r["dueno"] else g["_texto_sin"]
-            print("  %s — %s: %d (%s UG)" % (r["categoria"], firma, r["cantidad"], fmt_num(r["ug"])))
+            ajeno = " (ajeno)" if r.get("ajeno") else ""
+            print("  %s — %s%s: %d (%s UG)" % (r["categoria"], firma, ajeno, r["cantidad"], fmt_num(r["ug"])))
         print("  Total del potrero: %s, %s UG" % (animales_txt(g["animales"]), fmt_num(g["ug"])))
+        if g["ajenos"]["animales"]:
+            detalle = ", ".join("%s: %d" % (d, c) for d, c in g["ajenos"]["por_dueno"].items())
+            print("  De esos, ajenos (de vecinos): %s (%s)" % (animales_txt(g["ajenos"]["animales"]), detalle))
         total_animales += g["animales"]
         total_ug += g["ug"]
     print("")
