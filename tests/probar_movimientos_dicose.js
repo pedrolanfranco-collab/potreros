@@ -369,7 +369,7 @@ async function probarApp(archivo){
     W.document.getElementById('tr-guia').value = 'K222222'; W.document.getElementById('tr-fecha').value = W.fechaISOHoy();
     const ft = W.document.querySelector('#tr-filas .tr-fila');
     ft.querySelector('.tr-cat').value = 'Vacas'; ft.querySelector('.tr-dueno').value = dVende;
-    ft.querySelector('.tr-dueno-dest').value = 'Pedro'; ft.querySelector('.tr-cant').value = '2';
+    ft.querySelector('.tr-dueno-dest').value = 'Silvia'; ft.querySelector('.tr-cant').value = '2';
     const evTR = servidor.filas.eventos_sync.length;
     W.document.getElementById('tr-guardar').click();
     await dormir(60);

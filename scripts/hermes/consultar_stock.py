@@ -45,7 +45,7 @@ ESTABLECIMIENTOS = {
     "maria_laura": {
         "nombre": "María Laura",
         "potreros": ["Tajamar", "Casco", "Uno", "Rincon", "Manantial"],
-        "duenos": ["Silvia", "Perico", "Mili", "Pedro", "Juan Pablo", "Fito"],
+        "duenos": ["Silvia", "Perico", "Mili", "Juan Pablo", "Fito"],
         "dueno_obligatorio": True,
         "texto_sin_dueno": "(sin dueño)",
         "usa_clave_campo": True,

@@ -123,8 +123,10 @@ async function probarArchivo(archivo, tieneDueno){
   // 11/9/2026: las 6 apps ya usan clave compuesta "categoria||firma"; sin
   // "tieneDueno" (María Laura/Pone Chico) cae en la firma vacía. 20/9/2026:
   // el nombre tiene que ser uno REALMENTE configurado en CONFIG.duenos --
-  // Pone Chico dejó de tener "Pedro" (ahora Chico/Pablo/Kelbi).
-  const nombreDueno = win.__establecimiento()==='pone_chico' ? 'Chico' : 'Pedro';
+  // Pone Chico dejó de tener "Pedro" (ahora Chico/Pablo/Kelbi). 10/11/2026:
+  // María Laura tampoco (dueños Silvia/Perico/Mili/Juan Pablo/Fito).
+  const DUENO_PRUEBA = {la_vuelta:'Pedro Lanfranco', maria_laura:'Silvia', pone_chico:'Chico'};
+  const nombreDueno = DUENO_PRUEBA[win.__establecimiento()];
   const key = tieneDueno ? categoria + '||' + nombreDueno : categoria + '||';
 
   // Estado conocido: 3 Vaquillonas en el origen, nada en el destino.
