@@ -136,8 +136,10 @@ async function probarVozBorrable(archivo, tieneDueno){
   // prueba tiene que ser uno REALMENTE configurado en CONFIG.duenos de
   // ese establecimiento -- Pone Chico dejó de tener "Pedro" (ahora Chico/
   // Pablo/Kelbi), así que un <select> puesto en "Pedro" ahí caía en
-  // blanco en silencio.
-  const nombreDueno = win.__establecimiento()==='pone_chico' ? 'Chico' : 'Pedro';
+  // blanco en silencio. 10/11/2026: María Laura tampoco tiene "Pedro"
+  // (dueños Silvia/Perico/Mili/Juan Pablo/Fito).
+  const DUENO_PRUEBA = {la_vuelta:'Pedro Lanfranco', maria_laura:'Silvia', pone_chico:'Chico'};
+  const nombreDueno = DUENO_PRUEBA[win.__establecimiento()];
   const claveVacas = tieneDueno ? `Vacas||${nombreDueno}` : 'Vacas||';
 
   win.renderInterpretacionVoz(win.__parseVoz(`agregar 8 vacas en el ${p}`));

@@ -195,7 +195,6 @@ module.exports = {
     "Silvia",
     "Perico",
     "Mili",
-    "Pedro",
     "Juan Pablo",
     "Fito"
   ],
@@ -251,11 +250,11 @@ module.exports = {
   "themeColor": "#7a5236",
   "nombre": "María Laura",
   "subtitulo": "Gestión de hacienda por potrero y dueño",
-  "versionPc": "4.00",
-  "versionMovil": "4.00",
+  "versionPc": "4.01",
+  "versionMovil": "4.01",
   "manejo": true,
   "simpleHabilitado": true,
-  "versionMovilSimple": "2.00",
+  "versionMovilSimple": "2.01",
   "duenoLabel": "Dueño",
   "duenoObligatorio": true,
   "guiasHabilitado": true,
@@ -269,7 +268,7 @@ module.exports = {
   "insumos": true,
   "bano": true,
   "caravanasHabilitado": true,
-  "propietarioSnig": {"mapaDuenos": {"Pedro Lanfranco": "Pedro"}},
+  "propietarioSnig": {"mapaDuenos": {}},
   "lecturaStock": true,
   "fixFechaIngreso": {
     "potreros": [

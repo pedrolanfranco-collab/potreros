@@ -9570,11 +9570,21 @@ async function snigParaReporte(){
   d.sinComparable.forEach(s=> s.porDueno.forEach(([n, c])=> filas.push([s.fam, n, c])));
   filas.push(['Solo en el SNIG, sin lectura (no entran en las categorías)', '', d.soloSnig]);
   filas.push(['Según el SNIG, en otro campo', '', d.otroCampo]);
+  /* 9/11/2026 (Pedro): tabla previa con la cuenta completa por propietario (antes de la tabla por tipo de animal). */
+  const c = d.cuenta;
+  const cuenta = {
+    titulo: 'Cuenta completa según el SNIG (este campo). Compará la columna Total con el export del SNIG de cada propietario.',
+    head: ['Propietario', 'Leídos', 'Sin lectura', 'Dados de baja acá', 'Total'],
+    filas: c.porDueno.map(x=> [x.dueno, x.leidos, x.sinLectura, x.bajaAca, x.total]).concat([[
+      'Total general', c.total.leidos, c.total.sinLectura, c.total.bajaAca, c.total.total]]),
+    nota: c.otroCampo ? 'Leídos acá pero el SNIG los ubica en otro campo: ' + c.otroCampo + ' (no suman).' : ''
+  };
   return {
     titulo: 'Por propietario SNIG',
     rotulo: 'Por tipo de animal, según el SNIG y la última lectura del bastón. Solo informativo: el stock es el de la app. El stock de "Otros bovinos" no se puede comparar con las categorías del bastón.',
     head: ['Tipo de animal', 'Propietario (SNIG)', 'Animales'],
-    filas
+    filas,
+    cuenta
   };
 }
 
@@ -9663,7 +9673,18 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', async ()=>
     doc.setFontSize(9);
     // 9/11/2026 (revisión): el rótulo largo se parte al ancho útil de la hoja (no se sale por la derecha)
     const anchoSnig = (doc.internal && doc.internal.pageSize ? doc.internal.pageSize.getWidth() : 210) - 28;
-    const yRotulo = doc.lastAutoTable.finalY + (d.transaccionesRows.length ? 16 : 8);
+    let yRotulo = doc.lastAutoTable.finalY + (d.transaccionesRows.length ? 16 : 8);
+    const c = snig.cuenta;
+    const lineasCuenta = doc.splitTextToSize(c.titulo, anchoSnig);
+    doc.text(lineasCuenta, 14, yRotulo);
+    doc.autoTable({
+      startY: yRotulo + lineasCuenta.length * 4,
+      head: [c.head],
+      body: c.filas,
+      theme: 'striped', headStyles:{fillColor:[30,123,52]}, styles:{fontSize:8}
+    });
+    yRotulo = doc.lastAutoTable.finalY + 8;
+    if(c.nota){ doc.text(c.nota, 14, yRotulo); yRotulo += 6; }
     const lineasRotulo = doc.splitTextToSize(snig.rotulo, anchoSnig);
     doc.text(lineasRotulo, 14, yRotulo);
     doc.autoTable({
@@ -9849,7 +9870,9 @@ document.getElementById('btn-exportar-excel').addEventListener('click', async ()
   }
 
   if(snig){
-    const wsSnig = XLSX.utils.aoa_to_sheet([[snig.rotulo], [], snig.head, ...snig.filas]);
+    const c = snig.cuenta;
+    const previa = [[c.titulo], c.head, ...c.filas].concat(c.nota ? [[c.nota]] : []).concat([[]]);
+    const wsSnig = XLSX.utils.aoa_to_sheet([...previa, [snig.rotulo], [], snig.head, ...snig.filas]);
     XLSX.utils.book_append_sheet(wb, wsSnig, snig.titulo);
   }
 
@@ -12589,12 +12612,23 @@ function resumenPorPropietarioSnig(padron){
   }));
   const snig = {}, noComparable = {};
   let soloSnig = 0, otroCampo = 0;
+  /* 9/11/2026 (Pedro): cuenta completa por propietario, para cuadrar contra el export del SNIG. Son los que el SNIG tiene
+     en este campo (en_snig true, campo_snig vacío o de este campo), separados en leídos, sin lectura y dados de baja acá.
+     Total = suma de las tres. No entra en las categorías ni cambia el stock. */
+  const cuentaDueno = {};
+  const cuentaFila = n => (cuentaDueno[n] = cuentaDueno[n] || {dueno: n, leidos: 0, sinLectura: 0, bajaAca: 0});
   (padron || []).forEach(a=>{
     if(!a) return;
     const vivo = a.estado_vida === 'ACTIVO';
     const leida = !!a.ultima_lectura;
     const campoAjeno = !!a.campo_snig && a.campo_snig !== ESTABLECIMIENTO;
     if(vivo && leida && campoAjeno){ otroCampo++; return; }
+    if(a.en_snig === true && !campoAjeno){
+      const c = cuentaFila(propietarioSnigDe(a).texto);
+      if(!leida) c.sinLectura++;
+      else if(vivo) c.leidos++;
+      else c.bajaAca++;
+    }
     if(!vivo || a.en_snig !== true || campoAjeno) return;
     if(!leida){ soloSnig++; return; }
     const fam = familiaCategoriaSnig(a.categoria);
@@ -12620,10 +12654,37 @@ function resumenPorPropietarioSnig(padron){
   }
   const sinComparable = [FAMILIA_OTRAS_SNIG, FAMILIA_SIN_CAT_SNIG].filter(f=> noComparable[f])
     .map(fam=> ({fam, porDueno: porDueno(noComparable[fam])}));
-  return {filas, sinComparable, soloSnig, otroCampo};
+  const cuentaPorDueno = Object.values(cuentaDueno).map(c=> Object.assign(c, {total: c.leidos + c.sinLectura + c.bajaAca}))
+    .sort((x, y)=> (y.total - x.total) || x.dueno.localeCompare(y.dueno, 'es'));
+  const cuentaTotal = cuentaPorDueno.reduce((t, c)=> ({leidos: t.leidos + c.leidos, sinLectura: t.sinLectura + c.sinLectura,
+    bajaAca: t.bajaAca + c.bajaAca, total: t.total + c.total}), {leidos: 0, sinLectura: 0, bajaAca: 0, total: 0});
+  return {filas, sinComparable, soloSnig, otroCampo, cuenta: {porDueno: cuentaPorDueno, total: cuentaTotal, otroCampo}};
+}
+/* 9/11/2026 (Pedro): el enlace "Sin lectura" a 🧾 SNIG sin lectura solo existe en la PC (btn-snig-sin-lectura, visible). */
+function snigBotonSinLecturaVisible(){
+  const b = document.getElementById('btn-snig-sin-lectura');
+  return !!(b && b.style.display !== 'none');
+}
+function htmlCuentaCompletaSnig(c){
+  const enlace = snigBotonSinLecturaVisible()
+    ? '<a href="#" data-snig-abrir-sl="1">🧾 SNIG sin lectura</a>' : '🧾 SNIG sin lectura';
+  let h = '<div style="margin-bottom:14px;"><table class="tabla-animales"><thead><tr><th>Cuenta completa según el SNIG (este campo)</th>'
+    + '<th style="text-align:right;">Leídos por el bastón</th><th style="text-align:right;">Sin lectura</th>'
+    + '<th style="text-align:right;">Dados de baja acá</th><th style="text-align:right;">Total según el SNIG</th></tr></thead><tbody>';
+  h += c.porDueno.map(x=> `<tr><td>${esc(x.dueno)}</td><td class="num">${x.leidos}</td><td class="num">${x.sinLectura}</td>`
+    + `<td class="num">${x.bajaAca ? `<span style="color:#b7791f;">⚠ ${x.bajaAca}</span>` : 0}</td><td class="num">${x.total}</td></tr>`).join('');
+  h += `<tr class="total"><td>Total general</td><td class="num">${c.total.leidos}</td><td class="num">${c.total.sinLectura}</td>`
+    + `<td class="num">${c.total.bajaAca}</td><td class="num">${c.total.total}</td></tr>`;
+  h += '</tbody></table>';
+  h += '<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">Compará la columna Total con el export del SNIG de cada propietario. '
+    + 'Sin lectura: el SNIG la tiene y el bastón nunca la leyó (lista en ' + enlace + '). '
+    + 'Dados de baja acá: el SNIG la da viva y nuestra base la dio de baja: revisar.</div>';
+  if(c.otroCampo) h += `<div style="font-size:12px;color:#b7791f;margin-top:4px;">Leídos acá pero el SNIG los ubica en otro campo: ${c.otroCampo} (no suman)</div>`;
+  return h + '</div>';
 }
 function htmlPorPropietarioSnig(d){
   let h = '<p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 10px;">Por tipo de animal, según el SNIG y la última lectura del bastón. Solo lectura: no cambia el stock.</p>';
+  if(d.cuenta && d.cuenta.porDueno.length) h += htmlCuentaCompletaSnig(d.cuenta);
   if(!d.filas.length && !d.sinComparable.length) h += '<p style="font-size:12.5px;color:var(--texto-suave);">Ningún animal con stock cargado.</p>';
   h += d.filas.map(f=> f.comparable ? `<div style="margin-bottom:14px;">
       <table class="tabla-animales">
@@ -12664,6 +12725,10 @@ async function cargarPanelPropietarioSnig(){
     return;
   }
   el.innerHTML = (r.deCache ? avisoCopiaPadronHTML({fechaCache: r.fechaCache}) : '') + htmlPorPropietarioSnig(resumenPorPropietarioSnig(r.filas));
+  el.querySelectorAll('[data-snig-abrir-sl]').forEach(a=> a.addEventListener('click', e=>{
+    e.preventDefault();
+    document.getElementById('btn-snig-sin-lectura').click();
+  }));
 }
 
 /* ---------- PROPIETARIO SEGÚN EL SNIG (9/11/2026, CONFIG.propietarioSnig: La Vuelta y María Laura) ----------

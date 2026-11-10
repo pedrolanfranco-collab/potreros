@@ -617,7 +617,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.00</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.01</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1373,7 +1373,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.00","manejo":false,"versionMovil":"3.00","simpleHabilitado":true,"versionMovilSimple":"2.00","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.01","manejo":false,"versionMovil":"3.01","simpleHabilitado":true,"versionMovilSimple":"2.01","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -2111,7 +2111,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'movil-3.00';
+const VERSION_APP = 'movil-3.01';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -9240,12 +9240,23 @@ function resumenPorPropietarioSnig(padron){
   }));
   const snig = {}, noComparable = {};
   let soloSnig = 0, otroCampo = 0;
+  /* 9/11/2026 (Pedro): cuenta completa por propietario, para cuadrar contra el export del SNIG. Son los que el SNIG tiene
+     en este campo (en_snig true, campo_snig vacío o de este campo), separados en leídos, sin lectura y dados de baja acá.
+     Total = suma de las tres. No entra en las categorías ni cambia el stock. */
+  const cuentaDueno = {};
+  const cuentaFila = n => (cuentaDueno[n] = cuentaDueno[n] || {dueno: n, leidos: 0, sinLectura: 0, bajaAca: 0});
   (padron || []).forEach(a=>{
     if(!a) return;
     const vivo = a.estado_vida === 'ACTIVO';
     const leida = !!a.ultima_lectura;
     const campoAjeno = !!a.campo_snig && a.campo_snig !== ESTABLECIMIENTO;
     if(vivo && leida && campoAjeno){ otroCampo++; return; }
+    if(a.en_snig === true && !campoAjeno){
+      const c = cuentaFila(propietarioSnigDe(a).texto);
+      if(!leida) c.sinLectura++;
+      else if(vivo) c.leidos++;
+      else c.bajaAca++;
+    }
     if(!vivo || a.en_snig !== true || campoAjeno) return;
     if(!leida){ soloSnig++; return; }
     const fam = familiaCategoriaSnig(a.categoria);
@@ -9271,10 +9282,37 @@ function resumenPorPropietarioSnig(padron){
   }
   const sinComparable = [FAMILIA_OTRAS_SNIG, FAMILIA_SIN_CAT_SNIG].filter(f=> noComparable[f])
     .map(fam=> ({fam, porDueno: porDueno(noComparable[fam])}));
-  return {filas, sinComparable, soloSnig, otroCampo};
+  const cuentaPorDueno = Object.values(cuentaDueno).map(c=> Object.assign(c, {total: c.leidos + c.sinLectura + c.bajaAca}))
+    .sort((x, y)=> (y.total - x.total) || x.dueno.localeCompare(y.dueno, 'es'));
+  const cuentaTotal = cuentaPorDueno.reduce((t, c)=> ({leidos: t.leidos + c.leidos, sinLectura: t.sinLectura + c.sinLectura,
+    bajaAca: t.bajaAca + c.bajaAca, total: t.total + c.total}), {leidos: 0, sinLectura: 0, bajaAca: 0, total: 0});
+  return {filas, sinComparable, soloSnig, otroCampo, cuenta: {porDueno: cuentaPorDueno, total: cuentaTotal, otroCampo}};
+}
+/* 9/11/2026 (Pedro): el enlace "Sin lectura" a 🧾 SNIG sin lectura solo existe en la PC (btn-snig-sin-lectura, visible). */
+function snigBotonSinLecturaVisible(){
+  const b = document.getElementById('btn-snig-sin-lectura');
+  return !!(b && b.style.display !== 'none');
+}
+function htmlCuentaCompletaSnig(c){
+  const enlace = snigBotonSinLecturaVisible()
+    ? '<a href="#" data-snig-abrir-sl="1">🧾 SNIG sin lectura</a>' : '🧾 SNIG sin lectura';
+  let h = '<div style="margin-bottom:14px;"><table class="tabla-animales"><thead><tr><th>Cuenta completa según el SNIG (este campo)</th>'
+    + '<th style="text-align:right;">Leídos por el bastón</th><th style="text-align:right;">Sin lectura</th>'
+    + '<th style="text-align:right;">Dados de baja acá</th><th style="text-align:right;">Total según el SNIG</th></tr></thead><tbody>';
+  h += c.porDueno.map(x=> `<tr><td>${esc(x.dueno)}</td><td class="num">${x.leidos}</td><td class="num">${x.sinLectura}</td>`
+    + `<td class="num">${x.bajaAca ? `<span style="color:#b7791f;">⚠ ${x.bajaAca}</span>` : 0}</td><td class="num">${x.total}</td></tr>`).join('');
+  h += `<tr class="total"><td>Total general</td><td class="num">${c.total.leidos}</td><td class="num">${c.total.sinLectura}</td>`
+    + `<td class="num">${c.total.bajaAca}</td><td class="num">${c.total.total}</td></tr>`;
+  h += '</tbody></table>';
+  h += '<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">Compará la columna Total con el export del SNIG de cada propietario. '
+    + 'Sin lectura: el SNIG la tiene y el bastón nunca la leyó (lista en ' + enlace + '). '
+    + 'Dados de baja acá: el SNIG la da viva y nuestra base la dio de baja: revisar.</div>';
+  if(c.otroCampo) h += `<div style="font-size:12px;color:#b7791f;margin-top:4px;">Leídos acá pero el SNIG los ubica en otro campo: ${c.otroCampo} (no suman)</div>`;
+  return h + '</div>';
 }
 function htmlPorPropietarioSnig(d){
   let h = '<p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 10px;">Por tipo de animal, según el SNIG y la última lectura del bastón. Solo lectura: no cambia el stock.</p>';
+  if(d.cuenta && d.cuenta.porDueno.length) h += htmlCuentaCompletaSnig(d.cuenta);
   if(!d.filas.length && !d.sinComparable.length) h += '<p style="font-size:12.5px;color:var(--texto-suave);">Ningún animal con stock cargado.</p>';
   h += d.filas.map(f=> f.comparable ? `<div style="margin-bottom:14px;">
       <table class="tabla-animales">
@@ -9315,6 +9353,10 @@ async function cargarPanelPropietarioSnig(){
     return;
   }
   el.innerHTML = (r.deCache ? avisoCopiaPadronHTML({fechaCache: r.fechaCache}) : '') + htmlPorPropietarioSnig(resumenPorPropietarioSnig(r.filas));
+  el.querySelectorAll('[data-snig-abrir-sl]').forEach(a=> a.addEventListener('click', e=>{
+    e.preventDefault();
+    document.getElementById('btn-snig-sin-lectura').click();
+  }));
 }
 
 /* ---------- PROPIETARIO SEGÚN EL SNIG (9/11/2026, CONFIG.propietarioSnig: La Vuelta y María Laura) ----------
