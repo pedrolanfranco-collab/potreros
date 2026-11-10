@@ -223,6 +223,9 @@ jobs:
       - name: "Instructivos de Campo, movil y PC (29-30/10/2026) -- cada pagina nombra todos los botones de su app, las versiones coinciden y el boton y la precarga estan solo donde corresponden"
         run: node tests/probar_instructivos.js
 
+      - name: "Propietario segun el SNIG (9/11/2026) -- ficha, lineas bajo las caravanas, dueño sugerido en la muerte, estados solo-SNIG, Por propietario SNIG y SNIG sin lectura; Pone Chico apagado"
+        run: node tests/probar_propietario_snig.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-movil-campo/index.html
+
       - name: "UG: las crias de la temporada no cuentan hasta que se destetan (11/10/2026) -- Terneros desde marzo, Corderos/as desde enero"
         run: node tests/probar_ug_temporada.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html
 

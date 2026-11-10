@@ -34,7 +34,9 @@ NOTA_FOTO = ("Cifras de stock_potreros: la foto que publican las apps; puede est
              "equipo sincronizo despues de un movimiento.")
 
 COLS_ANIMAL_BASICO = ("id8,ide,categoria,potrero,estado_vida,estado_carencia,fecha_apto,dias_restantes,"
-                      "producto_carencia,proximo_tratamiento")
+                      "producto_carencia,proximo_tratamiento,en_snig,ultima_lectura")
+# 9/11/2026 (revisión): el SNIG la tiene y el bastón nunca la leyó: sin carencia ni datos, NO es "sin carencia"
+AVISO_SOLO_SNIG = ("En el SNIG pero el bastón nunca lo leyó: sin datos sanitarios, NO asumir apto")
 COLS_ANIMAL_COMPLETO = COLS_ANIMAL_BASICO + (",sexo,gen,propietario,ultimo_peso,peso_fecha,ganancia_diaria,"
                                              "pesadas_totales,rodeo,nota,nota_fecha,baja_motivo,baja_fecha,baja_guia")
 COLS_SANIDAD_BASICO = "fecha_txt,categoria,potrero,cantidad,productos,dosis,estado,apto_txt,dias_hace,observaciones"
@@ -220,6 +222,9 @@ def construir(perfil, campos):
         n = _limite(limite)
         cols = COLS_ANIMAL_COMPLETO if completo else COLS_ANIMAL_BASICO
         filas = _leer("animales_caravana", est, cols, extra, "id8.asc", n + 1)
+        for f in filas:
+            if f.get("ultima_lectura") is None and f.get("en_snig") is True:
+                f["aviso"] = AVISO_SOLO_SNIG
         return {"campo": cs.ESTABLECIMIENTOS[est]["nombre"], "animales": filas[:n],
                 "hay_mas": len(filas) > n, "cantidad": min(len(filas), n)}
 

@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">3.86</span></li>
-    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">3.53</span></li>
-    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">2.24</span></li>
+    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">4.00</span></li>
+    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">4.00</span></li>
+    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">3.00</span></li>
   </ul>
   <p class="nota">La versión de tu celular está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.76</b>). Si tu número es más viejo, abrí la app con señal y esperá un momento: se actualiza sola.</p>
 </div>
@@ -123,6 +123,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🧾 Propietario según el SNIG</b> <span class="campo">(La Vuelta y María Laura)</span>: la ficha de <span class="b">🔎 Buscar caravana</span>, los casilleros de caravana y la pestaña <span class="b">Por propietario SNIG</span> del <span class="b">📊 Stock total</span> muestran de quién es cada animal según el SNIG. Solo avisa: no cambia el stock ni bloquea nada. Ver <a href="#snig">Propietario según el SNIG</a>.</li>
     <li><b>✅ Evento guardado</b>: un cartel grande confirma lo que guardaste en este equipo y se cierra solo o al tocarlo. El pie sigue mostrando si falta sincronizar. En <b>🏡 Al vecino</b>, los errores también aparecen en rojo dentro del formulario.</li>
     <li><b>🛁 Baño</b> <span class="campo">(La Vuelta y María Laura)</span>: pantalla nueva para el control del baño de aspersión. Abrís el ciclo con el agua y el producto, anotás cada tanda, las reposiciones, el fin del día y el cierre, y la app calcula los litros por animal y avisa cuándo toca reponer. Anda sin señal.</li>
     <li><b>🔗 Potreros unidos (1+2 y 19+20)</b> <span class="campo">(solo La Vuelta)</span>: cuando la portera está abierta, pasás todo el <b>1</b> y el <b>2</b> al <b>1+2</b> (y el <b>19</b> y el <b>20</b> al <b>19+20</b>). El mapa muestra el potrero unido. Mirá la sección <a href="#unidos">🔗 Potreros unidos</a>.</li>
@@ -179,6 +180,7 @@
         <li><a href="#dicose">📑 Movimientos DICOSE</a></li>
         <li><a href="#desaparecidos">❓ Desaparecidos</a></li>
         <li><a href="#vecinos">🏡 Vecinos</a></li>
+        <li><a href="#snig">🧾 Propietario según el SNIG</a></li>
         <li><a href="#caravana">🔎 Buscar caravana</a></li>
         <li><a href="#pesadas">⚖️ Pesadas</a></li>
         <li><a href="#alertas">🔔 Alertas</a></li>
@@ -201,6 +203,7 @@
   <tr><td>El dueño se llama</td><td data-campo="La Vuelta"><b>Firma</b>. Se puede dejar “(sin firma)”.</td><td data-campo="María Laura"><b>Dueño</b>. Hay que elegir uno.</td><td data-campo="Pone Chico"><b>Dueño</b>. Hay que elegir uno.</td></tr>
   <tr><td>🔑 Clave del campo</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No se usa</b></td></tr>
   <tr><td>🔎 Buscar caravana</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>🧾 Propietario según el SNIG</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está todavía</b></td></tr>
   <tr><td>🔎 Buscar caravana sin señal</td><td data-campo="La Vuelta">Sí (con la copia guardada en el celular)</td><td data-campo="María Laura">No: necesita señal</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>Compras y ventas</td><td data-campo="La Vuelta"><b>📑 Movimientos DICOSE</b>, en Herramientas</td><td data-campo="María Laura"><b>📑 Movimientos DICOSE</b>, en Herramientas</td><td data-campo="Pone Chico"><b>💰 Compra / Venta</b>, en la ficha del potrero</td></tr>
   <tr><td>🌾 Campo ajeno y 🚚 Traslado a María Laura (dentro de 📑 Movimientos DICOSE)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No</td><td data-campo="Pone Chico">No</td></tr>
@@ -275,7 +278,7 @@
 </ol>
 <ul>
   <li><b>⚠️ en rojo, arriba de la tabla</b>: la <b>sobrecarga</b> (más UG/ha que lo recomendado) o la <b>ocupación prolongada</b> (muchos días seguidos con animales). Ver <a href="#alertas">🔔 Alertas</a>.</li>
-  <li><span class="b">👤 Ver por dueño</span>: abre una ventana con cada categoría, su dueño (o firma) y la cantidad.</li>
+  <li><span class="b">👤 Ver por dueño</span>: abre una ventana con cada categoría, su dueño (o firma) y la cantidad. <span class="campo">En La Vuelta y María Laura</span> abajo aparece “Según el SNIG (última lectura del bastón)”: cuántos de este potrero son de cada propietario según el SNIG, por tipo de animal (terneros/as, vacas, vaquillonas, novillos, toros), y cuántos quedan como “Sin SNIG o sin lectura”.</li>
   <li><b>Historial (N)</b>: está plegado. Tocalo para abrirlo. Muestra los últimos 15 movimientos del potrero con la fecha y, al final, el nombre de quien los cargó. Si un renglón tiene 📍 es que se marcó una ubicación en el mapa.</li>
   <li>Si hay animales desaparecidos de ese potrero, arriba sale un aviso naranja con la palabra <b>resolver</b>: tocala para ir a <a href="#desaparecidos">❓ Desaparecidos</a>.</li>
   <li>Para cerrar la ficha, tocá la <b>✕</b> de arriba a la derecha.</li>
@@ -346,7 +349,7 @@
     <li>Elegí la <b>categoría</b> y el <b>dueño</b> (en La Vuelta, <b>Firma</b>).</li>
     <li><b>Si es de Terneros</b>, aparece una lista “Ternero”: elegí <b>“De temporada (nacido a marcación)”</b> o <b>“Marcado”</b>. Es obligatorio: sin elegir no guarda.</li>
     <li>Poné la <b>cantidad</b>. No puede ser más de lo que hay (“Solo hay N…”).</li>
-    <li>Opcional: <b>Causa</b>, y <b>Caravana</b> (mínimo 8 números).</li>
+    <li>Opcional: <b>Causa</b>, y <b>Caravana</b> (mínimo 8 números). <span class="campo">En La Vuelta y María Laura</span>, si el SNIG tiene ese animal, debajo de la caravana sale su propietario según el SNIG, y el <b>dueño</b> de arriba se elige solo con el del SNIG (“Dueño sugerido por el SNIG”). Si ya cambiaste el dueño a mano, la app no lo pisa. Ver <a href="#snig">Propietario según el SNIG</a>.</li>
     <li>Opcional: <span class="b">📷 Agregar foto (hasta 3)</span>.</li>
     <li>Opcional, <b>“Dónde se encontró”</b>:
       <ul>
@@ -445,6 +448,7 @@
     <li>Pestaña <b>Potreros</b>: los potreros con animales y qué hay en cada uno (y cuántos están vacíos).</li>
     <li>Pestaña <b>Temporada</b>: <b>Nacimientos</b> (Terneros con el porcentaje sobre las vacas preñadas, Abortos, Corderos/Corderas y Señalados con su porcentaje) y <b>Muertes</b> de la temporada (Bovinos, Ovinos y Equinos; los Terneros aparte, “de temporada” y “marcados”), con la tabla de agosto a diciembre. Abajo de los nacimientos, <b>✎ Editar vacas preñadas / ovejas encarneradas</b> te deja cambiar esas dos cantidades (son la base de los porcentajes) y <span class="b">Guardar</span>.</li>
     <li>Pestaña <b>Por dueño</b>: las categorías, las UG y la dotación de cada dueño (o firma). Lo que no tiene dueño asignado figura aparte.</li>
+    <li><span class="campo">La Vuelta y María Laura:</span> pestaña <b>Por propietario SNIG</b>: de los animales de este campo, cuántos son de cada propietario según el SNIG, por tipo de animal (terneros/as, vacas, vaquillonas, novillos, toros), y cuántos quedan como “Sin SNIG”. Los que el SNIG tiene y el bastón nunca leyó van aparte, al pie. Solo lee: el stock sigue siendo el de la app.</li>
   </ul>
 </div>
 
@@ -668,7 +672,23 @@
     <li><b>📤 YA NO ESTÁ EN EL CAMPO</b>: salió o está dado de baja. Revisá que el número esté bien.</li>
   </ul>
   <p>Debajo, los datos del animal: categoría, sexo, generación, dueño (o firma), potrero, <b>Rodeo</b> y <b>Nota</b> que anotó el bastón (con la fecha de esa lectura), último peso, última lectura y próximo tratamiento. <span class="campo">En La Vuelta</span> también el bloque <b>⚖️ Pesadas</b> con la ganancia diaria y el historial. Si dice que la caravana no está en el padrón, puede ser un animal que nunca pasó por la manga o un número mal escrito.</p>
+  <p>En La Vuelta y María Laura, la ficha trae además <b>Propietario (SNIG)</b>: de quién es el animal según el SNIG. Si el SNIG no lo tiene, dice “Sin SNIG — firma: …” con el dueño o firma que anotaste. Si el SNIG lo ubica en otro campo, sale “⚠ Según el SNIG está en …” (solo avisa, no bloquea nada). Un animal que el SNIG tiene pero el bastón nunca leyó aparece como <b>🆕 PENDIENTE DE PRIMERA LECTURA</b> o <b>❓ VIVO SIN REGISTRO EN EL PREDIO</b>. Ver <a href="#snig">Propietario según el SNIG</a>.</p>
   <p class="nota"><b>Sin señal</b> <span class="campo">(solo La Vuelta)</span>: la app guarda en el celular una copia del padrón, que se pone al día sola cuando sincroniza con señal (cada media hora como mucho, y entera una vez por día). Sin señal, o si la consulta no contesta en unos segundos, la búsqueda usa esa copia y arriba de la ficha dice <b>“📴 Sin señal: datos del padrón al &lt;fecha y hora&gt;”</b>. Con 7 días o más lo avisa en rojo: puede haber tratamientos o bajas que no figuran, así que confirmá con señal antes de mandar a faena. El período de espera se sigue contando con la fecha de hoy. Al abrir el buscador, una línea dice cuántas caravanas tiene la copia y de cuándo es. Para tenerla hay que abrir la app con señal y con la 🔑 Clave del campo cargada al menos una vez.</p>
+</div>
+
+<div class="fn" id="snig">
+  <h3>🧾 Propietario según el SNIG</h3>
+  <p class="para">Para qué sirve: saber de quién es cada animal según el SNIG (el registro oficial), además del dueño o la firma que anotamos nosotros. <span class="campo">Solo en La Vuelta y María Laura.</span> La app solo lee: <b>no cambia el stock y no bloquea ningún movimiento</b>.</p>
+  <ul>
+    <li><b>Propietario (SNIG)</b> aparece en la ficha de <a href="#caravana">🔎 Buscar caravana</a> y debajo de cada casillero de caravana (la muerte, Desaparecidos, Vecinos, Sanidad y, en las apps completas, Eventos de manejo).</li>
+    <li>Si el SNIG no tiene el animal: <b>“Sin SNIG — firma: …”</b>, con el dueño o firma que anotaste. Si no anotaste ninguno, sale “(sin firma)” en La Vuelta y “(sin dueño)” en María Laura.</li>
+    <li>Si el SNIG tiene el animal pero sin nombre de propietario: <b>“Propietario sin nombre en el SNIG”</b>.</li>
+    <li>Si el SNIG lo ubica en <b>otro campo</b>: <b>“⚠ Según el SNIG está en …”</b>. Solo avisa: podés seguir cargando igual.</li>
+    <li>En la <b>muerte</b> con caravana: si el SNIG tiene el animal y no cambiaste el dueño a mano, el dueño se elige solo con el del SNIG y aparece “Dueño sugerido por el SNIG … (podés cambiarlo)”.</li>
+    <li>Si la caravana no está ni en el padrón ni en el SNIG de este campo: <b>“⚠ No figura en el padrón ni en el SNIG de este campo”</b>. Puede ser un número mal escrito.</li>
+    <li>Animales que el SNIG tiene y el bastón nunca leyó: no tienen datos sanitarios, así que <b>no son “apto”</b>. La ficha dice <b>🆕 PENDIENTE DE PRIMERA LECTURA</b> si el SNIG los puso en el predio hace hasta 6 meses (183 días), y <b>❓ VIVO SIN REGISTRO EN EL PREDIO</b> si hace más o no tiene fecha. No cuentan en el stock ni en las categorías.</li>
+  </ul>
+  <p class="nota">Los totales por propietario están en <a href="#stock">📊 Stock total</a> (pestaña <b>Por propietario SNIG</b>) y en 👤 Ver por dueño de cada potrero. Pone Chico todavía no tiene esta información.</p>
 </div>
 
 <div class="fn" id="pesadas">
