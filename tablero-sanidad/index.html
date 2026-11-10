@@ -556,6 +556,8 @@ function resumirGens(filas){      // solo animales activos; se guarda agrupado p
   const m = {};
   for(const a of filas){
     if(a.estado_vida && a.estado_vida !== 'ACTIVO') continue;
+    // 9/11/2026 (revisión): sin ultima_lectura es un solo-SNIG (o sin lectura del bastón): no entra en la generación
+    if(!a.ultima_lectura) continue;
     const k = normPot(a.potrero) + '|' + String(a.gen == null ? '' : a.gen).trim() + '|' + normTxt(a.categoria);
     m[k] = m[k] || { potrero: String(a.potrero == null ? '' : a.potrero).trim(), gen: a.gen, categoria: a.categoria || '', n: 0 };
     m[k].n++;
@@ -575,7 +577,7 @@ async function actualizar(){
       pedir('sanidad_proximos', estab, 'fecha_prevista.asc.nullslast'), pedir('sanidad_ultimos', estab, 'fecha.desc'),
       pedirTodo('stock_potreros', estab, 'potrero,categoria,dueno,cantidad,ug,especie,actualizado_en', 'potrero.asc,clave.asc'),
       /* la generación es un extra: si el padrón no se puede leer, el resto del tablero sigue andando */
-      pedirTodo('animales_caravana', estab, 'potrero,gen,categoria,estado_vida', 'id8.asc').then(resumirGens).catch(() => null),
+      pedirTodo('animales_caravana', estab, 'potrero,gen,categoria,estado_vida,ultima_lectura', 'id8.asc').then(resumirGens).catch(() => null),
       /* también un extra: si la carga no se puede leer, Últimos sale igual, sin generación */
       tc ? pedirTodo(tc.t, tc.conEstab ? estab : null, 'fecha,categoria,potrero,cantidad,gen', 'fecha.desc,id.asc', '&gen=not.is.null', estab).catch(() => []) : [],
       /* "Ya se hizo": si la tabla no existe o no se puede leer, se muestran todos los vencidos y sin botón */

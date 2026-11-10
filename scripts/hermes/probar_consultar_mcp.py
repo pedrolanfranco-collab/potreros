@@ -20,7 +20,13 @@ FILAS = {
                          "productos": "Ivermectina", "dosis": "1 cc", "costo_animal": 3.5}],
     "sanidad_proximos": [{"categoria": "Vacas", "sanidad": "Aftosa", "animales": 15, "dias": 10}],
     "animales_caravana": [{"id8": "123", "categoria": "Vacas", "estado_carencia": "En carencia",
-                           "propietario": "Mili", "ultimo_peso": 400}],
+                           "propietario": "Mili", "ultimo_peso": 400, "en_snig": True, "ultima_lectura": "2026-10-13"},
+                          # 9/11/2026 (revisión): en el SNIG y el bastón nunca la leyó: sin datos, no es "sin carencia"
+                          {"id8": "999", "categoria": None, "estado_carencia": None, "en_snig": True,
+                           "ultima_lectura": None},
+                          # sin SNIG y sin lectura: no es solo-SNIG, no lleva aviso
+                          {"id8": "555", "categoria": "Vacas", "estado_carencia": None, "en_snig": None,
+                           "ultima_lectura": None}],
     "eventos_sync": [{"tipo": "venta", "potrero": "Casco", "detalle": {"fin": 1000}}],
 }
 
@@ -85,6 +91,19 @@ def main():
          "propietario" in completo["animales"](caravana="123") and "ultimo_peso" in completo["animales"](caravana="123")),
     ]
     pruebas.append(("completo: eventos devuelve el historial", j(completo["eventos"]())["cantidad"] == 1))
+
+    # 9/11/2026 (revisión): filas solo-SNIG (en_snig true, sin ultima_lectura) con aviso y sin "sin carencia"
+    todos = j(basico["animales"]())["animales"]
+    por_id = {x.get("id8"): x for x in todos}
+    solo, leida, sin_snig = por_id.get("999", {}), por_id.get("123", {}), por_id.get("555", {})
+    pruebas += [
+        ("solo-SNIG: sale con el aviso de no asumir apto", solo.get("aviso") == mcp.AVISO_SOLO_SNIG),
+        ("solo-SNIG: la carencia queda vacia (no se lee como sin carencia)", solo.get("estado_carencia") is None),
+        ("animal leido por el baston: sin aviso", "aviso" not in leida and leida.get("ultima_lectura") == "2026-10-13"),
+        ("sin SNIG y sin lectura: sin aviso", "aviso" not in sin_snig),
+        ("el pedido de animales trae en_snig y ultima_lectura",
+         any("animales_caravana" in p[1] and "en_snig" in p[1] and "ultima_lectura" in p[1] for p in pedidos)),
+    ]
 
     # acceso por campo
     antes = len(pedidos)

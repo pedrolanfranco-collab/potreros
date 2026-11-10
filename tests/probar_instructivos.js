@@ -74,10 +74,13 @@ const PAGINAS = [
     id: 'pc', dir: 'instructivo-pc', nombre: 'PC', version: 'versionPc',
     variante: c => c + '-pc',
     encabezado: v => `· v${v} (completa)</div>`,
-    excepciones: {},
+    excepciones: {
+      'sl-csv': 'Botón "⬇ CSV" del modal 🧾 SNIG sin lectura (solo PC, 9/11/2026, paso 3D): aparece al cargar la lista, como df-csv, y se documenta junto con el botón cuando salga la versión que lo incluye (paso 4).',
+    },
     ocultoPorConfig: { 'btn-caravana': 'caravanasHabilitado', 'btn-guias': 'guiasHabilitado', 'btn-pesadas': 'pesadasHistorial',
       'btn-faltantes': 'datosFaltantes', 'btn-reproduccion': 'reproduccion', 'btn-lecturas-stock': 'lecturaStock', 'btn-csv-baston': 'completarCsvBaston', 'btn-voz': 'siempre', 'btn-insumos': 'insumos', 'btn-bano': 'bano',
-      'vs-csv': 'siempre', 'df-csv': 'datosFaltantes', 'btn-eventos-manejo': 'manejo', 'btn-tareas': 'manejo', 'btn-calendario': 'manejo' },
+      'vs-csv': 'siempre', 'df-csv': 'datosFaltantes', 'btn-eventos-manejo': 'manejo', 'btn-tareas': 'manejo', 'btn-calendario': 'manejo',
+      'btn-snig-sin-lectura': 'propietarioSnig' },
     esperado: {
       'la-vuelta':   { claveCampo: true, insumos: true,  bano: true, manejo: true, caravanasHabilitado: true,  duenoLabel: 'Firma',  duenoObligatorio: false, guiasHabilitado: true,  dicoseHabilitado: true,  trasladoHabilitado: true,  pesadasHistorial: true,  datosFaltantes: true,  completarCsvBaston: true,  usaExcelBridge: true,  mapLabels: false, puntosSeed: true, lecturaStock: true },
       'maria-laura': { claveCampo: true, insumos: true,  bano: true, manejo: true, caravanasHabilitado: true,  duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: true,  dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, datosFaltantes: false, completarCsvBaston: false, usaExcelBridge: false, mapLabels: true,  puntosSeed: false, lecturaStock: true },

@@ -104,7 +104,7 @@ async function probarPc(archivo){
   chequear('[hacienda] abre la ventana de sección', panel.style.display === 'flex');
   chequear('[hacienda] queda marcada en el menú', item('hacienda').classList.contains('activo') && !item('mapa').classList.contains('activo'));
   const atajos = Array.from(doc.querySelectorAll('#pc-seccion-lista [data-pc-ir]'));
-  const visiblesOrig = ['btn-desaparecidos', 'btn-vecinos', 'btn-caravana', 'btn-pesadas', 'btn-alertas', 'btn-verificar-stock', 'btn-lecturas-stock', 'btn-faltantes']
+  const visiblesOrig = ['btn-desaparecidos', 'btn-vecinos', 'btn-caravana', 'btn-pesadas', 'btn-alertas', 'btn-verificar-stock', 'btn-lecturas-stock', 'btn-faltantes', 'btn-snig-sin-lectura']
     .filter(id => doc.getElementById(id) && doc.getElementById(id).style.display !== 'none');
   chequear('[hacienda] un atajo por cada botón visible, en orden', JSON.stringify(atajos.map(b => b.getAttribute('data-pc-ir'))) === JSON.stringify(visiblesOrig),
     atajos.map(b => b.getAttribute('data-pc-ir')).join(','));

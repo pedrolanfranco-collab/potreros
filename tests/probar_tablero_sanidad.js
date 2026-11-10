@@ -58,8 +58,12 @@ const CARAV = [
   { potrero: '12', gen: dig(ANIO - 2), categoria: 'Vaca', estado_vida: 'ACTIVO' }, { potrero: '12', gen: dig(ANIO - 2), categoria: 'Vaca', estado_vida: 'ACTIVO' },
   { potrero: '12 ', gen: dig(ANIO - 1), categoria: 'Vaca', estado_vida: null },
   { potrero: '12', gen: dig(ANIO - 1), categoria: 'Vaca', estado_vida: 'VENDIDO' },          // no cuenta
-  { potrero: 'FORCER', gen: dig(ANIO - 3), categoria: 'Novillo 2-3', estado_vida: 'ACTIVO' }         // potrero que no está en el stock
+  { potrero: 'FORCER', gen: dig(ANIO - 3), categoria: 'Novillo 2-3', estado_vida: 'ACTIVO' },        // potrero que no está en el stock
+  // 9/11/2026 (revisión): solo-SNIG: el SNIG la tiene en el predio y el bastón nunca la leyó (sin ultima_lectura)
+  { potrero: '12', gen: dig(ANIO - 5), categoria: 'Vaca', estado_vida: 'ACTIVO', en_snig: true, ultima_lectura: null }
 ];
+// Las filas leídas por el bastón llevan su última lectura (el tablero no cuenta las que no la tienen)
+CARAV.forEach(f => { if(f.ultima_lectura === undefined) f.ultima_lectura = iso(-2); });
 // cargas (sanidad_carga): la primera coincide con la 1ª fila de Últimos; la 3ª es de otro potrero y no debe cruzar
 const CARGAS = [
   { fecha: iso(-3), categoria: 'vacas', potrero: ' 12', cantidad: 50, gen: 5 },
@@ -142,6 +146,9 @@ const resp = url => {
   chequear('generación total con año y dígito: ' + (ANIO-2) + ' (gen ' + ((ANIO-2)%10) + ') · 2, ' + (ANIO-1) + ' · 1, ' + (ANIO-3) + ' · 1 (sin el vendido)',
     new RegExp(gl(2) + '2').test(txt) && new RegExp(gl(1) + '1').test(txt) && new RegExp(gl(3) + '1').test(txt) && !/ · 5/.test(txt.slice(txt.indexOf('Generación'))), txt.slice(txt.indexOf('Generación'), txt.indexOf('Generación') + 160));
   chequear('generación del potrero 12 se une pese al espacio en el nombre', /Potrero 12[\s\S]*?Generación \(con caravana\)/.test(st));
+  // 9/11/2026 (revisión): la fila solo-SNIG (gen de hace 5 años, sin ultima_lectura) no suma a la generación
+  chequear('la fila solo-SNIG (sin ultima_lectura) no entra en la generación', !txt.includes('(gen ' + ((ANIO - 5) % 10) + ')'), txt.slice(txt.indexOf('Generación'), txt.indexOf('Generación') + 200));
+  chequear('la generación pide ultima_lectura al padrón', a.llamadas.some(l => l.url.includes('animales_caravana') && l.url.includes('ultima_lectura')));
   chequear('el potrero que no figura en el stock queda aparte', st.includes('sin potrero del stock') && st.indexOf('FORCER') === -1 && st.includes(String(ANIO-3)));
   chequear('nota de cobertura (3 de 180)', txt.includes('4 de 180') || txt.includes('3 de 180'), txt.slice(txt.indexOf('Cuenta')));
   chequear('potrero 3 antes que 12 (orden numérico)', st.indexOf('Potrero 3') < st.indexOf('Potrero 12'));

@@ -617,7 +617,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v2.24</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.00</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1373,7 +1373,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"2.27","manejo":false,"versionMovil":"2.24","simpleHabilitado":true,"versionMovilSimple":"1.64","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"bano":false,"caravanasHabilitado":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.00","manejo":false,"versionMovil":"3.00","simpleHabilitado":true,"versionMovilSimple":"2.00","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":false,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -2111,7 +2111,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'movil-2.24';
+const VERSION_APP = 'movil-3.00';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -4532,6 +4532,20 @@ function agregarCaravanaMuerte(id){
     categoria: datos.categoria, cantidad: datos.cantidad, dueno: datos.dueno, caravana, fechaOriginal: h.fecha, ...conIdOriginal(h)});
   renderDetalle(ub.potrero);
   toast(caravana ? 'Caravana guardada' : 'Caravana borrada');
+  if(caravana) snigAvisarCaravanaMuerte(caravana);
+}
+/* 9/11/2026: después de guardar la caravana, un segundo toast con el propietario según el SNIG. No bloquea
+   ni cambia lo guardado; sin señal o sin datos no dice nada. */
+function snigAvisarCaravanaMuerte(caravana){
+  if(!CONFIG.propietarioSnig) return;
+  const id8 = normalizarCaravana(caravana);
+  if(!id8) return;
+  buscarCaravana(id8).then(r=>{
+    if(!r || !r.animal) return;
+    const s = propietarioSnigDe(r.animal);
+    if(!s) return;
+    toast(`Caravana ${id8}: ${s.texto}` + (s.alerta ? ` · ${s.alerta}` : ''));
+  }).catch(()=>{});
 }
 
 /* Igual que agregarCaravanaMuerte pero para el Nº de guía DICOSE/SNIG
@@ -5888,8 +5902,84 @@ function abrirDetalleDuenoPotrero(nombre){
   document.getElementById('detalle-dueno-tabla').innerHTML = `<table class="tabla-animales">
     <thead><tr><th>Categoría</th><th>${CONFIG.duenoLabel}</th><th style="text-align:right;">Cant.</th></tr></thead>
     <tbody>${filas || '<tr><td colspan="3" style="color:#8a8465;">Sin animales registrados</td></tr>'}</tbody>
-  </table>`;
+  </table>${CONFIG.propietarioSnig ? '<div id="detalle-dueno-snig" style="margin-top:12px;"></div>' : ''}`;
   document.getElementById('modal-detalle-dueno').style.display = 'flex';
+  if(CONFIG.propietarioSnig) cargarSnigEnDetalleDueno(nombre);
+}
+/* 9/11/2026 (3F, a pedido de Pedro; solo con CONFIG.propietarioSnig): debajo del desglose de arriba, "Según el SNIG
+   (última lectura del bastón)" del potrero abierto. Solo LEE: no valida ni bloquea ningún movimiento entre potreros.
+   Carga el padrón una vez por apertura (con "Cargando…"); si no hay señal, un renglón de aviso y lo demás intacto. */
+let _snigDetalleReq = 0;
+async function cargarSnigEnDetalleDueno(nombre){
+  const req = ++_snigDetalleReq;
+  const el = () => document.getElementById('detalle-dueno-snig');
+  if(!el()) return;
+  el().innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Cargando…</p>';
+  const r = await padronParaStockSnig();
+  if(req !== _snigDetalleReq || !el()) return;
+  el().innerHTML = htmlSnigDetalleDueno(nombre, r);
+}
+/* Cálculo puro de la sección: animales del padrón ACTIVOS, leídos por el bastón, en_snig true y no ubicados en otro
+   campo (los mismos criterios que la pestaña del Stock total), cuyo potrero (última lectura) es este. Sin SNIG o sin
+   lectura = stock del potrero menos lo cubierto, nunca negativo; si el SNIG tiene más, se marca el exceso. */
+/* 9/11/2026 (revisión): quitarAcentos solo existe en el bloque @completo; estas funciones del SNIG corren también en
+   Campo, así que usan esta copia propia (la misma regla). */
+function quitarAcentosSnig(s){ return String(s).normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function normNombrePotreroSnig(s){ return quitarAcentosSnig(String(s == null ? '' : s).trim().toLowerCase()); }
+/* 9/11/2026 (a pedido de Pedro): el padrón y el stock se comparan por FAMILIA de tipo de animal (ver familiaCategoriaSnig).
+   Sin sumar las familias 'Otras' ni 'Sin categoría' del padrón, que no se pueden comparar: van aparte y no se restan. */
+function resumenSnigPotrero(padron, nombre){
+  const clave = normNombrePotreroSnig(nombre);
+  const stock = {};
+  detalleAnimales(estado.potreros[nombre] ? estado.potreros[nombre].animales : {}).forEach(x=>{
+    const fam = familiaCategoriaSnig(x.cat);
+    stock[fam] = (stock[fam] || 0) + x.cant;
+  });
+  const porDueno = {}, cubiertos = {};
+  let noComparables = 0;
+  (padron || []).forEach(a=>{
+    if(!a || a.estado_vida !== 'ACTIVO' || !a.ultima_lectura || a.en_snig !== true) return;
+    if(!a.potrero || normNombrePotreroSnig(a.potrero) !== clave) return;
+    if(a.campo_snig && a.campo_snig !== ESTABLECIMIENTO) return;
+    const fam = familiaCategoriaSnig(a.categoria);
+    if(FAMILIAS_SNIG.indexOf(fam) < 0){ noComparables++; return; }
+    const dueno = propietarioSnigDe(a).texto;
+    porDueno[dueno] = porDueno[dueno] || {};
+    porDueno[dueno][fam] = (porDueno[dueno][fam] || 0) + 1;
+    cubiertos[fam] = (cubiertos[fam] || 0) + 1;
+  });
+  const filas = [];
+  Object.keys(porDueno).sort((x, y)=> x.localeCompare(y, 'es')).forEach(dueno=>{
+    FAMILIAS_SNIG.forEach(fam=>{
+      if(porDueno[dueno][fam]) filas.push({dueno, fam, n: porDueno[dueno][fam]});
+    });
+  });
+  let sinSnig = 0, exceso = 0;
+  FAMILIAS_SNIG.forEach(fam=>{
+    const t = stock[fam] || 0, c = cubiertos[fam] || 0;
+    sinSnig += Math.max(0, t - c);
+    exceso += Math.max(0, c - t);
+  });
+  return {filas, sinSnig, exceso, otrasStock: stock[FAMILIA_OTRAS_SNIG] || 0, noComparables};
+}
+function htmlSnigDetalleDueno(nombre, r){
+  if(r.error) return `<p style="font-size:12.5px;color:#96601a;">No se pudo consultar el SNIG (${esc(String(r.error).slice(0, 120))}). Necesitás señal para ver esta parte; el desglose de arriba no cambia.</p>`;
+  const d = resumenSnigPotrero(r.filas, nombre);
+  let h = (r.deCache ? avisoCopiaPadronHTML({fechaCache: r.fechaCache}) : '')
+    + '<div style="font-weight:600;font-size:13.5px;margin-bottom:4px;">Por tipo de animal, según el SNIG y la última lectura del bastón</div>'
+    + '<p style="font-size:12px;color:var(--texto-suave);margin:0 0 6px;">Según la última lectura: puede estar atrasado hasta la próxima pasada del bastón.</p>';
+  if(d.filas.length){
+    h += `<table class="tabla-animales"><thead><tr><th>Propietario (SNIG)</th><th>Tipo de animal</th><th style="text-align:right;">Animales</th></tr></thead><tbody>
+      ${d.filas.map(f=> `<tr><td>${esc(f.dueno)}</td><td>${esc(f.fam)}</td><td class="num">${f.n}</td></tr>`).join('')}
+    </tbody></table>`;
+  }else{
+    h += '<p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 6px;">Ningún animal de este potrero leído por el bastón según el SNIG.</p>';
+  }
+  h += `<p style="font-size:12.5px;margin:8px 0 2px;">Sin SNIG o sin lectura: <strong>${d.sinSnig}</strong></p>`;
+  if(d.exceso) h += `<div style="font-size:12px;color:#b7791f;margin-top:4px;">⚠ el SNIG tiene ${d.exceso} más que el stock del potrero (revisar)</div>`;
+  if(d.otrasStock) h += `<p style="font-size:12px;color:var(--texto-suave);margin:6px 0 0;">En la app, sin comparar con el SNIG: ${d.otrasStock}. El stock de "Otros bovinos" no se puede comparar con las categorías del bastón.</p>`;
+  if(d.noComparables) h += `<p style="font-size:12px;color:var(--texto-suave);margin:4px 0 0;">Según el SNIG, sin categoría o con categoría no comparable: ${d.noComparables}</p>`;
+  return h;
 }
 document.getElementById('detalle-dueno-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-detalle-dueno').style.display = 'none';
@@ -6742,7 +6832,7 @@ function mostrarFormulario(nombre, accion, prefill){
 
   if(accion==='muerte'){
     zona.innerHTML = `
-      <div class="form-accion">
+      <div class="form-accion"${prefill?' data-correccion="1"':''}>
         <h3>Registrar muerte en ${esc(nombre)}</h3>
         <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
         <div class="form-row" id="f-grupo-fila" style="display:none;"><label>Ternero</label><select id="f-grupo">${opcionesGrupoTernero(prefill?prefill.grupoTernero:undefined)}</select></div>
@@ -8652,7 +8742,7 @@ function normalizarCaravana(txt){
    Se baja desde sincronizar(): entera la primera vez y una vez por día; si no, diferencias (ultima_lectura >=) cada 30 min.
    Vale solo para el ID de dispositivo que la bajó. Sin IndexedDB queda en memoria, como la cola de fotos.
    Si la ficha empieza a mostrar una columna nueva, agregarla a PADRON_COLUMNAS. Detalle en CLAUDE.md. */
-const PADRON_COLUMNAS = 'id8,sexo,categoria,gen,propietario,potrero,estado_carencia,fecha_apto,producto_carencia,proximo_tratamiento,ultimo_peso,peso_fecha,ultima_lectura,estado_vida,baja_motivo,baja_fecha,baja_guia,pesadas,ganancia_diaria,rodeo,rodeo_fecha,nota,nota_fecha';
+const PADRON_COLUMNAS = 'id8,sexo,categoria,gen,propietario,potrero,estado_carencia,fecha_apto,producto_carencia,proximo_tratamiento,ultimo_peso,peso_fecha,ultima_lectura,estado_vida,baja_motivo,baja_fecha,baja_guia,pesadas,ganancia_diaria,rodeo,rodeo_fecha,nota,nota_fecha,en_snig,propietario_snig,campo_snig,snig_ingreso';
 const PADRON_CADA_MS = 30 * 60 * 1000;          // diferencias: cada media hora como mucho
 const PADRON_COMPLETA_MS = 24 * 60 * 60 * 1000; // bajada entera: una vez por día
 const PADRON_VIEJO_DIAS = 7;                    // desde ahí la ficha avisa que la copia es vieja
@@ -8809,6 +8899,180 @@ async function buscarCaravana(id8){
   return {animal: copia.animales[id8] || null, deCache: true, fechaCache: copia.actualizadoEn};
 }
 
+/* 9/11/2026: varias caravanas a la vez (Eventos de manejo). Con copia del celular y sin señal, usa la copia.
+   Con señal consulta el padrón en trozos de 100 y, si falla, cae a la copia si la hay. Como mucho 300 caravanas. */
+async function buscarCaravanasLote(ids){
+  const lista = ids.slice(0, 300);
+  const truncado = ids.length > lista.length;
+  const client = clienteSupabase();
+  const copia = PADRON_OFFLINE ? await padronLocal.leer() : null;
+  const desdeCopia = ()=>{
+    const mapa = {};
+    lista.forEach(id=>{ if(copia.animales[id]) mapa[id] = copia.animales[id]; });
+    return {mapa, deCache: true, fechaCache: copia.actualizadoEn, truncado};
+  };
+  if(!client || !navigator.onLine) return copia ? desdeCopia() : {error: 'sin conexión'};
+  try{
+    const mapa = {};
+    for(let i = 0; i < lista.length; i += 100){
+      const res = await client.from(TABLA_CARAVANAS).select(PADRON_COLUMNAS)
+        .eq('establecimiento', ESTABLECIMIENTO).in('id8', lista.slice(i, i + 100));
+      if(res.error) throw new Error(res.error.message || 'error de consulta');
+      limpiarTextoRemoto(res.data || []).forEach(a=>{ if(a && a.id8) mapa[a.id8] = a; });
+    }
+    return {mapa, truncado};
+  }catch(e){
+    return copia ? desdeCopia() : {error: 'sin señal'};
+  }
+}
+
+/* ---------- LÍNEA DEL PROPIETARIO SEGÚN EL SNIG EN LOS FORMULARIOS (9/11/2026, CONFIG.propietarioSnig) ----------
+   Debajo de cada casillero de caravana (muerte, muerte de desaparecido, vecinos y Eventos de manejo) sale una línea
+   informativa. NUNCA bloquea ni cambia lo que guarda el formulario, y si algo falla (sin señal, error) no muestra nada.
+   Delegación de eventos: los formularios se arman dinámicamente. Sin CONFIG.propietarioSnig no se registra nada. */
+const _snigEstado = new WeakMap();
+function snigTipoCampo(el){
+  if(!el || !el.tagName || !el.getAttribute) return null;
+  if(el.id === 'f-caravana' || el.id === 'md-caravana' || el.id === 'fv-caravana') return 'una';
+  if(el.getAttribute('data-vp') === 'caravana') return 'una';
+  if(el.id === 'em-caravanas') return 'lista';
+  return null;
+}
+function snigLineaDe(el){
+  let linea = el.nextElementSibling;
+  if(!linea || !linea.classList.contains('snig-linea')){
+    linea = document.createElement('div');
+    linea.className = 'snig-linea';
+    linea.setAttribute('data-snig-para', el.id || el.getAttribute('data-vp') || '');
+    linea.style.cssText = 'font-size:12px;color:#5a6572;width:100%;flex-basis:100%;margin-top:2px;';
+    el.insertAdjacentElement('afterend', linea);
+  }
+  return linea;
+}
+function snigLineaUnaHTML(r){
+  if(!r || r.error) return '';
+  if(!r.animal){
+    if(r.deCache || !propietarioSnigAusente()) return '';
+    return `<div style="color:#b7791f;font-weight:600;">${esc(propietarioSnigAusente())}</div>`;
+  }
+  return snigBloqueHTML(r.animal);
+}
+function snigLineaLoteHTML(r, ids){
+  if(!r || r.error || !ids.length) return '';
+  const cont = {};
+  let sinSnig = 0, otroCampo = 0, ausentes = 0;
+  const excepcionales = [];
+  ids.slice(0, 300).forEach(id=>{
+    const a = r.mapa[id];
+    if(!a){ ausentes++; excepcionales.push(`${id}: no figura en el padrón`); return; }
+    const s = propietarioSnigDe(a);
+    if(!s) return;
+    const motivos = [];
+    if(a.en_snig === true) cont[s.texto] = (cont[s.texto] || 0) + 1;
+    else { sinSnig++; motivos.push(s.texto); }
+    if(s.alerta){ otroCampo++; motivos.push('otro campo según el SNIG: ' + s.campoOtro); }
+    if(motivos.length) excepcionales.push(`${id}: ${motivos.join(' · ')}`);
+  });
+  const partes = [`${ids.length} caravanas`];
+  const porDueno = Object.keys(cont).sort((x, y)=> cont[y] - cont[x]).map(n => `${n} ${cont[n]}`);
+  if(porDueno.length) partes.push('Propietario (SNIG): ' + porDueno.join(', '));
+  if(sinSnig) partes.push(`Sin SNIG ${sinSnig}`);
+  if(otroCampo) partes.push(`⚠ ${otroCampo} ${otroCampo === 1 ? 'está' : 'están'} en otro campo según el SNIG`);
+  if(ausentes) partes.push(`${ausentes} ${ausentes === 1 ? 'no figura' : 'no figuran'} en el padrón`);
+  if(r.deCache) partes.push('sin señal: copia del padrón');
+  if(r.truncado) partes.push('se miraron las primeras 300');
+  const excep = excepcionales.slice(0, 10).map(t => `<div>${esc(t)}</div>`).join('')
+    + (excepcionales.length > 10 ? `<div>… y ${excepcionales.length - 10} más</div>` : '');
+  return `<div>${esc(partes.join(' · '))}</div>`
+    + (excep ? `<div style="color:#b7791f;">${excep}</div>` : '');
+}
+function snigProgramar(el){
+  const tipo = snigTipoCampo(el);
+  if(!tipo) return;
+  let est = _snigEstado.get(el);
+  if(!est){ est = {timer: null, seq: 0}; _snigEstado.set(el, est); }
+  clearTimeout(est.timer);
+  const mio = ++est.seq;
+  const linea = snigLineaDe(el);
+  // 9/11/2026 (3C): si la caravana cambió, el "sugerido" anterior ya no vale; se quita de inmediato
+  linea.querySelectorAll('.snig-sugerido').forEach(n => n.remove());
+  // 9/11/2026 (revisión): y el dueño que el SNIG había preseleccionado vuelve al de antes (si la persona no lo tocó)
+  if(tipo === 'una') snigVolverOriginal(snigSelDueno(el));
+  let ids;
+  if(tipo === 'lista'){
+    // solo los trozos con 8 dígitos o más; después, el mismo parser que al guardar la lista
+    const crudos = String(el.value || '').split(/[\s,;]+/).filter(t => t.replace(/\D/g, '').length >= 8).join(' ');
+    ids = normalizarCaravanasEntrada(crudos);
+  }else{
+    ids = String(el.value || '').replace(/\D/g, '').length >= 8 ? [normalizarCaravana(el.value)] : [];
+  }
+  if(!ids.length){ linea.innerHTML = ''; return; }
+  est.timer = setTimeout(async ()=>{
+    let html = '';
+    let animal = null;
+    try{
+      if(tipo === 'lista'){
+        html = snigLineaLoteHTML(await buscarCaravanasLote(ids), ids);
+      }else{
+        const r = await buscarCaravana(ids[0]);
+        html = snigLineaUnaHTML(r);
+        animal = r && !r.error ? r.animal : null;
+      }
+    }catch(e){ html = ''; animal = null; }
+    if(est.seq !== mio) return;   // el valor cambió mientras buscaba: se descarta el resultado viejo
+    linea.innerHTML = html;
+    if(tipo === 'una') snigSugerirDueno(el, animal, linea);
+  }, 350);
+}
+/* 9/11/2026 (3C): preselecciona en la muerte (#f-caravana) el dueño que dice el SNIG, si ese nombre es una de las
+   opciones del select de dueño y la persona no lo tocó. Solo cambia el valor del select (sin disparar change: el
+   formulario no recalcula nada con el dueño); lo que se guarda al confirmar sigue siendo lo que diga el select.
+   #md-caravana y #fv-caravana no tienen select de dueño: no entran. */
+let _snigSeteando = false;
+/* 9/11/2026 (revisión): el select de dueño de la muerte. Sin formulario de muerte (o en una corrección, que trae
+   prefill) no hay sugerencia. Reglas: (1) el valor original se guarda ANTES de la primera sugerencia; (2) cuando la
+   sugerencia deja de valer (caravana cambiada, borrada o sin dueño del SNIG que sea opción) el select vuelve al
+   original, salvo que la persona lo haya tocado; (3) "tocado" = cualquier interacción de la persona con el select
+   (pointerdown, keydown, focus, change). Los cambios hechos por el código no cuentan. */
+function snigSelDueno(el){
+  if(!el || el.id !== 'f-caravana') return null;
+  const form = el.closest('.form-accion');
+  return form ? form.querySelector('#f-dueno') : null;
+}
+function snigVolverOriginal(sel){
+  if(!sel || !sel.hasAttribute('data-snig-sugerido')) return;
+  sel.removeAttribute('data-snig-sugerido');
+  if(sel.hasAttribute('data-snig-tocado') || !sel.hasAttribute('data-snig-original')) return;
+  _snigSeteando = true;
+  try{ sel.value = sel.getAttribute('data-snig-original'); } finally { _snigSeteando = false; }
+}
+function snigSugerirDueno(el, animal, linea){
+  if(!CONFIG.propietarioSnig || !el || !linea) return;
+  const sel = snigSelDueno(el);
+  if(!sel) return;
+  if(sel.closest('.form-accion').hasAttribute('data-correccion') || sel.hasAttribute('data-snig-tocado')) return;
+  const s = animal && animal.en_snig === true ? propietarioSnigDe(animal) : null;
+  if(!s || !s.texto || !Array.from(sel.options).some(o => o.value === s.texto)){ snigVolverOriginal(sel); return; }
+  if(!sel.hasAttribute('data-snig-original')) sel.setAttribute('data-snig-original', sel.value);
+  _snigSeteando = true;
+  try{ sel.value = s.texto; } finally { _snigSeteando = false; }
+  sel.setAttribute('data-snig-sugerido', '1');
+  linea.insertAdjacentHTML('beforeend', `<div class="snig-sugerido" style="color:#1e7b34;font-weight:600;">Dueño sugerido por el SNIG: ${esc(s.texto)} (podés cambiarlo)</div>`);
+}
+if(CONFIG.propietarioSnig){
+  document.addEventListener('input', e=>{ snigProgramar(e.target); });
+  // valores precargados (muerte de un desaparecido, edición de un evento): la línea sale al entrar al casillero
+  document.addEventListener('focusin', e=>{ if(snigTipoCampo(e.target) && e.target.value) snigProgramar(e.target); });
+  // 9/11/2026 (revisión): cualquier interacción de la persona con el select de dueño lo deja "tocado"
+  ['pointerdown', 'keydown', 'focusin'].forEach(evento => document.addEventListener(evento, e=>{
+    if(e.target && e.target.id === 'f-dueno') e.target.setAttribute('data-snig-tocado', '1');
+  }));
+  // 3C: si la persona cambia el dueño a mano, la sugerencia ya no se pisa (los cambios del código no cuentan)
+  document.addEventListener('change', e=>{
+    if(e.target && e.target.id === 'f-dueno' && !_snigSeteando) e.target.setAttribute('data-snig-tocado', '1');
+  });
+}
+
 /* La carencia, resuelta con la fecha de HOY del celular (1/10/2026).
    El padrón lo publica la PC una vez al día (publicar_animales.py), y hasta
    hoy publicaba también los días que faltaban. Ese número baja uno por día
@@ -8907,11 +9171,221 @@ function pesadasFichaHTML(a){
 /* Fase reproductiva: solo la PC la define (bloque @pc de abajo); en las demás no se llama (CONFIG.reproduccion apagado). */
 let reproFichaHTML = () => '';
 
+/* 9/11/2026 (3E-1, a pedido de Pedro): pestaña "Por propietario SNIG" del Stock total. Solo con CONFIG.propietarioSnig
+   (La Vuelta y María Laura; Pone Chico no la tiene). Responde: de los animales de ESTE campo, ¿de quién son según el
+   SNIG? Solo LEE: el stock sigue siendo el de los eventos y esta vista no lo modifica ni lo bloquea. Los animales
+   solo-SNIG (el SNIG los tiene y el bastón nunca los leyó) NO entran en las categorías: van aparte al pie. */
+function asegurarPestanaSnig(){
+  if(!CONFIG.propietarioSnig || document.getElementById('stock-panel-4')) return;
+  const boton = document.createElement('button');
+  boton.dataset.tab = '4';
+  boton.className = 'stock-tab-btn';
+  boton.textContent = 'Por propietario SNIG';
+  document.getElementById('stock-tabs').appendChild(boton);
+  const panel = document.createElement('div');
+  panel.dataset.panel = '4';
+  panel.id = 'stock-panel-4';
+  panel.style.display = 'none';
+  const pie = document.querySelector('#modal-stock .form-botones');
+  pie.parentNode.insertBefore(panel, pie);
+}
+/* Padrón completo del campo (animales_caravana, paginado con traerTodo). Sin señal: en el celular con copia
+   (CONFIG.padronOffline) usa la copia; si no hay copia o es la PC, devuelve el error para mostrar el mensaje. */
+async function padronParaStockSnig(){
+  const client = clienteSupabase();
+  const copia = async () => {
+    if(!PADRON_OFFLINE) return null;
+    const c = await padronLocal.leer();
+    return c ? {filas: Object.values(c.animales || {}), deCache: true, fechaCache: c.actualizadoEn} : null;
+  };
+  if(!client || !navigator.onLine) return (await copia()) || {error: 'sin conexión'};
+  try{
+    const res = await traerTodo(()=> client.from(TABLA_CARAVANAS).select(PADRON_COLUMNAS)
+      .eq('establecimiento', ESTABLECIMIENTO), null, 'id8');
+    if(!res.error) return {filas: limpiarTextoRemoto(res.data || [])};
+    return (await copia()) || {error: res.error.message || 'error de consulta'};
+  }catch(e){
+    return (await copia()) || {error: 'sin señal'};
+  }
+}
+/* 9/11/2026 (a pedido de Pedro): el padrón del bastón y el stock de la app no usan los mismos nombres ('TERNERO', 'VAQ',
+   'Vaca CUT' contra 'Terneros', 'Vaquillonas 1-2 años'...). Por eso el SNIG se compara por FAMILIA de tipo de animal.
+   Esta función es la única regla: el Stock total, Ver por dueño y el PDF/Excel la usan. Cambiarla cambia las tres vistas.
+   'Otras' = lo que no es de las 5 familias (Otros bovinos, bueyes, ovinos, equinos). 'Sin categoría' = vacío (solo padrón). */
+const FAMILIAS_SNIG = ['Terneros/as', 'Vacas', 'Vaquillonas', 'Novillos', 'Toros'];
+const FAMILIA_OTRAS_SNIG = 'Otras';
+const FAMILIA_SIN_CAT_SNIG = 'Sin categoría';
+function familiaCategoriaSnig(nombre){
+  const s = quitarAcentosSnig(String(nombre == null ? '' : nombre).trim().toLowerCase());
+  if(!s) return FAMILIA_SIN_CAT_SNIG;
+  if(/^(tern|teros)/.test(s)) return 'Terneros/as';
+  if(/^vaca/.test(s) || s === 'vinv' || s === 'vcut') return 'Vacas';
+  if(/^vaq/.test(s)) return 'Vaquillonas';
+  if(/^nov/.test(s) || /^n\+?3/.test(s)) return 'Novillos';
+  if(/^(toro|torito)/.test(s)) return 'Toros';
+  return FAMILIA_OTRAS_SNIG;
+}
+/* Cálculo puro (usa el stock de la app igual que el Stock total y el padrón que se le pasa). Por familia:
+   propietarios según el SNIG (vivo, leído por el bastón, en_snig, campo_snig vacío o de este campo),
+   "Sin SNIG" = stock de la app menos lo que cubre el SNIG (0 si el SNIG tiene más: se marca el exceso).
+   Total = stock de la app, sin cambios. */
+function resumenPorPropietarioSnig(padron){
+  const stock = {}, stockDueno = {};
+  POTREROS_GEO.forEach(p=> detalleAnimales(estado.potreros[p.nombre].animales).forEach(x=>{
+    const fam = familiaCategoriaSnig(x.cat);
+    stock[fam] = (stock[fam] || 0) + x.cant;
+    const firma = textoFirma(x.dueno);
+    stockDueno[fam] = stockDueno[fam] || {};
+    stockDueno[fam][firma] = (stockDueno[fam][firma] || 0) + x.cant;
+  }));
+  const snig = {}, noComparable = {};
+  let soloSnig = 0, otroCampo = 0;
+  (padron || []).forEach(a=>{
+    if(!a) return;
+    const vivo = a.estado_vida === 'ACTIVO';
+    const leida = !!a.ultima_lectura;
+    const campoAjeno = !!a.campo_snig && a.campo_snig !== ESTABLECIMIENTO;
+    if(vivo && leida && campoAjeno){ otroCampo++; return; }
+    if(!vivo || a.en_snig !== true || campoAjeno) return;
+    if(!leida){ soloSnig++; return; }
+    const fam = familiaCategoriaSnig(a.categoria);
+    const dueno = propietarioSnigDe(a).texto;
+    const bolsa = FAMILIAS_SNIG.indexOf(fam) >= 0 ? snig : noComparable;
+    bolsa[fam] = bolsa[fam] || {};
+    bolsa[fam][dueno] = (bolsa[fam][dueno] || 0) + 1;
+  });
+  const porDueno = obj => Object.entries(obj || {}).sort((x, y)=> (y[1] - x[1]) || x[0].localeCompare(y[0], 'es'));
+  const suma = obj => Object.values(obj || {}).reduce((s, n)=> s + n, 0);
+  const filas = [];
+  FAMILIAS_SNIG.forEach(fam=>{
+    if(stock[fam] === undefined && !snig[fam]) return;
+    const total = stock[fam] || 0;
+    const cubiertos = suma(snig[fam]);
+    filas.push({fam, total, comparable: true, porDueno: porDueno(snig[fam]),
+      sinSnig: Math.max(0, total - cubiertos), exceso: Math.max(0, cubiertos - total),
+      enApp: porDueno(stockDueno[fam])});
+  });
+  if(stock[FAMILIA_OTRAS_SNIG] !== undefined){
+    filas.push({fam: FAMILIA_OTRAS_SNIG, total: stock[FAMILIA_OTRAS_SNIG], comparable: false, porDueno: [],
+      sinSnig: 0, exceso: 0, enApp: porDueno(stockDueno[FAMILIA_OTRAS_SNIG])});
+  }
+  const sinComparable = [FAMILIA_OTRAS_SNIG, FAMILIA_SIN_CAT_SNIG].filter(f=> noComparable[f])
+    .map(fam=> ({fam, porDueno: porDueno(noComparable[fam])}));
+  return {filas, sinComparable, soloSnig, otroCampo};
+}
+function htmlPorPropietarioSnig(d){
+  let h = '<p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 10px;">Por tipo de animal, según el SNIG y la última lectura del bastón. Solo lectura: no cambia el stock.</p>';
+  if(!d.filas.length && !d.sinComparable.length) h += '<p style="font-size:12.5px;color:var(--texto-suave);">Ningún animal con stock cargado.</p>';
+  h += d.filas.map(f=> f.comparable ? `<div style="margin-bottom:14px;">
+      <table class="tabla-animales">
+        <thead><tr><th>${esc(f.fam)}</th><th style="text-align:right;">Animales</th></tr></thead>
+        <tbody>
+          ${f.porDueno.map(([n, c])=> `<tr><td>${esc(n)}</td><td class="num">${c}</td></tr>`).join('')}
+          <tr><td>Sin SNIG</td><td class="num">${f.sinSnig}</td></tr>
+          <tr class="total"><td>Total</td><td class="num">${f.total}</td></tr>
+        </tbody>
+      </table>
+      ${f.exceso ? `<div style="font-size:12px;color:#b7791f;margin-top:4px;">⚠ el SNIG tiene ${f.exceso} más que el stock (revisar)</div>` : ''}
+      <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">En la app: ${f.enApp.map(([n, c])=> `${esc(n)} ${c}`).join(' · ') || '—'}</div>
+    </div>` : `<div style="margin-bottom:14px;">
+      <table class="tabla-animales">
+        <thead><tr><th>${esc(f.fam)}</th><th style="text-align:right;">Animales</th></tr></thead>
+        <tbody><tr class="total"><td>Total en la app</td><td class="num">${f.total}</td></tr></tbody>
+      </table>
+      <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">Incluye "Otros bovinos", bueyes, ovinos y equinos: el stock de "Otros bovinos" no se puede comparar con las categorías del bastón.</div>
+    </div>`).join('');
+  if(d.sinComparable.length){
+    h += '<table class="tabla-animales"><thead><tr><th>Sin categoría o categoría no comparable</th><th style="text-align:right;">Animales</th></tr></thead><tbody>';
+    d.sinComparable.forEach(s=>{
+      h += `<tr><td colspan="2" style="font-weight:600;">${esc(s.fam)}</td></tr>`;
+      s.porDueno.forEach(([n, c])=>{ h += `<tr><td>${esc(n)}</td><td class="num">${c}</td></tr>`; });
+    });
+    h += '</tbody></table>';
+  }
+  h += `<p style="font-size:12.5px;margin:12px 0 2px;">Solo en el SNIG, sin lectura (ver 🧾 SNIG sin lectura): <strong>${d.soloSnig}</strong></p>`;
+  h += `<p style="font-size:12.5px;margin:0 0 2px;">Según el SNIG están en otro campo: <strong>${d.otroCampo}</strong></p>`;
+  return h;
+}
+async function cargarPanelPropietarioSnig(){
+  const el = document.getElementById('stock-panel-4');
+  if(!el) return;
+  const r = await padronParaStockSnig();
+  if(r.error){
+    el.innerHTML = `<p style="font-size:12.5px;color:#96601a;">No se pudo consultar el SNIG (${esc(String(r.error).slice(0, 120))}). Necesitás señal para ver esta pestaña; el resto del Stock total no cambia.</p>`;
+    return;
+  }
+  el.innerHTML = (r.deCache ? avisoCopiaPadronHTML({fechaCache: r.fechaCache}) : '') + htmlPorPropietarioSnig(resumenPorPropietarioSnig(r.filas));
+}
+
+/* ---------- PROPIETARIO SEGÚN EL SNIG (9/11/2026, CONFIG.propietarioSnig: La Vuelta y María Laura) ----------
+   El Lector publica en animales_caravana: propietario_snig (nombre del propietario según el SNIG), en_snig
+   (true: el SNIG la tiene; false: no la tiene aunque hay export de ese campo; null: no hay export de ese campo)
+   y campo_snig (slug del campo donde el SNIG la ubica). La app SOLO LEE. La alerta de campo nunca bloquea nada.
+   Sin CONFIG.propietarioSnig (Pone Chico, apagado) no sale ninguna línea. */
+const CAMPOS_SNIG_LEGIBLES = {la_vuelta: 'La Vuelta', maria_laura: 'María Laura', pone_chico: 'Pone Chico'};
+function propietarioSnigDe(a){
+  if(!CONFIG.propietarioSnig || !a || a.en_snig == null) return null;
+  let texto;
+  if(a.en_snig === true){
+    const mapa = CONFIG.propietarioSnig.mapaDuenos || {};
+    const nombre = a.propietario_snig || '';
+    if(!nombre) texto = 'Propietario sin nombre en el SNIG';
+    else texto = Object.prototype.hasOwnProperty.call(mapa, nombre) ? mapa[nombre] : nombre;
+  }else{
+    texto = 'Sin SNIG — firma: ' + textoFirma(a.propietario);
+  }
+  /* 9/11/2026 (Pedro): el SNIG manda sobre el campo donde está el animal. Con snig_ingreso se dice desde cuándo;
+     si ese ingreso es posterior a la última lectura del bastón, se aclara (puede ser un animal cargado por error
+     o que todavía no se leyó). En el lote (snigLineaLoteHTML) se usa solo campoOtro, sin fecha. */
+  let alerta = '', campoOtro = '';
+  if(a.campo_snig && a.campo_snig !== ESTABLECIMIENTO){
+    campoOtro = CAMPOS_SNIG_LEGIBLES[a.campo_snig] || a.campo_snig;
+    alerta = '⚠ Según el SNIG está en ' + campoOtro;
+    const ingreso = a.snig_ingreso ? String(a.snig_ingreso).slice(0, 10) : '';
+    const lectura = a.ultima_lectura ? String(a.ultima_lectura).slice(0, 10) : '';
+    if(ingreso){
+      alerta += ' desde el ' + fechaISOaDisplay(ingreso);
+      if(lectura && ingreso > lectura) alerta += ' (después de la última lectura del bastón)';
+    }
+  }
+  return {texto, alerta, campoOtro};
+}
+function propietarioSnigAusente(){
+  return CONFIG.propietarioSnig ? '⚠ No figura en el padrón ni en el SNIG de este campo' : '';
+}
+/* 9/11/2026: un animal que el SNIG tiene pero el bastón nunca leyó (sin carencia, sin última lectura) no tiene
+   datos sanitarios: NO es "apto". Criterio tan estricto a propósito, para no cambiar ningún animal existente. */
+function snigSinDatosSanitarios(a){
+  // Con CONFIG.propietarioSnig apagado (Pone Chico) no se muestra nada nuevo: ni este estado (9/11/2026).
+  return !!CONFIG.propietarioSnig && !!a && a.en_snig === true && !a.estado_carencia && !a.ultima_lectura;
+}
+/* 9/11/2026 (a pedido de Pedro): estado de un solo-SNIG según cuánto hace que el SNIG lo tiene en el predio
+   (snig_ingreso). Se calcula con la fecha de HOY en el celular/PC, así cambia sola sin republicar, igual que la
+   carencia. Hasta 183 días: pendiente de primera lectura. Más, o sin fecha: vivo sin registro en el predio. */
+const SNIG_SIN_LECTURA_DIAS = 183;
+function snigEstadoSinLectura(a){
+  if(!snigSinDatosSanitarios(a)) return null;
+  const iso = a.snig_ingreso ? String(a.snig_ingreso).slice(0, 10) : '';
+  let dias = iso ? diasDesde(iso) : null;
+  if(dias != null && isNaN(dias)) dias = null;
+  if(dias != null && dias <= SNIG_SIN_LECTURA_DIAS) return {estado: 'pendiente', texto: '🆕 PENDIENTE DE PRIMERA LECTURA', dias};
+  return {estado: 'vivo_sin_registro', texto: '❓ VIVO SIN REGISTRO EN EL PREDIO', dias};
+}
+/* Líneas del propietario según el SNIG (texto ya traducido por mapaDuenos; el dueño del bastón pasa por textoFirma). */
+function snigBloqueHTML(a){
+  const s = propietarioSnigDe(a);
+  if(!s) return '';
+  return `<div style="font-size:12px;color:#5a6572;">${esc(a.en_snig === true ? 'Propietario (SNIG): ' + s.texto : s.texto)}</div>`
+    + (s.alerta ? `<div style="font-size:12px;color:#b7791f;font-weight:600;">${esc(s.alerta)}</div>` : '');
+}
+
 function fichaCaravanaHTML(a){
+  const snig = propietarioSnigDe(a);
   const filas = [
     ['Categoría', a.categoria],
     ['Sexo', a.sexo],
     ['Generación', a.gen],
+    ...(snig ? [['Propietario (SNIG)', snig.texto]] : []),
     [CONFIG.duenoLabel, a.propietario],
     ['Potrero', a.potrero],
     /* 13/10/2026: rodeo y nota que el bastón anotó en la ULTIMA lectura que los
@@ -8947,6 +9421,17 @@ function fichaCaravanaHTML(a){
         + (a.baja_guia ? `, con la guía ${a.baja_guia}` : '') + '.';
     }
     if(probable) detalle += ' Falta el export del SNIG de ese dueño para confirmarlo, así que tomalo como probable.';
+  }else if(snigSinDatosSanitarios(a)){
+    const sl = snigEstadoSinLectura(a);
+    if(sl.estado === 'pendiente'){
+      color = '#b7791f';
+      estado = sl.texto;
+      detalle = `El SNIG lo tiene en este campo desde el ${fechaISOaDisplay(String(a.snig_ingreso).slice(0, 10))} y el bastón todavía no lo leyó. Sin datos sanitarios: no se sabe si está en período de espera. No lo mandes a faena sin chequear.`;
+    }else{
+      color = '#8a4b0f';
+      estado = sl.texto;
+      detalle = 'El SNIG lo da vivo en este campo, pero hace más de 6 meses (o sin fecha de ingreso) que no figura en los registros del campo ni lo leyó el bastón. Puede estar muerto o haber salido sin baja en el SNIG, o haberse cargado por error, o simplemente no haberse leído nunca. La condición la dice el SNIG: confirmalo ahí. No lo mandes a faena.';
+    }
   }else if(car.estado === 'NO APTO'){
     color = 'var(--rojo-hacienda)';
     estado = '⛔ NO APTO';
@@ -8974,7 +9459,7 @@ function fichaCaravanaHTML(a){
   return `<div class="modal-info" style="border-left:4px solid ${color};padding-left:10px;margin:10px 0;">
       <div style="font-weight:700;color:${color};font-size:15px;">${estado}</div>
       <div>${esc(detalle)}</div>
-    </div>
+    </div>${snig && snig.alerta ? `<div style="color:#b7791f;font-weight:600;margin:-4px 0 8px;">${esc(snig.alerta)}</div>` : ''}
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${esc(v)}</td></tr>`).join('')}
     </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}${CONFIG.reproduccion ? reproFichaHTML(a) : ''}${CONFIG.manejo && typeof eventosManejoFichaHTML==='function' ? eventosManejoFichaHTML(a.id8) : ''}`;
@@ -8997,9 +9482,10 @@ async function ejecutarBusquedaCaravana(){
   // 31/10/2026: si vino de la copia del celular, arriba de todo dice de qué fecha son los datos
   const avisoCopia = r.deCache ? avisoCopiaPadronHTML(r) : '';
   if(!r.animal){
+    const snigAusente = !r.deCache && propietarioSnigAusente() ? `<p class="modal-info" style="color:#b7791f;">${esc(propietarioSnigAusente())}</p>` : '';
     caja.innerHTML = avisoCopia + (r.deCache
       ? `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en la copia del padrón de este celular. Puede ser un animal que todavía no bajó a la copia, uno que nunca pasó por la manga, o un número mal tipeado. Con señal se puede volver a buscar.</p>`
-      : `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Puede ser un animal que nunca pasó por la manga, o un número mal tipeado.</p>`);
+      : `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Puede ser un animal que nunca pasó por la manga, o un número mal tipeado.</p>`) + snigAusente;
     return;
   }
   caja.innerHTML = avisoCopia + fichaCaravanaHTML(r.animal);
@@ -10621,14 +11107,25 @@ scc.addEventListener('change', async ()=>{
        una carga con un número a revisar. Mismo criterio que "no está en el
        padrón", acá al lado, que también deja guardar. */
     if(a.estado_vida && a.estado_vida !== 'ACTIVO'){
-      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">📤 <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — <b>YA NO ESTÁ EN EL CAMPO</b> (${esc(resumenBaja(a))}). Revisá el número.${deCopia}</p>`;
+      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">📤 <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — <b>YA NO ESTÁ EN EL CAMPO</b> (${esc(resumenBaja(a))}). Revisá el número.${deCopia}</p>` + snigBloqueHTML(a);
       return;
     }
     // Por carenciaHoy() y no por a.estado_carencia: si el plazo venció entre
     // la última corrida de la PC y hoy, el padrón todavía lo trae NO APTO.
     const aviso = carenciaHoy(a).estado === 'NO APTO'
       ? ` <b style="color:var(--rojo-hacienda);">— NO APTO hasta el ${esc(a.fecha_apto||'?')}</b>` : '';
-    quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${esc(id8)}</b>: ${esc(partes.join(', '))}${aviso}${deCopia}</p>`;
+    // 9/11/2026: sin datos sanitarios (solo-SNIG) no es ✓ verde: amarillo. Y debajo, el propietario según el SNIG.
+    const slQuien = snigEstadoSinLectura(a);
+    if(slQuien){
+      const pendQuien = slQuien.estado === 'pendiente';
+      const iconoQuien = pendQuien ? '🆕' : '❓';
+      const dichoQuien = pendQuien
+        ? `pendiente de primera lectura (SNIG desde ${fechaISOaDisplay(String(a.snig_ingreso).slice(0, 10))}), sin datos sanitarios.`
+        : 'vivo sin registro en el predio, sin datos sanitarios.';
+      quien.innerHTML = `<p class="modal-info" style="color:${pendQuien ? '#b7791f' : '#8a4b0f'};">${iconoQuien} <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — ${esc(dichoQuien)}${deCopia}</p>` + snigBloqueHTML(a);
+    }else{
+      quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${esc(id8)}</b>: ${esc(partes.join(', '))}${aviso}${deCopia}</p>` + snigBloqueHTML(a);
+    }
   }
 });
 /* Confirmación explícita de "no tiene caravana": deja constancia
@@ -10909,6 +11406,8 @@ function abrirEventosManejo(){
   tiposPrevios.forEach(t=>{if(!Array.from(emEl('em-tipo').options).some(o=>o.value===t))emEl('em-tipo').add(new Option(t,t));});
   emEl('em-fecha').value=fechaISOHoy(); emEl('em-tipo').value='Destete'; emEl('em-tipo-otro').value='';emEl('em-guardar').textContent='Registrar evento';emEl('em-cancelar').style.display='none';
   emEl('em-potrero').value='';emEl('em-categoria').value='';emEl('em-cantidad').value='';emEl('em-caravanas').value='';emEl('em-obs').value='';
+  // 9/11/2026 (revisión): el valor cambió por código: se avisa con input para que la línea del SNIG se actualice
+  emEl('em-caravanas').dispatchEvent(new Event('input',{bubbles:true}));
   modal.style.display='flex';renderEventosManejo();
 }
 function guardarEventoManejo(){
@@ -10942,7 +11441,7 @@ if(emEl('btn-eventos-manejo')){
   emEl('em-tipo').addEventListener('change',()=>emEl('em-otro-wrap').style.display=emEl('em-tipo').value==='Otro…'?'':'none');
   emEl('em-filtro-tipo').addEventListener('change',renderEventosManejo);emEl('em-filtro-potrero').addEventListener('change',renderEventosManejo);
   emEl('em-caravanas').addEventListener('input',()=>{const n=normalizarCaravanasEntrada(emEl('em-caravanas').value).length;if(n)emEl('em-cantidad').value=n;});
-  emEl('em-csv').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const x=leerCaravanasDeCsv(decodificarCsvDatamars(r.result));if(x.error){toast(x.error);return;}emEl('em-caravanas').value=x.caravanas.join('\n');emEl('em-cantidad').value=x.caravanas.length;};r.readAsArrayBuffer(f);});
+  emEl('em-csv').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const x=leerCaravanasDeCsv(decodificarCsvDatamars(r.result));if(x.error){toast(x.error);return;}emEl('em-caravanas').value=x.caravanas.join('\n');emEl('em-caravanas').dispatchEvent(new Event('input',{bubbles:true}));emEl('em-cantidad').value=x.caravanas.length;};r.readAsArrayBuffer(f);});
 }
 let editandoTareaId=null;
 let accionesTareaPC=false;
@@ -12234,6 +12733,7 @@ async function actualizarPanelTemporada(){
 }
 async function cargarStock(){
   cambiarPestanaStock(0);
+  asegurarPestanaSnig();
   document.querySelectorAll('#modal-stock [data-panel]').forEach(el=> el.innerHTML = '<p style="font-size:13px;color:var(--texto-suave);">Cargando…</p>');
 
   const totalHa = haFisicas();
@@ -12328,6 +12828,7 @@ async function cargarStock(){
       </div>`;
     }).join('') : '<p style="font-size:12.5px;color:var(--texto-suave);">Ningún dueño tiene animales cargados.</p>';
   }
+  await cargarPanelPropietarioSnig();
 }
 document.getElementById('btn-stock').addEventListener('click', ()=>{
   document.getElementById('modal-stock').style.display = 'flex';
