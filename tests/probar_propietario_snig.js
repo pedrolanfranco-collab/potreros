@@ -200,6 +200,10 @@ async function probarCampo(archivo, est){
     // solo en el SNIG: el bastón nunca la leyó (sin propietario, sin lectura, sin datos de tratamiento)
     '20000009': { en_snig: true, propietario_snig: C.snig, propietario: '', ultima_lectura: null, estado_carencia: null,
       categoria: null, sexo: null, gen: null, potrero: null },
+    // 9/11/2026 (Pedro): alerta de otro campo con la fecha de ingreso según el SNIG (lectura del 01/10 en la 8; del 13/10 en la 12 y la 13)
+    '20000008': { en_snig: true, propietario_snig: C.snig, campo_snig: C.otro, ultima_lectura: '2026-10-01', snig_ingreso: '2026-10-07' },
+    '20000012': { en_snig: true, propietario_snig: C.snig, campo_snig: C.otro, ultima_lectura: '2026-10-13', snig_ingreso: '2026-10-01' },
+    '20000013': { en_snig: true, propietario_snig: C.snig, campo_snig: C.otro, ultima_lectura: '2026-10-13', snig_ingreso: '2026-10-13' },
   });
   const { win, errores } = await levantar(archivo, filas);
   console.log('\n=== ' + archivo + ' (' + est + ') ===');
@@ -253,6 +257,21 @@ async function probarCampo(archivo, est){
 
   caja = await buscar(win, '20000007');
   chequear('campo_snig del mismo campo: sin alerta', caja.textContent.indexOf('⚠') < 0, caja.textContent.slice(0, 200));
+
+  // 9/11/2026 (Pedro): la alerta de otro campo dice desde cuándo lo tiene el SNIG, y si es posterior a la última lectura
+  const alertaDe = c => Array.from(c.querySelectorAll('div')).map(d => d.textContent.trim()).find(t => t.indexOf('⚠ Según el SNIG') === 0) || '';
+  caja = await buscar(win, '20000006');
+  chequear('(c) sin snig_ingreso: la alerta queda como antes, sin fecha',
+    alertaDe(caja) === '⚠ Según el SNIG está en ' + C.otroLegible, alertaDe(caja));
+  caja = await buscar(win, '20000008');
+  chequear('(a) snig_ingreso posterior a ultima_lectura: "desde el 07/10/2026 (después de la última lectura del bastón)"',
+    alertaDe(caja) === '⚠ Según el SNIG está en ' + C.otroLegible + ' desde el 07/10/2026 (después de la última lectura del bastón)', alertaDe(caja));
+  caja = await buscar(win, '20000012');
+  chequear('(b) snig_ingreso anterior a la lectura: "desde el 01/10/2026", sin paréntesis',
+    alertaDe(caja) === '⚠ Según el SNIG está en ' + C.otroLegible + ' desde el 01/10/2026', alertaDe(caja));
+  caja = await buscar(win, '20000013');
+  chequear('(b) snig_ingreso igual a la lectura: "desde el 13/10/2026", sin paréntesis',
+    alertaDe(caja) === '⚠ Según el SNIG está en ' + C.otroLegible + ' desde el 13/10/2026', alertaDe(caja));
 
   caja = await buscar(win, '20000009');
   f = filasDeCaja(caja);
@@ -332,6 +351,10 @@ async function probarFichaYQuienEs(archivo, est){
     caja.textContent.indexOf('❓ VIVO SIN REGISTRO EN EL PREDIO') >= 0 && caja.textContent.indexOf('✅ APTO') < 0, caja.textContent.slice(0, 300));
   chequear('ficha solo-SNIG sin fecha: el detalle dice que hace más de 6 meses o sin fecha',
     caja.textContent.indexOf('hace más de 6 meses (o sin fecha de ingreso)') >= 0);
+  // 9/11/2026 (Pedro): el texto nuevo del estado "vivo sin registro" (la condición la dice el SNIG; puede no haberse leído nunca)
+  chequear('(d) "vivo sin registro": dice que puede ser cargado por error o nunca leído, y que el SNIG confirma',
+    caja.textContent.indexOf('Puede estar muerto o haber salido sin baja en el SNIG, o haberse cargado por error, o simplemente no haberse leído nunca. La condición la dice el SNIG: confirmalo ahí. No lo mandes a faena.') >= 0,
+    caja.textContent.slice(0, 400));
   caja = await buscar(win, '20000001');
   chequear('animal normal con carencia APTO sigue diciendo "✅ APTO"', caja.textContent.indexOf('✅ APTO') >= 0, caja.textContent.slice(0, 200));
 
@@ -355,7 +378,7 @@ async function probarLineas(archivo, est){
     '20000001': { en_snig: true, propietario_snig: C.snig, propietario: 'FIDEICOMISO' },
     '20000002': { en_snig: false, propietario: 'FIDEICOMISO' },
     '20000005': { en_snig: null, propietario_snig: C.snig },
-    '20000006': { en_snig: true, propietario_snig: C.snig, campo_snig: C.otro },
+    '20000006': { en_snig: true, propietario_snig: C.snig, campo_snig: C.otro, snig_ingreso: '2026-10-07' },
     '20000007': { en_snig: true, propietario_snig: C.snig, campo_snig: est },
     '20000009': { en_snig: true, propietario_snig: C.snig, propietario: '', ultima_lectura: null, estado_carencia: null,
       categoria: null, sexo: null, gen: null, potrero: null },
@@ -412,6 +435,9 @@ async function probarLineas(archivo, est){
   chequear('lote: Sin SNIG 1', lote.indexOf('Sin SNIG 1') >= 0, lote);
   chequear('lote: "⚠ 1 está en otro campo según el SNIG"', lote.indexOf('⚠ 1 está en otro campo según el SNIG') >= 0, lote);
   chequear('lote: "1 no figura en el padrón"', lote.indexOf('1 no figura en el padrón') >= 0, lote);
+  // 9/11/2026 (Pedro): en el lote, el otro campo va sin fecha (aunque la caravana tenga snig_ingreso)
+  chequear('(e) lote: "20000006: otro campo según el SNIG: ' + C.otroLegible + '" y sin fecha',
+    lote.indexOf('20000006: otro campo según el SNIG: ' + C.otroLegible) >= 0 && lote.indexOf('desde el') < 0, lote);
   chequear('lote: excepcionales con su motivo (sin SNIG y ausente)',
     lote.indexOf('20000002: Sin SNIG — firma: FIDEICOMISO') >= 0 && lote.indexOf('29999999: no figura en el padrón') >= 0, lote);
   RED.caida = true;

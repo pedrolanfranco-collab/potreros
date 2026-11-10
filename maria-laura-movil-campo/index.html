@@ -8267,7 +8267,7 @@ function snigLineaLoteHTML(r, ids){
     const motivos = [];
     if(a.en_snig === true) cont[s.texto] = (cont[s.texto] || 0) + 1;
     else { sinSnig++; motivos.push(s.texto); }
-    if(s.alerta){ otroCampo++; motivos.push(s.alerta.replace(/^⚠ /, '')); }
+    if(s.alerta){ otroCampo++; motivos.push('otro campo según el SNIG: ' + s.campoOtro); }
     if(motivos.length) excepcionales.push(`${id}: ${motivos.join(' · ')}`);
   });
   const partes = [`${ids.length} caravanas`];
@@ -8631,9 +8631,21 @@ function propietarioSnigDe(a){
   }else{
     texto = 'Sin SNIG — firma: ' + textoFirma(a.propietario);
   }
-  let alerta = '';
-  if(a.campo_snig && a.campo_snig !== ESTABLECIMIENTO) alerta = '⚠ Según el SNIG está en ' + (CAMPOS_SNIG_LEGIBLES[a.campo_snig] || a.campo_snig);
-  return {texto, alerta};
+  /* 9/11/2026 (Pedro): el SNIG manda sobre el campo donde está el animal. Con snig_ingreso se dice desde cuándo;
+     si ese ingreso es posterior a la última lectura del bastón, se aclara (puede ser un animal cargado por error
+     o que todavía no se leyó). En el lote (snigLineaLoteHTML) se usa solo campoOtro, sin fecha. */
+  let alerta = '', campoOtro = '';
+  if(a.campo_snig && a.campo_snig !== ESTABLECIMIENTO){
+    campoOtro = CAMPOS_SNIG_LEGIBLES[a.campo_snig] || a.campo_snig;
+    alerta = '⚠ Según el SNIG está en ' + campoOtro;
+    const ingreso = a.snig_ingreso ? String(a.snig_ingreso).slice(0, 10) : '';
+    const lectura = a.ultima_lectura ? String(a.ultima_lectura).slice(0, 10) : '';
+    if(ingreso){
+      alerta += ' desde el ' + fechaISOaDisplay(ingreso);
+      if(lectura && ingreso > lectura) alerta += ' (después de la última lectura del bastón)';
+    }
+  }
+  return {texto, alerta, campoOtro};
 }
 function propietarioSnigAusente(){
   return CONFIG.propietarioSnig ? '⚠ No figura en el padrón ni en el SNIG de este campo' : '';
@@ -8715,7 +8727,7 @@ function fichaCaravanaHTML(a){
     }else{
       color = '#8a4b0f';
       estado = sl.texto;
-      detalle = 'El SNIG lo da vivo en este campo, pero hace más de 6 meses (o sin fecha de ingreso) que no figura en los registros del campo ni lo leyó el bastón. Puede estar muerto o haber salido sin baja en el SNIG. No lo mandes a faena.';
+      detalle = 'El SNIG lo da vivo en este campo, pero hace más de 6 meses (o sin fecha de ingreso) que no figura en los registros del campo ni lo leyó el bastón. Puede estar muerto o haber salido sin baja en el SNIG, o haberse cargado por error, o simplemente no haberse leído nunca. La condición la dice el SNIG: confirmalo ahí. No lo mandes a faena.';
     }
   }else if(car.estado === 'NO APTO'){
     color = 'var(--rojo-hacienda)';
