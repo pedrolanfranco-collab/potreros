@@ -122,6 +122,42 @@ tampoco la sabe; una de ficha sin confirmar, como Vaquillona, sigue sin pasar). 
 lecturas con lo que pasó, y la PC la muestra en Herramientas › Consultar › "⚠ Datos faltantes (N)"
 (últimos 60 días, CSV). La app solo lee. Test: `tests/probar_datos_faltantes.js`.
 
+### Reproducción: tacto y DAO (3/11/2026, a pedido de Pedro, solo PC de La Vuelta, `CONFIG.reproduccion`)
+
+La PC (`repro.py`, carpeta del Lector) clasifica cada sesión del bastón como TACTO, DAO o IATF **por el nombre del archivo** y, si el
+nombre no lo dice, por el contenido de la columna TACTOS (tacto y DAO comparten esa columna; `969_PALPACION` sale DAO porque trae
+CICLA/SUP/PROF). Publica en `animales_caravana` las columnas `repro` (jsonb, `[{f,t,e,r,p,s,o}]` = fecha, tipo, etapa, resultado,
+productos, sesión, potrero), `estado_repro` y `repro_fecha` (SQL: `scripts/snig/alter_repro.sql`, que se corre **antes** de publicar).
+La app **solo lee** y no recalcula: ventana "🐄 Reproducción" (Herramientas › Consultar: Tactos y DAO, IATF, Cruces) y línea de tiempo en la
+ficha de caravana (`reproFichaHTML`, que solo define la PC). **Pedro decidió mostrar solo tacto y DAO**: un evento IATF que llegue en `repro`
+se ignora. Una sesión mal clasificada se corrige en `repro_sesiones.csv` del Lector (`sesion;tipo;etapa;por_que`, `IGNORAR` la saca),
+nunca en la app. Resultados normalizados: `PRENEZ_GRANDE/MEDIA/CHICA`, `PRENEZ` (sin tamaño), `VACIA`, `DUDA`, `CICLANDO`,
+`ANESTRO_SUP/PROF`, `ANESTRO`; un valor desconocido llega crudo y se muestra tal cual. Valor de control real: de 44 ciclando en el DAO
+(sesión 969), 20 preñez grande + 10 media + 14 vacías en el tacto 1116. Test: `tests/probar_reproduccion.js`.
+
+### Lecturas vs stock y WhatsApp (8/11/2026, a pedido de Pedro, PC de La Vuelta y María Laura, `CONFIG.lecturaStock`)
+
+Normalmente se leen todos los animales del potrero; si se leyeron menos, Pedro se entera de dos formas:
+- **Aviso al celular** (Lector, `lectura_stock.py`): "leyó 85 de 92 en el potrero 8 (faltan 7: Vacas 5)", comparando contra `stock_potreros`.
+- **Ventana "📋 Lecturas vs stock"** (Herramientas › Consultar), que compara cada sesión contra el stock **en vivo** de la app, total y
+  por categoría, con las caravanas que figuraban en el potrero y no se leyeron.
+- **Datos:** el Lector publica una fila por sesión de los últimos 45 días en `sesiones_baston` (SQL `scripts/snig/sesiones_baston.sql`;
+  `anon` solo lee, con la clave del campo; la escribe el Lector con la clave privada). La app solo lee.
+- **Potrero de la sesión:** en La Vuelta lo tipea el operario (si no es un potrero de la app: "no se pudo comparar"); en María Laura
+  sale del nombre del archivo (`ML-TAJAMAR`; un nombre con prefijo `ML-` es de María Laura, regla en `reconstruir_xrs2.proponer_campo`).
+- **Regla de stock, la misma en el Lector y en la app:** cuenta las categorías bovinas (`ESPECIES.bovino`; `BOVINOS` en
+  `lectura_stock.py`) más las que la sesión leyó. "Faltan" y "urgente" cuentan solo categorías de las que se leyó algo: una categoría con
+  0 leídos (los terneros cuando solo se vacunaron las vacas) es "lote parcial", sin alarma. **Si se cambia la lista en un lado, se cambia
+  en el otro.** Un bug real: el aviso del celular ignoraba las categorías no leídas y decía "coincide" cuando la PC decía "faltan 15"; las
+  pruebas no lo vieron porque llamaban a `comparar()` con otro argumento que `avisos()`.
+- **Límite conocido:** una sesión vieja se compara con el stock de hoy (los animales se movieron después); la ventana lo avisa si la
+  sesión tiene más de 2 días. Sirve sobre todo para sesiones nuevas.
+- **WhatsApp (Hermes):** `avisar.whatsapp()` del Lector corre `hermes send` hacia `WHATSAPP_DESTINO` (en el `.env` del Lector, no versionado).
+  `vigilar_entrada.whatsapp_problemas()` manda por WhatsApp las líneas del aviso que indican un problema (archivo que no se pudo leer,
+  padrón sin publicar, Sanidad sin pasar o con error, falla de la corrida, faltantes de lectura), **una sola vez cada una**, y reintenta si
+  Hermes estaba caído. Nunca lleva caravanas, dueños ni montos.
+- Tests: `tests/probar_lectura_stock.js` (app), `probar_lectura_stock.py`, `probar_avisar_whatsapp.py` y `probar_vigilar.py` (Lector).
+
 ### Lector XRS2 (otro carril)
 El Lector del bastón es otro repo (`lector-xrs2`, carpeta `C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Lector XRS2`). Su contexto completo, el flujo `Entrada\` → `vigilar_entrada.py` → `sanidad_puente.py` y el incidente del 13→18/10/2026 viven ahora en el `CLAUDE.md` de esa carpeta. Puntos de contacto con la app: el Lector publica `animales_caravana` y `sanidad_carga*` y la app los lee; la app arma el CSV completado (`completar-sanidad/` y "Completar lectura del bastón") que el Lector toma de `Entrada\`.
 
