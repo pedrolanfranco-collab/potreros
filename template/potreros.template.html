@@ -17579,10 +17579,35 @@ function confirmarAccionVoz(){
 
 let reconocimientoVoz = null;
 let grabandoVoz = false;
+// 11/11/2026: la barra de abajo (#footer-tools) llega hasta la esquina donde flota el micrófono, y este tapaba un tercio de
+// "🛠 Herramientas" (medido igual en el celular a 375x812 y en la PC a 1366x768). Si la barra (o el aviso rojo de "trabado", que va
+// justo encima) ocupa esa esquina, el micrófono sube 12 px por encima; si no la ocupa, queda en su lugar de siempre, a 22 px del borde.
+function ubicarBotonVoz(){
+  const boton = document.getElementById('btn-voz');
+  if(!boton) return;
+  const margen = 22, lado = 58;
+  const ancho = window.innerWidth, alto = window.innerHeight;
+  let tope = alto;
+  ['footer-tools', 'aviso-trabado'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    const r = el.getBoundingClientRect();
+    if(r.width > 0 && r.height > 0 && r.right > ancho - margen - lado && r.bottom > tope - margen - lado && r.top < tope) tope = r.top;
+  });
+  boton.style.bottom = (tope < alto ? Math.round(alto - tope) + 12 : margen) + 'px';
+}
 function inicializarVoz(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR) return;
   document.getElementById('btn-voz').style.display = 'block';
+  ubicarBotonVoz();
+  window.addEventListener('resize', ubicarBotonVoz);
+  const pie = document.getElementById('footer-tools');
+  if(pie){
+    // la barra cambia de alto según los avisos que muestra, y el aviso de "trabado" se agrega y se saca encima de ella
+    if(typeof ResizeObserver === 'function') new ResizeObserver(ubicarBotonVoz).observe(pie);
+    if(typeof MutationObserver === 'function' && pie.parentNode) new MutationObserver(ubicarBotonVoz).observe(pie.parentNode, {childList:true});
+  }
   reconocimientoVoz = new SR();
   reconocimientoVoz.lang = 'es-UY';
   reconocimientoVoz.continuous = false;

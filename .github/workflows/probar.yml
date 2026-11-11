@@ -82,6 +82,9 @@ jobs:
       - name: Voz -- resuelve potrero con relleno (en el N / al potrero N) y no confunde categoria/cantidad
         run: node tests/probar_voz.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
 
+      - name: Microfono -- el boton flotante sube por encima de la barra de abajo en el celular y no tapa Herramientas
+        run: node tests/probar_boton_voz.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
       - name: Auditoria 8/9 -- cola no pierde eventos, voz se puede borrar, exportadores muestran negativos, restablecer avisa
         run: node tests/probar_auditoria_fixes.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
 
