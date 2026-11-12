@@ -13,19 +13,19 @@ viven en Supabase (proyecto compartido `skkknfjpwcstefcroqjt`).
 
 Cada campo tiene **3 variantes** (9 apps en total): `<campo>-pc/` (PC: exportar PDF/Excel, editar/borrar, Verificar
 stock), `<campo>-movil/` (móvil completa: GPS, voz, Stock total, Quién soy) y `<campo>-movil-campo/` ("Campo", simple,
-para los empleados). Además: `la-vuelta-test/` (copia de prueba **sin Supabase**), páginas sueltas hechas a mano
+para los empleados). Además: `la-vuelta-test/` (copia de prueba **sin Supabase**, también generada), páginas sueltas hechas a mano
 (`tablero-sanidad/`, `tablero-campos/`, `completar-sanidad/`, `instructivo-campo/`, `instructivo-movil/`,
 `instructivo-pc/`), `scripts/` (Python de la PC de Pedro, con pruebas en el CI) y `docs/eventos.md` (contrato de
 eventos). El `index.html`, `potreros.html` y `manifest.json` de la raíz son restos viejos: no están conectados a nada.
 
 ## Comandos
 
-- **Generar las apps:** `node template/generar.js` (escribe los 9 `index.html`, el `CACHE` de cada `sw.js` y las copias
+- **Generar las apps:** `node template/generar.js` (escribe los 9 `index.html` y `la-vuelta-test/`, el `CACHE` de cada `sw.js` y las copias
   de OneDrive de Pedro). `node template/generar.js --check` verifica sin escribir (primer paso del CI).
 - **Pruebas:** `tests/probar_*.js` (jsdom, versiones fijas en `tests/package.json`) y `scripts/**/probar_*.py`. Todas
   corren en `.github/workflows/probar.yml`; el CI falla si un `tests/probar_*.js` no está en la lista del workflow.
   Antes de commitear un cambio de prueba, en la PC de Pedro: `node tests/sync-skill.js`.
-- **Publicar:** merge a `main` → el job `jsdom` corre las pruebas (~3 min) y solo si pasan el job `publicar` sube a
+- **Publicar:** merge a `main` → el job `jsdom` corre las pruebas (8 a 15 min) y solo si pasan el job `publicar` sube a
   Pages (~1 min). Desde la nube no se puede abrir `github.io` (403 del proxy): el deploy se confirma mirando el run
   de Actions.
 - **Vista local:** `cd <carpeta> && python -m http.server 8000`. ⚠️ **No es un sandbox**: la app habla con el
