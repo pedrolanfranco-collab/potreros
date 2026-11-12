@@ -4,7 +4,7 @@
  * abrir solo lea (GET), el botón "Ya se hizo" (21/10/2026: única escritura, en sanidad_proximos_hechos)
  * y la clave del campo (Fase 4): la manda en x-clave-campo, la comprueba con
  * verificar_clave (un fallo de red nunca es "clave mala"), no pisa la copia con una lectura vacía sin clave,
- * y Pone Chico no la usa.
+ * y Pone Chico usa la suya (desde el 12/11/2026).
  * Uso: node tests/probar_tablero_sanidad.js tablero-sanidad/index.html
  */
 const fs = require('fs');
@@ -237,7 +237,7 @@ const resp = url => {
   const s = await abrir((url) => url.includes('sanidad_proximos_hechos') ? { status: 404, body: { message: 'no existe' } } : resp(url));
   chequear('sin la tabla no hay botón y se ven todos', !s.doc.querySelector('[data-hecho]') && /<b>1<\/b><span>vencidos/.test(s.doc.getElementById('vista-prox').innerHTML));
 
-  console.log('Clave del campo (Fase 4): La Vuelta y María Laura la mandan, Pone Chico no');
+  console.log('Clave del campo (Fase 4): La Vuelta, María Laura y Pone Chico mandan cada uno la suya');
   const rpcOk = (url) => url.includes('rpc/verificar_clave') ? true : resp(url);
   const rpcMala = (url) => url.includes('rpc/verificar_clave') ? false : resp(url);
   const hdr = l => l.headers['x-clave-campo'];
@@ -291,14 +291,16 @@ const resp = url => {
   const gets8 = k8.llamadas.filter(l => l.metodo === 'GET');
   chequear('María Laura manda la clave de María Laura', k8.doc.getElementById('estab').value === 'maria_laura' && gets8.length >= 4 && gets8.every(l => hdr(l) === 'clavelaura22'), JSON.stringify(gets8.map(hdr)));
 
-  // Pone Chico: sin clave, aunque haya una vieja en el equipo
-  const k9 = await abrir(rpcOk, { clave_campo_pone_chico: 'claveantigua1', tablero_sanidad_v1_estab: 'pone_chico' });
-  chequear('Pone Chico: sin aviso, sin encabezado, sin verificar_clave',
-    k9.doc.getElementById('estab').value === 'pone_chico' && k9.doc.getElementById('clave-aviso').hidden && k9.llamadas.length >= 4
-    && k9.llamadas.every(l => !hdr(l)) && !k9.llamadas.some(l => l.url.includes('verificar_clave')), JSON.stringify(k9.llamadas.map(l => l.url.slice(-40))));
-  // cambiar de campo en el mismo tablero cambia el aviso
-  k0.doc.getElementById('estab').value = 'pone_chico'; k0.doc.getElementById('estab').dispatchEvent(new k0.win.Event('change')); await dormir(50);
-  chequear('al pasar a Pone Chico el aviso de clave desaparece', k0.doc.getElementById('clave-aviso').hidden);
+  // Pone Chico usa su propia clave desde el 12/11/2026 (antes no la usaba)
+  const k9 = await abrir(rpcOk, { clave_campo_la_vuelta: 'clavevuelta1', clave_campo_pone_chico: 'clavechico33', tablero_sanidad_v1_estab: 'pone_chico' });
+  const gets9 = k9.llamadas.filter(l => l.metodo === 'GET');
+  chequear('Pone Chico manda la clave de Pone Chico',
+    k9.doc.getElementById('estab').value === 'pone_chico' && k9.doc.getElementById('clave-aviso').hidden && gets9.length >= 4
+    && gets9.every(l => hdr(l) === 'clavechico33'), JSON.stringify(gets9.map(hdr)));
+  const k10 = await abrir(rpcOk, { clave_campo_la_vuelta: 'clavevuelta1', tablero_sanidad_v1_estab: 'pone_chico' });
+  chequear('Pone Chico sin clave: aviso "Falta la clave de Pone Chico" y ningún pedido lleva la de otro campo',
+    !k10.doc.getElementById('clave-aviso').hidden && /Falta la clave de Pone Chico/.test(k10.doc.getElementById('clave-msg').textContent)
+    && k10.llamadas.every(l => !hdr(l)), k10.doc.getElementById('clave-msg').textContent + ' ' + JSON.stringify(k10.llamadas.map(hdr)));
 
   // "Ya se hizo" también lleva la clave del campo
   const kh = await abrir((url, metodo, opt) => url.includes('rpc/verificar_clave') ? true : url.includes('sanidad_proximos_hechos') ? (metodo === 'POST' ? { status: 201, body: [{ id: 3, ...JSON.parse(opt.body) }] } : []) : resp(url), { clave_campo_la_vuelta: 'claveprueba1' });

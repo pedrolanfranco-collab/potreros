@@ -112,7 +112,7 @@ historial, como cualquier carga de una persona.
 
 Si existe `CLAVE_CAMPO_<ESTABLECIMIENTO>` (variable de entorno, p. ej. `CLAVE_CAMPO_LA_VUELTA`) o esa línea en
 `C:\Users\<usuario>\.potreros\.env`, los scripts la mandan en el encabezado `x-clave-campo`. **Nunca se imprime.**
-Pone Chico no usa clave.
+Pone Chico usa clave desde el 12/11/2026 (`CLAVE_CAMPO_PONE_CHICO`); hasta el cierre de su etapa 2 la base sigue abierta y sin esa línea también anda.
 
 Hoy las políticas de Supabase siguen abiertas, así que sin clave también anda. **Cuando se corra el cierre de la
 Fase 4 (release 2)**, sin la clave del campo no se va a poder leer ni escribir: hay que tenerla cargada antes

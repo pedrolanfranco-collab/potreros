@@ -224,8 +224,13 @@ def prueba_transporte():
         chequear("maria_laura: la clave sale del .env (sin variable de entorno)",
                  capturas[-1].get_header("X-clave-campo") == "clave-de-archivo-1234", "")
         CS.pedir("GET", "x", establecimiento="pone_chico")
-        chequear("pone_chico no usa clave: no manda el encabezado",
+        chequear("pone_chico sin CLAVE_CAMPO_PONE_CHICO: no manda el encabezado (ni la de otro campo)",
                  capturas[-1].get_header("X-clave-campo") is None, "")
+        os.environ["CLAVE_CAMPO_PONE_CHICO"] = "clave-de-chico-9012"
+        CS.pedir("GET", "x", establecimiento="pone_chico")
+        chequear("pone_chico usa clave desde el 12/11/2026: manda la suya",
+                 capturas[-1].get_header("X-clave-campo") == "clave-de-chico-9012", "")
+        os.environ.pop("CLAVE_CAMPO_PONE_CHICO", None)
         os.environ.pop("CLAVE_CAMPO_LA_VUELTA", None)
         POTREROS_SIN = os.path.join(tmp, "no_existe.env")
         os.environ["POTREROS_ENV"] = POTREROS_SIN

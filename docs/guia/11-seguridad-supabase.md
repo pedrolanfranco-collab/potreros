@@ -202,6 +202,17 @@ siguen abiertas.
   Para volver atrás: `fase4_cierre_deshacer.sql` (reabre todo). **Pendiente**: rotar el token personal `sbp_` de Hermes
   (ignora RLS), decidir las tablas de otros proyectos de arriba, y vigilar `equipos_vistos`/el cartel "trabados" unos días.
 
+**Pone Chico con clave, etapa 1 (12/11/2026, a pedido de Pedro, tras la auditoría del 12/11).** `CONFIG.claveCampo` pasó a `true` en
+Pone Chico (PC y móvil 3.03, Campo 2.03): sus 3 apps muestran la ventana, el aviso del pie y el botón, mandan `x-clave-campo` y llaman
+a `verificar_clave`, igual que La Vuelta y María Laura. También el Tablero de Sanidad (`CON_CLAVE.pone_chico`) y Hermes
+(`usa_clave_campo`, variable `CLAVE_CAMPO_PONE_CHICO` en `~/.potreros/.env`). **Este release no corta nada**: `pone_chico` sigue en
+`private.campos_abiertos`, así que un equipo sin clave (o con versión vieja) sigue sincronizando. Antes de publicar, Pedro carga la
+clave con `private.cargar_clave('pone_chico', ...)` (nunca por chat ni por el repo). **Etapa 2, pendiente:** cuando
+`private.equipos_vistos` muestre los equipos de Pone Chico con `con_clave = true`, correr
+`delete from private.campos_abiertos where establecimiento = 'pone_chico';` (**sin volver a correr `fase4_cierre.sql`: lo reinserta**)
+y actualizar `verificar_fase4.py` (`CAMPO_ABIERTO`), `fotos_reportes.sql` y `scripts/seguridad/README.md`, que todavía describen a
+Pone Chico abierto porque así está la base.
+
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del
   12/9/2026 (ver memoria `planilla-sanitaria-v22`): un `PATCH` contra esa
