@@ -25,6 +25,7 @@
     --crema:#f3ecd9;
     --crema-alta:#faf6ea;
     --ocre:#c68a3b;
+    --ocre-texto:#8f5f12;   /* ocre oscuro para TEXTO sobre crema: contraste 5,1 (el ocre da 2,5) */
     --rojo-hacienda:#a1402e;
     --texto:#241f16;
     --texto-suave:#5a5340;
@@ -78,7 +79,7 @@
   .resumen{display:flex;gap:18px;position:relative;z-index:1;flex-wrap:wrap;}
   .resumen .stat{text-align:right;}
   .resumen .stat .num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;color:var(--crema-alta);}
-  .resumen .stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em;color:#b9c4a2;}
+  .resumen .stat .lbl{font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#b9c4a2;}
 
   /* ---------- LAYOUT ---------- */
   #main{flex:1;display:flex;min-height:0;}
@@ -203,8 +204,8 @@
     font-size:15.5px;
     color:var(--verde-monte);
   }
-  .potrero-card .area{font-size:11.5px;color:var(--texto-suave);}
-  .potrero-card .nota-doble{font-size:11.5px;color:var(--texto-suave);margin-top:2px;}
+  .potrero-card .area{font-size:12px;color:var(--texto-suave);}
+  .potrero-card .nota-doble{font-size:12px;color:var(--texto-suave);margin-top:2px;}
   .badge-total{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
@@ -217,9 +218,9 @@
     text-align:center;
   }
   .badge-total.vacio{background:#cfc7ab;color:#6b6349;}
-  .mini-cats{margin-top:6px;font-size:11.5px;color:var(--texto-suave);display:flex;flex-wrap:wrap;gap:6px;}
+  .mini-cats{margin-top:6px;font-size:12px;color:var(--texto-suave);display:flex;flex-wrap:wrap;gap:6px;}
   .mini-cats span{background:var(--crema);border-radius:4px;padding:1px 6px;}
-  .ocupacion-badge{margin-top:6px;font-size:11.5px;padding:3px 8px;border-radius:5px;display:inline-block;}
+  .ocupacion-badge{margin-top:6px;font-size:12px;padding:3px 8px;border-radius:5px;display:inline-block;}
   .ocupacion-ocupado{background:#e4ecdc;color:#3f5a2c;}
   .ocupacion-descanso{background:#eee6cd;color:#7a5236;}
   .ocupacion-sin-datos{background:#f0ece0;color:var(--texto-suave);font-style:italic;}
@@ -257,7 +258,7 @@
   }
   #detalle .meta{font-size:12px;color:var(--texto-suave);margin-bottom:10px;}
   .tabla-animales{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
-  .tabla-animales th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--texto-suave);padding:4px 4px;border-bottom:1px solid var(--linea);}
+  .tabla-animales th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--texto-suave);padding:4px 4px;border-bottom:1px solid var(--linea);}
   .tabla-animales td{padding:5px 4px;border-bottom:1px solid #eee6cd;}
   .tabla-animales td.num{font-family:'JetBrains Mono',monospace;font-weight:600;text-align:right;}
   .tabla-animales tr.total td{font-weight:700;border-top:1.5px solid var(--verde-campo);border-bottom:none;}
@@ -276,7 +277,7 @@
   }
   .btn:active{transform:translateY(1px);}
   .btn-agregar{background:var(--verde-campo);color:#fff;}
-  .btn-mover{background:var(--ocre);color:#fff;}
+  .btn-mover{background:var(--ocre);color:var(--texto);}
   .btn-nacimiento{background:#3f6b8f;color:#fff;}
   .btn-muerte{background:var(--rojo-hacienda);color:#fff;}
   .btn-compraventa{background:#8a6d1f;color:#fff;}
@@ -294,7 +295,7 @@
   }
   .form-accion h3{margin:0 0 8px 0;font-size:13.5px;font-family:'Fraunces',serif;color:var(--verde-monte);}
   .form-row{margin-bottom:8px;}
-  .form-row label{display:block;font-size:11.5px;color:var(--texto-suave);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em;}
+  .form-row label{display:block;font-size:12px;color:var(--texto-suave);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em;}
   .form-row select, .form-row input{
     width:100%;
     padding:7px 8px;
@@ -324,7 +325,7 @@
   .hist-item.consumo{border-left-color:var(--tierra);}
   .hist-item.compra{border-left-color:#1f7a5c;}
   .hist-item.venta{border-left-color:#8a6d1f;}
-  .hist-item .fecha{color:var(--texto-suave);font-family:'JetBrains Mono',monospace;font-size:10.5px;}
+  .hist-item .fecha{color:var(--texto-suave);font-family:'JetBrains Mono',monospace;font-size:12px;}
   .hist-item.correccion{border-left-color:#8a6d1f;background:#fbf6e8;}
   .hist-item.eliminado{opacity:0.55;text-decoration:line-through;}
   .hist-acciones{float:right;display:inline-flex;gap:6px;}
@@ -348,7 +349,7 @@
     gap:8px;
     background:#efe7cf;
   }
-  #estado-compacto{flex:1;min-width:0;font-size:11px;line-height:1.5;}
+  #estado-compacto{flex:1;min-width:0;font-size:12px;line-height:1.5;}
   #estado-compacto div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* Fase 4, release 1 (clave del campo): aviso debajo del estado de sincronización, y la ventana de la clave */
   #estado-compacto #aviso-clave{white-space:normal;margin-top:2px;font-weight:700;line-height:1.3;cursor:pointer;}
@@ -396,7 +397,7 @@
   .ins-der{text-align:right;flex:none;}
   .ins-stock{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;}
   .ins-frascos{font-size:12px;color:var(--texto-suave);}
-  .ins-estado{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:10px;padding:1px 8px;margin-top:2px;background:#dfe9d3;color:#2b3a24;}
+  .ins-estado{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:10px;padding:1px 8px;margin-top:2px;background:#dfe9d3;color:#2b3a24;}
   .ins-amarillo .ins-estado{background:#f2d9a8;color:#6b4a0c;}
   .ins-rojo .ins-estado{background:#e8b9b0;color:#7a2417;}
   .ins-cola-titulo{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);margin:12px 0 6px;}
@@ -436,11 +437,11 @@
   .bano-tramo.bano-ok{border-left-color:#2b5d1e;background:#eef4e6;}
   .bano-tramo.bano-alto, .bano-tramo.bano-bajo{border-left-color:var(--rojo-hacienda);background:#f7e3df;}
   .bano-tramo.bano-sin_conteo{border-left-color:#8a8060;background:#faf6ea;}
-  .bano-etq{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:10px;padding:1px 8px;margin-left:4px;background:#e6e0c8;color:#3a3426;}
+  .bano-etq{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:10px;padding:1px 8px;margin-left:4px;background:#e6e0c8;color:#3a3426;}
   .bano-ok .bano-etq{background:#cfe0bf;color:#1f3a14;}
   .bano-alto .bano-etq, .bano-bajo .bano-etq{background:#e8b9b0;color:#5c1a0f;}
   .bano-prod-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--linea);border-radius:8px;padding:8px 10px;margin:0 0 6px;}
-  .nota-guardado{font-size:10.5px;color:var(--texto-suave);text-align:center;margin-top:2px;}
+  .nota-guardado{font-size:12px;color:var(--texto-suave);text-align:center;margin-top:2px;}
 
   input[type=file]{display:none;}
 
@@ -460,7 +461,7 @@
   }
   #toast.mostrar{opacity:1;transform:translateX(-50%) translateY(-6px);}
 
-  .leyenda-cat{font-size:10px;color:var(--texto-suave);}
+  .leyenda-cat{font-size:12px;color:var(--texto-suave);}
 
   /* ---------- MODAL COEFICIENTES UG ---------- */
   .modal-overlay{
@@ -495,7 +496,7 @@
   .cal-filtros label{font-size:12px;color:var(--texto-suave);}
   .cal-filtros select{margin-left:4px;}
   .cal-grilla{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;}
-  .cal-dia-semana{text-align:center;font-size:11px;font-weight:700;color:var(--texto-suave);padding:5px 0;}
+  .cal-dia-semana{text-align:center;font-size:12px;font-weight:700;color:var(--texto-suave);padding:5px 0;}
   .cal-dia{position:relative;min-height:78px;border:1px solid var(--linea);border-radius:5px;background:#fff;padding:4px;text-align:left;overflow:hidden;color:var(--texto);cursor:pointer;}
   .cal-dia:hover,.cal-dia.seleccionado{outline:2px solid var(--ocre);outline-offset:-2px;}
   .cal-dia.otro-mes{background:#f2f0ea;color:#8b8a82;}
@@ -519,11 +520,11 @@
     .cal-dia{min-height:48px;padding:3px 2px;text-align:center;}
     .cal-dia-numero{font-size:11px;margin:0;}
     .cal-marca{display:none;}
-    .cal-cantidad{display:inline-block;font-size:9px;line-height:14px;min-width:14px;height:14px;border-radius:8px;background:var(--ocre);color:#fff;margin-top:2px;}
+    .cal-cantidad{display:inline-block;font-size:9px;line-height:14px;min-width:14px;height:14px;border-radius:8px;background:var(--ocre);color:var(--texto);margin-top:2px;}
     .cal-dia-fila{align-items:flex-start;}
   }
   .stock-tab-btn{flex:1;font-size:12px;padding:7px 4px;border-radius:6px;border:1px solid var(--linea);background:transparent;color:var(--texto);font-family:'Inter',sans-serif;cursor:pointer;}
-  .stock-tab-btn.activo{border-color:var(--ocre);background:var(--ocre);color:#fff;}
+  .stock-tab-btn.activo{border-color:var(--ocre);background:var(--ocre);color:var(--texto);}
   .coef-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #eee6cd;}
   .coef-row label{font-size:13px;flex:1;}
   .coef-row input{
@@ -531,7 +532,7 @@
     font-family:'JetBrains Mono',monospace;font-size:13px;text-align:right;
   }
   .carga-badge{
-    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--texto-suave);
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--texto-suave);
     background:var(--crema);border-radius:4px;padding:1px 6px;
   }
 
@@ -543,7 +544,7 @@
   }
   .punto-item .info{display:flex;align-items:center;gap:6px;}
   .punto-item .icono{font-size:15px;}
-  .punto-item .txt-sub{color:var(--texto-suave);font-size:11px;}
+  .punto-item .txt-sub{color:var(--texto-suave);font-size:12px;}
   .punto-item .acciones{display:flex;gap:10px;flex-shrink:0;}
   .punto-item button{
     background:none;border:none;color:var(--rojo-hacienda);cursor:pointer;font-size:12px;
@@ -565,7 +566,7 @@
     position:absolute;top:0;right:0;background:rgba(0,0,0,.6);color:#fff;border:none;
     width:20px;height:20px;font-size:12px;line-height:20px;cursor:pointer;padding:0;
   }
-  .rp-nota{font-size:11px;color:var(--texto-suave);font-style:italic;}
+  .rp-nota{font-size:12px;color:var(--texto-suave);font-style:italic;}
   .rp-fotos:empty{display:none;}
   .hist-item .rp-fotos{clear:both;}
   .rp-form-resolver{
@@ -593,7 +594,7 @@
   .visor-fotos[data-unica="1"] .visor-nav{visibility:hidden;}
   .modo-colocar-aviso{
     position:fixed;top:14px;left:50%;transform:translateX(-50%);
-    background:var(--ocre);color:#fff;padding:8px 16px;border-radius:20px;
+    background:var(--ocre);color:var(--texto);padding:8px 16px;border-radius:20px;
     font-size:13px;font-weight:600;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,0.25);
   }
   .dibujo-controles{
@@ -615,7 +616,7 @@
   header h1{font-size:16px;line-height:1.1;flex-basis:100%;}
   header h1 span{display:none;}
   #estado-conexion{order:1;margin-top:0 !important;line-height:1.2;}
-  header .sub{order:2;font-size:11px;margin-top:0;line-height:1.2;}
+  header .sub{order:2;font-size:12px;margin-top:0;line-height:1.2;}
   header .sub::before{content:"· ";}
   .resumen{gap:12px;flex-wrap:nowrap;}
   .resumen .stat{display:none;}
@@ -692,7 +693,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v2.03</div>
+        <div class="sub">v2.04</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -728,7 +729,7 @@
       <div id="detalle" style="display:none;">
         <div id="detalle-caja"></div>
       </div>
-      <div id="modal-detalle-dueno" class="modal-overlay" style="display:none;">
+      <div id="modal-detalle-dueno" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-box">
           <h3 id="detalle-dueno-titulo">👤 Por dueño</h3>
           <button class="btn-cerrar-x" id="detalle-dueno-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -746,7 +747,7 @@
     </div>
   </div>
 </div>
-<div id="modal-herramientas" class="modal-overlay" style="display:none;">
+<div id="modal-herramientas" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>🛠 Herramientas</h3>
     <button class="btn-cerrar-x" id="herramientas-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -774,7 +775,7 @@
     <div class="form-botones"><button class="btn btn-secundario" id="herramientas-cerrar">Cerrar</button></div>
   </div>
 </div>
-<div id="modal-desaparecidos" class="modal-overlay" style="display:none;">
+<div id="modal-desaparecidos" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>❓ Desaparecidos</h3>
     <button class="btn-cerrar-x" id="desaparecidos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -782,13 +783,13 @@
     <div id="desaparecidos-lista"></div>
     <details style="margin-top:14px;">
       <summary style="font-size:12.5px;color:var(--texto-suave);cursor:pointer;">🪦 Ver registro de muertes por categoría</summary>
-      <div class="form-row" style="margin-top:8px;"><label>Dueño</label><select id="muertes-filtro-dueno"><option value="">Todos</option></select></div>
+      <div class="form-row" style="margin-top:8px;"><label for="muertes-filtro-dueno">Dueño</label><select id="muertes-filtro-dueno"><option value="">Todos</option></select></div>
       <div id="muertes-tabla"></div>
     </details>
     <div class="form-botones"><button class="btn btn-secundario" id="desaparecidos-cerrar">Cerrar</button></div>
   </div>
 </div>
-<div id="modal-vecinos" class="modal-overlay" style="display:none;">
+<div id="modal-vecinos" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>🏡 Vecinos</h3>
     <button class="btn-cerrar-x" id="vecinos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -797,7 +798,7 @@
     <div class="form-botones"><button class="btn btn-secundario" id="vecinos-cerrar">Cerrar</button></div>
   </div>
 </div>
-<div id="modal-sanidad" class="modal-overlay" style="display:none;">
+<div id="modal-sanidad" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>🏥 Sanidad</h3>
     <button class="btn-cerrar-x" id="sanidad-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -805,25 +806,25 @@
     <button class="btn btn-json btn-full" id="btn-cargar-sanidad" style="margin-bottom:10px;">+ Cargar tratamiento (grupal)</button>
     <button class="btn btn-json btn-full" id="btn-cargar-sanidad-individual" style="margin-bottom:10px;">+ Cargar tratamiento (individual)</button>
         <div id="form-sanidad" style="display:none;margin-bottom:12px;">
-      <div class="form-row"><label>Fecha</label><input type="date" id="sc-fecha"></div>
-      <div class="form-row"><label>Categoría</label><select id="sc-categoria"></select></div>
-            <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="sc-dueno"></select></div>
-            <div class="form-row"><label>Potrero</label><select id="sc-potrero"></select></div>
-      <div class="form-row"><label>Cantidad</label><input type="number" id="sc-cantidad" min="1"></div>
+      <div class="form-row"><label for="sc-fecha">Fecha</label><input type="date" id="sc-fecha"></div>
+      <div class="form-row"><label for="sc-categoria">Categoría</label><select id="sc-categoria"></select></div>
+            <div class="form-row"><label for="sc-dueno">${CONFIG.duenoLabel}</label><select id="sc-dueno"></select></div>
+            <div class="form-row"><label for="sc-potrero">Potrero</label><select id="sc-potrero"></select></div>
+      <div class="form-row"><label for="sc-cantidad">Cantidad</label><input type="number" id="sc-cantidad" min="1"></div>
       <div class="form-row" id="sc-fila-caravana" style="display:none;">
-        <label>Caravana</label>
+        <label for="sc-caravana">Caravana</label>
         <input type="tel" id="sc-caravana" inputmode="numeric" placeholder="8 dígitos" maxlength="15">
         <label style="display:flex;align-items:center;gap:6px;font-weight:normal;margin-top:6px;font-size:13px;">
           <input type="checkbox" id="sc-sin-caravana"> Este animal no tiene caravana
         </label>
       </div>
       <div id="sc-caravana-quien"></div>
-      <div class="form-row"><label>Gen (opcional)</label><input type="number" id="sc-gen" min="0"></div>
-      <div class="form-row"><label>Producto 1</label><select id="sc-producto1" style="display:none;"></select><input type="text" id="sc-producto1-otro" placeholder="Producto 1"></div>
-      <div class="form-row"><label>Dosis 1</label><input type="number" id="sc-dosis1" min="0" step="0.01"></div>
-      <div class="form-row"><label>Producto 2 (opcional)</label><select id="sc-producto2" style="display:none;"></select><input type="text" id="sc-producto2-otro" placeholder="Producto 2 (opcional)"></div>
-      <div class="form-row"><label>Dosis 2 (opcional)</label><input type="number" id="sc-dosis2" min="0" step="0.01"></div>
-      <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="sc-obs"></div>
+      <div class="form-row"><label for="sc-gen">Gen (opcional)</label><input type="number" id="sc-gen" min="0"></div>
+      <div class="form-row"><label for="sc-producto1">Producto 1</label><select id="sc-producto1" style="display:none;"></select><input type="text" id="sc-producto1-otro" placeholder="Producto 1"></div>
+      <div class="form-row"><label for="sc-dosis1">Dosis 1</label><input type="number" id="sc-dosis1" min="0" step="0.01"></div>
+      <div class="form-row"><label for="sc-producto2">Producto 2 (opcional)</label><select id="sc-producto2" style="display:none;"></select><input type="text" id="sc-producto2-otro" placeholder="Producto 2 (opcional)"></div>
+      <div class="form-row"><label for="sc-dosis2">Dosis 2 (opcional)</label><input type="number" id="sc-dosis2" min="0" step="0.01"></div>
+      <div class="form-row"><label for="sc-obs">Observaciones (opcional)</label><input type="text" id="sc-obs"></div>
       <div class="form-botones">
         <button class="btn btn-agregar" id="sc-guardar">Guardar</button>
         <button class="btn btn-secundario" id="sc-cancelar">Cancelar</button>
@@ -833,12 +834,12 @@
     <div class="form-botones"><button class="btn btn-secundario" id="sanidad-cerrar">Cerrar</button></div>
   </div>
 </div>
-<div id="modal-lluvias" class="modal-overlay" style="display:none;">
+<div id="modal-lluvias" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>🌧 Lluvias</h3>
     <button class="btn-cerrar-x" id="lluvias-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
-    <div class="form-row"><label>Fecha</label><input type="date" id="ll-fecha"></div>
-    <div class="form-row"><label>Milímetros</label><input type="number" id="ll-mm" min="0" step="0.1"></div>
+    <div class="form-row"><label for="ll-fecha">Fecha</label><input type="date" id="ll-fecha"></div>
+    <div class="form-row"><label for="ll-mm">Milímetros</label><input type="number" id="ll-mm" min="0" step="0.1"></div>
     <div class="form-botones" style="margin-bottom:12px;">
       <button class="btn btn-agregar" id="ll-guardar">Cargar lluvia</button>
     </div>
@@ -849,19 +850,19 @@
     <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
   </div>
 </div>
-<div id="modal-usuario" class="modal-overlay" style="display:none;">
+<div id="modal-usuario" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>👤 ¿Quién sos?</h3>
     <button class="btn-cerrar-x" id="usuario-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Tu nombre queda guardado en este dispositivo y se agrega a cada movimiento que cargues, para saber quién hizo qué.</p>
-    <div class="form-row"><label>Nombre</label><input type="text" id="usuario-nombre-input" placeholder="Ej: Pedro"></div>
+    <div class="form-row"><label for="usuario-nombre-input">Nombre</label><input type="text" id="usuario-nombre-input" placeholder="Ej: Pedro"></div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="usuario-guardar">Guardar</button>
       <button class="btn btn-secundario" id="usuario-cancelar">Cancelar</button>
     </div>
   </div>
 </div>
-<div id="modal-clave-campo" class="modal-overlay" style="display:none;">
+<div id="modal-clave-campo" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>🔑 Clave del campo</h3>
     <button class="btn-cerrar-x" id="clave-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -877,14 +878,14 @@
     <p class="modal-info" style="margin:10px 0 0;">Sin la clave la app sigue andando por ahora. Más adelante va a hacer falta para sincronizar.</p>
   </div>
 </div>
-<div id="modal-caravana" class="modal-overlay" style="display:none;">
+<div id="modal-caravana" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>🔎 Buscar caravana</h3>
     <button class="btn-cerrar-x" id="caravana-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Escribí el número visual de la caravana (los 8 dígitos) para ver de qué animal se trata y si está en período de espera.</p>
     <p class="modal-info" id="cv-copia" style="display:none;"></p>
     <div class="form-row">
-      <label>Caravana</label>
+      <label for="cv-numero">Caravana</label>
       <input type="tel" id="cv-numero" inputmode="numeric" placeholder="Ej: 57179343" maxlength="15">
     </div>
     <div class="form-botones">
@@ -894,7 +895,7 @@
     <div class="form-botones"><button class="btn btn-secundario" id="caravana-cerrar">Cerrar</button></div>
   </div>
 </div>
-<div id="modal-insumos" class="modal-overlay" style="display:none;">
+<div id="modal-insumos" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>🧴 Insumos</h3>
     <button class="btn-cerrar-x" id="insumos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -909,7 +910,7 @@
     </div>
   </div>
 </div>
-<div id="modal-insumos-form" class="modal-overlay" style="display:none;">
+<div id="modal-insumos-form" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>🧴 Cargar insumo</h3>
     <button class="btn-cerrar-x" id="insumos-form-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -925,7 +926,7 @@
       <input type="text" id="ins-producto" list="ins-productos-lista" autocomplete="off" placeholder="Escribí para buscar">
       <datalist id="ins-productos-lista"></datalist>
     </div>
-    <div class="form-row" id="ins-fila-destino" style="display:none;"><label>Destino</label><input type="text" id="ins-destino" readonly></div>
+    <div class="form-row" id="ins-fila-destino" style="display:none;"><label for="ins-destino">Destino</label><input type="text" id="ins-destino" readonly></div>
     <div class="form-row"><label for="ins-cantidad">Cantidad (ml)</label>
       <input type="text" id="ins-cantidad" inputmode="decimal" autocomplete="off" placeholder="Ej: 500">
     </div>
@@ -944,7 +945,7 @@
     </div>
   </div>
 </div>
-<div id="modal-bano" class="modal-overlay" style="display:none;">
+<div id="modal-bano" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>🛁 Baño</h3>
     <button class="btn-cerrar-x" id="bano-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -997,7 +998,7 @@
     </div>
   </div>
 </div>
-<div id="modal-bano-form" class="modal-overlay" style="display:none;">
+<div id="modal-bano-form" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3 id="bano-f-titulo">🛁 Baño</h3>
     <button class="btn-cerrar-x" id="bano-f-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -1066,7 +1067,7 @@
     </div>
   </div>
 </div>
-<div id="modal-bano-productos" class="modal-overlay" style="display:none;">
+<div id="modal-bano-productos" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>⚙ Productos del baño</h3>
     <button class="btn-cerrar-x" id="bano-p-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
@@ -1095,14 +1096,14 @@
 </div>
 <div id="toast"></div>
 <div id="aviso-guardado" role="status" aria-live="polite" hidden>✅ Evento guardado</div>
-<div id="modal-puntos" class="modal-overlay" style="display:none;">
+<div id="modal-puntos" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3>Aguadas, instalaciones y caminos</h3>
     <button class="btn-cerrar-x" id="puntos-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info">Estos puntos se agregan al mapa y salen como capas aparte en el KMZ exportado.</p>
-    <div class="form-row"><label>Tipo</label><select id="np-tipo"></select></div>
-    <div class="form-row"><label>Subtipo</label><select id="np-subtipo"></select></div>
-    <div class="form-row"><label>Nombre (opcional)</label><input type="text" id="np-nombre" placeholder="Ej: Represa grande"></div>
+    <div class="form-row"><label for="np-tipo">Tipo</label><select id="np-tipo"></select></div>
+    <div class="form-row"><label for="np-subtipo">Subtipo</label><select id="np-subtipo"></select></div>
+    <div class="form-row"><label for="np-nombre">Nombre (opcional)</label><input type="text" id="np-nombre" placeholder="Ej: Represa grande"></div>
     <div class="form-row"><label>Fotos (opcional, hasta 3)</label><div id="np-fotos"></div></div>
     <button class="btn btn-agregar btn-full" id="np-colocar" style="width:100%;margin-bottom:6px;">📍 Elegir ubicación en el mapa</button>
     <button class="btn btn-kmz btn-full" id="np-importar" style="width:100%;margin-bottom:6px;">⬆ Importar de archivo (KML/KMZ/GPX)</button>
@@ -1112,14 +1113,14 @@
     <div class="form-botones"><button class="btn btn-secundario" id="puntos-cerrar">Cerrar</button></div>
   </div>
 </div>
-<div id="modal-reporte" class="modal-overlay" style="display:none;">
+<div id="modal-reporte" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="modal-box">
     <h3 id="reporte-titulo">🔧 Infraestructura</h3>
     <button class="btn-cerrar-x" id="reporte-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info" id="reporte-info">Reportá un problema encontrado en el campo — se guarda con su ubicación para poder encontrarlo después.</p>
-    <div class="form-row" id="reporte-fila-subtipo"><label>Tipo de problema</label><select id="rp-subtipo"></select></div>
-    <div class="form-row"><label>Fecha</label><input type="date" id="rp-fecha"></div>
-    <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="rp-obs" placeholder="Ej: cerca de la tranquera norte"></div>
+    <div class="form-row" id="reporte-fila-subtipo"><label for="rp-subtipo">Tipo de problema</label><select id="rp-subtipo"></select></div>
+    <div class="form-row"><label for="rp-fecha">Fecha</label><input type="date" id="rp-fecha"></div>
+    <div class="form-row"><label for="rp-obs">Observaciones (opcional)</label><input type="text" id="rp-obs" placeholder="Ej: cerca de la tranquera norte"></div>
     <div class="form-row" id="rp-fotos-fila">
       <label>Fotos (opcional, hasta 3)</label>
       <button class="btn btn-secundario btn-full" type="button" id="rp-fotos-boton" style="width:100%;">📷 Agregar foto (hasta 3)</button>
@@ -1145,7 +1146,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.03","manejo":false,"versionMovil":"3.03","simpleHabilitado":true,"versionMovilSimple":"2.03","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.04","manejo":false,"versionMovil":"3.04","simpleHabilitado":true,"versionMovilSimple":"2.04","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -1883,7 +1884,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'campo-2.03';
+const VERSION_APP = 'campo-2.04';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -5568,7 +5569,7 @@ function renderDetalle(nombre){
     </div>` : '';
 
   det.innerHTML = `
-    <div class="detalle-titulo"><h2>${esc(nombre)}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar">✕</button></div>
+    <div class="detalle-titulo"><h2>${esc(nombre)}</h2><button class="btn-cerrar-detalle" id="detalle-cerrar" title="Cerrar" aria-label="Cerrar">✕</button></div>
     <div class="total-grande"><strong>${total}</strong>animal${total===1?'':'es'}</div>
     <div class="meta">${ha.toFixed(1)} ha${difiereArea ? ` <span style="color:#8a8465;">(calculada: ${areaCalc.toFixed(1)} ha)</span>` : ''} · ${total} animal${total===1?'':'es'} · ${ug.toFixed(1)} UG · <strong>${carga.toFixed(2)} UG/ha</strong>${ugAjenas>0 ? ` <span style="color:var(--texto-suave);">(${ugAjenas.toFixed(1)} UG ajenas)</span>` : ''}</div>
     <div class="ocupacion-badge ocupacion-${ocup.tipo}" style="margin-bottom:10px;">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
@@ -5604,10 +5605,10 @@ function renderDetalle(nombre){
           <span class="fecha">${esc(h.fecha)}</span> — ${esc(h.detalle)}${h.ubic ? ' <span title="Tiene ubicación en el mapa">📍</span>' : ''}
           ${(h.id && h.extra && !h.eliminado) ? `
           <span class="hist-acciones">
-            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo.indexOf('vecino_')!==0 && h.tipo!=='retorno_campo_ajeno' && h.tipo!=='compra' && h.tipo!=='venta') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar">✏️</button>` : ''}
-            ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana">🏷️</button>` : ''}
-            ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-foto="${esc(h.id)}" title="Agregar foto">📷</button><button class="hist-btn" data-hist-mapa="${esc(h.id)}" title="Ver en el mapa">🗺</button>` : ''}
-            ${(h.tipo!=='traslado_entrada' && h.tipo.indexOf('vecino_')!==0) ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar">🗑</button>` : ''}
+            ${(h.tipo!=='movimiento' && h.tipo!=='movimiento_todo' && h.tipo!=='movimiento_multi' && h.tipo!=='encontrado' && h.tipo!=='perdida' && h.tipo!=='muerte_desaparecido' && h.tipo!=='envio_campo_ajeno' && h.tipo.indexOf('vecino_')!==0 && h.tipo!=='retorno_campo_ajeno' && h.tipo!=='compra' && h.tipo!=='venta') ? `<button class="hist-btn" data-hist-editar="${esc(h.id)}" title="Editar" aria-label="Editar">✏️</button>` : ''}
+            ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-caravana="${esc(h.id)}" title="Agregar/editar caravana" aria-label="Agregar/editar caravana">🏷️</button>` : ''}
+            ${(h.tipo==='muerte' || h.tipo==='muerte_desaparecido') ? `<button class="hist-btn" data-hist-foto="${esc(h.id)}" title="Agregar foto" aria-label="Agregar foto">📷</button><button class="hist-btn" data-hist-mapa="${esc(h.id)}" title="Ver en el mapa" aria-label="Ver en el mapa">🗺</button>` : ''}
+            ${(h.tipo!=='traslado_entrada' && h.tipo.indexOf('vecino_')!==0) ? `<button class="hist-btn" data-hist-borrar="${esc(h.id)}" title="Borrar" aria-label="Borrar">🗑</button>` : ''}
           </span>` : ''}
           ${((h.tipo==='muerte' || h.tipo==='muerte_desaparecido') && h.eventId) ? `<div class="rp-fotos" data-hist-fotos="${esc(h.eventId)}">${thumbsFotosHTML(h, 'muerte')}</div>` : ''}
         </div>
@@ -5746,7 +5747,7 @@ function htmlSnigDetalleDueno(nombre, r){
     h += '<p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 6px;">Ningún animal de este potrero leído por el bastón según el SNIG.</p>';
   }
   h += `<p style="font-size:12.5px;margin:8px 0 2px;">Sin SNIG o sin lectura: <strong>${d.sinSnig}</strong></p>`;
-  if(d.exceso) h += `<div style="font-size:12px;color:#b7791f;margin-top:4px;">⚠ el SNIG tiene ${d.exceso} más que el stock del potrero (revisar)</div>`;
+  if(d.exceso) h += `<div style="font-size:12px;color:#8f5f12;margin-top:4px;">⚠ el SNIG tiene ${d.exceso} más que el stock del potrero (revisar)</div>`;
   if(d.otrasStock) h += `<p style="font-size:12px;color:var(--texto-suave);margin:6px 0 0;">En la app, sin comparar con el SNIG: ${d.otrasStock}. El stock de "Otros bovinos" no se puede comparar con las categorías del bastón.</p>`;
   if(d.noComparables) h += `<p style="font-size:12px;color:var(--texto-suave);margin:4px 0 0;">Según el SNIG, sin categoría o con categoría no comparable: ${d.noComparables}</p>`;
   return h;
@@ -6028,7 +6029,7 @@ function filaAgregarAnimales(idx){
     <select class="ag-cat" style="flex:2;">${opcionesCategorias()}</select>
     <input type="text" class="ag-dueno-otro" placeholder="Dueño/procedencia (obligatorio)" style="flex:2;">
     <input type="number" class="ag-cant" min="1" value="1" style="flex:1;min-width:56px;">
-    <button type="button" class="ag-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+    <button type="button" class="ag-quitar" title="Quitar categoría" aria-label="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
   </div>`;
 }
 function actualizarBotonesQuitarAgregar(){
@@ -6044,7 +6045,7 @@ function mostrarFormularioAgregarInicial(nombre){
       <label style="display:block;font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Categoría · ${CONFIG.duenoLabel} · Cantidad</label>
       <div id="f-filas-agregar">${filaAgregarAnimales(0)}</div>
       <button type="button" class="btn btn-secundario" id="f-agregar-fila" style="margin:8px 0;">+ Agregar otra categoría</button>
-      <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+      <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
       <div class="form-botones">
         <button class="btn btn-agregar" id="f-confirmar">Agregar</button>
         <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -6109,12 +6110,12 @@ function mostrarFormulario(nombre, accion, prefill){
       zona.innerHTML = `
         <div class="form-accion">
           <h3>Agregar animales a ${esc(nombre)}</h3>
-          <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill.categoria)}</select></div>
+          <div class="form-row"><label for="f-cat">Categoría</label><select id="f-cat">${opcionesCategorias(prefill.categoria)}</select></div>
           <div class="form-row"><label>${CONFIG.duenoLabel}</label>
             <input type="text" id="f-dueno-otro" placeholder="Dueño/procedencia (obligatorio)" value="${esc(prefill.dueno||'')}">
           </div>
-          <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill.cantidad}"></div>
-          <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+          <div class="form-row"><label for="f-cant">Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill.cantidad}"></div>
+          <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
           <div class="form-botones">
             <button class="btn btn-agregar" id="f-confirmar">Guardar corrección</button>
             <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -6167,13 +6168,13 @@ function mostrarFormulario(nombre, accion, prefill){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Mover animales desde ${esc(nombre)}</h3>
-        <div class="form-row"><label>Potrero destino</label><select id="f-destino"><option value="${esc(nombre)}">(sin mover — recategorizar en ${esc(nombre)})</option>${opcionesPotreros(nombre)}</select></div>
-        <div class="form-row"><label>Categoría destino (opcional)</label><select id="f-cat-destino"><option value="">— mantener la categoría de cada una —</option>${opcionesCategorias()}</select></div>
-        <div class="form-row"><label>Dueño destino (opcional)</label><select id="f-dueno-destino"><option value="__mantener__" selected>— mantener el dueño de cada una —</option>${opcionesDuenos()}</select></div>
+        <div class="form-row"><label for="f-destino">Potrero destino</label><select id="f-destino"><option value="${esc(nombre)}">(sin mover — recategorizar en ${esc(nombre)})</option>${opcionesPotreros(nombre)}</select></div>
+        <div class="form-row"><label for="f-cat-destino">Categoría destino (opcional)</label><select id="f-cat-destino"><option value="">— mantener la categoría de cada una —</option>${opcionesCategorias()}</select></div>
+        <div class="form-row"><label for="f-dueno-destino">Dueño destino (opcional)</label><select id="f-dueno-destino"><option value="__mantener__" selected>— mantener el dueño de cada una —</option>${opcionesDuenos()}</select></div>
         <label style="font-size:13px;font-weight:600;display:block;margin:10px 0 4px;">Categorías a mover</label>
         <div id="f-categorias-mover">${filasCategoriasMover(nombre)}</div>
-        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
-        <div class="form-row"><label>Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: arreo por sequía, pastoreo rotativo..." value=""></div>
+        <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label for="f-obs">Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: arreo por sequía, pastoreo rotativo..." value=""></div>
         <p style="font-size:11px;color:var(--texto-suave);margin:2px 0 0 0;">Tildá una o más categorías. Si elegís una categoría destino, todas las tildadas pasan a esa categoría; si elegís un dueño destino, todas las tildadas pasan a ese dueño (sirve para asignarle el dueño a animales "sin asignar" a medida que los identificás); dejar cualquiera de los dos en blanco mantiene lo que ya tenía cada una.</p>
         <div class="form-botones">
           <button class="btn btn-mover" id="f-confirmar">Mover</button>
@@ -6262,8 +6263,8 @@ function mostrarFormulario(nombre, accion, prefill){
       <div class="form-accion">
         <h3>Mover TODO el potrero ${esc(nombre)}</h3>
         <p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 8px 0;">Se van a mover ${total} animales: ${resumen}</p>
-        <div class="form-row"><label>Potrero destino</label><select id="f-destino">${opcionesPotreros(nombre)}</select></div>
-        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label for="f-destino">Potrero destino</label><select id="f-destino">${opcionesPotreros(nombre)}</select></div>
+        <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-botones">
           <button class="btn btn-mover" id="f-confirmar">Mover todo (${total})</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -6309,11 +6310,11 @@ function mostrarFormulario(nombre, accion, prefill){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Registrar nacimiento en ${esc(nombre)}</h3>
-        <div class="form-row"><label>Categoría de la cría</label><select id="f-cat">${opcionesCategoriasNacimiento(prefill?prefill.categoria:'Terneros')}</select></div>
-        <div class="form-row"><label>${CONFIG.duenoLabel} (de la madre)</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
-        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
-        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: parto sin problemas" value="${esc(prefill&&prefill.obs?prefill.obs:'')}"></div>
+        <div class="form-row"><label for="f-cat">Categoría de la cría</label><select id="f-cat">${opcionesCategoriasNacimiento(prefill?prefill.categoria:'Terneros')}</select></div>
+        <div class="form-row"><label for="f-dueno">${CONFIG.duenoLabel} (de la madre)</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label for="f-cant">Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label for="f-obs">Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: parto sin problemas" value="${esc(prefill&&prefill.obs?prefill.obs:'')}"></div>
         <div class="form-botones">
           <button class="btn btn-nacimiento" id="f-confirmar">${prefill?'Guardar corrección':'Registrar nacimiento'}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -6346,13 +6347,13 @@ function mostrarFormulario(nombre, accion, prefill){
     zona.innerHTML = `
       <div class="form-accion"${prefill?' data-correccion="1"':''}>
         <h3>Registrar muerte en ${esc(nombre)}</h3>
-        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
-        <div class="form-row" id="f-grupo-fila" style="display:none;"><label>Ternero</label><select id="f-grupo">${opcionesGrupoTernero(prefill?prefill.grupoTernero:undefined)}</select></div>
-        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
-        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
-        <div class="form-row"><label>Causa (opcional)</label><input type="text" id="f-obs" placeholder="Ej: empantanado, enfermedad..." value="${esc(prefill&&prefill.obs?prefill.obs:'')}"></div>
-        <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="f-caravana" placeholder="mín. 8 dígitos" inputmode="numeric" value="${esc(prefill&&prefill.caravana?prefill.caravana:'')}"></div>
+        <div class="form-row"><label for="f-cat">Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
+        <div class="form-row" id="f-grupo-fila" style="display:none;"><label for="f-grupo">Ternero</label><select id="f-grupo">${opcionesGrupoTernero(prefill?prefill.grupoTernero:undefined)}</select></div>
+        <div class="form-row"><label for="f-dueno">${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label for="f-cant">Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label for="f-obs">Causa (opcional)</label><input type="text" id="f-obs" placeholder="Ej: empantanado, enfermedad..." value="${esc(prefill&&prefill.obs?prefill.obs:'')}"></div>
+        <div class="form-row"><label for="f-caravana">Caravana (opcional)</label><input type="text" id="f-caravana" placeholder="mín. 8 dígitos" inputmode="numeric" value="${esc(prefill&&prefill.caravana?prefill.caravana:'')}"></div>
         <div class="form-row"><label>Fotos (opcional, hasta 3)</label><div id="f-fotos-muerte"></div></div>
         <div class="form-row"><label>Dónde se encontró (opcional)</label>
           <div id="f-ubic-txt" class="rp-nota">Sin ubicación marcada</div>
@@ -6428,12 +6429,12 @@ function mostrarFormulario(nombre, accion, prefill){
       <div class="form-accion">
         <h3>Consumo (faena) en ${esc(nombre)}</h3>
         <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Animales que se faenan para consumo de carne: se restan del potrero. Si el animal no figura en la app se resta lo que haya y queda anotado cuántos faltaban.</p>
-        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategoriasConsumo(pre.categoria)}</select></div>
-        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenosConsumo(nombre, pre.dueno)}</select>
+        <div class="form-row"><label for="f-cat">Categoría</label><select id="f-cat">${opcionesCategoriasConsumo(pre.categoria)}</select></div>
+        <div class="form-row"><label for="f-dueno">${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenosConsumo(nombre, pre.dueno)}</select>
           <input type="text" id="f-dueno-otro" placeholder="Escribir dueño/procedencia" style="display:none;margin-top:6px;"></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${pre.cantidad||1}"></div>
-        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${pre._fechaISO?pre._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
-        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: cordero para la casa" value="${esc(pre.obs||'')}"></div>
+        <div class="form-row"><label for="f-cant">Cantidad</label><input type="number" id="f-cant" min="1" value="${pre.cantidad||1}"></div>
+        <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${pre._fechaISO?pre._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label for="f-obs">Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: cordero para la casa" value="${esc(pre.obs||'')}"></div>
         <div class="form-botones">
           <button class="btn btn-muerte" id="f-confirmar">${prefill?'Guardar corrección':'Registrar consumo'}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -6466,11 +6467,11 @@ function mostrarFormulario(nombre, accion, prefill){
       <div class="form-accion">
         <h3>Registrar desaparición en ${esc(nombre)}</h3>
         <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Para un animal que salió del potrero sin que sepas dónde está (cruzó a otro campo, etc.) — se resta de acá y queda en 🛠 Herramientas › ❓ Desaparecidos hasta que aparezca o se dé por perdido.</p>
-        <div class="form-row"><label>Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
-        <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
-        <div class="form-row"><label>Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
-        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
-        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: cerca del vecino Fulano" value="${esc(prefill&&prefill.obs?prefill.obs:'')}"></div>
+        <div class="form-row"><label for="f-cat">Categoría</label><select id="f-cat">${opcionesCategorias(prefill?prefill.categoria:undefined)}</select></div>
+        <div class="form-row"><label for="f-dueno">${CONFIG.duenoLabel}</label><select id="f-dueno">${opcionesDuenos(prefill?prefill.dueno:undefined)}</select></div>
+        <div class="form-row"><label for="f-cant">Cantidad</label><input type="number" id="f-cant" min="1" value="${prefill?prefill.cantidad:1}"></div>
+        <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${prefill&&prefill._fechaISO?prefill._fechaISO:fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label for="f-obs">Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: cerca del vecino Fulano" value="${esc(prefill&&prefill.obs?prefill.obs:'')}"></div>
         <div class="form-botones">
           <button class="btn btn-muerte" id="f-confirmar">${prefill?'Guardar corrección':'Registrar desaparición'}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
@@ -6508,12 +6509,12 @@ function mostrarFormulario(nombre, accion, prefill){
       <div class="form-accion">
         <h3>Pasó al vecino desde ${esc(nombre)}</h3>
         <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Animales nuestros que ahora están en el campo de un vecino. Salen de acá y quedan en 🛠 Herramientas › 🏡 Vecinos, donde después se anota la vuelta, la pérdida o la muerte.</p>
-        <div class="form-row"><label>Vecino</label><input type="text" id="f-vecino" list="dl-vecinos" maxlength="40" placeholder="Nombre del vecino"><datalist id="dl-vecinos">${listarVecinos().map(v=>`<option value="${esc(v)}"></option>`).join('')}</datalist></div>
+        <div class="form-row"><label for="f-vecino">Vecino</label><input type="text" id="f-vecino" list="dl-vecinos" maxlength="40" placeholder="Nombre del vecino"><datalist id="dl-vecinos">${listarVecinos().map(v=>`<option value="${esc(v)}"></option>`).join('')}</datalist></div>
         <div style="font-size:12px;color:var(--texto-suave);margin:4px 0;">Categoría · ${esc(CONFIG.duenoLabel)} · Cantidad · Caravana (opcional, mín. 8 dígitos)</div>
         <div id="vec-filas">${filaPasoVecinoHTML()}</div>
         <button type="button" class="btn btn-secundario btn-full" id="vec-agregar-fila" style="margin-bottom:8px;">＋ Otra categoría</button>
-        <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
-        <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: pasó por el alambrado del norte"></div>
+        <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+        <div class="form-row"><label for="f-obs">Observaciones (opcional)</label><input type="text" id="f-obs" placeholder="Ej: pasó por el alambrado del norte"></div>
         <div id="vec-error" role="alert" style="color:#b42318;font-weight:700;margin:8px 0;" hidden></div>
         <div class="form-botones">
           <button class="btn btn-muerte" id="f-confirmar">Registrar</button>
@@ -7222,8 +7223,8 @@ function abrirFormularioMuerteDesaparecido(caso){
   const cont = document.getElementById(`form-resolver-${caso.casoId}`);
   cont.style.display = 'block';
   cont.innerHTML = `
-    <div class="form-row"><label>Cantidad muerta</label><input type="number" id="md-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
-    <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="md-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
+    <div class="form-row"><label for="md-cant">Cantidad muerta</label><input type="number" id="md-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
+    <div class="form-row"><label for="md-caravana">Caravana (opcional)</label><input type="text" id="md-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
     <div class="form-row"><label>Fotos (opcional, hasta 3)</label><div id="md-fotos"></div></div>
     <div class="form-row"><label>Dónde se encontró (opcional)</label>
       <div id="md-ubic-txt" class="rp-nota">Sin ubicación marcada</div>
@@ -7315,7 +7316,7 @@ function filaPasoVecinoHTML(){
     <select data-vp="dueno" style="flex:2;">${opcionesDuenos()}</select>
     <input type="number" data-vp="cant" min="1" value="1" style="flex:1;min-width:56px;">
     <input type="text" data-vp="caravana" placeholder="caravana" inputmode="numeric" style="flex:2;min-width:96px;">
-    <button type="button" class="vec-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+    <button type="button" class="vec-quitar" title="Quitar categoría" aria-label="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
   </div>`;
 }
 function filaVolvioVecinoHTML(nombre){
@@ -7324,7 +7325,7 @@ function filaVolvioVecinoHTML(nombre){
   return `<div class="form-row vec-fila" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
     <select data-vf="clave" style="flex:3;">${opciones}</select>
     <input type="number" data-vf="cant" min="1" value="1" style="flex:1;min-width:56px;">
-    <button type="button" class="vec-quitar" title="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+    <button type="button" class="vec-quitar" title="Quitar categoría" aria-label="Quitar categoría" style="background:none;border:none;color:var(--rojo-hacienda);font-size:17px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
   </div>`;
 }
 function actualizarQuitarFilasVecino(cont){
@@ -7448,10 +7449,10 @@ function abrirFormularioVecinoDesap(caso){
   cont.style.display = 'block';
   cont.innerHTML = `
     <p style="font-size:12px;color:var(--texto-suave);margin:0 0 6px 0;">Apareció en el campo de un vecino: cierra el caso y el animal queda en la cuenta de ese vecino (🏡 Vecinos).</p>
-    <div class="form-row"><label>Cantidad encontrada en el vecino</label><input type="number" id="fv-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
-    <div class="form-row"><label>Vecino</label><input type="text" id="fv-vecino" list="dl-vecinos-desap" maxlength="40" placeholder="Nombre del vecino"><datalist id="dl-vecinos-desap">${listarVecinos().map(v=>`<option value="${esc(v)}"></option>`).join('')}</datalist></div>
-    <div class="form-row"><label>Fecha</label><input type="date" id="fv-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
-    <div class="form-row"><label>Caravana (opcional)</label><input type="text" id="fv-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
+    <div class="form-row"><label for="fv-cant">Cantidad encontrada en el vecino</label><input type="number" id="fv-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
+    <div class="form-row"><label for="fv-vecino">Vecino</label><input type="text" id="fv-vecino" list="dl-vecinos-desap" maxlength="40" placeholder="Nombre del vecino"><datalist id="dl-vecinos-desap">${listarVecinos().map(v=>`<option value="${esc(v)}"></option>`).join('')}</datalist></div>
+    <div class="form-row"><label for="fv-fecha">Fecha</label><input type="date" id="fv-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+    <div class="form-row"><label for="fv-caravana">Caravana (opcional)</label><input type="text" id="fv-caravana" placeholder="mín. 8 dígitos" inputmode="numeric"></div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="fv-confirmar">Confirmar</button>
       <button class="btn btn-secundario" id="fv-cancelar">Cancelar</button>
@@ -7482,9 +7483,9 @@ function abrirFormularioEncontrado(caso){
   const cont = document.getElementById(`form-resolver-${caso.casoId}`);
   cont.style.display = 'block';
   cont.innerHTML = `
-    <div class="form-row"><label>Cantidad encontrada</label><input type="number" id="fe-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
-    <div class="form-row"><label>Potrero al que vuelve</label><select id="fe-potrero"><option value="${esc(caso.potreroOrigen)}">${esc(caso.potreroOrigen)} (de donde salió)</option>${opcionesPotreros(caso.potreroOrigen)}</select></div>
-    <div class="form-row"><label>Fecha</label><input type="date" id="fe-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
+    <div class="form-row"><label for="fe-cant">Cantidad encontrada</label><input type="number" id="fe-cant" min="1" max="${caso.pendiente}" value="${caso.pendiente}"></div>
+    <div class="form-row"><label for="fe-potrero">Potrero al que vuelve</label><select id="fe-potrero"><option value="${esc(caso.potreroOrigen)}">${esc(caso.potreroOrigen)} (de donde salió)</option>${opcionesPotreros(caso.potreroOrigen)}</select></div>
+    <div class="form-row"><label for="fe-fecha">Fecha</label><input type="date" id="fe-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
     <div class="form-botones">
       <button class="btn btn-agregar" id="fe-confirmar">Confirmar</button>
       <button class="btn btn-secundario" id="fe-cancelar">Cancelar</button>
@@ -8250,7 +8251,7 @@ function snigLineaUnaHTML(r){
   if(!r || r.error) return '';
   if(!r.animal){
     if(r.deCache || !propietarioSnigAusente()) return '';
-    return `<div style="color:#b7791f;font-weight:600;">${esc(propietarioSnigAusente())}</div>`;
+    return `<div style="color:#8f5f12;font-weight:600;">${esc(propietarioSnigAusente())}</div>`;
   }
   return snigBloqueHTML(r.animal);
 }
@@ -8281,7 +8282,7 @@ function snigLineaLoteHTML(r, ids){
   const excep = excepcionales.slice(0, 10).map(t => `<div>${esc(t)}</div>`).join('')
     + (excepcionales.length > 10 ? `<div>… y ${excepcionales.length - 10} más</div>` : '');
   return `<div>${esc(partes.join(' · '))}</div>`
-    + (excep ? `<div style="color:#b7791f;">${excep}</div>` : '');
+    + (excep ? `<div style="color:#8f5f12;">${excep}</div>` : '');
 }
 function snigProgramar(el){
   const tipo = snigTipoCampo(el);
@@ -8453,7 +8454,7 @@ function pesadasFichaHTML(a){
   }
   const filas = todas.slice().sort((x, y) => String(y.f).localeCompare(String(x.f))).map(x =>
     `<tr><td style="padding:2px 6px;">${esc(x.f)}</td>`
-    + `<td style="padding:2px 6px;font-weight:600;">${esc(fmtKg(x.p))}${x.s === true ? ' <span style="color:#b7791f;">(dudosa)</span>' : ''}</td>`
+    + `<td style="padding:2px 6px;font-weight:600;">${esc(fmtKg(x.p))}${x.s === true ? ' <span style="color:#8f5f12;">(dudosa)</span>' : ''}</td>`
     + `<td style="padding:2px 6px;">${esc(fmtGdp(x.g))}</td>`
     + `<td style="padding:2px 6px;color:#5a6572;">${esc(x.a || '')}</td></tr>`).join('');
   return `<div class="modal-info" style="margin-top:10px;"><b>⚖️ Pesadas</b> (${todas.length})<br>${resumen}</div>
@@ -8597,14 +8598,14 @@ function htmlCuentaCompletaSnig(c){
     + '<th style="text-align:right;">Leídos por el bastón</th><th style="text-align:right;">Sin lectura</th>'
     + '<th style="text-align:right;">Dados de baja acá</th><th style="text-align:right;">Total según el SNIG</th></tr></thead><tbody>';
   h += c.porDueno.map(x=> `<tr><td>${esc(x.dueno)}</td><td class="num">${x.leidos}</td><td class="num">${x.sinLectura}</td>`
-    + `<td class="num">${x.bajaAca ? `<span style="color:#b7791f;">⚠ ${x.bajaAca}</span>` : 0}</td><td class="num">${x.total}</td></tr>`).join('');
+    + `<td class="num">${x.bajaAca ? `<span style="color:#8f5f12;">⚠ ${x.bajaAca}</span>` : 0}</td><td class="num">${x.total}</td></tr>`).join('');
   h += `<tr class="total"><td>Total general</td><td class="num">${c.total.leidos}</td><td class="num">${c.total.sinLectura}</td>`
     + `<td class="num">${c.total.bajaAca}</td><td class="num">${c.total.total}</td></tr>`;
   h += '</tbody></table>';
   h += '<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">Compará la columna Total con el export del SNIG de cada propietario. '
     + 'Sin lectura: el SNIG la tiene y el bastón nunca la leyó (lista en ' + enlace + '). '
     + 'Dados de baja acá: el SNIG la da viva y nuestra base la dio de baja: revisar.</div>';
-  if(c.otroCampo) h += `<div style="font-size:12px;color:#b7791f;margin-top:4px;">Leídos acá pero el SNIG los ubica en otro campo: ${c.otroCampo} (no suman)</div>`;
+  if(c.otroCampo) h += `<div style="font-size:12px;color:#8f5f12;margin-top:4px;">Leídos acá pero el SNIG los ubica en otro campo: ${c.otroCampo} (no suman)</div>`;
   return h + '</div>';
 }
 function htmlPorPropietarioSnig(d){
@@ -8620,7 +8621,7 @@ function htmlPorPropietarioSnig(d){
           <tr class="total"><td>Total</td><td class="num">${f.total}</td></tr>
         </tbody>
       </table>
-      ${f.exceso ? `<div style="font-size:12px;color:#b7791f;margin-top:4px;">⚠ el SNIG tiene ${f.exceso} más que el stock (revisar)</div>` : ''}
+      ${f.exceso ? `<div style="font-size:12px;color:#8f5f12;margin-top:4px;">⚠ el SNIG tiene ${f.exceso} más que el stock (revisar)</div>` : ''}
       <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">En la app: ${f.enApp.map(([n, c])=> `${esc(n)} ${c}`).join(' · ') || '—'}</div>
     </div>` : `<div style="margin-bottom:14px;">
       <table class="tabla-animales">
@@ -8715,7 +8716,7 @@ function snigBloqueHTML(a){
   const s = propietarioSnigDe(a);
   if(!s) return '';
   return `<div style="font-size:12px;color:#5a6572;">${esc(a.en_snig === true ? 'Propietario (SNIG): ' + s.texto : s.texto)}</div>`
-    + (s.alerta ? `<div style="font-size:12px;color:#b7791f;font-weight:600;">${esc(s.alerta)}</div>` : '');
+    + (s.alerta ? `<div style="font-size:12px;color:#8f5f12;font-weight:600;">${esc(s.alerta)}</div>` : '');
 }
 
 function fichaCaravanaHTML(a){
@@ -8763,7 +8764,7 @@ function fichaCaravanaHTML(a){
   }else if(snigSinDatosSanitarios(a)){
     const sl = snigEstadoSinLectura(a);
     if(sl.estado === 'pendiente'){
-      color = '#b7791f';
+      color = '#8f5f12';
       estado = sl.texto;
       detalle = `El SNIG lo tiene en este campo desde el ${fechaISOaDisplay(String(a.snig_ingreso).slice(0, 10))} y el bastón todavía no lo leyó. Sin datos sanitarios: no se sabe si está en período de espera. No lo mandes a faena sin chequear.`;
     }else{
@@ -8779,7 +8780,7 @@ function fichaCaravanaHTML(a){
       + (car.faltan != null ? ` — ${cuantos}` : '')
       + (a.producto_carencia ? `, por ${a.producto_carencia}` : '');
   }else if(car.estado === 'CARENCIA DESCONOCIDA'){
-    color = '#b7791f';
+    color = '#8f5f12';
     estado = '⚠️ SIN CONFIRMAR';
     detalle = 'No se sabe si está apto: '
       + (a.producto_carencia ? `${a.producto_carencia} no tiene plazo de espera cargado.` : 'falta el plazo de un producto.')
@@ -8798,7 +8799,7 @@ function fichaCaravanaHTML(a){
   return `<div class="modal-info" style="border-left:4px solid ${color};padding-left:10px;margin:10px 0;">
       <div style="font-weight:700;color:${color};font-size:15px;">${estado}</div>
       <div>${esc(detalle)}</div>
-    </div>${snig && snig.alerta ? `<div style="color:#b7791f;font-weight:600;margin:-4px 0 8px;">${esc(snig.alerta)}</div>` : ''}
+    </div>${snig && snig.alerta ? `<div style="color:#8f5f12;font-weight:600;margin:-4px 0 8px;">${esc(snig.alerta)}</div>` : ''}
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       ${filas.map(([k,v])=>`<tr><td style="padding:3px 6px;color:#5a6572;">${k}</td><td style="padding:3px 6px;font-weight:600;">${esc(v)}</td></tr>`).join('')}
     </table>${CONFIG.pesadasHistorial ? pesadasFichaHTML(a) : ''}${CONFIG.reproduccion ? reproFichaHTML(a) : ''}${CONFIG.manejo && typeof eventosManejoFichaHTML==='function' ? eventosManejoFichaHTML(a.id8) : ''}`;
@@ -8817,10 +8818,10 @@ async function ejecutarBusquedaCaravana(){
   // 31/10/2026: si vino de la copia del celular, arriba de todo dice de qué fecha son los datos
   const avisoCopia = r.deCache ? avisoCopiaPadronHTML(r) : '';
   if(!r.animal){
-    const snigAusente = !r.deCache && propietarioSnigAusente() ? `<p class="modal-info" style="color:#b7791f;">${esc(propietarioSnigAusente())}</p>` : '';
+    const snigAusente = !r.deCache && propietarioSnigAusente() ? `<p class="modal-info" style="color:#8f5f12;">${esc(propietarioSnigAusente())}</p>` : '';
     caja.innerHTML = avisoCopia + (r.deCache
-      ? `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en la copia del padrón de este celular. Puede ser un animal que todavía no bajó a la copia, uno que nunca pasó por la manga, o un número mal tipeado. Con señal se puede volver a buscar.</p>`
-      : `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Puede ser un animal que nunca pasó por la manga, o un número mal tipeado.</p>`) + snigAusente;
+      ? `<p class="modal-info" style="color:#8f5f12;">La caravana <b>${id8}</b> no está en la copia del padrón de este celular. Puede ser un animal que todavía no bajó a la copia, uno que nunca pasó por la manga, o un número mal tipeado. Con señal se puede volver a buscar.</p>`
+      : `<p class="modal-info" style="color:#8f5f12;">La caravana <b>${id8}</b> no está en el padrón. Puede ser un animal que nunca pasó por la manga, o un número mal tipeado.</p>`) + snigAusente;
     return;
   }
   caja.innerHTML = avisoCopia + fichaCaravanaHTML(r.animal);
@@ -8962,10 +8963,10 @@ function pintarPesadasLote(){
       <tr><td style="padding:3px 6px;color:#5a6572;">Ganancia diaria prom.</td><td style="padding:3px 6px;font-weight:600;">${r.gdp == null ? '— (sin pesada anterior)' : esc(fmtGdp(r.gdp)) + ` (${r.gdpN} animales)`}</td></tr>
       <tr><td style="padding:3px 6px;color:#5a6572;">Proporción del lote</td><td style="padding:3px 6px;">${prop}</td></tr>
     </table>
-    ${r.sospechosas ? `<p class="modal-info" style="color:#b7791f;">${r.sospechosas} pesada${r.sospechosas === 1 ? '' : 's'} dudosa${r.sospechosas === 1 ? '' : 's'} (fuera de rango) no entra${r.sospechosas === 1 ? '' : 'n'} en estos números.</p>` : ''}
+    ${r.sospechosas ? `<p class="modal-info" style="color:#8f5f12;">${r.sospechosas} pesada${r.sospechosas === 1 ? '' : 's'} dudosa${r.sospechosas === 1 ? '' : 's'} (fuera de rango) no entra${r.sospechosas === 1 ? '' : 'n'} en estos números.</p>` : ''}
     <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;">
       <tr style="color:#5a6572;"><td style="padding:2px 6px;">Caravana</td><td style="padding:2px 6px;">Categoría</td><td style="padding:2px 6px;">Peso</td><td style="padding:2px 6px;">Ganancia</td></tr>
-      ${orden.map(x=>`<tr><td style="padding:2px 6px;">${esc(x.id8)}</td><td style="padding:2px 6px;">${esc(x.categoria)}</td><td style="padding:2px 6px;font-weight:600;">${esc(fmtKg(x.p))}${x.s ? ' <span style="color:#b7791f;">(dudosa)</span>' : ''}</td><td style="padding:2px 6px;">${esc(fmtGdp(x.g))}</td></tr>`).join('')}
+      ${orden.map(x=>`<tr><td style="padding:2px 6px;">${esc(x.id8)}</td><td style="padding:2px 6px;">${esc(x.categoria)}</td><td style="padding:2px 6px;font-weight:600;">${esc(fmtKg(x.p))}${x.s ? ' <span style="color:#8f5f12;">(dudosa)</span>' : ''}</td><td style="padding:2px 6px;">${esc(fmtGdp(x.g))}</td></tr>`).join('')}
     </table>`;
 }
 
@@ -10422,11 +10423,11 @@ scc.addEventListener('change', async ()=>{
   const r = await buscarCaravana(id8);
   const deCopia = r.deCache ? ` <span style="color:#8f5f12;">(sin señal: padrón del ${esc(textoFechaCopia(r.fechaCache))})</span>` : '';
   if(r.error){
-    quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">Sin señal para verificar la caravana ${id8}. Se va a guardar igual.</p>`;
+    quien.innerHTML = `<p class="modal-info" style="color:#8f5f12;">Sin señal para verificar la caravana ${id8}. Se va a guardar igual.</p>`;
   }else if(!r.animal){
     quien.innerHTML = r.deCache
-      ? `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en la copia del padrón de este celular. Revisá el número.${deCopia}</p>`
-      : `<p class="modal-info" style="color:#b7791f;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
+      ? `<p class="modal-info" style="color:#8f5f12;">La caravana <b>${id8}</b> no está en la copia del padrón de este celular. Revisá el número.${deCopia}</p>`
+      : `<p class="modal-info" style="color:#8f5f12;">La caravana <b>${id8}</b> no está en el padrón. Revisá el número.</p>`;
   }else{
     const a = r.animal;
     const partes = [a.categoria, a.sexo && a.sexo.toLowerCase(), a.propietario,
@@ -10442,7 +10443,7 @@ scc.addEventListener('change', async ()=>{
        una carga con un número a revisar. Mismo criterio que "no está en el
        padrón", acá al lado, que también deja guardar. */
     if(a.estado_vida && a.estado_vida !== 'ACTIVO'){
-      quien.innerHTML = `<p class="modal-info" style="color:#b7791f;">📤 <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — <b>YA NO ESTÁ EN EL CAMPO</b> (${esc(resumenBaja(a))}). Revisá el número.${deCopia}</p>` + snigBloqueHTML(a);
+      quien.innerHTML = `<p class="modal-info" style="color:#8f5f12;">📤 <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — <b>YA NO ESTÁ EN EL CAMPO</b> (${esc(resumenBaja(a))}). Revisá el número.${deCopia}</p>` + snigBloqueHTML(a);
       return;
     }
     // Por carenciaHoy() y no por a.estado_carencia: si el plazo venció entre
@@ -10457,7 +10458,7 @@ scc.addEventListener('change', async ()=>{
       const dichoQuien = pendQuien
         ? `pendiente de primera lectura (SNIG desde ${fechaISOaDisplay(String(a.snig_ingreso).slice(0, 10))}), sin datos sanitarios.`
         : 'vivo sin registro en el predio, sin datos sanitarios.';
-      quien.innerHTML = `<p class="modal-info" style="color:${pendQuien ? '#b7791f' : '#8a4b0f'};">${iconoQuien} <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — ${esc(dichoQuien)}${deCopia}</p>` + snigBloqueHTML(a);
+      quien.innerHTML = `<p class="modal-info" style="color:${pendQuien ? '#8f5f12' : '#8a4b0f'};">${iconoQuien} <b>${esc(id8)}</b>: ${esc(partes.join(', '))} — ${esc(dichoQuien)}${deCopia}</p>` + snigBloqueHTML(a);
     }else{
       quien.innerHTML = `<p class="modal-info" style="color:#1e7b34;">✓ <b>${esc(id8)}</b>: ${esc(partes.join(', '))}${aviso}${deCopia}</p>` + snigBloqueHTML(a);
     }

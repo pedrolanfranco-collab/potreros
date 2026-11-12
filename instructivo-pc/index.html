@@ -74,8 +74,8 @@
   .b{display:inline-block;background:var(--boton-fondo);border:2px solid var(--boton-borde);border-radius:9px;
      padding:0 8px;margin:1px 0;font-weight:700;line-height:1.5;}
   .indice{list-style:none;padding:0;margin:8px 0;}
-  .indice > li{margin:6px 0;}
-  .indice a{display:inline-block;padding:4px 0;}
+  .indice > li{margin:0;}
+  .indice a{display:inline-block;padding:11px 0;min-height:44px;box-sizing:border-box;}   /* 12/11/2026: enlaces de 44 px de alto, para acertarles con el dedo */
   .indice ul{list-style:none;padding-left:16px;margin:2px 0 6px;}
   .indice ul a{font-weight:500;}
   .para{color:var(--suave);font-style:italic;margin:2px 0 6px;}
@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.02</span></li>
-    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">4.02</span></li>
-    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">3.03</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.03</span></li>
+    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">4.03</span></li>
+    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">3.04</span></li>
   </ul>
   <p class="nota">La versión de tu PC está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.81 (completa)</b>). Si tu número es más viejo, abrí la app con conexión y esperá un momento: se actualiza sola.</p>
 </div>
@@ -123,6 +123,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>👓 Se lee mejor</b>: los botones de color ocre (<span class="b">⇄ Mover una categoría</span>, <span class="b">⇄⇄ Mover TODO el potrero</span>) ahora llevan letra oscura, los avisos en amarillo pasaron a un tono más oscuro y la letra más chica de rótulos, tablas y fechas subió de tamaño. Además, tocar el nombre de un casillero ya lleva el cursor a ese casillero. No cambia cómo se usa la app.</li>
     <li><b>🔑 Clave del campo en Pone Chico</b> <span class="campo">(solo Pone Chico)</span>: desde esta versión la app de Pone Chico también pide la clave del campo. La primera vez que la abrís con señal aparece la ventana <b>🔑 Clave del campo</b>: escribila una sola vez en cada equipo. Si no la tenés, pedísela a Pedro. Mientras no esté cargada, el pie avisa “Falta la clave del campo”. Ver <a href="#clave">🔑 Clave del campo</a>.</li>
     <li><b>🎤 El micrófono ya no tapa Herramientas</b>: el botón redondo rojo <span class="b">🎤</span> ahora queda un poco más arriba, por encima de la barra de abajo. Antes tapaba parte del botón <span class="b">🛠 Herramientas</span>. Funciona igual que siempre.</li>
     <li><b>🧾 Propietario según el SNIG</b> <span class="campo">(La Vuelta y María Laura)</span>: la ficha de <span class="b">🔎 Buscar caravana</span>, los casilleros de caravana y la pestaña <span class="b">Por propietario SNIG</span> del <span class="b">📊 Stock total</span> muestran de quién es cada animal según el SNIG. Solo avisa: no cambia el stock ni bloquea nada. Ver <a href="#snig">Propietario según el SNIG</a>.</li>

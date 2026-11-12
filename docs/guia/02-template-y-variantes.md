@@ -53,6 +53,11 @@ in `@prueba`), the first line of `clienteSupabase()` (`@prueba`: returns `null`)
 Adding the markers did not change a byte of the 9 real apps. A new code path that reaches Supabase without `clienteSupabase()`
 would leak into the test copy: `tests/probar_test_aislado.js` fails if the file contains the URL or the key.
 
+**Contrast and accessibility rules (12/11/2026, audit)** — text on `--ocre` is dark (`var(--texto)`, 5.5:1), never white
+(2.96:1); ocre *as text* on a cream background uses `--ocre-texto` (`#8f5f12`), never `--ocre` or `#b7791f`. Text is at least
+12px, except the map controls and the calendar cells. A new form field is `<label for="id">` + a control with that `id`; an
+icon-only button carries `title` and `aria-label`; a new `.modal-overlay` carries `role="dialog" aria-modal="true"`.
+
 ### PC vs. móvil split
 
 - **PC**: has PDF export (jsPDF), Excel export (SheetJS), and a UG-coefficient
