@@ -69,8 +69,8 @@ Cada una salió de un error real. El porqué y el detalle están en el archivo d
     veces al revés. Mientras haya equipos con versión vieja, el SQL es **aditivo**: columnas opcionales, sin renombrar ni borrar.
 12. **RLS que bloquea contesta 200 con lista vacía**, no un error: para un UPDATE/DELETE pedir la fila de vuelta
     (`.select('id')`) y dar por hecho solo si volvió.
-13. Desde la Fase 4 de la auditoría las tablas operativas exigen la **clave del campo** (`x-clave-campo`); Pone Chico queda abierto
-    a propósito. La llave pública está en este repo público: nunca alcanza para proteger nada.
+13. Desde la Fase 4 de la auditoría las tablas operativas exigen la **clave del campo** (`x-clave-campo`). Pone Chico: la app la pide
+    desde el 12/11/2026, pero en la base sigue abierto hasta el cierre de la etapa 2. La llave pública está en este repo público: nunca alcanza para proteger nada.
 14. La **clave privada** de Supabase (y cualquier otra) nunca va al repo, a un log ni a un chat; vive en
     `~/.potreros/.env` de la PC.
 

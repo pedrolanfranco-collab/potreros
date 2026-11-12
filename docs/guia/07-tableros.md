@@ -26,7 +26,7 @@ nombres del padrón difieren más que eso, la tarjeta sale sin bloque. Si la lec
 Para tenerlo en las dos pestañas de verdad, la PC tendría que publicar `gen` (columna nueva en las dos tablas + `actualizar_sanidad_supabase.py`, que vive en OneDrive).
 Tiene **ícono propio** (cruz sanitaria blanca y línea de pulso sobre azul petróleo, `theme_color` `#0f5c63`), distinto de los de las apps;
 el test verifica que ningún `icon-*.png` sea igual a los de `la-vuelta-*`/`maria-laura-*`/`pone-chico-*`. Se refresca cada 5 min y al volver a la pestaña, guarda la última copia en `localStorage` y avisa en rojo si la PC no
-publica hace más de 6 h. **Clave del campo (21/10/2026):** La Vuelta y María Laura piden la clave; el tablero toma la que ya se cargó en las apps (mismo origen, `clave_campo_<campo>`) o la pide una vez, la comprueba con `verificar_clave` y la manda en `x-clave-campo`; Pone Chico no la usa. Sin clave y con las políticas cerradas no pisa la última copia con una lectura vacía. Test:
+publica hace más de 6 h. **Clave del campo (21/10/2026; Pone Chico desde el 12/11/2026):** los tres campos piden la clave; el tablero toma la que ya se cargó en las apps (mismo origen, `clave_campo_<campo>`) o la pide una vez, la comprueba con `verificar_clave` y la manda en `x-clave-campo`. Sin clave y con las políticas cerradas no pisa la última copia con una lectura vacía. Test:
 `tests/probar_tablero_sanidad.js`.
 **"Ya se hizo" en los vencidos (21/10/2026, a pedido de Pedro):** `sanidad_proximos` la regenera la Planilla cada hora y arrastra
 vencidos viejos (23 en La Vuelta, el más viejo de jul/2025, varios con nombres de categoría viejos como "Nov. 2 a 3"), así que borrar ahí no

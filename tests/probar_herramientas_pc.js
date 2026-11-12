@@ -109,9 +109,9 @@ async function probarPc(archivo){
   chequear('5 botones de grupo en la vista principal', grupos.length === 5, grupos.length);
   chequear('ningún botón de sub-menú está a la vista de entrada',
     Object.values(SUBMENUS).flat().every(id => !visible(doc.getElementById(id))));
-  // Pone Chico no usa clave del campo (17/10/2026): su botón está oculto a propósito
+  // Pone Chico usa clave del campo desde el 12/11/2026: su botón se ve como en los otros campos
   const poneChico = /pone-chico/.test(archivo);
-  const directos = poneChico ? DIRECTOS.filter(id => id !== 'btn-clave-campo' && id !== 'btn-eventos-manejo' && id !== 'btn-tareas' && id !== 'btn-calendario') : DIRECTOS;
+  const directos = poneChico ? DIRECTOS.filter(id => id !== 'btn-eventos-manejo' && id !== 'btn-tareas' && id !== 'btn-calendario') : DIRECTOS;
   chequear('los botones directos siguen a la vista', directos.every(id => doc.getElementById(id) && visible(doc.getElementById(id))),
     directos.filter(id => !doc.getElementById(id) || !visible(doc.getElementById(id))).join(','));
   if(poneChico) chequear('Eventos queda oculto cuando CONFIG.manejo=false',!!doc.getElementById('btn-eventos-manejo')&&!visible(doc.getElementById('btn-eventos-manejo')));
