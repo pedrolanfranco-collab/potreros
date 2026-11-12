@@ -251,7 +251,7 @@ async function probarCampo(archivo, est){
   chequear('campo_snig de otro campo: alerta "⚠ Según el SNIG está en ' + C.otroLegible + '"',
     caja.textContent.indexOf('⚠ Según el SNIG está en ' + C.otroLegible) >= 0, caja.textContent.slice(0, 300));
   const alerta = Array.from(caja.querySelectorAll('div')).find(d => d.textContent.indexOf('⚠ Según el SNIG') === 0);
-  chequear('la alerta va en color #b7791f', !!alerta && /#b7791f/i.test(alerta.getAttribute('style') || ''),
+  chequear('la alerta va en color #8f5f12 (ocre oscuro: contraste 5,1)', !!alerta && /#8f5f12/i.test(alerta.getAttribute('style') || ''),
     alerta && alerta.getAttribute('style'));
   chequear('la alerta no es una fila de la tabla (y la ficha sigue con sus filas)',
     filasDeCaja(caja).every(x => !/⚠/.test(x[0] || '')) && filasDeCaja(caja).length > 0);
@@ -1586,7 +1586,7 @@ async function probarCuentaCompleta(archivo, est){
   chequear('Silvia: 3 / 2 / 0 / total 5', JS(filas[1]) === JS([D.B.esperado, '3', '2', '0', '5']), JS(filas));
   chequear('fila de total general: 13 / 6 / 1 / 20 (suma de las filas)',
     JS(filas[2]) === JS(['Total general', '13', '6', '1', '20']), JS(filas));
-  chequear('la baja acá va en color ámbar (#b7791f)', !!t && !!t.querySelector('span[style*="b7791f"]'));
+  chequear('la baja acá va en color ámbar oscuro (#8f5f12)', !!t && !!t.querySelector('span[style*="8f5f12"]'));
   chequear('rótulo: "Compará la columna Total con el export del SNIG de cada propietario"',
     p4.textContent.indexOf('Compará la columna Total con el export del SNIG de cada propietario') >= 0);
   chequear('línea aparte (no suma): "Leídos acá pero el SNIG los ubica en otro campo: 1 (no suman)"',
