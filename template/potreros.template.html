@@ -780,6 +780,9 @@
 </nav>
 <!-- @pc:end -->
 <div id="app">
+<!-- @prueba:start -->
+  <div id="banner-prueba" style="background:#c42a2a;color:#fff;text-align:center;font-family:'Inter',sans-serif;font-weight:700;font-size:12.5px;padding:6px 10px;letter-spacing:.03em;flex-shrink:0;">🧪 MODO PRUEBA — sin conexión a la base, no afecta los datos reales</div>
+<!-- @prueba:end -->
   <header>
     <div class="brand">
       <div>
@@ -2304,8 +2307,14 @@ const USUARIO_KEY = 'potreros_nombre_usuario';
 function usuarioActual(){ return (localStorage.getItem(USUARIO_KEY) || '').trim(); }
 
 /* ======================= SINCRONIZACIÓN (Supabase) ======================= */
+// @real:start
 const SUPABASE_URL = 'https://skkknfjpwcstefcroqjt.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_U62qYc-mqby-ZGzE9FG2IA_kzOTGGJK';
+// @real:end
+// @prueba:start
+const SUPABASE_URL = '';   // copia de prueba (la-vuelta-test): sin Supabase, ver clienteSupabase()
+const SUPABASE_ANON_KEY = '';
+// @prueba:end
 const ESTABLECIMIENTO = CONFIG.establecimiento;
 
 /* ===== Texto que viene de afuera (30/9/2026, auditoría de seguridad) =====
@@ -2713,6 +2722,11 @@ function actualizarAvisoClave(){
 }
 let supabaseClient = null;
 function clienteSupabase(){
+  // @prueba:start
+  // Auditoría de seguridad (1/10/2026): la copia de prueba NUNCA habla con Supabase. Antes usaba las tablas de
+  // producción con la etiqueta la_vuelta_test y podía mezclar sanidad y stock con datos reales.
+  if(CONFIG.prueba) return null;
+  // @prueba:end
   if(!supabaseClient && window.supabase && window.supabase.createClient){
     const global = {
       // 8/10/2026: con señal mala el fetch quedaba colgado para siempre y la sincronización no terminaba nunca

@@ -1,6 +1,6 @@
 /*
- * generar.js — genera los 6 archivos (3 establecimientos × PC/móvil) a partir
- * de potreros.template.html + configs/*.js.
+ * generar.js — genera las 9 apps (3 establecimientos × PC / móvil / Campo) y la copia de prueba
+ * la-vuelta-test a partir de potreros.template.html + configs/*.js.
  *
  * Uso:
  *   node template/generar.js            escribe los 6 archivos (OneDrive + repo)
@@ -59,6 +59,28 @@ const ESTABLECIMIENTOS = [
     onedrive: { pc: 'pone_chico_pc.html', movil: 'pone_chico_movil.html', 'movil-simple': 'pone_chico_movil_simple.html' },
     repoDir: { pc: 'pone-chico-pc', movil: 'pone-chico-movil', 'movil-simple': 'pone-chico-movil-campo' },
   },
+  {
+    // Copia de PRUEBA (12/11/2026): antes era un clon a mano de la app Campo de La Vuelta que quedó en la v1.8.
+    // Ahora sale del template como una variante más (la Campo de La Vuelta), con el marcador @prueba: sin la URL ni
+    // la llave de Supabase, clienteSupabase() devuelve null y lleva el cartel rojo "MODO PRUEBA". Usa su propio
+    // establecimiento y su propio storageKey (comparte origen con las apps reales: no puede pisar sus datos).
+    // Lo comprueba tests/probar_test_aislado.js.
+    nombre: 'la-vuelta-test',
+    config: Object.assign({}, require('./configs/la-vuelta.js'), {
+      prueba: true,
+      establecimiento: 'la_vuelta_test',
+      storageKey: 'la_vuelta_test_potreros_v1',
+      titulo: 'La Vuelta PRUEBA — Mapa de Potreros',
+      nombre: 'La Vuelta PRUEBA',
+      subtitulo: 'Copia de prueba · no afecta los datos reales',
+      themeColor: '#c42a2a',
+      claveCampo: false,
+      stockSupabase: false,
+    }),
+    variantes: ['movil-simple'],
+    repoDir: { 'movil-simple': 'la-vuelta-test' },
+    cache: (config) => `la-vuelta-test-v${config.versionMovilSimple}`,
+  },
 ];
 
 const CABECERA_GENERADO = '<!-- ARCHIVO GENERADO por template/generar.js -- no editar a mano. Editar template/potreros.template.html o template/configs/*.js y correr `node template/generar.js`. -->\n';
@@ -104,6 +126,8 @@ function generar(templateText, config, variant) {
   // duenoObligatorio, lo que dejaba afuera a La Vuelta pese a tener 4+
   // dueños, porque ahí la Firma es opcional a propósito).
   activos.push(config.duenos.length > 1 ? 'multiDueno' : 'unDueno');
+  // Copia de prueba (la-vuelta-test): sin Supabase y con el cartel "MODO PRUEBA". Las 9 apps reales llevan @real.
+  activos.push(config.prueba ? 'prueba' : 'real');
 
   let texto = stripMarkers(templateText, activos);
 
@@ -128,6 +152,7 @@ function generar(templateText, config, variant) {
 }
 
 function cacheEsperado(est, variant) {
+  if (est.cache) return est.cache(est.config);
   if (variant === 'pc') return `${est.nombre}-pc-v${est.config.versionPc}`;
   if (variant === 'movil-simple') return `${est.nombre}-movil-simple-v${est.config.versionMovilSimple}`;
   return `${est.nombre}-movil-v${est.config.versionMovil}`;
@@ -160,11 +185,12 @@ function main() {
   }
 
   for (const est of ESTABLECIMIENTOS) {
-    const variantes = ['pc', 'movil'].concat(est.config.simpleHabilitado ? ['movil-simple'] : []);
+    const variantes = est.variantes || ['pc', 'movil'].concat(est.config.simpleHabilitado ? ['movil-simple'] : []);
     for (const variant of variantes) {
       const salida = generar(templateText, est.config, variant);
       const repoPath = path.join(REPO_DIR, est.repoDir[variant], 'index.html');
-      const onedrivePath = path.join(ONEDRIVE_DIR, est.onedrive[variant]);
+      // la copia de prueba no tiene copia maestra en OneDrive
+      const onedrivePath = est.onedrive ? path.join(ONEDRIVE_DIR, est.onedrive[variant]) : null;
       const swPath = path.join(REPO_DIR, est.repoDir[variant], 'sw.js');
       const cacheValue = cacheEsperado(est, variant);
 
@@ -188,7 +214,7 @@ function main() {
       } else {
         fs.writeFileSync(repoPath, salida, 'utf-8');
         console.log(`escrito: ${repoPath} (${salida.length} caracteres)`);
-        if (ondriveDisponible) {
+        if (ondriveDisponible && onedrivePath) {
           fs.writeFileSync(onedrivePath, salida, 'utf-8');
           console.log(`escrito: ${onedrivePath} (${salida.length} caracteres)`);
         }

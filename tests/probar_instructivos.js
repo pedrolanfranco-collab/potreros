@@ -277,7 +277,10 @@ async function levantar(archivo, enLinea, cache) {
     const grupo = (pc.match(/<div class="hg-titulo">Este dispositivo<\/div>[\s\S]*?(?=<div class="hg">|<div class="hsub")/) || [''])[0];
     chequear(`${PAGINAS[2].variante(c)}: el botón está en Herramientas › Este dispositivo`, grupo.includes('id="btn-instructivo"'));
   }
-  chequear('la-vuelta-test: la copia de prueba no tiene instructivo', !/btn-instructivo|instructivo-/.test(leer('la-vuelta-test/index.html') + leer('la-vuelta-test/sw.js')));
+  // 12/11/2026: la copia de prueba sale del template (variante Campo de La Vuelta), así que lleva el mismo botón que Campo
+  chequear('la-vuelta-test: generada como Campo, abre instructivo-campo y su sw.js lo precarga',
+    /id="btn-instructivo"/.test(leer('la-vuelta-test/index.html')) && leer('la-vuelta-test/sw.js').includes('"../instructivo-campo/"')
+    && !/instructivo-(movil|pc)/.test(leer('la-vuelta-test/sw.js')));
 
   console.log('\n[4b] apretar el botón en las 9 apps (con señal y sin señal)');
   for (const { P, dir } of todas) {
