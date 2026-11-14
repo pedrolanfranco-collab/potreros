@@ -66,7 +66,8 @@ Cada una salió de un error real. El porqué y el detalle están en el archivo d
 
 **Supabase y seguridad** (`11-seguridad-supabase.md`)
 11. **El SQL (tablas, columnas, políticas, funciones) se corre antes de publicar el código que lo usa.** Pasó tres
-    veces al revés. Mientras haya equipos con versión vieja, el SQL es **aditivo**: columnas opcionales, sin renombrar ni borrar.
+    veces al revés. Mientras haya equipos con versión vieja, el SQL es **aditivo**: columnas opcionales, sin renombrar ni borrar. Con la Fase 6 corrida, una tabla
+    nueva en `public` no nace con permisos para la llave pública: lleva su `grant` explícito.
 12. **RLS que bloquea contesta 200 con lista vacía**, no un error: para un UPDATE/DELETE pedir la fila de vuelta
     (`.select('id')`) y dar por hecho solo si volvió.
 13. Desde la Fase 4 de la auditoría las tablas operativas exigen la **clave del campo** (`x-clave-campo`). Pone Chico: la app la pide

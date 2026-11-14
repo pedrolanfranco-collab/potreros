@@ -9,6 +9,7 @@ hacer cualquiera**. Cada fase tiene su SQL, su vuelta atrás y una verificación
 | 2 | Escritura anónima en `productos_catalogo`, `animales_caravana`, `sanidad_ultimos`, `sanidad_proximos`; `creado_en` de `eventos_sync` lo fija el servidor | `fase2_carencia.sql`, `fase2_carencia_deshacer.sql`, `verificar_fase2.py` |
 | 4 | Clave del campo: eventos falsos con la llave pública y lectura del padrón y los datos comerciales (en dos releases, ver abajo) | `fase4_clave_campo.sql`, `fase4_clave_campo_deshacer.sql`, `fase4_cierre.sql`, `fase4_cierre_deshacer.sql`, `verificar_fase4.py` |
 | (24/10/2026, fuera de las fases) | Bucket `fotos-reportes` para las fotos de los reportes de campo: `anon` solo sube y ve fotos dentro de la carpeta de cada establecimiento, sin UPDATE ni DELETE | `fotos_reportes.sql`, `fotos_reportes_deshacer.sql` |
+| 6 (auditoría del 12/11/2026) | Compras y precios (`comprobantes`, `proveedores`, `precios_vet`, `cotizaciones`, `alias_productos`, `insumos_alias` y sus vistas) cerrados a la llave pública; tope de tamaño en `eventos_sync`; `authenticated` sin permisos; lo nuevo en `public` no nace abierto; `search_path` de `stock_insumos_app` | `fase6_endurecer.sql`, `fase6_endurecer_deshacer.sql`, `probar_fase6.js` |
 
 ## Cómo se corre una fase
 
@@ -169,6 +170,39 @@ su stream (la clave es una sola por campo, compartida con el empleado de Campo),
 La Vuelta puede escribir el espejo de un traslado en el stream de María Laura (es lo que permite el
 traslado entre campos). Si se filtra una clave, se cambia con `private.cargar_clave` y cada equipo
 pide la nueva.
+
+## Fase 6: endurecimiento (auditoría del 12/11/2026)
+
+`fase6_endurecer.sql` (con `fase6_endurecer_deshacer.sql`; transaccional, idempotente, respaldos en
+`auditoria_privilegios_antes_fase6` y `auditoria_politicas_antes_fase6`). **No cambia nada de lo que usan las apps,
+los tableros, Hermes ni los scripts de la PC.** Qué hace:
+
+1. **Compras y precios**: `comprobantes`, `proveedores`, `precios_vet`, `cotizaciones`, `alias_productos`,
+   `insumos_alias` y las vistas `precio_ultimo`, `precio_vigente`, `comparacion_catalogo`, `movimientos_insumo` y
+   `stock_insumos` dejan de leerse con la llave pública (se borran las políticas `lectura_anon`; un intento da 401
+   `permission denied`). Los escribe y los lee la clave privada (la skill de precios, los scripts). El stock de
+   insumos de las apps sale de `stock_insumos_app()` (SECURITY DEFINER), que sigue andando. Antes de prepararla se
+   miraron 24 h de registros de Supabase: ninguna lectura directa de esas tablas.
+2. **Tope de tamaño en `eventos_sync`** (`eventos_sync_tamanos`): `detalle` hasta 16 KB (el más grande guardado:
+   973 bytes), `tipo` 60, `establecimiento` 40, `potrero` y `dispositivo` 120, `fecha_cliente` 40. Un evento más
+   grande se rechaza con 23514. Si alguna fila vieja no cumpliera, el script entero aborta sin aplicar nada.
+3. **Permisos de más**: `authenticated` (no hay usuarios con login) pierde todo permiso de tabla y secuencia en
+   `public`; `anon` pierde TRUNCATE, REFERENCES, TRIGGER y MAINTAIN. **Desde que corre, una tabla, vista o secuencia
+   nueva en `public` no nace con permisos para `anon` ni `authenticated`**: el SQL que la crea tiene que hacer su
+   `grant` explícito (como ya hacen los de este repo). Las funciones nuevas siguen naciendo ejecutables por todos
+   (default global de Postgres): cada una hace su `revoke`/`grant`, como `verificar_clave`.
+4. **Funciones**: `stock_insumos_app()` pasa a `search_path = ''`; `rls_auto_enable()` deja de ser ejecutable por
+   la API.
+
+**No entra**: la etapa 2 de Pone Chico (sacarlo de `private.campos_abiertos`) hasta que `private.equipos_vistos`
+muestre sus equipos con `con_clave = true` (al 14/11/2026, ninguno). La "sanidad importada" de María Laura y Pone
+Chico no aplica: esas tablas no tienen `importado_en` ni importador.
+
+**Cómo se corre**: SQL Editor, pegar `fase6_endurecer.sql`, Run (o el conector de Supabase, a pedido de Pedro). Al
+final muestra tres controles: ninguna tabla de compras legible por `anon`, 0 objetos con permisos para
+`authenticated` y el tope "validado". **Prueba sin tocar Supabase**: `probar_fase6.js` (PGlite, igual que
+`probar_cierre.js`; 41 verificaciones, incluido que el deshacer deja permisos, políticas, defaults y funciones
+idénticos a los de antes).
 
 ## Bucket `fotos-reportes` (fotos de los reportes, 24/10/2026)
 
