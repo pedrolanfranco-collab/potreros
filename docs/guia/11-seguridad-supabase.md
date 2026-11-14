@@ -213,6 +213,14 @@ clave con `private.cargar_clave('pone_chico', ...)` (nunca por chat ni por el re
 y actualizar `verificar_fase4.py` (`CAMPO_ABIERTO`), `fotos_reportes.sql` y `scripts/seguridad/README.md`, que todavía describen a
 Pone Chico abierto porque así está la base.
 
+**Fase 6, endurecimiento (preparada el 14/11/2026, auditoría del 12/11):** `scripts/seguridad/fase6_endurecer.sql`
+cierra a la llave pública las tablas de compras y precios (`comprobantes`, `proveedores`, `cotizaciones`, `precios_vet`,
+`alias_productos`, `insumos_alias` y sus vistas, que estaban "fuera de esta auditoría, legibles con la llave pública"),
+pone un tope de tamaño a `eventos_sync` (`detalle` hasta 16 KB), deja a `authenticated` sin permisos, saca TRUNCATE y
+compañía a `anon`, y hace que **lo nuevo en `public` no nazca con permisos para `anon`/`authenticated`** (cada tabla
+nueva lleva su `grant` explícito). Detalle, cómo correrla y su prueba (`probar_fase6.js`) en `scripts/seguridad/README.md`.
+Hasta que Pedro la corra, la tabla de arriba sigue siendo la foto real.
+
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del
   12/9/2026 (ver memoria `planilla-sanitaria-v22`): un `PATCH` contra esa
