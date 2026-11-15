@@ -171,7 +171,7 @@ La Vuelta puede escribir el espejo de un traslado en el stream de María Laura (
 traslado entre campos). Si se filtra una clave, se cambia con `private.cargar_clave` y cada equipo
 pide la nueva.
 
-## Fase 6: endurecimiento (auditoría del 12/11/2026)
+## Fase 6: endurecimiento (auditoría del 12/11/2026; CORRIDA el 15/11/2026)
 
 `fase6_endurecer.sql` (con `fase6_endurecer_deshacer.sql`; transaccional, idempotente, respaldos en
 `auditoria_privilegios_antes_fase6` y `auditoria_politicas_antes_fase6`). **No cambia nada de lo que usan las apps,
