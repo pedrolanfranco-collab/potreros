@@ -127,7 +127,8 @@ function generarCon(nombre, cfgTexto, archivos = {}){
   const dir = path.join(TMP, nombre), tab = path.join(dir, 'tablero-campos');
   fs.mkdirSync(tab, { recursive: true });
   fs.mkdirSync(path.join(dir, 'template'), { recursive: true });
-  fs.symlinkSync(path.join(raiz, 'template', 'configs'), path.join(dir, 'template', 'configs'), 'dir');
+  // 'junction': en Windows un enlace 'dir' pide permisos de administrador (EPERM); en Linux el tipo se ignora.
+  fs.symlinkSync(path.join(raiz, 'template', 'configs'), path.join(dir, 'template', 'configs'), 'junction');
   fs.copyFileSync(path.join(raiz, 'tablero-campos', 'fuente.html'), path.join(tab, 'fuente.html'));
   fs.copyFileSync(path.join(raiz, 'tablero-campos', 'generar.js'), path.join(tab, 'generar.js'));
   fs.writeFileSync(path.join(tab, 'x.geojson'), JSON.stringify(GEOJSON_X));
@@ -155,7 +156,8 @@ function generadorTmp(nombre, campos, titulo = 'Tablero de Campos', extra = {}){
   chequear('no hay botón de Pone Chico', !a.doc.querySelector('.campo-btn[data-campo="pone_chico"]'));
 
   const TAB_INI = 'const TABLERO = ';
-  const ini = html.indexOf(TAB_INI), fin = ini === -1 ? -1 : html.indexOf(';\n', ini);
+  // ;\r?\n y no ';\n': en Windows (core.autocrlf) el index.html queda con CRLF y la prueba fallaba solo ahí.
+  const ini = html.indexOf(TAB_INI), fin = ini === -1 ? -1 : ini + html.slice(ini).search(/;\r?\n/);
   let TAB = null;
   try{ TAB = JSON.parse(html.slice(ini + TAB_INI.length, fin)); }catch(e){ TAB = null; }
   chequear('index.html trae TABLERO como JSON válido', !!TAB, 'no se pudo leer');
