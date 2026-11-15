@@ -290,6 +290,9 @@ jobs:
       - name: "Fase 3 de la auditoria, paso 4 (11/10/2026) -- una correccion se ubica por el event_id del evento que corrige (eventIdOriginal), no por parecido: dos ventas identicas, las dos puntas de un movimiento, respaldo por parecido para eventos viejos"
         run: node tests/probar_correccion_por_id.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html
 
+      - name: "15/11/2026 -- un nacimiento que deja mas terneros que vacas y vaquillonas 2-3 anos en el potrero pregunta antes de guardar (potrero 7 de La Vuelta: se cargo el total como partos)"
+        run: node tests/probar_aviso_crias_madres.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html
+
       - name: "Fase 3 de la auditoria, paso 4 (11/10/2026) -- tipos de evento desconocidos se guardan y se aplican al actualizar la app; todo evento lleva detalle.v (variante-version)"
         run: node tests/probar_eventos_desconocidos.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
 
