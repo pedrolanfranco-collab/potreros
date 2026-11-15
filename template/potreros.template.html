@@ -7846,6 +7846,25 @@ function opcionesCategorias(seleccionada){
 // (bovino=Terneros, ovino=Corderos/as, ver calcularEstadisticasNacimientos)
 // y esas dos categorías nunca se usaron en la práctica.
 const CATEGORIAS_CRIA = ['Terneros','Corderos/as'];
+/* 15/11/2026 (a pedido de Pedro): el 12/11 se cargó en el potrero 7 de La Vuelta el conteo TOTAL de
+   terneros (17) como si fueran partos nuevos, y el potrero quedó con 45 terneros y 23 vacas. Antes de
+   guardar un nacimiento de Terneros, si el potrero queda con más terneros que madres (Vacas +
+   Vaquillonas 2-3 años, de cualquier dueño), se pregunta. Devuelve true si hay que seguir. */
+const MADRES_DE_TERNEROS = ['Vacas', 'Vaquillonas 2-3 años'];
+function confirmarCriasVsMadres(potrero, cat, cant){
+  if(cat !== 'Terneros') return true;
+  const p = estado.potreros[potrero]; if(!p) return true;
+  let terneros = 0, madres = 0;
+  Object.entries(p.animales || {}).forEach(([key, n])=>{
+    const c = partesClave(key).cat;
+    if(c === 'Terneros') terneros += (n||0);
+    else if(MADRES_DE_TERNEROS.includes(c)) madres += (n||0);
+  });
+  const despues = terneros + cant;
+  if(despues <= madres) return true;
+  return confirm(`Con este nacimiento el potrero ${potrero} queda con ${despues} terneros y hay ${madres} vacas y vaquillonas.\n\n`
+    + `Si contaste el total de terneros del potrero, cargá solo los que nacieron nuevos.\n\n¿Registrar igual ${cant}?`);
+}
 /* 10/10/2026: las muertes de Terneros se dividen en dos grupos, a pedido de Pedro:
    "de temporada" (del nacimiento a la marcación) y "marcados". La app no sabe
    cuándo se marcó, así que se elige al cargar la muerte (campo `grupoTernero` del
@@ -8516,6 +8535,7 @@ function mostrarFormulario(nombre, accion, prefill){
       const obs = document.getElementById('f-obs').value.trim();
       if(!cant || cant<1){ toast('Ingresá una cantidad válida'); return; }
       if(!fechaISO){ toast('Elegí una fecha'); return; }
+      if(!confirmarCriasVsMadres(nombre, cat, cant)) return;
       const fecha = fechaISOaDisplay(fechaISO);
       const totalAntes = totalPotrero(nombre);
       const a = estado.potreros[nombre].animales;
@@ -17534,6 +17554,7 @@ function confirmarAccionVoz(){
   } else if(accion==='agregar' || accion==='nacimiento'){
     const objetivo = destino || origen;
     if(!objetivo){ toast('Elegí un potrero'); return; }
+    if(accion==='nacimiento' && !confirmarCriasVsMadres(objetivo, cat, cant)) return;
     if(accion==='agregar' && totalPotrero(objetivo)>0){
       toast(`"Agregar" es solo para carga inicial de un potrero vacío. Para ${objetivo} usá "compra" o "nacimiento".`);
       return;
