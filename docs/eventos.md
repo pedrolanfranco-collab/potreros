@@ -119,6 +119,9 @@ Registros del establecimiento (no tocan el stock):
 | `senalada` | `{id, machos, hembras, obs, usuario}` |
 | `senalada_editada` | `{id, fecha, machos, hembras, obs}` |
 | `senalada_eliminada` | `{id}` |
+| `esquila` | `{id, trabajo, items:[{categoria, cantidad}], lana:[{tipo, bultos, kg}], maquina, modalidad, precioLata, moneda, latas, total, obs, usuario}`; `trabajo` = `esquila` o `limpieza` (desoje y descole); solo ovinos; `lana[].tipo` = `vellon`, `punta_quemada` u `otros`; latas = 1 por ovino y 2 por carnero; `moneda` = `UYU` o `USD`; no modifica stock |
+| `esquila_editada` | snapshot igual a `esquila` más `fecha`; reemplaza el registro por id |
+| `esquila_eliminada` | `{id}` |
 | `punto_creado` | `{id, tipo, subtipo, nombre, lat, lon}` |
 | `punto_eliminado` | `{id}` |
 | `reporte_creado` | `{id, categoria, subtipo, obs, fecha, lat, lon}` |
@@ -128,6 +131,8 @@ Registros del establecimiento (no tocan el stock):
 | `punto_foto` | `{id, fotoId, path, momento, fecha}` (foto de un punto —aguada, manga, corral, embarcadero…— ya subida al mismo bucket; `id` = id del punto `pt_…`, `momento` = `registro`) |
 | `muerte_foto` | `{id, fotoId, path, momento, fecha}` (foto de una muerte ya subida al mismo bucket; `id` = `event_id` del evento `muerte` o `muerte_desaparecido`, `momento` = `registro`) |
 | `proximo_confirmado` | `{id}` |
+
+**Esquila → Carpeta Verde (previsto, todavía no se traduce).** Hoja `14 - Lana & Cueros`: esquila de vellón → filas 6–12 por categoría adulta (D bultos, F cabezas, G kg); esquila de `Corderos/as` → fila 16; `limpieza` → fila 17 «Otra (descole, desoje)», sin sumar cabezas; `punta_quemada` → fila 15 (Barriga) y `otros` → fila 17, a confirmar con Pedro; la esquila más temprana del ejercicio → L5 y `modalidad` → L7. El costo (latas × precio) no pasa a la Carpeta: entra por la caja de Zureo.
 
 Potreros:
 
