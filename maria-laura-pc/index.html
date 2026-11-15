@@ -694,14 +694,14 @@
   <button data-pc-seccion="puntos" title="Puntos y reportes"><span aria-hidden="true">📍</span> <span class="pr-txt">Puntos y reportes</span></button>
   <button data-pc-seccion="exportar" title="Exportar y respaldo"><span aria-hidden="true">⬇</span> <span class="pr-txt">Exportar y respaldo</span></button>
   <button data-pc-seccion="dispositivo" title="Este dispositivo"><span aria-hidden="true">⚙</span> <span class="pr-txt">Este dispositivo</span></button>
-  <div class="pr-pie">v4.04 (completa)</div>
+  <div class="pr-pie">v4.05 (completa)</div>
 </nav>
 <div id="app">
   <header>
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v4.04 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v4.05 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -779,6 +779,7 @@
             <button class="btn btn-json" id="btn-insumos" style="display:none;">🧴 Insumos</button>
             <button class="btn btn-json" id="btn-bano" style="display:none;">🛁 Baño</button>
             <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
+            <button class="btn btn-json" id="btn-limpiezas">🧽 Limpiezas</button>
             <button class="btn btn-json" id="btn-eventos-manejo" style="display:none;">📋 Eventos de manejo</button>
             <button class="btn btn-json" id="btn-tareas" style="display:none;">✅ Tareas</button>
             <button class="btn btn-json" id="btn-calendario" style="display:none;">📅 Calendario</button>
@@ -1056,6 +1057,27 @@
     </div>
     <div id="consumos-resumen"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-limpiezas" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <h3>🧽 Limpieza de bebederos y tanques</h3>
+    <button class="btn-cerrar-x" id="limpiezas-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <div id="limpiezas-toca"></div>
+    <p id="limpiezas-sin-puntos" class="modal-info" style="display:none;">Primero cargá los puntos de agua (💧 Bebedero o Tanque) en el mapa.</p>
+    <div class="form-row"><label for="lp-punto">Bebedero o tanque</label><select id="lp-punto"></select></div>
+    <div class="form-row"><label for="lp-fecha">Fecha</label><input type="date" id="lp-fecha"></div>
+    <div class="form-row"><label for="lp-quien">Quién limpió</label><input id="lp-quien" maxlength="80" placeholder="Nombre de quien limpió"></div>
+    <div class="form-row"><label for="lp-obs">Observaciones (opcional)</label><textarea id="lp-obs" rows="2" maxlength="500"></textarea></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="lp-guardar">Anotar limpieza</button>
+      <button class="btn btn-secundario" id="lp-cancelar-edicion" style="display:none;">Cancelar edición</button>
+    </div>
+    <details class="historial-det historial-det-lista" open><summary>Limpiezas anotadas</summary>
+      <div class="form-row"><label for="lp-filtro">Punto</label><select id="lp-filtro"><option value="">Todos</option></select></div>
+      <div id="limpiezas-lista"></div>
+    </details>
+    <div class="form-botones"><button id="limpiezas-cerrar" class="btn btn-secundario">Cerrar</button></div>
   </div>
 </div>
 <div id="modal-eventos-manejo" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
@@ -1770,7 +1792,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"4.04","versionMovil":"4.04","manejo":true,"simpleHabilitado":true,"versionMovilSimple":"2.04","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"propietarioSnig":{"mapaDuenos":{}},"lecturaStock":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"4.05","versionMovil":"4.05","manejo":true,"simpleHabilitado":true,"versionMovilSimple":"2.05","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"propietarioSnig":{"mapaDuenos":{}},"lecturaStock":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -2245,7 +2267,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], reportesProgramados: {}, pendientesPotrero: {}, transacciones: [], lluvias: [], eventosClima: [], eventosManejo: [], tareas: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], reportesProgramados: {}, pendientesPotrero: {}, transacciones: [], lluvias: [], limpiezas: [], eventosClima: [], eventosManejo: [], tareas: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     maestros: {comprador: [], comisionista: [], contraparte: []}, colaMaestros: [],
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
@@ -2290,6 +2312,7 @@ function cargarEstado(){
       if(!parsed.puntos) parsed.puntos = [];
       if(!parsed.transacciones) parsed.transacciones = [];
       if(!parsed.lluvias) parsed.lluvias = [];
+      if(!Array.isArray(parsed.limpiezas)) parsed.limpiezas = [];
       if(!Array.isArray(parsed.eventosManejo)) parsed.eventosManejo = [];
       if(!Array.isArray(parsed.tareas)) parsed.tareas = [];
       if(!parsed.reportesProgramados || typeof parsed.reportesProgramados!=='object') parsed.reportesProgramados = {};
@@ -2518,7 +2541,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-4.04';
+const VERSION_APP = 'pc-4.05';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = false;
@@ -2927,6 +2950,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'envio_campo_ajeno', 'retorno_campo_ajeno', 'traslado_salida', 'traslado_entrada', 'movimiento_guia',
   'lluvia', 'lluvia_editada', 'lluvia_eliminada', 'evento_clima', 'evento_clima_editado', 'evento_clima_eliminado',
   'evento_manejo', 'evento_manejo_editado', 'evento_manejo_eliminado',
+  'limpieza_punto', 'limpieza_punto_editada', 'limpieza_punto_eliminada',
   'tarea_creada', 'tarea_editada', 'tarea_hecha', 'tarea_eliminada', 'reporte_programado',
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
   'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
@@ -3184,6 +3208,26 @@ function aplicarEventoManejoRemoto(row, d){
     Object.assign(previo, base, {_ts:marca, _creadoEn:String(row.creado_en||''), _ordenId:ordenId});
   }else estado.eventosManejo.push({...base, _ts:marca, _creadoEn:String(row.creado_en||''), _ordenId:ordenId});
 }
+/* 15/11/2026: limpieza de bebederos y tanques. Una limpieza es {id, puntoId, puntoNombre, puntoSubtipo,
+   fecha 'dd/mm/aaaa', quien, obs, usuario, dispositivo}. `quien` es quién limpió (se escribe a mano);
+   `usuario` es quién lo anotó en el equipo (en móvil enviarEvento() lo pisa con el usuario del equipo,
+   por eso quién limpió va en un campo propio). Ver docs/eventos.md (limpieza_punto). */
+const MESES_LIMPIEZA = 6;
+const SUBTIPOS_LIMPIEZA = ['Bebedero','Tanque'];
+function normalizarLimpieza(d, row){
+  if(!d || typeof d !== 'object') return null;
+  const id = textoTareaSeguro(d.id, 80), puntoId = textoTareaSeguro(d.puntoId, 80), quien = textoTareaSeguro(d.quien, 80);
+  const fecha = fechaTareaVisible(d.fecha) || fechaTareaVisible(row && row.fecha_cliente);
+  if(!id || !puntoId || !quien || !fecha) return null;
+  return {
+    id, puntoId, fecha, quien,
+    puntoNombre: textoTareaSeguro(d.puntoNombre, 80),
+    puntoSubtipo: textoTareaSeguro(d.puntoSubtipo, 40),
+    obs: textoTareaSeguro(d.obs, 500),
+    usuario: textoTareaSeguro(d.usuario, 80),
+    dispositivo: (row && typeof row.dispositivo === 'string') ? row.dispositivo : null
+  };
+}
 function aplicarEventoRemoto(row, potrerosSucios){
   const eventIdPrevio = _eventIdRemoto;
   _aplicandoRemoto = true;
@@ -3238,6 +3282,25 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
+  // 15/11/2026: limpieza de un bebedero o tanque (registro del establecimiento, no toca stock). Va antes
+  // del guard de potrero, como la lluvia. Alta idempotente por id. Cualquier variante (Campo incluido)
+  // aplica también la corrección y el borrado, que solo genera la PC.
+  if(row.tipo === 'limpieza_punto' || row.tipo === 'limpieza_punto_editada'){
+    const l = normalizarLimpieza(d, row);
+    if(!l) return;
+    estado.limpiezas = Array.isArray(estado.limpiezas) ? estado.limpiezas : [];
+    const previa = estado.limpiezas.find(x=>x.id===l.id);
+    if(row.tipo === 'limpieza_punto'){
+      if(!previa) estado.limpiezas.unshift(l);
+    } else if(previa){
+      Object.assign(previa, {fecha: l.fecha, quien: l.quien, obs: l.obs});
+    }
+    return;
+  }
+  if(row.tipo === 'limpieza_punto_eliminada'){
+    estado.limpiezas = (estado.limpiezas||[]).filter(x=>x.id!==d.id);
+    return;
+  }
   if(row.tipo === 'evento_clima'){
     // Mismo criterio que "lluvia": es del establecimiento entero, sin
     // potrero -- se aplica antes del guard de abajo.
@@ -4108,6 +4171,7 @@ async function sincronizar(mostrarToast){
       if(row.dispositivo !== miId){ aplicarEventoRemoto(row, potrerosSucios); cambios++; }
       estado.ultimaSincronizacion = row.creado_en;
     });
+    if(cambios>0) procesarLimpiezas(); // 15/11/2026: limpiezas que llegaron de otro equipo (Campo incluido)
     guardarEstado();
     if(cambios>0){
       actualizarTodo();
@@ -6988,7 +7052,7 @@ const SECCIONES_PC = {
   tareas:      { titulo: '✅ Tareas', ids: ['btn-tareas'] },
   calendario:  { titulo: '📅 Calendario', ids: ['btn-calendario'] },
   dicose:      { titulo: '📑 Movimientos DICOSE', ids: ['btn-guias'] },
-  puntos:      { titulo: '📍 Puntos y reportes', ids: ['btn-puntos', 'btn-resync-puntos', 'btn-infraestructura', 'btn-capin-annoni'] },
+  puntos:      { titulo: '📍 Puntos y reportes', ids: ['btn-puntos', 'btn-limpiezas', 'btn-resync-puntos', 'btn-infraestructura', 'btn-capin-annoni'] },
   exportar:    { titulo: '⬇ Exportar y respaldo', ids: ['btn-exportar-kmz', 'btn-exportar-pdf', 'btn-exportar-pdf-animales', 'btn-exportar-pdf-historial', 'btn-exportar-excel', 'btn-exportar-json', 'btn-importar-json'] },
   dispositivo: { titulo: '⚙ Este dispositivo', ids: ['btn-sincronizar', 'btn-usuario', 'btn-clave-campo', 'btn-instructivo', 'btn-restablecer', 'btn-herramientas'] }
 };
@@ -9647,12 +9711,21 @@ function poblarSelectSubtipo(){
   const sel = document.getElementById('np-subtipo');
   sel.innerHTML = TIPOS_PUNTO[tipo].subtipos.map(s=>`<option value="${s}">${s}</option>`).join('');
 }
+/* 15/11/2026: junta las limpiezas anotadas (estado.limpiezas, con quién limpió) y las tareas de limpieza
+   cumplidas. Una tarea cumplida el mismo día que una limpieza anotada del punto no se repite. */
 function bloqueLimpiezaPunto(p){
-  if(!CONFIG.manejo) return '';
-  const tareasPunto=(estado.tareas||[]).filter(t=>!t.eliminada&&t.puntoId===p.id&&['Limpieza de tanque','Limpieza de bebedero'].includes(t.tipo));
-  const ultima=tareasPunto.filter(t=>t.hecha).sort((a,b)=>compararOrdenTarea(b._hechaTs,b.id,a._hechaTs,a.id))[0];
-  const proxima=tareasPunto.filter(t=>!t.hecha).sort(ordenarTareas)[0];
-  return `<div class="rp-bloque"><b>Última limpieza:</b> ${esc(ultima?.fechaHecha||'sin registrar')} · <b>Próxima:</b> ${esc(proxima?.fechaPrevista||'sin programar')}<details class="historial-det"><summary>Historial de limpieza (${tareasPunto.length})</summary>${tareasPunto.sort((a,b)=>compararOrdenTarea(b._hechaTs||b._ts,b.id,a._hechaTs||a._ts,a.id)).map(t=>`<div>${t.hecha?'✅':'○'} ${esc(t.fechaHecha||t.fechaPrevista||'sin fecha')} · ${esc(t.tipo)}</div>`).join('')}</details></div>`;
+  const limpiable = p.tipo==='agua' && SUBTIPOS_LIMPIEZA.includes(p.subtipo);
+  const tareasPunto = CONFIG.manejo ? (estado.tareas||[]).filter(t=>!t.eliminada && t.puntoId===p.id && TIPOS_TAREA_LIMPIEZA.includes(t.tipo)) : [];
+  const registros = (estado.limpiezas||[]).filter(l=>l.puntoId===p.id);
+  if(!limpiable && !tareasPunto.length && !registros.length) return '';
+  const hechas = registros.map(l=>({fecha: l.fecha, icono: '✅', txt: `limpió ${l.quien}`}))
+    .concat(tareasPunto.filter(t=>t.hecha && !registros.some(l=>l.fecha===t.fechaHecha)).map(t=>({fecha: t.fechaHecha||'', icono: '✅', txt: t.usuario ? `${t.tipo} · ${t.usuario}` : t.tipo})))
+    .sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha));
+  const pendientes = tareasPunto.filter(t=>!t.hecha).sort(ordenarTareas);
+  const ultima = hechas[0];
+  const proxima = (pendientes[0] && pendientes[0].fechaPrevista) || (ultima ? sumarMesesLimpieza(ultima.fecha, MESES_LIMPIEZA) : 'sin programar');
+  const items = hechas.concat(pendientes.map(t=>({fecha: t.fechaPrevista||'sin fecha', icono: '○', txt: t.tipo})));
+  return `<div class="rp-bloque"><b>Última limpieza:</b> ${esc(ultima ? `${ultima.fecha} (${ultima.txt})` : 'sin registrar')} · <b>Próxima:</b> ${esc(proxima)}<details class="historial-det"><summary>Historial de limpieza (${items.length})</summary>${items.map(x=>`<div>${x.icono} ${esc(x.fecha||'sin fecha')} · ${esc(x.txt)}</div>`).join('')}</details></div>`;
 }
 function renderListaPuntos(){
   const cont = document.getElementById('lista-puntos');
@@ -9672,6 +9745,7 @@ function renderListaPuntos(){
       <div class="acciones">
         <button data-ver-punto="${esc(p.id)}" style="color:#1d4fa8;">🗺 Ver en el mapa</button>
         <button data-foto-punto="${esc(p.id)}" style="color:#8a6d1f;"${nFotos >= FOTOS_MAX_REPORTE ? ' disabled' : ''}>📷 Agregar foto</button>
+        ${p.tipo==='agua' && SUBTIPOS_LIMPIEZA.includes(p.subtipo) ? `<button data-limpiar-punto="${esc(p.id)}" style="color:#0b6e4f;">🧽 Anotar limpieza</button>` : ''}
         <button data-del="${esc(p.id)}">Eliminar</button>
       </div>
       ${nFotos ? `<div class="rp-bloque"><div class="rp-fotos">${thumbsFotosHTML(p, 'punto')}</div></div>` : ''}
@@ -9691,6 +9765,13 @@ function renderListaPuntos(){
   });
   cont.querySelectorAll('[data-del]').forEach(btn=>{
     btn.addEventListener('click', ()=> eliminarPunto(btn.dataset.del));
+  });
+  cont.querySelectorAll('[data-limpiar-punto]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const modalPuntos = document.getElementById('modal-puntos');
+      if(modalPuntos) modalPuntos.style.display = 'none';
+      abrirLimpiezas(btn.dataset.limpiarPunto);
+    });
   });
   mostrarFotosEn(cont);
 }
@@ -14468,7 +14549,7 @@ const TEMAS_TAREA={
 };
 const tareaEl=id=>document.getElementById(id);
 function potreroTareaVisible(nombre){const p=textoTareaSeguro(nombre,80);return POTREROS_GEO.some(x=>x.nombre===p)?p:null;}
-function emitirEventoTarea(tipo,detalle,fecha){const eventId=crypto.randomUUID(),fechaCliente=fecha||fechaISOaDisplay(fechaISOHoy());aplicarTareaRemota({tipo,detalle,fecha_cliente:fechaCliente,creado_en:new Date().toISOString(),event_id:eventId,dispositivo:idDispositivo()},detalle);guardarEstado();if(tipo==='tarea_creada')enviarEvento('tarea_creada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_editada')enviarEvento('tarea_editada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_hecha')enviarEvento('tarea_hecha',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_eliminada')enviarEvento('tarea_eliminada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='reporte_programado')enviarEvento('reporte_programado',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});}
+function emitirEventoTarea(tipo,detalle,fecha,eventIdFijo){const eventId=eventIdFijo||crypto.randomUUID(),fechaCliente=fecha||fechaISOaDisplay(fechaISOHoy());aplicarTareaRemota({tipo,detalle,fecha_cliente:fechaCliente,creado_en:new Date().toISOString(),event_id:eventId,dispositivo:idDispositivo()},detalle);guardarEstado();if(tipo==='tarea_creada')enviarEvento('tarea_creada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_editada')enviarEvento('tarea_editada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_hecha')enviarEvento('tarea_hecha',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_eliminada')enviarEvento('tarea_eliminada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='reporte_programado')enviarEvento('reporte_programado',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});}
 function fechaSiguienteTarea(fecha,dias){const [d,m,y]=String(fecha||'').split('/').map(Number);if(!d||!m||!y)return '';const x=new Date(Date.UTC(y,m-1,d+Number(dias)));return `${String(x.getUTCDate()).padStart(2,'0')}/${String(x.getUTCMonth()+1).padStart(2,'0')}/${x.getUTCFullYear()}`;}
 function diasHastaTarea(fecha){const f=fechaTareaVisible(fecha);if(!f)return null;const [d,m,y]=f.split('/').map(Number);return Math.round((Date.UTC(y,m-1,d)-Date.UTC(...fechaISOHoy().split('-').map(Number)))/86400000);}
 function ordenarTareas(a,b){const da=diasHastaTarea(a.fechaPrevista),db=diasHastaTarea(b.fechaPrevista);if(da===null&&db!==null)return 1;if(db===null&&da!==null)return -1;return (da??0)-(db??0)||compararOrdenTarea(a._ts,a.id,b._ts,b.id);}
@@ -14498,6 +14579,45 @@ function abrirTareas(){if(!CONFIG.manejo)return;const modal=tareaEl('modal-tarea
 function limpiarFormularioTarea(){editandoTareaId=null;tareaEl('tarea-fecha').value=fechaISOHoy();tareaEl('tarea-potrero').value='';tareaEl('tarea-punto').value='';tareaEl('tarea-tema-grupo').value='Ganado';tareaTipoActualizar();tareaEl('tarea-otro').value='';tareaEl('tarea-cada-dias').value='';tareaEl('tarea-obs').value='';tareaEl('tarea-guardar').textContent='Guardar tarea';tareaEl('tarea-cancelar').style.display='none';}
 function guardarTarea(){const fechaPrevista=fechaTareaVisible(tareaEl('tarea-fecha').value),temaGrupo=tareaEl('tarea-tema-grupo').value,select=tareaEl('tarea-tipo').value,tipo=textoTareaSeguro(select==='Otra…'?tareaEl('tarea-otro').value:select,80),cadaRaw=tareaEl('tarea-cada-dias').value,cadaDias=cadaRaw?Number(cadaRaw):null;if(!fechaPrevista||!tipo||(cadaRaw&&(!Number.isInteger(cadaDias)||cadaDias<1||cadaDias>730))){toast('Completá la tarea y revisá la fecha y la repetición (1–730 días).');return;}const previa=editandoTareaId?(estado.tareas||[]).find(x=>x.id===editandoTareaId):null,punto=(estado.puntos||[]).find(x=>x.id===tareaEl('tarea-punto').value),detalle={id:editandoTareaId||crypto.randomUUID(),ts:new Date().toISOString(),temaGrupo,tipo,tema:tipo==='Otra…'?textoTareaSeguro(tareaEl('tarea-otro').value,160):tipo,fechaPrevista,potrero:potreroTareaVisible(tareaEl('tarea-potrero').value),puntoId:punto?.id||null,puntoNombre:textoTareaSeguro(punto?.nombre||punto?.subtipo,80),cadaDias,serieId:previa?.serieId||editandoTareaId||undefined,serieN:previa?.serieN||0,obs:textoTareaSeguro(tareaEl('tarea-obs').value,500),usuario:textoTareaSeguro(usuarioActual(),80)};if(!detalle.tema){toast('Especificá la tarea.');return;}emitirEventoTarea(editandoTareaId?'tarea_editada':'tarea_creada',detalle,fechaPrevista);const editando=!!editandoTareaId;limpiarFormularioTarea();renderTareas();toast(editando?'Tarea actualizada':'Tarea guardada');}
 function marcarTareaHecha(id){const t=(estado.tareas||[]).find(x=>x.id===id&&!x.eliminada);if(!t||t.hecha)return;const fechaHecha=fechaISOaDisplay(fechaISOHoy()),serieId=t.serieId||t.id,serieN=(Number(t.serieN)||0)+1,siguiente=t.cadaDias?{id:`${serieId}#${serieN}`,serieId,serieN,fechaPrevista:fechaSiguienteTarea(fechaHecha,t.cadaDias)}:null;emitirEventoTarea('tarea_hecha',{id,ts:new Date().toISOString(),fechaHecha,siguiente,usuario:textoTareaSeguro(usuarioActual(),80)},fechaHecha);renderTareas();const mereceDestete=['Destete final','Fin destete temporario (DT)'].includes(t.tipo);if(mereceDestete&&confirm('¿Querés registrar también el evento Destete? Se abrirá el formulario para que lo revises.')){abrirEventosManejo();emEl('em-tipo').value='Destete';emEl('em-fecha').value=fechaISOHoy();emEl('em-potrero').value=t.potrero||'';emEl('em-obs').value=t.obs||'';}}
+/* 15/11/2026: una limpieza anotada (acá o en otro equipo, Campo incluido) cumple la tarea de limpieza pendiente
+   de ese punto y deja el recordatorio a MESES_LIMPIEZA meses. Los event_id son deterministas a partir del id
+   de la limpieza: si dos equipos lo hacen, Supabase rechaza el segundo (UNIQUE en event_id, 23505) y en la
+   memoria queda una sola tarea. Una limpieza ya procesada deja marca (la tarea "limp-<id>", o una tarea_hecha
+   con su event_id, o la lista local limpiezasProcesadas), así que una resincronización no vuelve a cerrar nada. */
+const TIPOS_TAREA_LIMPIEZA = ['Limpieza de tanque','Limpieza de bebedero'];
+function uuidDerivadoLimpieza(id, n){
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id||''))) return null;
+  const ultimo = parseInt(id.slice(-1), 16);
+  return id.slice(0,-1) + ((ultimo + n) % 16).toString(16);
+}
+function procesarLimpiezas(){
+  if(!CONFIG.manejo) return;
+  const procesadas = new Set(Array.isArray(estado.limpiezasProcesadas) ? estado.limpiezasProcesadas : []);
+  const tamanoAntes = procesadas.size;
+  const lista = (estado.limpiezas||[]).slice().sort((a,b)=> parseFechaDMY(a.fecha)-parseFechaDMY(b.fecha) || String(a.id).localeCompare(String(b.id)));
+  lista.forEach(l=>{
+    if(procesadas.has(l.id)) return;
+    const idCierre = uuidDerivadoLimpieza(l.id, 1), idRecordatorio = uuidDerivadoLimpieza(l.id, 2), idTarea = `limp-${l.id}`;
+    if(!idCierre){ procesadas.add(l.id); return; } // id que no es UUID: no se puede derivar un event_id válido
+    procesadas.add(l.id);
+    if((estado.tareas||[]).some(t=>t.id===idTarea || t._hechaOrdenId===idCierre)) return; // ya la procesó otro equipo
+    // Solo la limpieza más nueva de cada punto toca las tareas: una más vieja (llegó tarde, o vinieron varias juntas
+    // desde Campo, o es un equipo recién instalado) queda en el registro, pero no cierra el recordatorio nuevo ni crea uno viejo.
+    if(ultimaLimpiezaDe(l.puntoId) !== l) return;
+    const deLimpieza = t=> !t.eliminada && t.puntoId===l.puntoId && TIPOS_TAREA_LIMPIEZA.includes(t.tipo);
+    const pendiente = (estado.tareas||[]).filter(t=>deLimpieza(t) && !t.hecha).sort(ordenarTareas)[0];
+    if(pendiente){
+      const serieId = pendiente.serieId||pendiente.id, serieN = (Number(pendiente.serieN)||0)+1;
+      const siguiente = pendiente.cadaDias ? {id:`${serieId}#${serieN}`, serieId, serieN, fechaPrevista: fechaSiguienteTarea(l.fecha, pendiente.cadaDias)} : null;
+      emitirEventoTarea('tarea_hecha', {id: pendiente.id, ts: new Date().toISOString(), fechaHecha: l.fecha, siguiente, usuario: l.quien}, l.fecha, idCierre);
+    }
+    if((estado.tareas||[]).some(t=>deLimpieza(t) && !t.hecha)) return; // ya hay otra pendiente (p. ej. la siguiente de una serie)
+    const tipo = l.puntoSubtipo==='Tanque' ? 'Limpieza de tanque' : 'Limpieza de bebedero';
+    const fechaPrevista = sumarMesesLimpieza(l.fecha, MESES_LIMPIEZA);
+    emitirEventoTarea('tarea_creada', {id: idTarea, ts: new Date().toISOString(), temaGrupo: 'Mantenimiento', tipo, tema: `${tipo} · ${l.puntoNombre||''}`, fechaPrevista, potrero: null, puntoId: l.puntoId, puntoNombre: l.puntoNombre, cadaDias: null, obs: null, usuario: l.quien}, fechaPrevista, idRecordatorio);
+  });
+  if(procesadas.size !== tamanoAntes){ estado.limpiezasProcesadas = [...procesadas]; guardarEstado(); }
+}
 function editarTarea(id){const t=(estado.tareas||[]).find(x=>x.id===id&&!x.eliminada);if(!t)return;editandoTareaId=id;tareaEl('tarea-fecha').value=(t.fechaPrevista||'').split('/').reverse().join('-');tareaEl('tarea-potrero').value=t.potrero||'';poblarPuntosTarea();tareaEl('tarea-punto').value=t.puntoId||'';tareaEl('tarea-tema-grupo').value=t.temaGrupo||'Otras';tareaTipoActualizar();if(!Array.from(tareaEl('tarea-tipo').options).some(o=>o.value===t.tipo))tareaEl('tarea-tipo').add(new Option(t.tipo,t.tipo));tareaEl('tarea-tipo').value=t.tipo||'Otra…';tareaEl('tarea-otro').value=t.tema||'';tareaEl('tarea-otro-wrap').style.display=t.tipo==='Otra…'?'':'none';tareaEl('tarea-cada-dias').value=t.cadaDias||'';tareaEl('tarea-obs').value=t.obs||'';tareaEl('tarea-guardar').textContent='Guardar corrección';tareaEl('tarea-cancelar').style.display='';}
 function borrarTarea(id){const t=(estado.tareas||[]).find(x=>x.id===id&&!x.eliminada);if(!t||!confirm(`¿Borrar la tarea “${t.tema}”?`))return;emitirEventoTarea('tarea_eliminada',{id,ts:new Date().toISOString()},fechaISOaDisplay(fechaISOHoy()));renderTareas();}
 function deshacerTareaHecha(id){const t=(estado.tareas||[]).find(x=>x.id===id&&x.hecha);if(!t)return;const detalle={id,ts:new Date().toISOString(),temaGrupo:t.temaGrupo,tema:t.tema,tipo:t.tipo,fechaPrevista:t.fechaPrevista,potrero:t.potrero,puntoId:t.puntoId,puntoNombre:t.puntoNombre,cadaDias:t.cadaDias,serieId:t.serieId,serieN:t.serieN,obs:t.obs,usuario:textoTareaSeguro(usuarioActual(),80),fechaHecha:null};emitirEventoTarea('tarea_editada',detalle,fechaISOaDisplay(fechaISOHoy()));renderTareas();}
@@ -15596,6 +15716,162 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
     toast(`Venta ${textoFirma(desde)} → ${textoFirma(hacia)} registrada (guía ${guia})`);
   });
 }
+/* ======================= LIMPIEZA DE BEBEDEROS Y TANQUES (15/11/2026) =======================
+   Registro de cada limpieza: qué punto, qué fecha y quién limpió. Lo anotan PC, móvil y Campo;
+   corregir y borrar, solo la PC. Ver normalizarLimpieza(), procesarLimpiezas() y docs/eventos.md. */
+let editandoLimpiezaId = null;
+function puntosLimpiables(){
+  return (estado.puntos||[]).filter(p=>p.tipo==='agua' && SUBTIPOS_LIMPIEZA.includes(p.subtipo))
+    .sort((a,b)=>String(a.nombre||a.subtipo).localeCompare(String(b.nombre||b.subtipo),'es',{numeric:true}));
+}
+function nombrePuntoLimpieza(p){ return `${p.nombre||p.subtipo} (${p.subtipo})`; }
+/* Suma meses calendario a 'dd/mm/aaaa'. Si el día no existe en el mes de llegada, queda el último día
+   (31/08 + 6 meses = 28/02, o 29/02 en bisiesto). */
+function sumarMesesLimpieza(fecha, meses){
+  const f = fechaTareaVisible(fecha); if(!f) return '';
+  const [d,m,y] = f.split('/').map(Number);
+  const total = (m-1) + meses, anio = y + Math.floor(total/12), mes = total % 12;
+  const ultimo = new Date(Date.UTC(anio, mes+1, 0)).getUTCDate();
+  const dos = n => String(n).padStart(2,'0');
+  return `${dos(Math.min(d, ultimo))}/${dos(mes+1)}/${anio}`;
+}
+function ordenLimpiezaReciente(a,b){ return parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || String(b.id).localeCompare(String(a.id)); }
+function ultimaLimpiezaDe(puntoId){
+  return (estado.limpiezas||[]).filter(l=>l.puntoId===puntoId).sort(ordenLimpiezaReciente)[0] || null;
+}
+/* Los bebederos y tanques vencidos (más de MESES_LIMPIEZA meses o nunca anotados) y los que vencen en 15 días. */
+function puntosTocaLimpiar(){
+  const hoy = parseFechaDMY(fechaISOaDisplay(fechaISOHoy()));
+  return puntosLimpiables().map(p=>{
+    const ultima = ultimaLimpiezaDe(p.id);
+    const proxima = ultima ? sumarMesesLimpieza(ultima.fecha, MESES_LIMPIEZA) : null;
+    const dias = proxima ? Math.round((parseFechaDMY(proxima)-hoy)/86400000) : null;
+    return {p, ultima, proxima, dias};
+  }).filter(x=> x.dias===null || x.dias<=15)
+    .sort((a,b)=> (a.dias===null ? -1e9 : a.dias) - (b.dias===null ? -1e9 : b.dias));
+}
+function renderLimpiezasToca(){
+  const cont = document.getElementById('limpiezas-toca'); if(!cont) return;
+  if(!puntosLimpiables().length){ cont.innerHTML = ''; return; }
+  const lista = puntosTocaLimpiar();
+  cont.innerHTML = `<h4>Toca limpiar (${lista.length})</h4>` + (!lista.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Todos los bebederos y tanques están al día.</p>'
+    : lista.map(x=>{
+        const rojo = x.dias===null || x.dias<0;
+        const txt = x.ultima ? `última ${esc(x.ultima.fecha)} · le toca el ${esc(x.proxima)}` : 'sin limpieza anotada';
+        return `<div class="potrero-card" data-limpieza-toca="${esc(x.p.id)}" data-color="${rojo?'rojo':'amarillo'}" style="cursor:pointer;"><div class="nombre">${rojo?'🔴':'🟡'} ${esc(nombrePuntoLimpieza(x.p))}</div><div style="font-size:12px;margin-top:4px;">${txt}</div></div>`;
+      }).join(''));
+  cont.querySelectorAll('[data-limpieza-toca]').forEach(el=>el.addEventListener('click', ()=>{
+    document.getElementById('lp-punto').value = el.dataset.limpiezaToca;
+    document.getElementById('lp-quien').focus();
+  }));
+}
+function renderLimpiezasLista(){
+  const cont = document.getElementById('limpiezas-lista'); if(!cont) return;
+  const filtro = document.getElementById('lp-filtro').value;
+  const lista = (estado.limpiezas||[]).filter(l=>!filtro || l.puntoId===filtro).slice().sort(ordenLimpiezaReciente).slice(0,20);
+  cont.innerHTML = !lista.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Sin limpiezas anotadas todavía.</p>'
+    : lista.map(l=>`
+      <div class="potrero-card">
+        <div class="nombre">${esc(l.fecha)} · ${esc(l.puntoNombre||'')}${l.puntoSubtipo?(' ('+esc(l.puntoSubtipo)+')'):''}
+          <span class="hist-acciones">
+            <button class="hist-btn" data-limpieza-editar="${esc(l.id)}" title="Editar" aria-label="Editar">✏️</button>
+            <button class="hist-btn" data-limpieza-borrar="${esc(l.id)}" title="Borrar" aria-label="Borrar">🗑</button>
+          </span>
+        </div>
+        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">Limpió: ${esc(l.quien)}${l.obs?(' — '+esc(l.obs)):''}</div>
+      </div>`).join('');
+  cont.querySelectorAll('[data-limpieza-editar]').forEach(b=>b.addEventListener('click', ev=>{ ev.stopPropagation(); editarLimpieza(b.dataset.limpiezaEditar); }));
+  cont.querySelectorAll('[data-limpieza-borrar]').forEach(b=>b.addEventListener('click', ev=>{ ev.stopPropagation(); borrarLimpieza(b.dataset.limpiezaBorrar); }));
+}
+function abrirLimpiezas(puntoId){
+  const puntos = puntosLimpiables();
+  const opciones = puntos.map(p=>`<option value="${esc(p.id)}">${esc(nombrePuntoLimpieza(p))}</option>`).join('');
+  const sel = document.getElementById('lp-punto'), filtro = document.getElementById('lp-filtro');
+  sel.innerHTML = opciones;
+  const filtroPrevio = filtro.value;
+  filtro.innerHTML = '<option value="">Todos</option>' + opciones;
+  filtro.value = puntos.some(p=>p.id===filtroPrevio) ? filtroPrevio : '';
+  if(puntoId && puntos.some(p=>p.id===puntoId)) sel.value = puntoId;
+  document.getElementById('limpiezas-sin-puntos').style.display = puntos.length ? 'none' : '';
+  document.getElementById('lp-guardar').disabled = !puntos.length;
+  document.getElementById('lp-fecha').value = fechaISOHoy();
+  document.getElementById('lp-fecha').max = fechaISOHoy();
+  document.getElementById('lp-quien').value = usuarioActual();
+  document.getElementById('lp-obs').value = '';
+  editandoLimpiezaId = null;
+  sel.disabled = false;
+  document.getElementById('lp-guardar').textContent = 'Anotar limpieza';
+  document.getElementById('lp-cancelar-edicion').style.display = 'none';
+  renderLimpiezasToca();
+  renderLimpiezasLista();
+  document.getElementById('modal-limpiezas').style.display = 'flex';
+}
+function guardarLimpieza(){
+  const fechaISO = document.getElementById('lp-fecha').value;
+  const quien = textoTareaSeguro(document.getElementById('lp-quien').value, 80);
+  const obs = textoTareaSeguro(document.getElementById('lp-obs').value, 500);
+  if(!fechaISO){ toast('Elegí una fecha'); return; }
+  if(fechaISO > fechaISOHoy()){ toast('La fecha no puede ser futura'); return; }
+  if(!quien){ toast('Escribí quién limpió'); return; }
+  const fecha = fechaISOaDisplay(fechaISO);
+  if(editandoLimpiezaId){
+    const previa = (estado.limpiezas||[]).find(x=>x.id===editandoLimpiezaId);
+    if(!previa){ abrirLimpiezas(); return; }
+    Object.assign(previa, {fecha, quien, obs});
+    guardarEstado();
+    enviarEvento('limpieza_punto_editada', ESTABLECIMIENTO, {id: previa.id, puntoId: previa.puntoId, puntoNombre: previa.puntoNombre, puntoSubtipo: previa.puntoSubtipo, fecha, quien, obs}, fecha);
+    abrirLimpiezas();
+    toast('Limpieza corregida');
+    return;
+  }
+  const punto = puntosLimpiables().find(p=>p.id===document.getElementById('lp-punto').value);
+  if(!punto){ toast('Elegí el bebedero o tanque'); return; }
+  const usuario = usuarioActual() || null;
+  const l = {id: crypto.randomUUID(), puntoId: punto.id, puntoNombre: textoTareaSeguro(punto.nombre||punto.subtipo, 80), puntoSubtipo: punto.subtipo, fecha, quien, obs, usuario, dispositivo: idDispositivo()};
+  estado.limpiezas = Array.isArray(estado.limpiezas) ? estado.limpiezas : [];
+  estado.limpiezas.unshift(l);
+  guardarEstado();
+  enviarEvento('limpieza_punto', ESTABLECIMIENTO, {id: l.id, puntoId: l.puntoId, puntoNombre: l.puntoNombre, puntoSubtipo: l.puntoSubtipo, fecha, quien, obs, usuario}, fecha);
+  procesarLimpiezas();
+  document.getElementById('lp-obs').value = '';
+  renderLimpiezasToca();
+  renderLimpiezasLista();
+  if(document.getElementById('lista-puntos')) renderListaPuntos();
+  toast(`Anotada. Próxima: ${sumarMesesLimpieza(fecha, MESES_LIMPIEZA)}`);
+}
+function editarLimpieza(id){
+  const l = (estado.limpiezas||[]).find(x=>x.id===id); if(!l) return;
+  editandoLimpiezaId = id;
+  const sel = document.getElementById('lp-punto');
+  if(!Array.from(sel.options).some(o=>o.value===l.puntoId)) sel.add(new Option(l.puntoNombre||'(punto borrado)', l.puntoId));
+  sel.value = l.puntoId; sel.disabled = true;
+  document.getElementById('lp-guardar').disabled = false;
+  document.getElementById('lp-fecha').value = l.fecha.split('/').reverse().join('-');
+  document.getElementById('lp-quien').value = l.quien || '';
+  document.getElementById('lp-obs').value = l.obs || '';
+  document.getElementById('lp-guardar').textContent = 'Guardar corrección';
+  document.getElementById('lp-cancelar-edicion').style.display = '';
+  document.getElementById('lp-quien').focus();
+}
+function borrarLimpieza(id){
+  const l = (estado.limpiezas||[]).find(x=>x.id===id); if(!l) return;
+  if(!confirm(`¿Borrar la limpieza de ${l.puntoNombre||'este punto'} del ${l.fecha}? No se puede deshacer.`)) return;
+  estado.limpiezas = (estado.limpiezas||[]).filter(x=>x.id!==id);
+  guardarEstado();
+  enviarEvento('limpieza_punto_eliminada', ESTABLECIMIENTO, {id});
+  renderLimpiezasToca();
+  renderLimpiezasLista();
+  toast('Limpieza borrada');
+}
+document.getElementById('lp-cancelar-edicion').addEventListener('click', ()=>abrirLimpiezas());
+document.getElementById('btn-limpiezas').addEventListener('click', ()=>abrirLimpiezas());
+document.getElementById('lp-guardar').addEventListener('click', guardarLimpieza);
+document.getElementById('lp-filtro').addEventListener('change', renderLimpiezasLista);
+document.getElementById('limpiezas-cerrar').addEventListener('click', ()=>{ document.getElementById('modal-limpiezas').style.display = 'none'; });
+document.getElementById('limpiezas-cerrar-x').addEventListener('click', ()=>{ document.getElementById('modal-limpiezas').style.display = 'none'; });
+document.getElementById('modal-limpiezas').addEventListener('click', e=>{ if(e.target.id==='modal-limpiezas') e.target.style.display = 'none'; });
 document.getElementById('lluvias-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-lluvias').style.display = 'none';
 });

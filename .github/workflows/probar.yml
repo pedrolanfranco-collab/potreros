@@ -130,6 +130,9 @@ jobs:
       - name: "Abortos en Herramientas -- registro sin potrero, sincronizado, y % junto al de nacidos"
         run: node tests/probar_abortos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
 
+      - name: "Limpieza de bebederos y tanques -- quién limpió, Toca limpiar, cumple la tarea y recordatorio a 6 meses"
+        run: node tests/probar_limpiezas.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
       - name: "Señalada en Herramientas -- registro sin potrero, macho/hembra, sincronizado, y % sobre ovejas encarneradas"
         run: node tests/probar_senalada.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
 
