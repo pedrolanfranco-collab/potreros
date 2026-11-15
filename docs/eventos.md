@@ -104,6 +104,9 @@ Registros del establecimiento (no tocan el stock):
 | `evento_clima` | `{id, tipo, obs, usuario}` |
 | `evento_clima_editado` | `{id, fecha, tipo, obs}` |
 | `evento_clima_eliminado` | `{id}` |
+| `limpieza_punto` | `{id, puntoId, puntoNombre, puntoSubtipo, fecha, quien, obs, usuario}`; limpieza de un bebedero o tanque; `quien` = quién limpió (texto libre), `usuario` = quién lo anotó; alta idempotente por id; en PC/móvil cumple la tarea de limpieza pendiente de ese punto y deja otra a 6 meses (`tarea_hecha`/`tarea_creada` con `event_id` derivado del id) |
+| `limpieza_punto_editada` | snapshot igual a `limpieza_punto`; reemplaza fecha, quien y obs por id; solo la PC la genera |
+| `limpieza_punto_eliminada` | `{id}`; solo la PC la genera |
 | `evento_manejo` | `{id, ts?, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?, usuario}`; fecha en `fecha_cliente`; alta idempotente por id; no modifica stock |
 | `evento_manejo_editado` | snapshot `{id, ts?, fecha, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?}`; reemplaza el registro por id; no modifica stock |
 | `evento_manejo_eliminado` | `{id, ts?}`; conserva tombstone por id para impedir que una alta tardía lo reviva |
