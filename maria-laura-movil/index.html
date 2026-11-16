@@ -618,7 +618,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v4.07</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v4.08</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -683,6 +683,7 @@
       <button class="btn btn-json" id="btn-insumos" style="display:none;">🧴 Insumos</button>
       <button class="btn btn-json" id="btn-bano" style="display:none;">🛁 Baño</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
+      <button class="btn btn-json" id="btn-esquila">✂️ Esquila y limpieza</button>
       <button class="btn btn-json" id="btn-limpiezas">🧽 Limpiezas</button>
       <button class="btn btn-json" id="btn-eventos-manejo" style="display:none;">📋 Eventos de manejo</button>
       <button class="btn btn-json" id="btn-tareas" style="display:none;">✅ Tareas</button>
@@ -898,6 +899,36 @@
     <p class="modal-info">Ahora se llama <b id="rn-actual"></b>. Cambia solo el nombre: sus limpiezas, tareas y fotos siguen con él.</p>
     <div class="form-row"><label for="rn-nombre">Nombre nuevo</label><input id="rn-nombre" maxlength="80"></div>
     <div class="form-botones"><button id="rn-guardar" class="btn btn-agregar">Guardar nombre</button><button id="rn-cancelar" class="btn btn-secundario">Cancelar</button></div>
+  </div>
+</div>
+<div id="modal-esquila" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <h3>✂️ Esquila y limpieza</h3>
+    <button class="btn-cerrar-x" id="esquila-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p style="font-size:12px;color:var(--texto-suave);margin:0 0 8px 0;">Solo ovinos. No cambia el stock. La comparsa cobra por lata: cada ovino es una lata y cada carnero, dos.</p>
+    <div class="form-row"><label for="eq-trabajo">Trabajo</label><select id="eq-trabajo"><option value="esquila">Esquila</option><option value="limpieza">Limpieza de majada (desoje y descole)</option></select></div>
+    <div class="form-row"><label for="eq-fecha">Fecha</label><input type="date" id="eq-fecha"></div>
+    <div class="form-row"><label>Categorías y cantidades</label><div id="eq-items"></div><button type="button" class="btn btn-secundario" id="eq-agregar-item">＋ Otra categoría</button></div>
+    <div class="form-row"><label>Lana (opcional)</label>
+      <table id="eq-lana" style="width:100%;font-size:13px;"><thead><tr><th style="text-align:left;">Tipo</th><th>Bultos</th><th>Kg</th></tr></thead><tbody>
+        <tr data-lana="vellon"><td>Vellón</td><td><input type="number" min="0" max="100000" step="1" class="eq-bultos" aria-label="Bultos de vellón"></td><td><input type="number" min="0" max="10000000" step="0.1" class="eq-kg" aria-label="Kg de vellón"></td></tr>
+        <tr data-lana="punta_quemada"><td>Punta quemada</td><td><input type="number" min="0" max="100000" step="1" class="eq-bultos" aria-label="Bultos de punta quemada"></td><td><input type="number" min="0" max="10000000" step="0.1" class="eq-kg" aria-label="Kg de punta quemada"></td></tr>
+        <tr data-lana="otros"><td>Otros</td><td><input type="number" min="0" max="100000" step="1" class="eq-bultos" aria-label="Bultos de otros"></td><td><input type="number" min="0" max="10000000" step="0.1" class="eq-kg" aria-label="Kg de otros"></td></tr>
+      </tbody></table>
+    </div>
+    <div class="form-row"><label for="eq-maquina">Máquina (dueño de la comparsa)</label><select id="eq-maquina"></select>
+      <input type="text" id="eq-maquina-otra" maxlength="40" placeholder="Nombre del dueño de la comparsa" aria-label="Otra comparsa" style="display:none;margin-top:6px;"></div>
+    <div class="form-row"><label for="eq-modalidad">Modalidad (opcional)</label><select id="eq-modalidad"><option value="">—</option><option value="Pre-parto">Pre-parto</option><option value="Post-parto">Post-parto</option><option value="Otra">Otra</option></select></div>
+    <div class="form-row"><label for="eq-precio">Precio por lata (opcional)</label><div style="display:flex;gap:6px;"><input type="number" id="eq-precio" min="0" max="1000000000" step="0.01" style="flex:1 1 auto;min-width:0;width:auto;"><select id="eq-moneda" aria-label="Moneda" style="flex:0 0 auto;width:auto;"><option value="UYU">$</option><option value="USD">US$</option></select></div></div>
+    <p id="eq-resumen" style="font-size:13px;margin:4px 0 8px;"></p>
+    <div class="form-row"><label for="eq-obs">Observaciones (opcional)</label><input type="text" id="eq-obs"></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="eq-guardar">Registrar</button>
+      <button class="btn btn-secundario" id="eq-cancelar-edicion" style="display:none;">Cancelar edición</button>
+    </div>
+    <h4 style="margin:16px 0 6px;font-size:13px;">Cargadas</h4>
+    <div id="esquilas-lista"></div>
+    <div class="form-botones"><button class="btn btn-secundario" id="esquila-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="modal-eventos-manejo" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
@@ -1405,7 +1436,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"4.07","versionMovil":"4.07","manejo":true,"simpleHabilitado":true,"versionMovilSimple":"2.07","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"padronOffline":true,"propietarioSnig":{"mapaDuenos":{}},"lecturaStock":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"4.08","versionMovil":"4.08","manejo":true,"simpleHabilitado":true,"versionMovilSimple":"2.08","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"padronOffline":true,"propietarioSnig":{"mapaDuenos":{}},"lecturaStock":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -1760,7 +1791,32 @@ function detalleNumericoValido(d){
       'kilos','plazo','imeba','inia','mevir','inac','mgap','sepb','gastos','descuentos','neto','importeBruto','rendimiento','pesoProm','pesoPromNeto','ivaCom'];
     if(!campos.every(k => numOk(d.fin[k], 1e10))) return false;
   }
+  if(!numOk(d.precioLata, 1e9) || !numOk(d.latas, 1e6) || !numOk(d.total, 1e12)) return false;
+  if(d.lana != null){
+    if(!Array.isArray(d.lana) || d.lana.length > 10) return false;
+    if(!d.lana.every(it => it && typeof it === 'object' && numOk(it.bultos, 100000) && numOk(it.kg, 1e7))) return false;
+  }
   return true;
+}
+
+/* 15/11/2026: Esquila y limpieza. La comparsa cobra por lata: cada ovino es una lata y cada carnero, dos.
+   Una sola función para el formulario, la lista y las pruebas. */
+function calcularLatasEsquila(items){
+  return (items||[]).reduce((s, it)=> s + (Number(it && it.cantidad)||0) * ((it && it.categoria)==='Carneros' ? 2 : 1), 0);
+}
+
+/* Arma el registro guardado en estado.esquilas a partir del detalle de un evento (alta o edición). */
+function registroEsquila(d, fecha, dispositivo, usuarioPrevio){
+  return {
+    id: d.id, fecha,
+    trabajo: d.trabajo === 'limpieza' ? 'limpieza' : 'esquila',
+    items: Array.isArray(d.items) ? d.items.map(it=>({categoria: it.categoria, cantidad: it.cantidad||0})) : [],
+    lana: Array.isArray(d.lana) ? d.lana.map(l=>({tipo: l.tipo, bultos: l.bultos==null ? null : l.bultos, kg: l.kg==null ? null : l.kg})) : [],
+    maquina: d.maquina || null, modalidad: d.modalidad || null,
+    precioLata: d.precioLata==null ? null : d.precioLata, moneda: d.moneda === 'USD' ? 'USD' : 'UYU',
+    latas: d.latas==null ? calcularLatasEsquila(d.items) : d.latas, total: d.total==null ? null : d.total,
+    obs: d.obs || null, dispositivo: dispositivo || null, usuario: d.usuario || usuarioPrevio || null
+  };
 }
 
 /* Vacas preñadas / ovejas encarneradas de la temporada -- bases para el % de
@@ -1893,7 +1949,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], reportesProgramados: {}, pendientesPotrero: {}, transacciones: [], lluvias: [], limpiezas: [], eventosClima: [], eventosManejo: [], tareas: [], abortos: [], senaladas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], reportesProgramados: {}, pendientesPotrero: {}, transacciones: [], lluvias: [], limpiezas: [], eventosClima: [], eventosManejo: [], tareas: [], abortos: [], senaladas: [], esquilas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     maestros: {comprador: [], comisionista: [], contraparte: []}, colaMaestros: [],
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
@@ -2166,7 +2222,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'movil-4.07';
+const VERSION_APP = 'movil-4.08';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta y María Laura); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -2577,7 +2633,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'evento_manejo', 'evento_manejo_editado', 'evento_manejo_eliminado',
   'limpieza_punto', 'limpieza_punto_editada', 'limpieza_punto_eliminada',
   'tarea_creada', 'tarea_editada', 'tarea_hecha', 'tarea_eliminada', 'reporte_programado',
-  'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
+  'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada', 'esquila', 'esquila_editada', 'esquila_eliminada',
   'punto_creado', 'punto_eliminado', 'punto_renombrado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_nivel', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
   'vecino_paso', 'vecino_aparecido', 'vecino_retorno', 'vecino_perdida', 'vecino_muerte',
@@ -2993,6 +3049,24 @@ function aplicarEventoRemoto(row, potrerosSucios){
   }
   if(row.tipo === 'senalada_eliminada'){
     estado.senaladas = (estado.senaladas||[]).filter(sn=>sn.id!==d.id);
+    return;
+  }
+  // 15/11/2026: Esquila y limpieza de majada -- del establecimiento entero, sin potrero, antes del guard de
+  // abajo, como "senalada". No toca stock. Editar/borrar: cualquier dispositivo (incluido Campo) los aplica.
+  if(row.tipo === 'esquila'){
+    estado.esquilas = estado.esquilas || [];
+    if(!estado.esquilas.some(e=>e.id===d.id)){
+      estado.esquilas.unshift(registroEsquila(d, row.fecha_cliente || fechaHoy(), row.dispositivo));
+    }
+    return;
+  }
+  if(row.tipo === 'esquila_editada'){
+    const i = (estado.esquilas||[]).findIndex(x=>x.id===d.id);
+    if(i >= 0){ const viejo = estado.esquilas[i]; estado.esquilas[i] = registroEsquila(d, d.fecha || viejo.fecha, viejo.dispositivo, viejo.usuario); }
+    return;
+  }
+  if(row.tipo === 'esquila_eliminada'){
+    estado.esquilas = (estado.esquilas||[]).filter(e=>e.id!==d.id);
     return;
   }
 
@@ -6239,6 +6313,7 @@ document.getElementById('modal-herramientas').addEventListener('click', (e)=>{
   ['vecinos-cerrar-x', 'vecinos-cerrar'],
   ['sanidad-cerrar-x', 'sanidad-cerrar'],
   ['lluvias-cerrar-x', 'lluvias-cerrar'],
+  ['esquila-cerrar-x', 'esquila-cerrar'],
   ['tareas-cerrar-x', 'tareas-cerrar'],
   ['stock-cerrar-x', 'stock-cerrar'],
   ['usuario-cerrar-x', 'usuario-guardar'],
@@ -12732,6 +12807,236 @@ document.getElementById('sn-guardar').addEventListener('click', ()=>{
   enviarEvento('senalada', ESTABLECIMIENTO, {id, machos, hembras, obs: obs||null, usuario: usuario||null}, fecha);
   renderSenaladasLista();
   toast('Señalada registrada');
+});
+
+/* ---------- Esquila y limpieza de majada (15/11/2026, a pedido de Pedro) ----------
+   Registro del establecimiento entero, solo ovinos, no toca stock. Mismo patrón que Señalada: alta, edición y baja
+   directas, sincronizadas como esquila / esquila_editada / esquila_eliminada. La comparsa (máquina) se elige de las ya
+   usadas -- salen de estado.esquilas, así llegan a todos los equipos sin tabla nueva -- o se escribe una nueva.
+   Previsto para la Carpeta Verde (hoja 14 - Lana & Cueros): ver docs/eventos.md. */
+let editandoEsquilaId = null;
+const TIPOS_LANA_ESQUILA = [['vellon', 'Vellón'], ['punta_quemada', 'Punta quemada'], ['otros', 'Otros']];
+function opcionesCategoriasOvinas(sel){
+  return Object.keys(ESPECIES.ovino).map(c=>`<option value="${esc(c)}" ${c===sel?'selected':''}>${esc(c)}</option>`).join('');
+}
+function agregarFilaEsquila(cat, cant){
+  const div = document.createElement('div');
+  div.className = 'eq-item';
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+  div.innerHTML = `<select class="eq-cat" aria-label="Categoría">${opcionesCategoriasOvinas(cat)}</select>`
+    + `<input type="number" class="eq-cant" min="1" max="100000" step="1" style="width:90px;" aria-label="Cantidad" value="${cant==null?'':esc(cant)}">`
+    + `<button type="button" class="hist-btn eq-quitar" title="Quitar" aria-label="Quitar">✕</button>`;
+  div.querySelector('.eq-quitar').addEventListener('click', ()=>{
+    div.remove();
+    if(!document.querySelector('#eq-items .eq-item')) agregarFilaEsquila();
+    actualizarResumenEsquila();
+  });
+  div.querySelector('.eq-cat').addEventListener('change', actualizarResumenEsquila);
+  div.querySelector('.eq-cant').addEventListener('input', actualizarResumenEsquila);
+  document.getElementById('eq-items').appendChild(div);
+}
+/* Comparsas ya usadas, sin repetir (sin mayúsculas ni tildes, como los vecinos). */
+function comparsasEsquila(){
+  const vistas = {};
+  (estado.esquilas||[]).forEach(e=>{
+    const n = normalizarVecino(e.maquina);
+    if(n && !vistas[claveVecino(n)]) vistas[claveVecino(n)] = n;
+  });
+  return Object.values(vistas).sort((a,b)=> a.localeCompare(b, 'es'));
+}
+function ultimaComparsaEsquila(){
+  const lista = (estado.esquilas||[]).filter(e=>e.maquina).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha));
+  return lista.length ? lista[0].maquina : '';
+}
+function prepararMaquinaEsquila(sel){
+  const nombres = comparsasEsquila();
+  const s = document.getElementById('eq-maquina');
+  const otra = document.getElementById('eq-maquina-otra');
+  s.innerHTML = '<option value="">— Sin máquina —</option>'
+    + nombres.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')
+    + '<option value="__otra__">➕ Otra comparsa…</option>';
+  otra.value = '';
+  const existente = sel ? nombres.find(n=> claveVecino(n)===claveVecino(sel)) : null;
+  if(existente){ s.value = existente; otra.style.display = 'none'; }
+  else if(sel || !nombres.length){ s.value = '__otra__'; otra.value = sel || ''; otra.style.display = ''; }
+  else { s.value = ''; otra.style.display = 'none'; }
+}
+function valorMaquinaEsquila(){
+  const v = document.getElementById('eq-maquina').value;
+  if(v === '__otra__') return normalizarVecino(document.getElementById('eq-maquina-otra').value);
+  return v;
+}
+function leerFormEsquila(){
+  const items = Array.from(document.querySelectorAll('#eq-items .eq-item')).map(f=>({
+    categoria: f.querySelector('.eq-cat').value,
+    cantidad: Number(f.querySelector('.eq-cant').value)
+  })).filter(it=> it.categoria && it.cantidad > 0);
+  const lana = Array.from(document.querySelectorAll('#eq-lana tr[data-lana]')).map(tr=>{
+    const b = tr.querySelector('.eq-bultos').value, k = tr.querySelector('.eq-kg').value;
+    return {tipo: tr.dataset.lana, bultos: b==='' ? null : Number(b), kg: k==='' ? null : Number(k)};
+  }).filter(l=> l.bultos!=null || l.kg!=null);
+  const p = document.getElementById('eq-precio').value;
+  const precioLata = p==='' ? null : Number(p);
+  const latas = calcularLatasEsquila(items);
+  const total = precioLata==null ? null : Math.round(latas * precioLata * 100) / 100;
+  return {
+    fechaISO: document.getElementById('eq-fecha').value,
+    trabajo: document.getElementById('eq-trabajo').value === 'limpieza' ? 'limpieza' : 'esquila',
+    items, lana, maquina: valorMaquinaEsquila() || null,
+    modalidad: document.getElementById('eq-modalidad').value || null,
+    precioLata, moneda: document.getElementById('eq-moneda').value === 'USD' ? 'USD' : 'UYU',
+    latas, total, obs: document.getElementById('eq-obs').value.trim() || null
+  };
+}
+function textoMonedaEsquila(m){ return m === 'USD' ? 'US$' : '$'; }
+function actualizarResumenEsquila(){
+  const f = leerFormEsquila();
+  const carneros = f.items.some(it=> it.categoria==='Carneros');
+  document.getElementById('eq-resumen').innerHTML = `<strong>${f.latas}</strong> lata${f.latas===1?'':'s'}${carneros?' (los carneros cuentan 2)':''}`
+    + (f.total!=null ? ` — Total <strong>${textoMonedaEsquila(f.moneda)} ${esc(f.total.toLocaleString('es-UY'))}</strong>` : '');
+}
+function limpiarFormEsquila(){
+  editandoEsquilaId = null;
+  document.getElementById('eq-trabajo').value = 'esquila';
+  document.getElementById('eq-fecha').value = fechaISOHoy();
+  document.getElementById('eq-fecha').max = fechaISOHoy();
+  document.getElementById('eq-items').innerHTML = '';
+  agregarFilaEsquila();
+  document.querySelectorAll('#eq-lana input').forEach(i=>{ i.value = ''; });
+  prepararMaquinaEsquila(ultimaComparsaEsquila());
+  document.getElementById('eq-modalidad').value = '';
+  document.getElementById('eq-precio').value = '';
+  document.getElementById('eq-moneda').value = 'UYU';
+  document.getElementById('eq-obs').value = '';
+  document.getElementById('eq-guardar').textContent = 'Registrar';
+  document.getElementById('eq-cancelar-edicion').style.display = 'none';
+  actualizarResumenEsquila();
+}
+function textoItemsEsquila(items){ return (items||[]).map(it=> `${it.cantidad} ${it.categoria}`).join(', '); }
+function textoLanaEsquila(lana){
+  const nombres = Object.fromEntries(TIPOS_LANA_ESQUILA);
+  return (lana||[]).map(l=> `${nombres[l.tipo]||l.tipo}: ` + [l.bultos!=null ? `${l.bultos} bultos` : '', l.kg!=null ? `${l.kg} kg` : ''].filter(Boolean).join(', ')).join(' · ');
+}
+function renderEsquilasLista(){
+  const cont = document.getElementById('esquilas-lista');
+  const lista = (estado.esquilas||[]).slice().sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha)).slice(0, 30);
+  cont.innerHTML = !lista.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Sin esquilas ni limpiezas cargadas todavía.</p>'
+    : lista.map(e=>`
+      <div class="potrero-card">
+        <div class="nombre">${esc(e.fecha)} — ${e.trabajo==='limpieza' ? 'Limpieza (desoje y descole)' : 'Esquila'}
+          <span class="hist-acciones">
+            <button class="hist-btn" data-esquila-editar="${esc(e.id)}" title="Editar" aria-label="Editar">✏️</button>
+            <button class="hist-btn" data-esquila-borrar="${esc(e.id)}" title="Borrar" aria-label="Borrar">🗑</button>
+          </span>
+        </div>
+        <div style="font-size:13px;margin-top:4px;">${esc(textoItemsEsquila(e.items))} — ${esc(e.latas)} latas${e.total!=null ? ` — ${textoMonedaEsquila(e.moneda)} ${esc(Number(e.total).toLocaleString('es-UY'))}` : ''}</div>
+        ${(e.lana||[]).length ? `<div style="font-size:12px;margin-top:2px;">${esc(textoLanaEsquila(e.lana))}</div>` : ''}
+        ${e.maquina || e.modalidad || e.obs || e.usuario ? `<div style="font-size:12px;color:var(--texto-suave);margin-top:2px;">${esc([e.maquina ? 'Máquina: '+e.maquina : '', e.modalidad||'', e.obs||'', e.usuario||''].filter(Boolean).join(' — '))}</div>` : ''}
+      </div>`).join('');
+  cont.querySelectorAll('[data-esquila-editar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); editarEsquila(btn.dataset.esquilaEditar); });
+  });
+  cont.querySelectorAll('[data-esquila-borrar]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); borrarEsquila(btn.dataset.esquilaBorrar); });
+  });
+}
+function editarEsquila(id){
+  const e = (estado.esquilas||[]).find(x=> x.id===id);
+  if(!e) return;
+  limpiarFormEsquila();
+  editandoEsquilaId = id;
+  const [d,m,y] = e.fecha.split('/');
+  document.getElementById('eq-fecha').value = `${y}-${m}-${d}`;
+  document.getElementById('eq-trabajo').value = e.trabajo==='limpieza' ? 'limpieza' : 'esquila';
+  document.getElementById('eq-items').innerHTML = '';
+  (e.items && e.items.length ? e.items : [{}]).forEach(it=> agregarFilaEsquila(it.categoria, it.cantidad));
+  (e.lana||[]).forEach(l=>{
+    const tr = document.querySelector(`#eq-lana tr[data-lana="${l.tipo}"]`);
+    if(!tr) return;
+    tr.querySelector('.eq-bultos').value = l.bultos==null ? '' : l.bultos;
+    tr.querySelector('.eq-kg').value = l.kg==null ? '' : l.kg;
+  });
+  prepararMaquinaEsquila(e.maquina || '');
+  if(!e.maquina && comparsasEsquila().length){ document.getElementById('eq-maquina').value = ''; document.getElementById('eq-maquina-otra').style.display = 'none'; }
+  document.getElementById('eq-modalidad').value = e.modalidad || '';
+  document.getElementById('eq-precio').value = e.precioLata==null ? '' : e.precioLata;
+  document.getElementById('eq-moneda').value = e.moneda === 'USD' ? 'USD' : 'UYU';
+  document.getElementById('eq-obs').value = e.obs || '';
+  document.getElementById('eq-guardar').textContent = 'Guardar corrección';
+  document.getElementById('eq-cancelar-edicion').style.display = '';
+  actualizarResumenEsquila();
+  const b = document.getElementById('eq-trabajo');
+  if(b && b.scrollIntoView) b.scrollIntoView({block:'center'});
+}
+function borrarEsquila(id){
+  const e = (estado.esquilas||[]).find(x=> x.id===id);
+  if(!e) return;
+  if(!confirm(`¿Borrar ${e.trabajo==='limpieza' ? 'la limpieza' : 'la esquila'} del ${e.fecha} (${textoItemsEsquila(e.items)})? No se puede deshacer.`)) return;
+  estado.esquilas = (estado.esquilas||[]).filter(x=> x.id!==id);
+  guardarEstado();
+  enviarEvento('esquila_eliminada', ESTABLECIMIENTO, {id});
+  if(editandoEsquilaId === id) limpiarFormEsquila();
+  renderEsquilasLista();
+  toast('Registro borrado');
+}
+document.getElementById('btn-esquila').addEventListener('click', ()=>{
+  limpiarFormEsquila();
+  renderEsquilasLista();
+  document.getElementById('modal-esquila').style.display = 'flex';
+});
+document.getElementById('esquila-cerrar').addEventListener('click', ()=>{
+  document.getElementById('modal-esquila').style.display = 'none';
+});
+document.getElementById('eq-agregar-item').addEventListener('click', ()=>{ agregarFilaEsquila(); });
+document.getElementById('eq-maquina').addEventListener('change', ()=>{
+  const otra = document.getElementById('eq-maquina-otra');
+  const esOtra = document.getElementById('eq-maquina').value === '__otra__';
+  otra.style.display = esOtra ? '' : 'none';
+  if(esOtra) otra.focus();
+});
+['eq-precio', 'eq-moneda'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', actualizarResumenEsquila);
+  document.getElementById(id).addEventListener('change', actualizarResumenEsquila);
+});
+document.getElementById('eq-cancelar-edicion').addEventListener('click', limpiarFormEsquila);
+document.getElementById('eq-guardar').addEventListener('click', ()=>{
+  const malas = Array.from(document.querySelectorAll('#eq-items .eq-cant')).some(i=> i.value!=='' && !(Number.isInteger(Number(i.value)) && Number(i.value) > 0));
+  if(malas){ toast('Las cantidades tienen que ser números enteros mayores que 0'); return; }
+  const f = leerFormEsquila();
+  if(!f.fechaISO){ toast('Elegí una fecha'); return; }
+  if(!f.items.length){ toast('Cargá al menos una categoría con su cantidad'); return; }
+  if(f.lana.some(l=> (l.bultos!=null && !(l.bultos >= 0)) || (l.kg!=null && !(l.kg >= 0)))){ toast('Revisá los bultos y los kilos'); return; }
+  if(f.precioLata!=null && !(f.precioLata >= 0)){ toast('Revisá el precio por lata'); return; }
+  // Los demás equipos descartan un evento con números así (detalleNumericoValido): mejor no guardarlo acá.
+  if(!detalleNumericoValido({items: f.items, lana: f.lana, precioLata: f.precioLata, latas: f.latas, total: f.total})){ toast('Hay un número demasiado grande'); return; }
+  const fecha = fechaISOaDisplay(f.fechaISO);
+  const datos = {trabajo: f.trabajo, items: f.items, lana: f.lana, maquina: f.maquina, modalidad: f.modalidad,
+    precioLata: f.precioLata, moneda: f.moneda, latas: f.latas, total: f.total, obs: f.obs};
+  estado.esquilas = estado.esquilas || [];
+  if(editandoEsquilaId){
+    const id = editandoEsquilaId;
+    const i = estado.esquilas.findIndex(x=> x.id===id);
+    if(i >= 0){
+      const viejo = estado.esquilas[i];
+      estado.esquilas[i] = registroEsquila(Object.assign({id}, datos), fecha, viejo.dispositivo, viejo.usuario);
+      guardarEstado();
+    }
+    enviarEvento('esquila_editada', ESTABLECIMIENTO, Object.assign({id, fecha}, datos));
+    limpiarFormEsquila();
+    renderEsquilasLista();
+    toast('Registro corregido');
+    return;
+  }
+  const id = generarIdHistorial();
+  const usuario = (typeof usuarioActual === 'function') ? usuarioActual() : null;
+  estado.esquilas.unshift(registroEsquila(Object.assign({id, usuario: usuario||null}, datos), fecha, idDispositivo()));
+  guardarEstado();
+  // Mismo truco que "senalada": ESTABLECIMIENTO como placeholder de "potrero".
+  enviarEvento('esquila', ESTABLECIMIENTO, Object.assign({id}, datos, {usuario: usuario||null}), fecha);
+  limpiarFormEsquila();
+  renderEsquilasLista();
+  toast(f.trabajo==='limpieza' ? 'Limpieza registrada' : 'Esquila registrada');
 });
 
 /* ---------- Consumos (11/10/2026, a pedido de Pedro) ----------
