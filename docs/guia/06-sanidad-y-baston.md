@@ -97,7 +97,7 @@ apenas existan las columnas (`supabase_rodeo_nota.sql`, que corre Pedro **antes*
 de publicar: sin las columnas la PC publica sin esos campos y la ficha queda
 como estaba). Sin dato la fila no aparece. Test: `tests/probar_ficha_rodeo_nota.js`.
 
-### Padrón sin señal (31/10/2026, a pedido de Pedro, `CONFIG.padronOffline`, solo La Vuelta móvil y Campo)
+### Padrón sin señal (31/10/2026, a pedido de Pedro, `CONFIG.padronOffline`: La Vuelta y María Laura, móvil y Campo)
 
 "🔎 Buscar caravana" sin señal usa una copia del padrón guardada en el celular. La copia es la base IndexedDB `potreros_padron`
 (aparte de `potreros_fotos`: subirle la versión para agregar un store dejaría a la cola de fotos sin poder abrirla), con **un solo

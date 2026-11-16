@@ -72,7 +72,7 @@ async function levantar(archivo){
       estado.potreros['9'] = { animales:{}, historial:[], fechaIngreso:null, fechaSalida:null };
       estado.potreros['CERRO'] = { animales:{}, historial:[], fechaIngreso:null, fechaSalida:null };
     }
-    window.__parse = parseComandoVoz; window.__detectarCategoria = detectarCategoria; window.__est = function(){ return estado; }; window.__potreros = POTREROS_GEO.map(p=>p.nombre);
+    window.CATEGORIA_ESPECIE = CATEGORIA_ESPECIE; window.__parse = parseComandoVoz; window.__detectarCategoria = detectarCategoria; window.__est = function(){ return estado; }; window.__potreros = POTREROS_GEO.map(p=>p.nombre);
   `); }
   catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await new Promise(r => setTimeout(r, 30));
@@ -124,6 +124,50 @@ async function probarArchivo(archivo){
   const catVaq12 = win.__detectarCategoria(`agregar 5 vaquillonas al ${pNum}`);
   chequear('"vaquillonas" sin más sigue detectando "Vaquillonas 1-2 años" (sin regresión)',
     catVaq12 === 'Vaquillonas 1-2 años', 'detectó: ' + catVaq12);
+
+  // 11/11/2026: la carga por voz pregunta la ESPECIE antes de la categoria (vz-especie antes de vz-cat).
+  if(typeof win.renderInterpretacionVoz === 'function' && win.document.getElementById('voz-interpretado')){
+    const doc = win.document;
+    const valores = sel => Array.from(sel.options).map(o => o.value);
+    const cambiar = (el, v) => { el.value = v; el.dispatchEvent(new win.Event('change', { bubbles: true })); };
+    win.renderInterpretacionVoz(win.__parse('mover 5 ovejas al potrero ' + pOtro));
+    let esp = doc.getElementById('vz-especie');
+    chequear('voz: existe vz-especie', !!esp);
+    if(esp){
+      chequear('voz: vz-especie va antes que vz-cat', !!(esp.compareDocumentPosition(doc.getElementById('vz-cat')) & 4));
+      chequear('voz: vz-especie lista las tres especies', valores(esp).join() === 'bovino,ovino,equino', valores(esp).join());
+      chequear('voz: nombrando "ovejas" la especie es Ovino', esp.value === 'ovino', esp.value);
+      let cats = valores(doc.getElementById('vz-cat'));
+      chequear('voz: vz-cat lista solo categorias ovinas y deja elegida la detectada',
+        cats.length > 0 && cats.every(c => win.CATEGORIA_ESPECIE[c] === 'ovino') && doc.getElementById('vz-cat').value === 'Ovejas', cats.join());
+      cambiar(esp, 'equino');
+      cats = valores(doc.getElementById('vz-cat'));
+      chequear('voz: cambiar vz-especie vuelve a filtrar vz-cat', cats.length > 0 && cats.every(c => win.CATEGORIA_ESPECIE[c] === 'equino'), cats.join());
+    }
+    win.renderInterpretacionVoz(win.__parse('mover 5 vacas al potrero ' + pOtro));
+    chequear('voz: nombrando "vacas" la especie es Bovino', doc.getElementById('vz-especie').value === 'bovino' && doc.getElementById('vz-cat').value === 'Vacas');
+    win.renderInterpretacionVoz(win.__parse('mover 5 al potrero ' + pOtro));
+    const catsSin = valores(doc.getElementById('vz-cat'));
+    chequear('voz: sin categoria hablada la especie es Bovino y vz-cat lista bovinos',
+      doc.getElementById('vz-especie').value === 'bovino' && catsSin.length > 0 && catsSin.every(c => win.CATEGORIA_ESPECIE[c] === 'bovino'), catsSin.join());
+    // el aviso de "Ternero (solo muerte)" sigue a la categoria elegida
+    win.renderInterpretacionVoz({ accion: 'muerte', categoria: 'Terneros', dueno: '', cantidad: 1, origen: pNum, destino: null, precio: null });
+    chequear('voz: muerte de Terneros muestra el grupo', doc.getElementById('vz-grupo-fila').style.display === '');
+    cambiar(doc.getElementById('vz-especie'), 'ovino');
+    chequear('voz: al pasar a Ovino el grupo de Terneros se oculta', doc.getElementById('vz-grupo-fila').style.display === 'none');
+    // confirmar con otra especie sigue mandando el mismo evento de siempre (nacimiento de una categoria ovina)
+    win.renderInterpretacionVoz({ accion: 'nacimiento', categoria: null, dueno: '', cantidad: 2, origen: pNum, destino: pNum, precio: null });
+    cambiar(doc.getElementById('vz-especie'), 'ovino');
+    doc.getElementById('vz-cat').value = 'Corderos/as';
+    const duSel = doc.getElementById('vz-dueno');
+    const dueno = duSel ? duSel.value : '';
+    const clave = win.claveAnimal('Corderos/as', dueno);
+    const antes = win.__est().potreros[pNum].animales[clave] || 0;
+    doc.getElementById('vz-confirmar').dispatchEvent(new win.Event('click', { bubbles: true }));
+    chequear('voz: confirmar con la especie elegida registra la categoria elegida',
+      (win.__est().potreros[pNum].animales[clave] || 0) === antes + 2, 'antes ' + antes + ' ahora ' + win.__est().potreros[pNum].animales[clave]);
+  }
+
 }
 
 (async () => {

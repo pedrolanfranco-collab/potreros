@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">4.06</span></li>
-    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">4.06</span></li>
-    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">3.07</span></li>
+    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">4.07</span></li>
+    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">4.07</span></li>
+    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">3.08</span></li>
   </ul>
   <p class="nota">La versión de tu celular está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.76</b>). Si tu número es más viejo, abrí la app con señal y esperá un momento: se actualiza sola.</p>
 </div>
@@ -123,6 +123,11 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🔧 Reportes con nivel de urgencia</b>: al cargar un reporte de <span class="b">🔧 Infraestructura</span> o <span class="b">🌾 Capín Annoni</span> ahora elegís el <b>Nivel de urgencia</b> (es obligatorio): 🔴 rojo (urgente), 🟠 naranja o 🟡 amarillo. El marcador del mapa toma ese color y, cuando el reporte se resuelve, deja de verse en el mapa; en la lista y en "Ver en el mapa" se ve 🟢 verde. La lista muestra primero los rojos y, arriba, cuántos reportes hay de cada nivel y qué porcentaje son; cada reporte tiene un desplegable para <b>cambiarle el nivel</b>. Además hay dos tipos de problema nuevos: <b>Problema con boya</b> y <b>Portera rota</b>. Ver <a href="#reportes">🔧 Infraestructura y 🌾 Capín Annoni</a>.</li>
+    <li><b>💧 Aguadas y 🚧 Instal. también muestran los reportes</b>: esos dos botones del mapa ahora prenden y apagan también los reportes. Con <span class="b">💧 Aguadas</span> van los problemas de agua (caño, bebedero y boya); con <span class="b">🚧 Instal.</span>, la portera, el alambrado, “Otro” y todo el Capín Annoni. Si cargás un reporte con su capa apagada, la app la prende y te avisa.</li>
+    <li><b>⇄ Mover una categoría</b>, <b>⇄⇄ Mover TODO el potrero</b> y la <b>🎤 carga por voz</b> preguntan o muestran la <b>Especie</b>. En los dos formularios de mover arranca en Bovinos (si no hay bovinos, en la especie que haya) y solo salen las especies que hay en el potrero; en Mover una categoría, la lista y las categorías destino son las de esa especie. En Mover TODO hay además <b>Todas las especies</b>, que pasa todo el rodeo como siempre; con una sola especie elegida se mueve esa y lo demás queda en el potrero. En la voz, “Revisá antes de confirmar” muestra la especie de la categoría que dijiste.</li>
+    <li><b>⇄ Mover una categoría</b> <span class="campo">(La Vuelta)</span>: ya no te borra la firma. Antes, si no tocabas <b>Dueño destino</b>, los animales quedaban “sin firma”; ahora arranca en “— mantener el dueño de cada una —” y la firma solo se borra si elegís a propósito “— sin asignar —”.</li>
+    <li><b>🔎 Buscar caravana sin señal</b> <span class="campo">(María Laura)</span>: ahora María Laura también guarda en el celular una copia del padrón, igual que La Vuelta. Sin señal, la búsqueda la usa y dice <b>“📴 Sin señal: datos del padrón al …”</b>. Ver <a href="#caravana">🔎 Buscar caravana</a>.</li>
     <li><b>✏️ Renombrar un punto</b>: en la lista de <a href="#puntos">📍 Aguadas / instalaciones</a>, cada punto tiene <span class="b">✏️ Renombrar</span>. Cambia solo el nombre: sus limpiezas, tareas y fotos siguen con él. No hace falta borrarlo y volver a crearlo.</li>
     <li><b>🧽 Limpiezas</b>: anotá cuándo se limpió cada bebedero o tanque y quién lo limpió. La app avisa cuándo toca la próxima (cada 6 meses): ver <a href="#limpiezas">🧽 Limpiezas</a>.</li>
     <li><b>🐄 Aviso al cargar terneros</b>: si al registrar un nacimiento el potrero queda con más terneros que vacas y vaquillonas, la app pregunta antes de guardar. Si contaste el total de terneros del potrero, cargá solo los que nacieron nuevos. Si los números están bien, tocá <b>Aceptar</b> y se guarda igual.</li>
@@ -212,7 +217,7 @@
   <tr><td>🔑 Clave del campo</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico">Sí</td></tr>
   <tr><td>🔎 Buscar caravana</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>🧾 Propietario según el SNIG</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está todavía</b></td></tr>
-  <tr><td>🔎 Buscar caravana sin señal</td><td data-campo="La Vuelta">Sí (con la copia guardada en el celular)</td><td data-campo="María Laura">No: necesita señal</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
+  <tr><td>🔎 Buscar caravana sin señal</td><td data-campo="La Vuelta">Sí (con la copia guardada en el celular)</td><td data-campo="María Laura">Sí (con la copia guardada en el celular)</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>Compras y ventas</td><td data-campo="La Vuelta"><b>📑 Movimientos DICOSE</b>, en Herramientas</td><td data-campo="María Laura"><b>📑 Movimientos DICOSE</b>, en Herramientas</td><td data-campo="Pone Chico"><b>💰 Compra / Venta</b>, en la ficha del potrero</td></tr>
   <tr><td>🌾 Campo ajeno y 🚚 Traslado a María Laura (dentro de 📑 Movimientos DICOSE)</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No</td><td data-campo="Pone Chico">No</td></tr>
   <tr><td>⚖️ Pesadas</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">No está</td><td data-campo="Pone Chico">No está</td></tr>
@@ -271,7 +276,7 @@
   <h3>🛰 Satelital y 📍 Mi ubicación</h3>
   <ul>
     <li><b><span class="b">🛰 Satelital: ON</span></b> (botón arriba a la derecha del mapa): prende o apaga la imagen de satélite del mapa. Hace falta señal para ver la imagen.</li>
-    <li><b><span class="b">💧 Aguadas</span></b> y <b><span class="b">🚧 Instal.</span></b> (Instalaciones; en el borde de arriba del mapa, al lado del zoom): prenden o apagan cada capa de puntos, las aguadas y las instalaciones (mangas, corrales, bretes, embarcadero…). Apagada, el botón queda gris y tachado y sus puntos no se ven. Lo que elegís queda guardado en este celular, para ese campo. <span class="b">🗺 Ver en el mapa</span> de un punto con su capa apagada muestra solo ese punto, y la capa sigue apagada. Un punto nuevo que cargás con su capa apagada prende la capa.</li>
+    <li><b><span class="b">💧 Aguadas</span></b> y <b><span class="b">🚧 Instal.</span></b> (Instalaciones; en el borde de arriba del mapa, al lado del zoom): prenden o apagan cada capa de puntos, las aguadas y las instalaciones (mangas, corrales, bretes, embarcadero…). Apagada, el botón queda gris y tachado y sus puntos no se ven. Lo que elegís queda guardado en este celular, para ese campo. <span class="b">🗺 Ver en el mapa</span> de un punto con su capa apagada muestra solo ese punto, y la capa sigue apagada. Un punto nuevo que cargás con su capa apagada prende la capa. Las dos capas también prenden y apagan los <b>reportes</b> activos: con <span class="b">💧 Aguadas</span>, los problemas de agua (caño, bebedero y boya); con <span class="b">🚧 Instal.</span>, la portera, el alambrado, “Otro” y todo el Capín Annoni. Un reporte que cargás con su capa apagada la prende. <span class="b">🗺 Ver en el mapa</span> de un reporte con su capa apagada muestra solo ese reporte.</li>
     <li><b><span class="b">📍 Mi ubicación</span></b> (a la derecha del mapa, debajo de 🛰 Satelital): la primera vez el celular te pide permiso de ubicación. Marca un punto azul donde estás y un cartel dice <b>“📍 Estás en [potrero]”</b> o <b>“📍 Fuera de los potreros”</b>, con el margen de error en metros. Mientras está prendido el botón dice <b>“📍 GPS: ON”</b>; tocalo para apagarlo.</li>
   </ul>
   <p class="nota">El <b>☀ Modo sol</b> (más contraste) es solo de la app Campo.</p>
@@ -302,9 +307,10 @@
   <p class="para">Para qué sirve: pasar una o varias categorías a otro potrero, o cambiarles la categoría o el dueño.</p>
   <ol class="pasos">
     <li>Tocá <span class="b">⇄ Mover una categoría</span>.</li>
+    <li>Elegí la <b>Especie</b>: arranca en <b>Bovinos</b> y solo aparecen las que hay en el potrero. Abajo se ven solo las categorías de esa especie, y también las de <b>Categoría destino</b>. Se mueve solo lo que se ve: para mover bovinos y ovinos hacés dos movimientos.</li>
     <li>En <b>Potrero destino</b> elegí adónde van.</li>
     <li>En “Categorías a mover” <b>tildá</b> las que movés y, al lado, poné <b>cuántos</b> de cada una (viene cargado todo lo que hay).</li>
-    <li>Si querés cambiarles la categoría o el dueño al mismo tiempo, usá <b>Categoría destino (opcional)</b> y <b>Dueño destino (opcional)</b>. Dejados en blanco, cada categoría mantiene lo suyo.</li>
+    <li>Si querés cambiarles la categoría o el dueño al mismo tiempo, usá <b>Categoría destino (opcional)</b> y <b>Dueño destino (opcional)</b>. Dejados en blanco, cada categoría mantiene lo suyo. <span class="campo">En La Vuelta</span>, <b>Dueño destino</b> arranca en “— mantener el dueño de cada una —”: la firma solo se borra si elegís “— sin asignar —”.</li>
     <li>Si hace falta, escribí una nota en <b>Notas (opcional)</b>.</li>
     <li>Tocá <span class="b">Mover</span>.</li>
   </ol>
@@ -320,6 +326,7 @@
   <p class="para">Para qué sirve: pasar todo el rodeo de un potrero a otro, de una vez.</p>
   <ol class="pasos">
     <li>Tocá <span class="b">⇄⇄ Mover TODO el potrero</span>. Arriba del formulario figura cuántos animales se van a mover y de qué categorías.</li>
+    <li>Elegí la <b>Especie</b>: arranca en <b>Bovinos</b>, y también está <b>Todas las especies</b>. Con una especie, el resumen y el botón (por ejemplo <span class="b">Mover bovinos (N)</span>) cuentan solo esa especie y lo demás queda en el potrero; con <b>Todas las especies</b> se pasa todo el rodeo. Si en el potrero hay una sola especie, arranca en Todas las especies.</li>
     <li>Elegí el <b>Potrero destino</b>.</li>
     <li>Revisá la fecha y tocá <span class="b">Mover todo (N)</span>.</li>
   </ol>
@@ -434,7 +441,7 @@
 <ol class="pasos">
   <li>Tocá el botón redondo rojo <span class="b">🎤</span>, abajo a la derecha, justo arriba de la barra donde está <span class="b">🛠 Herramientas</span>. Solo aparece si el navegador del celular tiene reconocimiento de voz.</li>
   <li>Tocá <span class="b">🎤 Empezar a hablar</span> y decí algo como: <i>“mover 45 vacas del 12 al 15”</i>, <i>“agregar 20 ovejas al 8”</i>, <i>“nació un ternero en el 9”</i> o <i>“vendí 10 novillos del 7”</i>. Mientras escucha el botón dice “⏹ Escuchando... tocá para detener”.</li>
-  <li>Aparece <b>“Revisá antes de confirmar”</b> con lo que la app entendió: <b>Operación</b> (Mover, Agregar, Nacimiento, Muerte, Compra o Venta), <b>Categoría</b>, <b>Cantidad</b>, <b>Potrero origen / donde ocurre</b>, <b>Potrero destino (solo si mueve)</b> y <b>Precio unitario USD</b> (solo compra y venta, opcional). <span class="campo">En María Laura y Pone Chico</span> también el <b>Dueño</b>. Si es una muerte de Terneros, aparece la lista “Ternero (solo muerte)” y hay que elegir.</li>
+  <li>Aparece <b>“Revisá antes de confirmar”</b> con lo que la app entendió: <b>Operación</b> (Mover, Agregar, Nacimiento, Muerte, Compra o Venta), <b>Especie</b> (la app la deduce de la categoría que dijiste; si la cambiás, la lista de categorías cambia con ella), <b>Categoría</b>, <b>Cantidad</b>, <b>Potrero origen / donde ocurre</b>, <b>Potrero destino (solo si mueve)</b> y <b>Precio unitario USD</b> (solo compra y venta, opcional). <span class="campo">En María Laura y Pone Chico</span> también el <b>Dueño</b>. Si es una muerte de Terneros, aparece la lista “Ternero (solo muerte)” y hay que elegir.</li>
   <li>Corregí lo que haga falta y tocá <span class="b">✔ Confirmar</span>. <span class="b">Descartar</span> borra lo entendido y no carga nada.</li>
 </ol>
 <ul>
@@ -694,7 +701,7 @@
   </ul>
   <p>Debajo, los datos del animal: categoría, sexo, generación, dueño (o firma), potrero, <b>Rodeo</b> y <b>Nota</b> que anotó el bastón (con la fecha de esa lectura), último peso, última lectura y próximo tratamiento. <span class="campo">En La Vuelta</span> también el bloque <b>⚖️ Pesadas</b> con la ganancia diaria y el historial. Si dice que la caravana no está en el padrón, puede ser un animal que nunca pasó por la manga o un número mal escrito.</p>
   <p>En La Vuelta y María Laura, la ficha trae además <b>Propietario (SNIG)</b>: de quién es el animal según el SNIG. Si el SNIG no lo tiene, dice “Sin SNIG — firma: …” con el dueño o firma que anotaste. Si el SNIG lo ubica en otro campo, sale “⚠ Según el SNIG está en …” (solo avisa, no bloquea nada). Un animal que el SNIG tiene pero el bastón nunca leyó aparece como <b>🆕 PENDIENTE DE PRIMERA LECTURA</b> o <b>❓ VIVO SIN REGISTRO EN EL PREDIO</b>. Ver <a href="#snig">Propietario según el SNIG</a>.</p>
-  <p class="nota"><b>Sin señal</b> <span class="campo">(solo La Vuelta)</span>: la app guarda en el celular una copia del padrón, que se pone al día sola cuando sincroniza con señal (cada media hora como mucho, y entera una vez por día). Sin señal, o si la consulta no contesta en unos segundos, la búsqueda usa esa copia y arriba de la ficha dice <b>“📴 Sin señal: datos del padrón al &lt;fecha y hora&gt;”</b>. Con 7 días o más lo avisa en rojo: puede haber tratamientos o bajas que no figuran, así que confirmá con señal antes de mandar a faena. El período de espera se sigue contando con la fecha de hoy. Al abrir el buscador, una línea dice cuántas caravanas tiene la copia y de cuándo es. Para tenerla hay que abrir la app con señal y con la 🔑 Clave del campo cargada al menos una vez.</p>
+  <p class="nota"><b>Sin señal</b> <span class="campo">(La Vuelta y María Laura)</span>: la app guarda en el celular una copia del padrón, que se pone al día sola cuando sincroniza con señal (cada media hora como mucho, y entera una vez por día). Sin señal, o si la consulta no contesta en unos segundos, la búsqueda usa esa copia y arriba de la ficha dice <b>“📴 Sin señal: datos del padrón al &lt;fecha y hora&gt;”</b>. Con 7 días o más lo avisa en rojo: puede haber tratamientos o bajas que no figuran, así que confirmá con señal antes de mandar a faena. El período de espera se sigue contando con la fecha de hoy. Al abrir el buscador, una línea dice cuántas caravanas tiene la copia y de cuándo es. Para tenerla hay que abrir la app con señal y con la 🔑 Clave del campo cargada al menos una vez.</p>
 </div>
 
 <div class="fn" id="snig">
@@ -786,7 +793,8 @@
   <p class="para">Para qué sirve: marcar en el mapa un problema (un caño, un bebedero o un alambrado roto) o un foco de capín annoni, para encontrarlo después.</p>
   <ol class="pasos">
     <li>Tocá <span class="b">🔧 Infraestructura</span> o <span class="b">🌾 Capín Annoni</span>.</li>
-    <li>En Infraestructura elegí el <b>Tipo de problema</b> (Caño roto, Bebedero roto, Alambrado roto u Otro).</li>
+    <li>En Infraestructura elegí el <b>Tipo de problema</b> (Caño roto, Bebedero roto, Problema con boya, Alambrado roto, Portera rota u Otro).</li>
+    <li>Elegí el <b>Nivel de urgencia</b>, en Infraestructura y en Capín Annoni (es obligatorio; si no lo elegís, la app avisa y no sigue): 🔴 <b>Rojo — urgente</b>, 🟠 <b>Naranja</b> o 🟡 <b>Amarillo</b>.</li>
     <li>Revisá la <b>Fecha</b> y, si querés, escribí una observación (por ejemplo, “cerca de la tranquera norte”).</li>
     <li>Opcional: <span class="b">📷 Agregar foto (hasta 3)</span>.</li>
     <li>Marcá el lugar de una de las dos formas:
@@ -800,7 +808,8 @@
   <ul>
     <li><span class="b">🗺 Ver en el mapa</span>.</li>
     <li><span class="b">📷 Agregar foto</span> (hasta 10 fotos por reporte).</li>
-    <li><span class="b">✓ Resuelto</span>: cuando ya se arregló. Podés sumar una foto del arreglo (<b>“Foto del arreglo”</b>) y tocar <b>“Confirmar resuelto”</b>. Sale de la lista en todos los celulares y no se puede deshacer. Los resueltos quedan en “Resueltos (N)”.</li>
+    <li><span class="b">✓ Resuelto</span>: cuando ya se arregló. Podés sumar una foto del arreglo (<b>“Foto del arreglo”</b>) y tocar <b>“Confirmar resuelto”</b>. Sale de la lista en todos los celulares y no se puede deshacer. Los resueltos quedan en “Resueltos (N)”. Un reporte resuelto se ve 🟢 verde.</li>
+    <li><b>Nivel</b>: arriba de la lista hay un resumen con cuántos reportes hay de cada nivel (🔴, 🟠, 🟡 y 🟢 Verde, los concluidos) y qué porcentaje son; los rojos salen primero. Mientras el reporte no esté resuelto, su desplegable de nivel te deja <b>cambiarlo</b>.</li>
     <li><span class="b">Eliminar</span>: borra el reporte. Pide confirmar.</li>
   </ul>
 </div>
@@ -815,7 +824,7 @@
 <ul>
   <li><b>Cargá normalmente.</b> Todo se guarda en el celular y sale solo cuando vuelva la señal. <b>No lo cargues dos veces</b> por miedo a que no se mandó.</li>
   <li>Con señal, arriba dice <b>“🟢 En línea”</b>. Sin señal dice <b>“⚪ Sin conexión — los datos se siguen guardando en este dispositivo”</b>.</li>
-  <li>Sin señal no se ven las imágenes del mapa satelital, y no andan la <a href="#voz">🎤 carga por voz</a>, <a href="#pesadas">⚖️ Pesadas</a> ni el registro de muertes; <a href="#caravana">🔎 Buscar caravana</a> anda solo en La Vuelta, con la copia del padrón guardada en el celular. Las listas de Sanidad, <a href="#stock">📊 Stock total</a> y los consumos muestran lo último que se bajó. Lo demás anda.</li>
+  <li>Sin señal no se ven las imágenes del mapa satelital, y no andan la <a href="#voz">🎤 carga por voz</a>, <a href="#pesadas">⚖️ Pesadas</a> ni el registro de muertes; <a href="#caravana">🔎 Buscar caravana</a> anda en La Vuelta y María Laura, con la copia del padrón guardada en el celular. Las listas de Sanidad, <a href="#stock">📊 Stock total</a> y los consumos muestran lo último que se bajó. Lo demás anda.</li>
 </ul>
 <p>Abajo, en el pie, la app muestra cómo viene el envío:</p>
 <table>
