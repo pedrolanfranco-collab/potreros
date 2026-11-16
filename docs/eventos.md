@@ -124,6 +124,7 @@ Registros del establecimiento (no tocan el stock):
 | `senalada_eliminada` | `{id}` |
 | `punto_creado` | `{id, tipo, subtipo, nombre, lat, lon}` |
 | `punto_eliminado` | `{id}` |
+| `punto_renombrado` | `{id, nombre}`; cambia el nombre de un punto sin cambiar su id (sus limpiezas, tareas y fotos siguen con él); solo la app completa lo genera, todas lo aplican |
 | `reporte_creado` | `{id, categoria, subtipo, obs, fecha, lat, lon}` |
 | `reporte_resuelto` | `{id, fecha}` |
 | `reporte_eliminado` | `{id}` |

@@ -694,14 +694,14 @@
   <button data-pc-seccion="puntos" title="Puntos y reportes"><span aria-hidden="true">📍</span> <span class="pr-txt">Puntos y reportes</span></button>
   <button data-pc-seccion="exportar" title="Exportar y respaldo"><span aria-hidden="true">⬇</span> <span class="pr-txt">Exportar y respaldo</span></button>
   <button data-pc-seccion="dispositivo" title="Este dispositivo"><span aria-hidden="true">⚙</span> <span class="pr-txt">Este dispositivo</span></button>
-  <div class="pr-pie">v3.06 (completa)</div>
+  <div class="pr-pie">v3.07 (completa)</div>
 </nav>
 <div id="app">
   <header>
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.06 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.07 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1078,6 +1078,15 @@
       <div id="limpiezas-lista"></div>
     </details>
     <div class="form-botones"><button id="limpiezas-cerrar" class="btn btn-secundario">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-renombrar-punto" class="modal-overlay" style="display:none;z-index:10010;" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <h3>✏️ Renombrar punto</h3>
+    <button class="btn-cerrar-x" id="rn-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Ahora se llama <b id="rn-actual"></b>. Cambia solo el nombre: sus limpiezas, tareas y fotos siguen con él.</p>
+    <div class="form-row"><label for="rn-nombre">Nombre nuevo</label><input id="rn-nombre" maxlength="80"></div>
+    <div class="form-botones"><button id="rn-guardar" class="btn btn-agregar">Guardar nombre</button><button id="rn-cancelar" class="btn btn-secundario">Cancelar</button></div>
   </div>
 </div>
 <div id="modal-eventos-manejo" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
@@ -1792,7 +1801,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.06","manejo":false,"versionMovil":"3.06","simpleHabilitado":true,"versionMovilSimple":"2.06","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.07","manejo":false,"versionMovil":"3.07","simpleHabilitado":true,"versionMovilSimple":"2.07","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -2541,7 +2550,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-3.06';
+const VERSION_APP = 'pc-3.07';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = false;
@@ -2953,7 +2962,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'limpieza_punto', 'limpieza_punto_editada', 'limpieza_punto_eliminada',
   'tarea_creada', 'tarea_editada', 'tarea_hecha', 'tarea_eliminada', 'reporte_programado',
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
-  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
+  'punto_creado', 'punto_eliminado', 'punto_renombrado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
   'vecino_paso', 'vecino_aparecido', 'vecino_retorno', 'vecino_perdida', 'vecino_muerte',
   'correccion'
@@ -3404,6 +3413,19 @@ function aplicarEventoRemoto(row, potrerosSucios){
     estado.puntos.splice(idx,1);
     if(_reconstruyendo) return; // Verificar stock: el marcador del mapa es el de verdad, no se toca
     if(puntosLayers[d.id]){ map.removeLayer(puntosLayers[d.id]); delete puntosLayers[d.id]; }
+    guardarEstado();
+    return;
+  }
+
+  // 16/11/2026: cambio de nombre de un punto (conserva el id: sus limpiezas, tareas y fotos siguen con él).
+  // Solo la app completa lo genera; cualquier variante (Campo incluido) lo aplica.
+  if(row.tipo === 'punto_renombrado'){
+    const nombre = textoTareaSeguro(d.nombre, 80);
+    if(typeof d.id !== 'string' || !nombre) return;
+    if(!aplicarNombrePunto(d.id, nombre)) return;
+    if(_reconstruyendo) return; // Verificar stock: el marcador del mapa es el de verdad, no se toca
+    actualizarPopupPunto(estado.puntos.find(p=>p.id===d.id));
+    redibujarListaPuntosSiAbierta();
     guardarEstado();
     return;
   }
@@ -5866,6 +5888,21 @@ function actualizarPopupPunto(p){
   if(!marker) return;
   marker.setPopupContent(popupPuntoHTML(p));
   if(marker.isPopupOpen && marker.isPopupOpen()) mostrarFotosEn(marker.getPopup().getElement());
+}
+/* 16/11/2026: cambia el nombre de un punto y las copias de ese nombre que guardan sus limpiezas y tareas para
+   mostrarlo (también el tema "Limpieza de bebedero · <nombre>" del recordatorio automático). El id no cambia. */
+function aplicarNombrePunto(id, nombre){
+  const p = (estado.puntos||[]).find(x=>x.id===id);
+  if(!p) return false;
+  const viejo = p.nombre || p.subtipo;
+  p.nombre = nombre;
+  (estado.limpiezas||[]).forEach(l=>{ if(l.puntoId===id) l.puntoNombre = nombre; });
+  (estado.tareas||[]).forEach(t=>{
+    if(t.puntoId!==id) return;
+    t.puntoNombre = nombre;
+    if(t.tema === `${t.tipo} · ${viejo}`) t.tema = `${t.tipo} · ${nombre}`;
+  });
+  return true;
 }
 function redibujarListaPuntosSiAbierta(){
   const m = document.getElementById('modal-puntos');
@@ -9745,6 +9782,7 @@ function renderListaPuntos(){
       <div class="acciones">
         <button data-ver-punto="${esc(p.id)}" style="color:#1d4fa8;">🗺 Ver en el mapa</button>
         <button data-foto-punto="${esc(p.id)}" style="color:#8a6d1f;"${nFotos >= FOTOS_MAX_REPORTE ? ' disabled' : ''}>📷 Agregar foto</button>
+        <button data-renombrar-punto="${esc(p.id)}" style="color:#1d4fa8;">✏️ Renombrar</button>
         ${p.tipo==='agua' && SUBTIPOS_LIMPIEZA.includes(p.subtipo) ? `<button data-limpiar-punto="${esc(p.id)}" style="color:#0b6e4f;">🧽 Anotar limpieza</button>` : ''}
         <button data-del="${esc(p.id)}">Eliminar</button>
       </div>
@@ -9773,8 +9811,49 @@ function renderListaPuntos(){
       abrirLimpiezas(btn.dataset.limpiarPunto);
     });
   });
+  cont.querySelectorAll('[data-renombrar-punto]').forEach(btn=>{
+    btn.addEventListener('click', ()=> abrirRenombrarPunto(btn.dataset.renombrarPunto));
+  });
   mostrarFotosEn(cont);
 }
+/* 16/11/2026: "✏️ Renombrar" en la lista de puntos (PC y móvil completa). Cambia solo el nombre y conserva el id: borrar
+   y volver a crear un punto le da otro id y sus limpiezas, tareas y fotos quedan colgando del viejo. Viaja como
+   punto_renombrado (ver aplicarNombrePunto). */
+let renombrandoPuntoId = null;
+function abrirRenombrarPunto(id){
+  const p = (estado.puntos||[]).find(x=>x.id===id);
+  if(!p) return;
+  renombrandoPuntoId = id;
+  document.getElementById('rn-actual').textContent = `${p.nombre || '(sin nombre)'} (${p.subtipo})`;
+  document.getElementById('rn-nombre').value = p.nombre || '';
+  document.getElementById('modal-renombrar-punto').style.display = 'flex';
+  document.getElementById('rn-nombre').focus();
+}
+function cerrarRenombrarPunto(){
+  renombrandoPuntoId = null;
+  document.getElementById('modal-renombrar-punto').style.display = 'none';
+}
+function guardarRenombrarPunto(){
+  const p = (estado.puntos||[]).find(x=>x.id===renombrandoPuntoId);
+  if(!p){ cerrarRenombrarPunto(); return; }
+  const nombre = textoTareaSeguro(document.getElementById('rn-nombre').value, 80);
+  if(!nombre){ toast('Escribí el nombre nuevo'); return; }
+  if(nombre === p.nombre){ cerrarRenombrarPunto(); return; }
+  const repetido = (estado.puntos||[]).some(x=> x.id!==p.id && String(x.nombre||'').trim().toLowerCase() === nombre.toLowerCase());
+  if(repetido && !confirm(`Ya hay otro punto que se llama "${nombre}". ¿Usar el mismo nombre igual?`)) return;
+  aplicarNombrePunto(p.id, nombre);
+  actualizarPopupPunto(p);
+  guardarEstado();
+  enviarEvento('punto_renombrado', ESTABLECIMIENTO, {id: p.id, nombre});
+  cerrarRenombrarPunto();
+  renderListaPuntos();
+  toast(`Ahora se llama "${nombre}"`);
+}
+document.getElementById('rn-guardar').addEventListener('click', guardarRenombrarPunto);
+document.getElementById('rn-nombre').addEventListener('keydown', e=>{ if(e.key === 'Enter') guardarRenombrarPunto(); });
+document.getElementById('rn-cancelar').addEventListener('click', cerrarRenombrarPunto);
+document.getElementById('rn-cerrar-x').addEventListener('click', cerrarRenombrarPunto);
+document.getElementById('modal-renombrar-punto').addEventListener('click', e=>{ if(e.target.id === 'modal-renombrar-punto') cerrarRenombrarPunto(); });
 function eliminarPunto(id){
   estado.puntos = estado.puntos.filter(p=>p.id!==id);
   if(puntosLayers[id]){ map.removeLayer(puntosLayers[id]); delete puntosLayers[id]; }

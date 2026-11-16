@@ -693,7 +693,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v2.06</div>
+        <div class="sub">v2.07</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1167,7 +1167,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.06","manejo":false,"versionMovil":"3.06","simpleHabilitado":true,"versionMovilSimple":"2.06","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.07","manejo":false,"versionMovil":"3.07","simpleHabilitado":true,"versionMovilSimple":"2.07","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -1906,7 +1906,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'campo-2.06';
+const VERSION_APP = 'campo-2.07';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -2318,7 +2318,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'limpieza_punto', 'limpieza_punto_editada', 'limpieza_punto_eliminada',
   'tarea_creada', 'tarea_editada', 'tarea_hecha', 'tarea_eliminada', 'reporte_programado',
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
-  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
+  'punto_creado', 'punto_eliminado', 'punto_renombrado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
   'vecino_paso', 'vecino_aparecido', 'vecino_retorno', 'vecino_perdida', 'vecino_muerte',
   'correccion'
@@ -2769,6 +2769,18 @@ function aplicarEventoRemoto(row, potrerosSucios){
     if(idx===-1) return;
     estado.puntos.splice(idx,1);
     if(puntosLayers[d.id]){ map.removeLayer(puntosLayers[d.id]); delete puntosLayers[d.id]; }
+    guardarEstado();
+    return;
+  }
+
+  // 16/11/2026: cambio de nombre de un punto (conserva el id: sus limpiezas, tareas y fotos siguen con él).
+  // Solo la app completa lo genera; cualquier variante (Campo incluido) lo aplica.
+  if(row.tipo === 'punto_renombrado'){
+    const nombre = textoTareaSeguro(d.nombre, 80);
+    if(typeof d.id !== 'string' || !nombre) return;
+    if(!aplicarNombrePunto(d.id, nombre)) return;
+    actualizarPopupPunto(estado.puntos.find(p=>p.id===d.id));
+    redibujarListaPuntosSiAbierta();
     guardarEstado();
     return;
   }
@@ -4782,6 +4794,21 @@ function actualizarPopupPunto(p){
   if(!marker) return;
   marker.setPopupContent(popupPuntoHTML(p));
   if(marker.isPopupOpen && marker.isPopupOpen()) mostrarFotosEn(marker.getPopup().getElement());
+}
+/* 16/11/2026: cambia el nombre de un punto y las copias de ese nombre que guardan sus limpiezas y tareas para
+   mostrarlo (también el tema "Limpieza de bebedero · <nombre>" del recordatorio automático). El id no cambia. */
+function aplicarNombrePunto(id, nombre){
+  const p = (estado.puntos||[]).find(x=>x.id===id);
+  if(!p) return false;
+  const viejo = p.nombre || p.subtipo;
+  p.nombre = nombre;
+  (estado.limpiezas||[]).forEach(l=>{ if(l.puntoId===id) l.puntoNombre = nombre; });
+  (estado.tareas||[]).forEach(t=>{
+    if(t.puntoId!==id) return;
+    t.puntoNombre = nombre;
+    if(t.tema === `${t.tipo} · ${viejo}`) t.tema = `${t.tipo} · ${nombre}`;
+  });
+  return true;
 }
 function redibujarListaPuntosSiAbierta(){
   const m = document.getElementById('modal-puntos');
