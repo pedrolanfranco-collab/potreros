@@ -46,6 +46,18 @@ placeholders (`__TITULO__`, `__THEME_COLOR__`, `__NOMBRE__`, `__SUBTITULO__`,
 where a literal has to sit outside the `CONFIG` object (page `<title>`, meta
 theme-color).
 
+**`@real` / `@prueba` (12/11/2026)** — the 9 real apps are generated with `@real`; `la-vuelta-test/` (an extra entry in
+`ESTABLECIMIENTOS` of `generar.js`: La Vuelta's config with `prueba: true`, its own `establecimiento` / `storageKey`, only the
+`movil-simple` variant) is generated with `@prueba`. Only three spots use them: the Supabase URL and key (`@real`; empty strings
+in `@prueba`), the first line of `clienteSupabase()` (`@prueba`: returns `null`) and the red "MODO PRUEBA" banner (`@prueba`).
+Adding the markers did not change a byte of the 9 real apps. A new code path that reaches Supabase without `clienteSupabase()`
+would leak into the test copy: `tests/probar_test_aislado.js` fails if the file contains the URL or the key.
+
+**Contrast and accessibility rules (12/11/2026, audit)** — text on `--ocre` is dark (`var(--texto)`, 5.5:1), never white
+(2.96:1); ocre *as text* on a cream background uses `--ocre-texto` (`#8f5f12`), never `--ocre` or `#b7791f`. Text is at least
+12px, except the map controls and the calendar cells. A new form field is `<label for="id">` + a control with that `id`; an
+icon-only button carries `title` and `aria-label`; a new `.modal-overlay` carries `role="dialog" aria-modal="true"`.
+
 ### PC vs. móvil split
 
 - **PC**: has PDF export (jsPDF), Excel export (SheetJS), and a UG-coefficient

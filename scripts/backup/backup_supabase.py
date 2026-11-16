@@ -75,10 +75,17 @@ TABLAS = {
     "animales_caravana": None,
 }
 ORDEN = {"eventos_sync": "creado_en.asc,id.asc"}
-# Vistas: el OpenAPI las lista igual que las tablas, pero son derivadas (y una anulacion baja sus
-# filas, que dispararia una falsa alerta de borrado). Una vista nueva que no se agregue aca se
-# respalda como si fuera una tabla: no pasa nada grave, solo duplica datos.
-VISTAS = {"movimientos_dicose_vigentes"}
+# Vistas: el OpenAPI las lista igual que las tablas, pero son derivadas: sus filas salen de otras tablas
+# que ya se respaldan, y suben o bajan con una anulacion o con un precio nuevo sin que se borre nada
+# (21/10/2026: comparacion_catalogo 3 -> 2 dio ALERTA). Una vista nueva que no se agregue aca se
+# respalda como si fuera una tabla: no pasa nada grave, solo duplica datos y puede dar una falsa alerta.
+# Lista al 15/11/2026 (las 10 vistas de public): select viewname from pg_views where schemaname='public'.
+VISTAS = {
+    "movimientos_dicose_vigentes",
+    "comparacion_catalogo", "precio_ultimo", "precio_vigente",                         # precios
+    "movimientos_insumo", "stock_insumos",                                             # insumos
+    "bano_posibles_duplicados", "bano_resumen_ciclo", "bano_sugerencia", "bano_tramos",  # bano
+}
 
 PAGINA = 1000
 UMBRAL_CAIDA = 0.10
@@ -224,7 +231,10 @@ def conteos_anteriores(destino, excluir):
         return {}
     try:
         with open(os.path.join(destino, previas[-1], "manifest.json"), encoding="utf-8") as f:
-            return {t: v.get("filas") for t, v in json.load(f).get("tablas", {}).items() if v.get("filas") is not None}
+            # Las vistas no se comparan: un backup anterior, hecho antes de excluirlas, las trae (sin esto,
+            # dejar de respaldarlas pareceria "una tabla desaparecio" y daria ALERTA).
+            return {t: v.get("filas") for t, v in json.load(f).get("tablas", {}).items()
+                    if v.get("filas") is not None and t not in VISTAS}
     except Exception:
         return {}
 

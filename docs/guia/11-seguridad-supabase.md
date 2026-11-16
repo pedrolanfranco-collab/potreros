@@ -202,6 +202,29 @@ siguen abiertas.
   Para volver atrás: `fase4_cierre_deshacer.sql` (reabre todo). **Pendiente**: rotar el token personal `sbp_` de Hermes
   (ignora RLS), decidir las tablas de otros proyectos de arriba, y vigilar `equipos_vistos`/el cartel "trabados" unos días.
 
+**Pone Chico con clave, etapa 1 (12/11/2026, a pedido de Pedro, tras la auditoría del 12/11).** `CONFIG.claveCampo` pasó a `true` en
+Pone Chico (PC y móvil 3.03, Campo 2.03): sus 3 apps muestran la ventana, el aviso del pie y el botón, mandan `x-clave-campo` y llaman
+a `verificar_clave`, igual que La Vuelta y María Laura. También el Tablero de Sanidad (`CON_CLAVE.pone_chico`) y Hermes
+(`usa_clave_campo`, variable `CLAVE_CAMPO_PONE_CHICO` en `~/.potreros/.env`). **Este release no corta nada**: `pone_chico` sigue en
+`private.campos_abiertos`, así que un equipo sin clave (o con versión vieja) sigue sincronizando. Antes de publicar, Pedro carga la
+clave con `private.cargar_clave('pone_chico', ...)` (nunca por chat ni por el repo). **Etapa 2, pendiente:** cuando
+`private.equipos_vistos` muestre los equipos de Pone Chico con `con_clave = true`, correr
+`delete from private.campos_abiertos where establecimiento = 'pone_chico';` (**sin volver a correr `fase4_cierre.sql`: lo reinserta**)
+y actualizar `verificar_fase4.py` (`CAMPO_ABIERTO`), `fotos_reportes.sql` y `scripts/seguridad/README.md`, que todavía describen a
+Pone Chico abierto porque así está la base.
+
+**Fase 6, endurecimiento (CORRIDA el 15/11/2026 por el conector de Supabase, a pedido de Pedro; auditoría del 12/11):** `scripts/seguridad/fase6_endurecer.sql`
+cierra a la llave pública las tablas de compras y precios (`comprobantes`, `proveedores`, `cotizaciones`, `precios_vet`,
+`alias_productos`, `insumos_alias` y sus vistas, que estaban "fuera de esta auditoría, legibles con la llave pública"),
+pone un tope de tamaño a `eventos_sync` (`detalle` hasta 16 KB), deja a `authenticated` sin permisos, saca TRUNCATE y
+compañía a `anon`, y hace que **lo nuevo en `public` no nazca con permisos para `anon`/`authenticated`** (cada tabla
+nueva lleva su `grant` explícito). Detalle, cómo correrla y su prueba (`probar_fase6.js`) en `scripts/seguridad/README.md`.
+**Verificado después**: ninguna tabla ni vista de compras legible por `anon`, 0 objetos con permisos para `authenticated`,
+`eventos_sync_tamanos` validado; `anon` sigue leyendo y escribiendo las tablas de las apps, `stock_insumos_app()`, `verificar_clave`
+y `bano_estado_app` siguen ejecutables, `rls_auto_enable` ya no. Antes de correrla se confirmó que la única lectura de esas tablas en
+los registros era el respaldo diario de la PC (`backup_supabase.py`, con la clave privada). Respaldos en
+`auditoria_privilegios_antes_fase6` y `auditoria_politicas_antes_fase6`; se deshace con `fase6_endurecer_deshacer.sql`.
+
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del
   12/9/2026 (ver memoria `planilla-sanitaria-v22`): un `PATCH` contra esa

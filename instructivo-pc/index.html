@@ -74,8 +74,8 @@
   .b{display:inline-block;background:var(--boton-fondo);border:2px solid var(--boton-borde);border-radius:9px;
      padding:0 8px;margin:1px 0;font-weight:700;line-height:1.5;}
   .indice{list-style:none;padding:0;margin:8px 0;}
-  .indice > li{margin:6px 0;}
-  .indice a{display:inline-block;padding:4px 0;}
+  .indice > li{margin:0;}
+  .indice a{display:inline-block;padding:11px 0;min-height:44px;box-sizing:border-box;}   /* 12/11/2026: enlaces de 44 px de alto, para acertarles con el dedo */
   .indice ul{list-style:none;padding-left:16px;margin:2px 0 6px;}
   .indice ul a{font-weight:500;}
   .para{color:var(--suave);font-style:italic;margin:2px 0 6px;}
@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.03</span></li>
-    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">4.03</span></li>
-    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">3.03</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.07</span></li>
+    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">4.07</span></li>
+    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">3.08</span></li>
   </ul>
   <p class="nota">La versión de tu PC está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.81 (completa)</b>). Si tu número es más viejo, abrí la app con conexión y esperá un momento: se actualiza sola.</p>
 </div>
@@ -127,7 +127,12 @@
     <li><b>💧 Aguadas y 🚧 Instal. también muestran los reportes</b>: esos dos botones del mapa ahora prenden y apagan también los reportes. Con <span class="b">💧 Aguadas</span> van los problemas de agua (caño, bebedero y boya); con <span class="b">🚧 Instal.</span>, la portera, el alambrado, “Otro” y todo el Capín Annoni. Si cargás un reporte con su capa apagada, la app la prende y te avisa.</li>
     <li><b>⇄ Mover una categoría</b>, <b>⇄⇄ Mover TODO el potrero</b> y la <b>🎤 carga por voz</b> preguntan o muestran la <b>Especie</b>. En los dos formularios de mover arranca en Bovinos (si no hay bovinos, en la especie que haya) y solo salen las especies que hay en el potrero; en Mover una categoría, la lista y las categorías destino son las de esa especie. En Mover TODO hay además <b>Todas las especies</b>, que pasa todo el rodeo como siempre; con una sola especie elegida se mueve esa y lo demás queda en el potrero. Si editás (✏️) un movimiento que mezclaba especies, la Especie dice <b>Varias especies</b> y se ven todas las categorías del potrero, con tildadas las del movimiento, para que no se pierda ninguna. En la voz, “Revisá antes de confirmar” muestra la especie de la categoría que dijiste.</li>
     <li><b>⇄ Mover una categoría</b> <span class="campo">(La Vuelta)</span>: ya no te borra la firma. Antes, si no tocabas <b>Dueño destino</b>, los animales quedaban “sin firma”; ahora arranca en “— mantener el dueño de cada una —” y la firma solo se borra si elegís a propósito “— sin asignar —”.</li>
-    <li><b>🎤 El micrófono ya no tapa Herramientas</b>: el botón redondo rojo <span class="b">🎤</span> ahora queda un poco más arriba, por encima de la barra de abajo. Antes tapaba parte del botón <span class="b">🛠 Herramientas</span>. Funciona igual que siempre.</li>
+    <li><b>✏️ Renombrar un punto</b>: en la lista de <a href="#puntos">📍 Puntos</a>, cada punto tiene <span class="b">✏️ Renombrar</span>. Cambia solo el nombre: sus limpiezas, tareas y fotos siguen con él. No hace falta borrarlo y volver a crearlo.</li>
+    <li><b>🧽 Limpiezas</b>: anotá cuándo se limpió cada bebedero o tanque y quién lo limpió. La app avisa cuándo toca la próxima (cada 6 meses): ver <a href="#limpiezas">🧽 Limpiezas</a>.</li>
+    <li><b>🐄 Aviso al cargar terneros</b>: si al registrar un nacimiento el potrero queda con más terneros que vacas y vaquillonas, la app pregunta antes de guardar. Si contaste el total de terneros del potrero, cargá solo los que nacieron nuevos. Si los números están bien, tocá <b>Aceptar</b> y se guarda igual.</li>
+    <li><b>👓 Se lee mejor</b>: los botones de color ocre (<span class="b">⇄ Mover una categoría</span>, <span class="b">⇄⇄ Mover TODO el potrero</span>) ahora llevan letra oscura, los avisos en amarillo pasaron a un tono más oscuro y la letra más chica de rótulos, tablas y fechas subió de tamaño. Además, tocar el nombre de un casillero ya lleva el cursor a ese casillero. No cambia cómo se usa la app.</li>
+    <li><b>🔑 Clave del campo en Pone Chico</b> <span class="campo">(solo Pone Chico)</span>: desde esta versión la app de Pone Chico también pide la clave del campo. La primera vez que la abrís con señal aparece la ventana <b>🔑 Clave del campo</b>: escribila una sola vez en cada equipo. Si no la tenés, pedísela a Pedro. Mientras no esté cargada, el pie avisa “Falta la clave del campo”. Ver <a href="#clave">🔑 Clave del campo</a>.</li>
+>    <li><b>🎤 El micrófono ya no tapa Herramientas</b>: el botón redondo rojo <span class="b">🎤</span> ahora queda un poco más arriba, por encima de la barra de abajo. Antes tapaba parte del botón <span class="b">🛠 Herramientas</span>. Funciona igual que siempre.</li>
     <li><b>🧾 Propietario según el SNIG</b> <span class="campo">(La Vuelta y María Laura)</span>: la ficha de <span class="b">🔎 Buscar caravana</span>, los casilleros de caravana y la pestaña <span class="b">Por propietario SNIG</span> del <span class="b">📊 Stock total</span> muestran de quién es cada animal según el SNIG. Solo avisa: no cambia el stock ni bloquea nada. Ver <a href="#snig">Propietario según el SNIG</a>.</li>
     <li><b>📋 Cuenta completa por propietario según el SNIG</b> <span class="campo">(La Vuelta y María Laura)</span>: arriba de la pestaña <span class="b">Por propietario SNIG</span> del <span class="b">📊 Stock total</span>, una fila por propietario con leídos, sin lectura, dados de baja acá y el total según el SNIG: leídos + sin lectura + dados de baja acá = total del SNIG, para comparar con el export del SNIG. Solo lee: no cambia el stock.</li>
     <li><b>🧾 SNIG sin lectura</b> <span class="campo">(solo PC, La Vuelta y María Laura)</span>: la lista de los animales que el SNIG tiene en el campo y el bastón nunca leyó, con su estado. Solo mira. Ver <a href="#snig-sin-lectura">🧾 SNIG sin lectura</a>.</li>
@@ -180,6 +185,7 @@
         <li><a href="#calendario">📅 Calendario</a></li>
         <li><a href="#csv-baston">📂 Completar lectura del bastón (CSV)</a></li>
         <li><a href="#lluvias">🌧 Lluvias y otros eventos</a></li>
+        <li><a href="#limpiezas">🧽 Limpiezas</a></li>
         <li><a href="#dicose">📑 Movimientos DICOSE</a></li>
         <li><a href="#desaparecidos">❓ Desaparecidos</a></li>
         <li><a href="#vecinos">🏡 Vecinos</a></li>
@@ -226,7 +232,7 @@
 <table class="campos">
   <tr><th></th><th>La Vuelta</th><th>María Laura</th><th>Pone Chico</th></tr>
   <tr><td>El dueño se llama</td><td data-campo="La Vuelta"><b>Firma</b>. Se puede dejar “(sin firma)”.</td><td data-campo="María Laura"><b>Dueño</b>. Hay que elegir uno.</td><td data-campo="Pone Chico"><b>Dueño</b>. Hay que elegir uno.</td></tr>
-  <tr><td>🔑 Clave del campo</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No se usa</b></td></tr>
+  <tr><td>🔑 Clave del campo</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico">Sí</td></tr>
   <tr><td>🔎 Buscar caravana</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está</b></td></tr>
   <tr><td>🧾 Propietario según el SNIG y 🧾 SNIG sin lectura</td><td data-campo="La Vuelta">Sí</td><td data-campo="María Laura">Sí</td><td data-campo="Pone Chico"><b>No está todavía</b></td></tr>
   <tr><td>Compras y ventas</td><td data-campo="La Vuelta"><b>📑 Movimientos DICOSE</b> (formulario completo)</td><td data-campo="María Laura"><b>📑 Movimientos DICOSE</b> (formulario completo)</td><td data-campo="Pone Chico"><b>💰 Compra / Venta</b>, en la ficha del potrero (formulario simple, sin guía)</td></tr>
@@ -277,7 +283,7 @@
   <li><span class="b">🏥 Sanidad e insumos</span>: Sanidad e Insumos.</li>
   <li><span class="b">🌧 Lluvias y eventos</span>: abre <a href="#lluvias">🌧 Lluvias y otros eventos</a>.</li>
   <li><span class="b">📑 Movimientos DICOSE</span>: abre <a href="#dicose">📑 Movimientos DICOSE</a>.</li>
-  <li><span class="b">📍 Puntos y reportes</span>: Aguadas / instalaciones, Resincronizar mis puntos, Infraestructura y Capín Annoni.</li>
+  <li><span class="b">📍 Puntos y reportes</span>: Aguadas / instalaciones, <a href="#limpiezas">🧽 Limpiezas</a>, Resincronizar mis puntos, Infraestructura y Capín Annoni.</li>
   <li><span class="b">⬇ Exportar y respaldo</span>: KMZ, PDF, Excel y el backup.</li>
   <li><span class="b">⚙ Este dispositivo</span>: Sincronizar, Quién soy, Clave del campo, Instructivo, Restablecer y 🛠 Herramientas.</li>
 </ul>
@@ -604,6 +610,19 @@
 </div>
 
 
+<div class="fn" id="limpiezas">
+  <h3>🧽 Limpiezas</h3>
+  <p class="para">Para qué sirve: anotar cuándo se limpió cada bebedero o tanque, y quién lo limpió.</p>
+  <ol class="pasos">
+    <li>En el menú de la izquierda, abrí <span class="b">📍 Puntos y reportes</span> y tocá <span class="b">🧽 Limpiezas</span>. También podés tocar <span class="b">🧽 Anotar limpieza</span> en un bebedero o tanque de <a href="#puntos">📍 Aguadas / instalaciones</a>.</li>
+    <li>Elegí el <b>bebedero o tanque</b> y la <b>Fecha</b>.</li>
+    <li>En <b>Quién limpió</b> aparece tu nombre. Si limpió otra persona, cambialo.</li>
+    <li>Tocá <span class="b">Anotar limpieza</span>. La app te dice cuándo toca la próxima: <b>6 meses</b> después.</li>
+  </ol>
+  <p>Arriba, <b>Toca limpiar</b> muestra en 🔴 los que pasaron los 6 meses o nunca se anotaron, y en 🟡 los que vencen en los próximos 15 días. Tocá uno para elegirlo. Abajo ves las últimas 20 limpiezas, con ✏️ para corregir la fecha, quién o las observaciones, y 🗑 para borrar.</p>
+  <p>Si ese bebedero o tanque tenía una tarea de limpieza pendiente en ✅ Tareas, queda cumplida sola, con la fecha y el nombre que anotaste, y se agrega la próxima a 6 meses.</p>
+</div>
+
 <div class="fn" id="lluvias">
   <h3>🌧 Lluvias y otros eventos</h3>
   <p class="para">Para qué sirve: anotar lo que pasa en todo el campo (no en un potrero): lluvias, heladas, abortos, señaladas y los animales que se faenan para consumo. En la PC todos los registros se corrigen con ✏️ y 🗑.</p>
@@ -825,7 +844,7 @@
         <li><span class="b">⬆ Importar de archivo (KML/KMZ/GPX)</span>: carga todos los puntos del archivo con el tipo y subtipo elegidos; los que ya existen casi en el mismo lugar se saltean.</li>
         <li><span class="b">📥 Cargar bebederos y llaves de referencia</span>: carga la lista de referencia del monitor hidráulico. <span class="campo">Solo La Vuelta la trae (60 puntos); en los otros campos no carga ninguno.</span></li>
       </ul>
-      Abajo, la lista de puntos: <span class="b">🗺 Ver en el mapa</span>, <span class="b">📷 Agregar foto</span> (hasta 10 por punto) y <span class="b">Eliminar</span>.
+      Abajo, la lista de puntos: <span class="b">🗺 Ver en el mapa</span>, <span class="b">📷 Agregar foto</span> (hasta 10 por punto), <span class="b">✏️ Renombrar</span> (cambia solo el nombre, en todos los equipos; sus limpiezas, tareas y fotos siguen con él), <span class="b">🧽 Anotar limpieza</span> (bebederos y tanques, abre <a href="#limpiezas">🧽 Limpiezas</a>) y <span class="b">Eliminar</span>.
     </li>
     <li><b><span class="b">🔄 Resincronizar mis puntos</span></b>: reenvía todos los puntos de esta PC a los demás equipos (para puntos cargados antes de que se sincronizaran). Pide confirmar; si ya estaban, no se duplican.</li>
   </ul>
@@ -906,7 +925,7 @@
 
 <div class="fn" id="clave">
   <h3>🔑 Clave del campo</h3>
-  <p class="para">Para qué sirve: sin la clave, lo que cargás no se puede sincronizar. <span class="campo">No se usa en Pone Chico.</span></p>
+  <p class="para">Para qué sirve: sin la clave, lo que cargás no se puede sincronizar.</p>
   <ol class="pasos">
     <li>Unos segundos después de abrir la app aparece la ventana <b>“🔑 Clave del campo”</b>. También la abrís con <span class="b">🔑 Clave del campo</span>.</li>
     <li>Escribí la clave de tu campo. Si no la tenés, pedísela a Pedro.</li>

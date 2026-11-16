@@ -20,8 +20,11 @@ Desde la Fase 5 de la auditoría (10/10/2026) lee con la **clave privada**
   `maestros_dicose` y `movimientos_dicose` quedaron afuera.
 - **Sigue andando cuando la Fase 4 cierre la lectura anónima.** Con la llave pública el backup
   saldría vacío y parecería un borrado masivo.
-- Las **vistas** (`VISTAS` en el script, hoy `movimientos_dicose_vigentes`) se saltean: son
-  derivadas y su cantidad de filas baja con cada anulación.
+- Las **vistas** (`VISTAS` en el script: las 10 de `public` al 15/11/2026, de DICOSE, precios, insumos y
+  baño) se saltean: son derivadas de tablas que ya se respaldan, y sus filas suben o bajan con una
+  anulación o un precio nuevo sin que se borre nada. **Una vista nueva en `public` hay que agregarla
+  ahí**; si no, se respalda como tabla y puede dar una falsa ALERTA. Un backup anterior que todavía
+  traiga vistas no se compara contra ellas.
 
 Sin clave privada hace el backup como antes (llave pública y la lista fija) pero **termina con
 código 1 y avisa**: ese backup solo tiene lo que ve la app.

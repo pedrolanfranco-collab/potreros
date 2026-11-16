@@ -23,6 +23,6 @@ module.exports = {
     { id: 'la_vuelta',   nombre: 'La Vuelta',   usaClave: true, etiquetaDueno: 'Firma', potreros: { desdeConfig: 'la-vuelta' } },
     { id: 'maria_laura', nombre: 'María Laura', usaClave: true, etiquetaDueno: 'Dueño', potreros: { desdeConfig: 'maria-laura' } },
     // Pone Chico: oculto por ahora (4/11/2026, a pedido de Pedro). Para mostrarlo, sacar las dos barras del principio:
-    // { id: 'pone_chico', nombre: 'Pone Chico', usaClave: false, etiquetaDueno: 'Dueño', potreros: { desdeConfig: 'pone-chico' } },
+    // { id: 'pone_chico', nombre: 'Pone Chico', usaClave: true, etiquetaDueno: 'Dueño', potreros: { desdeConfig: 'pone-chico' } },
   ],
 };

@@ -133,6 +133,12 @@ jobs:
       - name: "Abortos en Herramientas -- registro sin potrero, sincronizado, y % junto al de nacidos"
         run: node tests/probar_abortos.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
 
+      - name: "Limpieza de bebederos y tanques -- quién limpió, Toca limpiar, cumple la tarea y recordatorio a 6 meses"
+        run: node tests/probar_limpiezas.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
+      - name: "Renombrar punto -- conserva el id, limpiezas y tareas con el nombre nuevo, punto_renombrado, solo PC y movil completa"
+        run: node tests/probar_renombrar_punto.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
       - name: "Señalada en Herramientas -- registro sin potrero, macho/hembra, sincronizado, y % sobre ovejas encarneradas"
         run: node tests/probar_senalada.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
 
@@ -292,6 +298,9 @@ jobs:
 
       - name: "Fase 3 de la auditoria, paso 4 (11/10/2026) -- una correccion se ubica por el event_id del evento que corrige (eventIdOriginal), no por parecido: dos ventas identicas, las dos puntas de un movimiento, respaldo por parecido para eventos viejos"
         run: node tests/probar_correccion_por_id.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html
+
+      - name: "15/11/2026 -- un nacimiento que deja mas terneros que vacas y vaquillonas 2-3 anos en el potrero pregunta antes de guardar (potrero 7 de La Vuelta: se cargo el total como partos)"
+        run: node tests/probar_aviso_crias_madres.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html
 
       - name: "Fase 3 de la auditoria, paso 4 (11/10/2026) -- tipos de evento desconocidos se guardan y se aplican al actualizar la app; todo evento lleva detalle.v (variante-version)"
         run: node tests/probar_eventos_desconocidos.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html

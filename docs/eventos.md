@@ -104,6 +104,9 @@ Registros del establecimiento (no tocan el stock):
 | `evento_clima` | `{id, tipo, obs, usuario}` |
 | `evento_clima_editado` | `{id, fecha, tipo, obs}` |
 | `evento_clima_eliminado` | `{id}` |
+| `limpieza_punto` | `{id, puntoId, puntoNombre, puntoSubtipo, fecha, quien, obs, usuario}`; limpieza de un bebedero o tanque; `quien` = quién limpió (texto libre), `usuario` = quién lo anotó; alta idempotente por id; en PC/móvil cumple la tarea de limpieza pendiente de ese punto y deja otra a 6 meses (`tarea_hecha`/`tarea_creada` con `event_id` derivado del id) |
+| `limpieza_punto_editada` | snapshot igual a `limpieza_punto`; reemplaza fecha, quien y obs por id; solo la PC la genera |
+| `limpieza_punto_eliminada` | `{id}`; solo la PC la genera |
 | `evento_manejo` | `{id, ts?, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?, usuario}`; fecha en `fecha_cliente`; alta idempotente por id; no modifica stock |
 | `evento_manejo_editado` | snapshot `{id, ts?, fecha, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?}`; reemplaza el registro por id; no modifica stock |
 | `evento_manejo_eliminado` | `{id, ts?}`; conserva tombstone por id para impedir que una alta tardía lo reviva |
@@ -123,6 +126,7 @@ Registros del establecimiento (no tocan el stock):
 | `punto_eliminado` | `{id}` |
 | `reporte_creado` | `{id, categoria, subtipo, obs, fecha, lat, lon, nivel?}`; `nivel` = `rojo`, `naranja` o `amarillo` (urgencia); ausente o con otro valor se muestra amarillo |
 | `reporte_nivel` | `{id, nivel}`; cambia el nivel de urgencia (`rojo` / `naranja` / `amarillo`) de un reporte ya creado; un nivel inválido o un id desconocido se ignora. Un reporte resuelto se ve verde, sin evento aparte |
+| `punto_renombrado` | `{id, nombre}`; cambia el nombre de un punto sin cambiar su id (sus limpiezas, tareas y fotos siguen con él); solo la app completa lo genera, todas lo aplican |
 | `reporte_resuelto` | `{id, fecha}` |
 | `reporte_eliminado` | `{id}` |
 | `reporte_foto` | `{id, fotoId, path, momento, fecha}` (foto del reporte ya subida a Storage, bucket `fotos-reportes`; `path` = `<establecimiento>/<id>/<fotoId>.jpg`, `momento` = `reporte` o `resuelto`) |

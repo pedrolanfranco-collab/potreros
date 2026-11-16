@@ -144,7 +144,9 @@ async function probarConfig(nombre,pc,movil,campo){
     chequear('el texto remoto se muestra escapado sin crear elementos HTML',!doc.getElementById('eventos-manejo-lista').querySelector('img')&&!doc.getElementById('eventos-manejo-lista').querySelector('svg'));
 
     // El modo Eventos colorea por recencia y el tooltip explica el último.
-    const hoy=p.estado().eventosManejo.find(x=>x.id===ev.id); hoy.fecha='05/11/2026';
+    // 15/11/2026: la fecha era fija ('05/11/2026') y la prueba empezó a fallar sola a los 8 días; ahora es la de hoy.
+    const hoyD=new Date(), dd=n=>String(n).padStart(2,'0');
+    const hoy=p.estado().eventosManejo.find(x=>x.id===ev.id); hoy.fecha=`${dd(hoyD.getDate())}/${dd(hoyD.getMonth()+1)}/${hoyD.getFullYear()}`;
     const pot=p.geo[0].nombre; hoy.potrero=pot; hoy.tipo='Caravaneo'; p.refrescarColoresMapa();
     const selector=doc.getElementById('mapa-pintar-por'); selector.value='eventos'; selector.dispatchEvent(new P.win.Event('change',{bubbles:true}));
     chequear('color de eventos recientes tiene máxima intensidad',p.colorEventosMapa(pot)==='#c2452d');

@@ -56,7 +56,7 @@ ESTABLECIMIENTOS = {
         "duenos": ["Chico", "Pablo", "Kelbi"],
         "dueno_obligatorio": True,
         "texto_sin_dueno": "(sin dueño)",
-        "usa_clave_campo": False,
+        "usa_clave_campo": True,
     },
 }
 
