@@ -693,14 +693,14 @@
   <button data-pc-seccion="puntos" title="Puntos y reportes"><span aria-hidden="true">📍</span> <span class="pr-txt">Puntos y reportes</span></button>
   <button data-pc-seccion="exportar" title="Exportar y respaldo"><span aria-hidden="true">⬇</span> <span class="pr-txt">Exportar y respaldo</span></button>
   <button data-pc-seccion="dispositivo" title="Este dispositivo"><span aria-hidden="true">⚙</span> <span class="pr-txt">Este dispositivo</span></button>
-  <div class="pr-pie">v4.02 (completa)</div>
+  <div class="pr-pie">v4.03 (completa)</div>
 </nav>
 <div id="app">
   <header>
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v4.02 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v4.03 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1728,6 +1728,7 @@
     <button class="btn-cerrar-x" id="reporte-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info" id="reporte-info">Reportá un problema encontrado en el campo — se guarda con su ubicación para poder encontrarlo después.</p>
     <div class="form-row" id="reporte-fila-subtipo"><label>Tipo de problema</label><select id="rp-subtipo"></select></div>
+    <div class="form-row"><label>Nivel de urgencia</label><select id="rp-nivel"><option value="">Elegí…</option><option value="rojo">🔴 Rojo — urgente</option><option value="naranja">🟠 Naranja</option><option value="amarillo">🟡 Amarillo</option></select></div>
     <div class="form-row"><label>Fecha</label><input type="date" id="rp-fecha"></div>
     <div class="form-row"><label>Observaciones (opcional)</label><input type="text" id="rp-obs" placeholder="Ej: cerca de la tranquera norte"></div>
     <div class="form-row" id="rp-fotos-fila">
@@ -1769,7 +1770,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"4.02","versionMovil":"4.02","manejo":true,"simpleHabilitado":true,"versionMovilSimple":"2.02","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"propietarioSnig":{"mapaDuenos":{}},"lecturaStock":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"4.03","versionMovil":"4.03","manejo":true,"simpleHabilitado":true,"versionMovilSimple":"2.03","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"padronOffline":true,"propietarioSnig":{"mapaDuenos":{}},"lecturaStock":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -2181,7 +2182,7 @@ const REPORTE_CATEGORIAS = {
     etiqueta: "Infraestructura",
     icono: "🔧",
     color: "#b23b3b",
-    subtipos: {"Caño roto":"🔧","Bebedero roto":"🚱","Alambrado roto":"✂️","Otro":"⚠️"}
+    subtipos: {"Caño roto":"🔧","Bebedero roto":"🚱","Problema con boya":"🛟","Alambrado roto":"✂️","Portera rota":"🚪","Otro":"⚠️"}
   },
   capin_annoni: {
     etiqueta: "Capín Annoni",
@@ -2190,6 +2191,28 @@ const REPORTE_CATEGORIAS = {
     subtipos: {"Foco de capín annoni":"🌾"}
   }
 };
+
+/* Nivel de urgencia de un reporte de campo: rojo (urgente), naranja o amarillo, que se elige al crearlo (obligatorio en el
+   formulario) y se puede cambiar después (evento reporte_nivel). Un reporte resuelto se ve verde. Un reporte sin nivel
+   (anteriores a esta función, o de un equipo viejo) es legal y se ve amarillo. */
+const REPORTE_NIVELES = {
+  rojo:     {etiqueta: 'Rojo',     emoji: '🔴', color: '#dc2626'},
+  naranja:  {etiqueta: 'Naranja',  emoji: '🟠', color: '#ea580c'},
+  amarillo: {etiqueta: 'Amarillo', emoji: '🟡', color: '#ca8a04'},
+  verde:    {etiqueta: 'Verde',    emoji: '🟢', color: '#16a34a'}
+};
+const REPORTE_NIVELES_ELEGIBLES = ['rojo', 'naranja', 'amarillo']; // los que se guardan; "verde" sale de resuelto
+function nivelDeReporte(r){
+  if(r && r.resuelto) return 'verde';
+  return (r && REPORTE_NIVELES_ELEGIBLES.includes(r.nivel)) ? r.nivel : 'amarillo';
+}
+/* Capa del mapa a la que pertenece un reporte de infraestructura: lo que tiene que ver con el agua va a 'agua'; el resto
+   (alambrado, portera, Otro y cualquier subtipo desconocido o de otra categoría) a 'instalacion'. */
+const REPORTE_SUBTIPO_CAPA = {"Caño roto":"agua","Bebedero roto":"agua","Problema con boya":"agua","Alambrado roto":"instalacion","Portera rota":"instalacion","Otro":"instalacion"};
+function capaDeReporte(r){
+  const s = r && r.subtipo;
+  return (typeof s === 'string' && Object.prototype.hasOwnProperty.call(REPORTE_SUBTIPO_CAPA, s)) ? REPORTE_SUBTIPO_CAPA[s] : 'instalacion';
+}
 
 /* ======================= ESTADO ======================= */
 const CONFIG_DEFAULT = { cargaMaxima: 1.3, diasOcupacionMax: 5 };
@@ -2517,9 +2540,9 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-4.02';
+const VERSION_APP = 'pc-4.03';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
-   "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
+   "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta y María Laura); la PC no guarda copia. */
 const PADRON_OFFLINE = false;
 /* `opciones` (opcional): {eventId} para fijar el id del evento, y {establecimiento}
    para escribirlo en el stream de OTRO establecimiento (traslados entre campos; la
@@ -2928,7 +2951,7 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'evento_manejo', 'evento_manejo_editado', 'evento_manejo_eliminado',
   'tarea_creada', 'tarea_editada', 'tarea_hecha', 'tarea_eliminada', 'reporte_programado',
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada',
-  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
+  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_nivel', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
   'vecino_paso', 'vecino_aparecido', 'vecino_retorno', 'vecino_perdida', 'vecino_muerte',
   'correccion'
@@ -3351,7 +3374,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     estado.reportes = estado.reportes || [];
     if(!Object.prototype.hasOwnProperty.call(REPORTE_CATEGORIAS, d.categoria) || !Number.isFinite(d.lat) || !Number.isFinite(d.lon) || typeof d.id !== 'string') return;
     if(!estado.reportes.some(r=>r.id===d.id)){
-      const reporte = {id: d.id, categoria: d.categoria, subtipo: d.subtipo, obs: d.obs||null, fecha: d.fecha || row.fecha_cliente || fechaHoy(), lat: d.lat, lon: d.lon, resuelto: false, fechaResuelto: null};
+      const reporte = {id: d.id, categoria: d.categoria, subtipo: d.subtipo, obs: d.obs||null, fecha: d.fecha || row.fecha_cliente || fechaHoy(), lat: d.lat, lon: d.lon, nivel: REPORTE_NIVELES_ELEGIBLES.includes(d.nivel) ? d.nivel : undefined, resuelto: false, fechaResuelto: null};
       estado.reportes.push(reporte);
       crearMarcadorReporte(reporte);
       guardarEstado();
@@ -3398,6 +3421,18 @@ function aplicarEventoRemoto(row, potrerosSucios){
       if(reportesLayers[d.id]){ map.removeLayer(reportesLayers[d.id]); delete reportesLayers[d.id]; }
       guardarEstado();
     }
+    return;
+  }
+
+  // Cambio de nivel de urgencia de un reporte (rojo / naranja / amarillo). Idempotente; un nivel inválido o un id desconocido se ignora.
+  if(row.tipo === 'reporte_nivel'){
+    const r = (estado.reportes||[]).find(x=>x.id===d.id);
+    if(!r || !REPORTE_NIVELES_ELEGIBLES.includes(d.nivel) || r.nivel === d.nivel) return;
+    r.nivel = d.nivel;
+    if(_reconstruyendo) return;
+    refrescarMarcadorReporte(r);
+    guardarEstado();
+    redibujarListaSiAbierta();
     return;
   }
 
@@ -5340,6 +5375,15 @@ function precargarMover(datos, fechaISO){
   const items = datos.items || [{categoria: datos.categoria, categoriaDestino: datos.categoriaDestino, dueno: datos.dueno, cantidad: datos.cantidad}];
   const el = id => document.getElementById(id);
   const tieneOpcion = (sel, valor)=> Array.from(sel.options).some(o=>o.value===valor);
+  // 11/11/2026: el formulario abre en la especie del movimiento que se edita (no en Bovino).
+  const selEsp = el('f-especie');
+  if(selEsp && items.length && items[0].categoria){
+    const esp = especieDeCategoria(items[0].categoria);
+    // movimiento que mezcla especies: "Varias especies" lista todo, así al confirmar se vuelve a mover todo y no se pierde ninguna
+    const varias = items.some(it=>it.categoria && especieDeCategoria(it.categoria)!==esp);
+    if(varias){ selEsp.insertAdjacentHTML('beforeend', '<option value="">Varias especies</option>'); selEsp.value = ''; selEsp.dispatchEvent(new Event('change')); }
+    else if(tieneOpcion(selEsp, esp)){ selEsp.value = esp; selEsp.dispatchEvent(new Event('change')); }
+  }
   if(datos.destino && tieneOpcion(el('f-destino'), datos.destino)) el('f-destino').value = datos.destino;
   const conCat = items.find(it=> it.categoriaDestino && it.categoriaDestino!==it.categoria);
   if(conCat && tieneOpcion(el('f-cat-destino'), conCat.categoriaDestino)) el('f-cat-destino').value = conCat.categoriaDestino;
@@ -5400,6 +5444,8 @@ function abrirFormularioEdicion(h, datos, potreroHost, transaccion){
     precargarMover(datos, fechaISO);
   } else if(h.tipo==='movimiento_todo'){
     mostrarFormulario(base, 'mover-todo');
+    const espTodo = document.getElementById('f-especie');
+    if(espTodo){ espTodo.value = 'todas'; espTodo.dispatchEvent(new Event('change')); }
     const destino = document.getElementById('f-destino');
     if(destino && datos.destino && Array.from(destino.options).some(o=>o.value===datos.destino)) destino.value = datos.destino;
     const fecha = document.getElementById('f-fecha');
@@ -5698,11 +5744,19 @@ function actualizarBotonesCapas(){
     btn.classList.toggle('capa-off', !visible);
   });
 }
-/* Prende o apaga la capa de un tipo: agrega o saca del mapa cada marcador de ese tipo. Los que quedan fuera siguen guardados
+/* Prende o apaga la capa de un tipo: agrega o saca del mapa cada marcador de ese tipo (puntos y reportes). Los que quedan fuera siguen guardados
    en puntosLayers, así se prenden después sin volver a crearlos. */
 function ponerCapaPuntos(tipo, visible){
   capasPuntos[tipo] = !!visible;
   try{ localStorage.setItem(CAPAS_PUNTOS_KEY, JSON.stringify(capasPuntos)); }catch(e){}
+  // los reportes activos de esa capa (reportesLayers solo tiene los activos) siguen a la capa igual que los puntos
+  Object.keys(reportesLayers).forEach(id => {
+    const r = (estado.reportes||[]).find(x => x.id === id);
+    const m = reportesLayers[id];
+    if(!r || !m || capaDeReporte(r) !== tipo) return;
+    if(visible && !map.hasLayer(m)) m.addTo(map);
+    if(!visible && map.hasLayer(m)) map.removeLayer(m);
+  });
   (estado.puntos||[]).filter(p => p.tipo === tipo).forEach(p => {
     const m = puntosLayers[p.id];
     if(!m) return;
@@ -5899,14 +5953,14 @@ map.on('click', (e)=>{
    Mismo mecanismo que PUNTOS de arriba (mismo pin en gota, mismo modo
    "tocar el mapa"), pero en `estado.reportes` -- son problemas puntuales
    que se resuelven (campo `resuelto`), no cosas permanentes del campo. */
-let modoColocarReporte = null; // {categoria, subtipo, obs, fecha, fotos}
+let modoColocarReporte = null; // {categoria, subtipo, nivel, obs, fecha, fotos}
 const reportesLayers = {}; // id -> marker
 let _marcadorVerTemporal = null; // marcador gris de un reporte resuelto (no tiene pin activo), ver verUbicacionEnMapa()
 
 function iconoReporte(reporte, resuelto){
   const cat = REPORTE_CATEGORIAS[reporte.categoria];
   const emoji = cat.subtipos[reporte.subtipo] || cat.icono;
-  const color = resuelto ? '#8c8c8c' : cat.color;
+  const color = REPORTE_NIVELES[resuelto ? 'verde' : nivelDeReporte(reporte)].color;
   return L.divIcon({
     className:'icono-punto',
     html:`<div style="background:${color};width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.35);border:2px solid #fff;"><span style="transform:rotate(45deg);font-size:13px;">${emoji}</span></div>`,
@@ -6314,16 +6368,25 @@ function actualizarPopupReporte(r){
 
 function crearMarcadorReporte(reporte){
   if(_reconstruyendo) return;
-  const marker = L.marker([reporte.lat, reporte.lon], {icon: iconoReporte(reporte, reporte.resuelto)}).addTo(map);
+  const marker = L.marker([reporte.lat, reporte.lon], {icon: iconoReporte(reporte, reporte.resuelto)});
   marker.bindPopup(popupReporteHTML(reporte));
   marker.on('popupopen', e => mostrarFotosEn(e.popup && e.popup.getElement && e.popup.getElement()));
+  // con su capa apagada el marcador queda guardado en reportesLayers pero fuera del mapa (ver ponerCapaPuntos)
+  if(capaPuntoVisible(capaDeReporte(reporte))) marker.addTo(map);
   reportesLayers[reporte.id] = marker;
+}
+
+/* Vuelve a dibujar el ícono del marcador de un reporte (cambio de nivel); si no tiene pin activo no hace nada. */
+function refrescarMarcadorReporte(r){
+  const marker = reportesLayers[r.id];
+  if(marker && marker.setIcon) marker.setIcon(iconoReporte(r, r.resuelto));
 }
 
 function guardarReporte(datos){
   const reporte = {
     id: 'rp_' + Date.now() + '_' + Math.floor(Math.random()*1000),
     categoria: datos.categoria, subtipo: datos.subtipo, obs: datos.obs||null,
+    nivel: REPORTE_NIVELES_ELEGIBLES.includes(datos.nivel) ? datos.nivel : undefined,
     fecha: datos.fecha || fechaISOHoy(), lat: datos.lat, lon: datos.lon,
     resuelto: false, fechaResuelto: null, fotos: []
   };
@@ -6332,10 +6395,11 @@ function guardarReporte(datos){
   crearMarcadorReporte(reporte);
   guardarEstado();
   renderListaReportes(reporte.categoria);
-  enviarEvento('reporte_creado', ESTABLECIMIENTO, {id: reporte.id, categoria: reporte.categoria, subtipo: reporte.subtipo, obs: reporte.obs, fecha: reporte.fecha, lat: reporte.lat, lon: reporte.lon});
+  enviarEvento('reporte_creado', ESTABLECIMIENTO, {id: reporte.id, categoria: reporte.categoria, subtipo: reporte.subtipo, obs: reporte.obs, fecha: reporte.fecha, lat: reporte.lat, lon: reporte.lon, nivel: reporte.nivel});
   // las fotos van después del reporte: reporte_creado queda primero en la cola, y cada reporte_foto sale detrás
   (datos.fotos || []).forEach(blob => encolarFotoReporte(reporte.id, blob, 'reporte'));
-  toast(`${reporte.subtipo} agregado al mapa`);
+  const capasPrendidas = prenderCapasSiApagadas([capaDeReporte(reporte)]);
+  toast(`${reporte.subtipo} agregado al mapa` + (capasPrendidas.length ? ` · se prendió la capa ${capasPrendidas.join(', ')}` : ''));
 }
 
 function colocarReporteEn(latlng){
@@ -6364,7 +6428,10 @@ function verReporteEnMapa(id){
   const r = (estado.reportes||[]).find(x => x.id === id);
   if(!r) return;
   document.getElementById('modal-reporte').style.display = 'none';
-  verUbicacionEnMapa({lat: r.lat, lon: r.lon, marker: reportesLayers[id] || null, popupHtml: popupReporteHTML(r), icono: iconoReporte(r, r.resuelto)});
+  // con la capa apagada su marcador no está en el mapa: se muestra uno temporal y la capa NO se prende (igual que un punto)
+  const apagada = !r.resuelto && !capaPuntoVisible(capaDeReporte(r));
+  verUbicacionEnMapa({lat: r.lat, lon: r.lon, marker: apagada ? null : (reportesLayers[id] || null), popupHtml: popupReporteHTML(r), icono: iconoReporte(r, r.resuelto)});
+  if(apagada) toast(`La capa ${CAPAS_PUNTO[capaDeReporte(r)].etiqueta} está apagada: se muestra solo este reporte`);
 }
 
 // recrear marcadores de reportes activos (los resueltos no se muestran en el mapa)
@@ -7185,7 +7252,62 @@ function opcionesDuenosConsumo(nombre, seleccionado){
   return enBlanco + lista.map(d=>`<option value="${esc(d)}" ${d===seleccionado?'selected':''}>${esc(d)}</option>`).join('')
     + '<option value="__otro__">Otro (escribir)…</option>';
 }
-function opcionesCategorias(seleccionada){
+/* 11/11/2026: al mover animales (y al cargar por voz) se pregunta primero la ESPECIE. 'otras' agrupa las categorías que no
+   están en CATEGORIA_ESPECIE (datos viejos o raros) para que esos animales nunca queden sin poder moverse. */
+const ESPECIE_OTRAS = 'otras';
+function especieDeCategoria(cat){ return CATEGORIA_ESPECIE[cat] || ESPECIE_OTRAS; }
+function etiquetaEspecie(esp){
+  return esp === 'todas' ? 'Todas las especies' : esp === ESPECIE_OTRAS ? 'Otras categorías' : (ESPECIE_LABEL[esp] || esp);
+}
+function opcionesEspecies(seleccionada){
+  return Object.keys(ESPECIES).map(esp=>`<option value="${esp}" ${esp===seleccionada?'selected':''}>${etiquetaEspecie(esp)}</option>`).join('');
+}
+function opcionesCategoriasDeEspecie(seleccionada, especie){
+  const cats = ESPECIES[especie] ? Object.keys(ESPECIES[especie]) : [];
+  if(!cats.length) return '';
+  return `<optgroup label="${ESPECIE_LABEL[especie]}">${cats.map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('')}</optgroup>`;
+}
+/* Animales con stock positivo de un potrero, de una especie ('otras' o una de ESPECIES); sin especie, todos. */
+function entradasMoverPorEspecie(nombre, especie){
+  return detalleAnimales(estado.potreros[nombre].animales).filter(x=>x.cant>0 && (!especie || especieDeCategoria(x.cat)===especie));
+}
+/* Especies (en el orden de ESPECIES, más 'otras' al final) que tienen animales en el potrero. */
+function especiesConAnimales(nombre){
+  const hay = {};
+  entradasMoverPorEspecie(nombre).forEach(x=>{ hay[especieDeCategoria(x.cat)] = true; });
+  return Object.keys(ESPECIES).concat([ESPECIE_OTRAS]).filter(e=>hay[e]);
+}
+/* Desplegable "Especie" de los formularios de mover: solo las que hay en el potrero (+ "Todas" en Mover TODO). */
+function opcionesEspeciesPotrero(nombre, conTodas, seleccionada){
+  const lista = especiesConAnimales(nombre).concat(conTodas ? ['todas'] : []);
+  return lista.map(e=>`<option value="${e}" ${e===seleccionada?'selected':''}>${etiquetaEspecie(e)}</option>`).join('');
+}
+/* Valor inicial: Bovino si hay; si no, la primera presente. En Mover TODO con una sola especie presente queda 'todas' (movimiento_todo, como siempre). */
+function especieInicialMover(nombre, conTodas){
+  const hay = especiesConAnimales(nombre);
+  if(conTodas && hay.length < 2) return 'todas';
+  return hay.includes('bovino') ? 'bovino' : (hay[0] || 'bovino');
+}
+/* Texto del resumen y del botón de "Mover TODO" según la especie elegida ('todas' = el texto de siempre). */
+function textoMoverTodo(nombre, esp){
+  if(esp === 'todas'){
+    const total = totalPotrero(nombre);
+    const resumen = detalleAnimales(estado.potreros[nombre].animales).filter(d=>d.cant>0).map(d=>`${d.cant} ${d.cat} (${textoFirma(d.dueno)})`).join(', ');
+    return {texto: `Se van a mover ${total} animales: ${resumen}`, boton: `Mover todo (${total})`};
+  }
+  const ent = entradasMoverPorEspecie(nombre, esp);
+  const n = ent.reduce((s,x)=>s+x.cant,0);
+  const que = etiquetaEspecie(esp).toLowerCase();
+  return {
+    texto: `Se van a mover solo ${n} ${que} (lo demás queda en el potrero): ${ent.map(x=>`${x.cant} ${x.cat} (${textoFirma(x.dueno)})`).join(', ')}`,
+    boton: `Mover ${que} (${n})`
+  };
+}
+/* Categorías destino de "Mover": las de la especie elegida; con "Varias especies" ('', al editar un movimiento que mezcla especies) o 'otras'
+   (categorías sueltas de especie desconocida, que hay que poder pasar a una categoría real) la lista completa, como antes de elegir especie. */
+function especieParaDestinoMover(esp){ return (!esp || esp === ESPECIE_OTRAS) ? undefined : esp; }
+function opcionesCategorias(seleccionada, especie){
+  if(especie !== undefined) return opcionesCategoriasDeEspecie(seleccionada, especie);
   return Object.entries(ESPECIES).map(([esp,cats])=>{
     const opts = Object.keys(cats).map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
     return `<optgroup label="${ESPECIE_LABEL[esp]}">${opts}</optgroup>`;
@@ -7216,9 +7338,55 @@ function opcionesCategoriasNacimiento(seleccionada){
 function opcionesPotreros(excluir){
   return POTREROS_GEO.map(p=>p.nombre).filter(n=>n!==excluir).sort().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
-function filasCategoriasMover(nombre){
-  const animales = estado.potreros[nombre].animales;
-  const entradas = detalleAnimales(animales).filter(x=>x.cant>0);
+/* Aplica un movimiento de varias categorías y lo envía como UN evento 'movimiento_multi'. Lo usan "⇄ Mover una categoría" y
+   "Mover TODO" cuando se elige una sola especie (así un dispositivo remoto lo reproduce con el mismo aplicarEventoRemoto).
+   filas: [{key, cat, dueno, cant}]. opc: {catDestinoCompartida, huboEleccionDueno, duenoDestinoSel, fechaISO, obs}.
+   Cierra el detalle y devuelve {detalleTxt}. */
+function aplicarMovimientoMulti(nombre, destino, filas, opc){
+  const {catDestinoCompartida, huboEleccionDueno, duenoDestinoSel, fechaISO, obs} = opc;
+  const fecha = fechaISOaDisplay(fechaISO);
+  const origenAnimales = estado.potreros[nombre].animales;
+  const totalAntesOrigen = totalPotrero(nombre);
+  const totalAntesDestino = totalPotrero(destino);
+  const destAnimales = estado.potreros[destino].animales;
+  const items = [];
+  const detalleTxt = [];
+  filas.forEach(f=>{
+    const catDestino = catDestinoCompartida || f.cat;
+    // huboEleccionDueno puede valer '' (elegido "sin asignar" a propósito
+    // en La Vuelta) -- comparar contra undefined, nunca con "||", o se
+    // pierde esa elección tratándola como "no elegido".
+    const duenoDestino = huboEleccionDueno ? duenoDestinoSel : f.dueno;
+    const keyDestino = claveAnimal(catDestino, duenoDestino);
+    origenAnimales[f.key] = (origenAnimales[f.key]||0) - f.cant;
+    destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + f.cant;
+    items.push({categoria: f.cat, categoriaDestino: catDestino, dueno: f.dueno, duenoDestino: huboEleccionDueno ? duenoDestinoSel : undefined, cantidad: f.cant});
+    const cambioCat = catDestino!==f.cat, cambioDueno = huboEleccionDueno && duenoDestino!==f.dueno;
+    let txt = `${f.cant} ${f.cat}`;
+    if(cambioCat && cambioDueno) txt += ` (${textoFirma(f.dueno)}) → ${catDestino} (${textoFirma(duenoDestino)})`;
+    else if(cambioCat) txt += ` (${textoFirma(f.dueno)}) → ${catDestino}`;
+    else if(cambioDueno) txt += `: ${textoFirma(f.dueno)} → ${textoFirma(duenoDestino)}`;
+    else txt += ` (${textoFirma(f.dueno)})`;
+    detalleTxt.push(txt);
+  });
+  registrarCambioOcupacion(nombre, totalAntesOrigen, fecha);
+  registrarCambioOcupacion(destino, totalAntesDestino, fecha);
+  const grupoIdMov = generarIdHistorial();
+  const extraMov = {potrero: nombre, destino, items, obs: obs||null};
+  const sufObs = obs ? ` (${obs})` : '';
+  const eventId = crypto.randomUUID();
+  if(destino===nombre){
+    registrarHistorial(nombre, 'movimiento_multi', `Recategorización: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
+  }else{
+    registrarHistorial(nombre, 'movimiento_multi', `→ ${destino}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
+    registrarHistorial(destino, 'movimiento_multi', `← ${nombre}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
+  }
+  enviarEvento('movimiento_multi', nombre, {destino, items, obs: obs||null}, fecha, {eventId});
+  guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre, destino]);
+  return {detalleTxt};
+}
+function filasCategoriasMover(nombre, especie){
+  const entradas = entradasMoverPorEspecie(nombre, especie);
   if(!entradas.length) return '<p style="font-size:13px;color:var(--texto-suave);margin:4px 0;">No hay animales en este potrero.</p>';
   return entradas.map(x=>{
     const key = claveAnimal(x.cat, x.dueno);
@@ -7632,11 +7800,12 @@ function mostrarFormulario(nombre, accion, prefill){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Mover animales desde ${esc(nombre)}</h3>
+        <div class="form-row"><label>Especie</label><select id="f-especie">${opcionesEspeciesPotrero(nombre, false, especieInicialMover(nombre, false))}</select></div>
         <div class="form-row"><label>Potrero destino</label><select id="f-destino"><option value="${esc(nombre)}">(sin mover — recategorizar en ${esc(nombre)})</option>${opcionesPotreros(nombre)}</select></div>
-        <div class="form-row"><label>Categoría destino (opcional)</label><select id="f-cat-destino"><option value="">— mantener la categoría de cada una —</option>${opcionesCategorias()}</select></div>
-        <div class="form-row"><label>Dueño destino (opcional)</label><select id="f-dueno-destino"><option value="__mantener__" selected>— mantener el dueño de cada una —</option>${opcionesDuenos()}</select></div>
+        <div class="form-row"><label>Categoría destino (opcional)</label><select id="f-cat-destino"><option value="">— mantener la categoría de cada una —</option>${opcionesCategorias(undefined, especieParaDestinoMover(especieInicialMover(nombre, false)))}</select></div>
+        <div class="form-row"><label>Dueño destino (opcional)</label><select id="f-dueno-destino"><option value="__mantener__" selected>— mantener el dueño de cada una —</option>${opcionesDuenos('__mantener__')}</select></div>
         <label style="font-size:13px;font-weight:600;display:block;margin:10px 0 4px;">Categorías a mover</label>
-        <div id="f-categorias-mover">${filasCategoriasMover(nombre)}</div>
+        <div id="f-categorias-mover">${filasCategoriasMover(nombre, especieInicialMover(nombre, false))}</div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label>Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: arreo por sequía, pastoreo rotativo..." value=""></div>
         <p style="font-size:11px;color:var(--texto-suave);margin:2px 0 0 0;">Tildá una o más categorías. Si elegís una categoría destino, todas las tildadas pasan a esa categoría; si elegís un dueño destino, todas las tildadas pasan a ese dueño (sirve para asignarle el dueño a animales "sin asignar" a medida que los identificás); dejar cualquiera de los dos en blanco mantiene lo que ya tenía cada una.</p>
@@ -7672,53 +7841,21 @@ function mostrarFormulario(nombre, accion, prefill){
         }).join('\n');
         if(!confirm(`Vas a dejar saldo negativo en ${nombre}:\n${detalleFaltantes}\n¿Continuar de todos modos?`)) return;
       }
-      const fecha = fechaISOaDisplay(fechaISO);
-      const totalAntesOrigen = totalPotrero(nombre);
-      const totalAntesDestino = totalPotrero(destino);
-      const destAnimales = estado.potreros[destino].animales;
-      const items = [];
-      const detalleTxt = [];
-      filas.forEach(f=>{
-        const catDestino = catDestinoCompartida || f.cat;
-        // huboEleccionDueno puede valer '' (elegido "sin asignar" a propósito
-        // en La Vuelta) -- comparar contra undefined, nunca con "||", o se
-        // pierde esa elección tratándola como "no elegido".
-        const duenoDestino = huboEleccionDueno ? duenoDestinoSel : f.dueno;
-        const keyDestino = claveAnimal(catDestino, duenoDestino);
-        origenAnimales[f.key] = (origenAnimales[f.key]||0) - f.cant;
-        destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + f.cant;
-        items.push({categoria: f.cat, categoriaDestino: catDestino, dueno: f.dueno, duenoDestino: huboEleccionDueno ? duenoDestinoSel : undefined, cantidad: f.cant});
-        const cambioCat = catDestino!==f.cat, cambioDueno = huboEleccionDueno && duenoDestino!==f.dueno;
-        let txt = `${f.cant} ${f.cat}`;
-        if(cambioCat && cambioDueno) txt += ` (${textoFirma(f.dueno)}) → ${catDestino} (${textoFirma(duenoDestino)})`;
-        else if(cambioCat) txt += ` (${textoFirma(f.dueno)}) → ${catDestino}`;
-        else if(cambioDueno) txt += `: ${textoFirma(f.dueno)} → ${textoFirma(duenoDestino)}`;
-        else txt += ` (${textoFirma(f.dueno)})`;
-        detalleTxt.push(txt);
-      });
-      registrarCambioOcupacion(nombre, totalAntesOrigen, fecha);
-      registrarCambioOcupacion(destino, totalAntesDestino, fecha);
-      const grupoIdMov = generarIdHistorial();
-      const extraMov = {potrero: nombre, destino, items, obs: obs||null};
-      const sufObs = obs ? ` (${obs})` : '';
-      const eventId = crypto.randomUUID();
-      if(destino===nombre){
-        registrarHistorial(nombre, 'movimiento_multi', `Recategorización: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
-      }else{
-        registrarHistorial(nombre, 'movimiento_multi', `→ ${destino}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
-        registrarHistorial(destino, 'movimiento_multi', `← ${nombre}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
-      }
-      enviarEvento('movimiento_multi', nombre, {destino, items, obs: obs||null}, fecha, {eventId});
-      guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre, destino]);
+      const {detalleTxt} = aplicarMovimientoMulti(nombre, destino, filas, {catDestinoCompartida, huboEleccionDueno, duenoDestinoSel, fechaISO, obs});
       toast(destino===nombre ? `Se recategorizaron: ${detalleTxt.join(', ')}` : `Se movieron a ${destino}: ${detalleTxt.join(', ')}`);
+    });
+    // 11/11/2026: cambiar la especie vuelve a pintar las filas y las categorías destino; el resto de los campos no se toca.
+    document.getElementById('f-especie').addEventListener('change', ()=>{
+      const esp = document.getElementById('f-especie').value;
+      document.getElementById('f-categorias-mover').innerHTML = filasCategoriasMover(nombre, esp);
+      document.getElementById('f-cat-destino').innerHTML = '<option value="">— mantener la categoría de cada una —</option>' + opcionesCategorias(undefined, especieParaDestinoMover(esp));
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
 
   if(accion==='mover-todo'){
     const total = totalPotrero(nombre);
-    const animales = estado.potreros[nombre].animales;
-    const resumen = detalleAnimales(animales).filter(d=>d.cant>0).map(d=>`${d.cant} ${d.cat} (${textoFirma(d.dueno)})`).join(', ');
+    const espIniTodo = especieInicialMover(nombre, true);
     if(total===0){
       zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">No hay animales en ${esc(nombre)} para mover.</p></div>`;
       return;
@@ -7726,11 +7863,12 @@ function mostrarFormulario(nombre, accion, prefill){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Mover TODO el potrero ${esc(nombre)}</h3>
-        <p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 8px 0;">Se van a mover ${total} animales: ${resumen}</p>
+        <div class="form-row"><label>Especie</label><select id="f-especie">${opcionesEspeciesPotrero(nombre, true, espIniTodo)}</select></div>
+        <p id="f-todo-resumen" style="font-size:12.5px;color:var(--texto-suave);margin:0 0 8px 0;">${esc(textoMoverTodo(nombre, espIniTodo).texto)}</p>
         <div class="form-row"><label>Potrero destino</label><select id="f-destino">${opcionesPotreros(nombre)}</select></div>
         <div class="form-row"><label>Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-botones">
-          <button class="btn btn-mover" id="f-confirmar">Mover todo (${total})</button>
+          <button class="btn btn-mover" id="f-confirmar">${esc(textoMoverTodo(nombre, espIniTodo).boton)}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
@@ -7738,6 +7876,16 @@ function mostrarFormulario(nombre, accion, prefill){
       const destino = document.getElementById('f-destino').value;
       const fechaISO = document.getElementById('f-fecha').value;
       if(!fechaISO){ toast('Elegí una fecha'); return; }
+      // 11/11/2026: una sola especie = el mismo evento movimiento_multi de "Mover una categoría" (categoría y dueño se mantienen);
+      // 'todas' sigue por el camino de siempre (movimiento_todo).
+      const espElegida = document.getElementById('f-especie').value;
+      if(espElegida !== 'todas'){
+        const filasEsp = entradasMoverPorEspecie(nombre, espElegida).map(x=>({key: claveAnimal(x.cat, x.dueno), cat: x.cat, dueno: x.dueno, cant: x.cant}));
+        if(!filasEsp.length){ toast('No hay animales de esa especie para mover'); return; }
+        aplicarMovimientoMulti(nombre, destino, filasEsp, {catDestinoCompartida: '', huboEleccionDueno: false, duenoDestinoSel: '__mantener__', fechaISO, obs: ''});
+        toast(`Se movieron ${etiquetaEspecie(espElegida).toLowerCase()} de ${nombre} a ${destino}`);
+        return;
+      }
       const fecha = fechaISOaDisplay(fechaISO);
       const origenAnimales = estado.potreros[nombre].animales;
       const destAnimales = estado.potreros[destino].animales;
@@ -7765,6 +7913,11 @@ function mostrarFormulario(nombre, accion, prefill){
       enviarEvento('movimiento_todo', nombre, {destino, items}, fecha, {eventId});
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre, destino]);
       toast(`Se movió todo el rodeo de ${nombre} a ${destino}`);
+    });
+    document.getElementById('f-especie').addEventListener('change', ()=>{
+      const r = textoMoverTodo(nombre, document.getElementById('f-especie').value);
+      document.getElementById('f-todo-resumen').textContent = r.texto;
+      document.getElementById('f-confirmar').textContent = r.boton;
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
@@ -9557,6 +9710,10 @@ function importarBackupTexto(texto){
   }
   estado = nuevo;
   migrarClavesSinFirma(estado.potreros);
+  // recrear marcadores de los reportes activos (los resueltos no tienen pin); respetan su capa igual que al abrir la app
+  Object.values(reportesLayers).forEach(m=> map.removeLayer(m));
+  Object.keys(reportesLayers).forEach(k=> delete reportesLayers[k]);
+  (estado.reportes||[]).filter(r=>!r.resuelto).forEach(r=> crearMarcadorReporte(r));
   // recrear marcadores de puntos en el mapa
   Object.values(puntosLayers).forEach(m=> map.removeLayer(m));
   Object.keys(puntosLayers).forEach(k=> delete puntosLayers[k]);
@@ -9793,19 +9950,30 @@ function renderListaReportes(categoria){
   const cont = document.getElementById('reporte-lista');
   const cat = REPORTE_CATEGORIAS[categoria];
   const todos = (estado.reportes||[]).filter(r=>r.categoria===categoria);
-  const activos = todos.filter(r=>!r.resuelto);
+  // rojo, naranja, amarillo; dentro de cada nivel queda el orden de siempre (el sort es estable)
+  const ORDEN_NIVEL = {rojo: 0, naranja: 1, amarillo: 2};
+  const activos = todos.filter(r=>!r.resuelto).sort((a,b)=> ORDEN_NIVEL[nivelDeReporte(a)] - ORDEN_NIVEL[nivelDeReporte(b)]);
   const resueltos = todos.filter(r=>r.resuelto);
+  // resumen: cuántos hay de cada nivel y qué % son, sobre el total de esta lista (los verdes son los concluidos)
+  const cuentas = {rojo: 0, naranja: 0, amarillo: 0, verde: 0};
+  todos.forEach(r=>{ cuentas[nivelDeReporte(r)]++; });
+  const resumen = todos.length
+    ? `<div class="rp-resumen" style="display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;margin:2px 0 8px;">${['rojo','naranja','amarillo','verde'].map(n=>`<span data-nivel-cuenta="${n}">${REPORTE_NIVELES[n].emoji} ${n==='verde' ? 'Verde (concluidos)' : REPORTE_NIVELES[n].etiqueta} ${cuentas[n]} (${Math.round(cuentas[n]*100/todos.length)}%)</span>`).join('')}</div>`
+    : '';
   const fila = (r)=>{
     const nFotos = fotosDeReporte(r).length;
+    const nv = nivelDeReporte(r);
     return `
-    <div class="punto-item rp-item">
+    <div class="punto-item rp-item" data-nivel="${nv}">
       <div class="info">
+        <span class="rp-nivel-punto" title="${esc(REPORTE_NIVELES[nv].etiqueta)}" style="display:inline-block;flex:none;width:10px;height:10px;border-radius:50%;background:${REPORTE_NIVELES[nv].color};"></span>
         <span class="icono">${esc(cat.subtipos[r.subtipo]||cat.icono)}</span>
         <span>${esc(r.subtipo)} <span class="txt-sub">${esc(r.fecha)}${r.obs?(' — '+esc(r.obs)):''}</span></span>
       </div>
       <div class="acciones">
         <button data-ver="${esc(r.id)}" style="color:#1d4fa8;">🗺 Ver en el mapa</button>
         <button data-foto-agregar="${esc(r.id)}" style="color:#8a6d1f;"${nFotos >= FOTOS_MAX_REPORTE ? ' disabled' : ''}>📷 Agregar foto</button>
+        ${r.resuelto ? '' : `<select data-nivel-cambiar="${esc(r.id)}" aria-label="Cambiar el nivel de urgencia" title="Nivel de urgencia" style="font-size:12px;padding:2px 4px;border-radius:6px;">${REPORTE_NIVELES_ELEGIBLES.map(n=>`<option value="${n}"${n===nv?' selected':''}>${REPORTE_NIVELES[n].emoji} ${REPORTE_NIVELES[n].etiqueta}</option>`).join('')}</select>`}
         ${r.resuelto ? '' : `<button data-resolver="${esc(r.id)}" style="color:#3f6b2f;">✓ Resuelto</button>`}
         <button data-del="${esc(r.id)}">Eliminar</button>
       </div>
@@ -9813,7 +9981,7 @@ function renderListaReportes(categoria){
       ${_resolviendoId === r.id ? formResolverHTML(r) : ''}
     </div>`;
   };
-  let html = activos.length ? activos.map(fila).join('') : '<div class="puntos-vacio">Sin reportes activos.</div>';
+  let html = resumen + (activos.length ? activos.map(fila).join('') : '<div class="puntos-vacio">Sin reportes activos.</div>');
   if(resueltos.length){
     html += `<details style="margin:10px 0 6px;"><summary style="font-size:13px;font-weight:600;cursor:pointer;">Resueltos (${resueltos.length})</summary><div style="margin-top:6px;">${resueltos.map(fila).join('')}</div></details>`;
   }
@@ -9830,6 +9998,9 @@ function renderListaReportes(categoria){
       _fotoExtraPara = {tipo: 'reporte', id: r.id};
       document.getElementById('rp-fotos-extra').click();
     });
+  });
+  cont.querySelectorAll('[data-nivel-cambiar]').forEach(sel=>{
+    sel.addEventListener('change', ()=> cambiarNivelReporte(sel.dataset.nivelCambiar, sel.value, categoria));
   });
   cont.querySelectorAll('[data-resolver]').forEach(btn=>{
     btn.addEventListener('click', ()=> abrirFormResolver(btn.dataset.resolver, categoria));
@@ -9901,6 +10072,18 @@ function resolverReporte(id, categoria){
   toast('Marcado como resuelto');
 }
 
+/* Cambia el nivel de urgencia de un reporte activo: local + evento reporte_nivel (mismo patrón que resolverReporte). */
+function cambiarNivelReporte(id, nivel, categoria){
+  const r = (estado.reportes||[]).find(x=>x.id===id);
+  if(!r || r.resuelto || !REPORTE_NIVELES_ELEGIBLES.includes(nivel) || r.nivel === nivel) return;
+  r.nivel = nivel;
+  refrescarMarcadorReporte(r);
+  guardarEstado();
+  renderListaReportes(categoria);
+  enviarEvento('reporte_nivel', ESTABLECIMIENTO, {id, nivel});
+  toast('Nivel cambiado a ' + REPORTE_NIVELES[nivel].etiqueta.toLowerCase());
+}
+
 function eliminarReporte(id, categoria){
   if(!confirm('¿Eliminar este reporte? No se puede deshacer.')) return;
   estado.reportes = (estado.reportes||[]).filter(r=>r.id!==id);
@@ -9931,10 +10114,19 @@ function abrirModalReporte(categoria){
   document.getElementById('rp-fecha').value = fechaISOHoy();
   document.getElementById('rp-fecha').max = fechaISOHoy();
   document.getElementById('rp-obs').value = '';
+  document.getElementById('rp-nivel').value = '';
   limpiarFotosCrear();
   _resolviendoId = null;
   renderListaReportes(categoria);
   document.getElementById('modal-reporte').style.display = 'flex';
+}
+
+/* Nivel elegido en el formulario ('' si no eligió). Es obligatorio: sin nivel se avisa y no se avanza. */
+function nivelReporteElegido(){
+  const n = document.getElementById('rp-nivel').value;
+  if(REPORTE_NIVELES_ELEGIBLES.includes(n)) return n;
+  toast('Elegí el nivel del reporte (rojo, naranja o amarillo)');
+  return '';
 }
 
 function subtipoReporteSeleccionado(){
@@ -9948,10 +10140,13 @@ document.getElementById('reporte-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-reporte').style.display = 'none';
 });
 document.getElementById('rp-mapa').addEventListener('click', ()=>{
+  const nivel = nivelReporteElegido();
+  if(!nivel) return;
   const usadas = _fotosCrear.slice();
   modoColocarReporte = {
     categoria: modalReporteCategoria,
     subtipo: subtipoReporteSeleccionado(),
+    nivel,
     obs: document.getElementById('rp-obs').value.trim(),
     fecha: document.getElementById('rp-fecha').value || fechaISOHoy(),
     fotos: usadas.map(f => f.blob)
@@ -11275,7 +11470,7 @@ function normalizarCaravana(txt){
   return d.slice(-8).padStart(8,'0');   // el EID trae 15, el visual 8
 }
 
-/* ---------- PADRÓN SIN SEÑAL (31/10/2026, CONFIG.padronOffline: La Vuelta, móvil y Campo) ----------
+/* ---------- PADRÓN SIN SEÑAL (31/10/2026, CONFIG.padronOffline: La Vuelta y María Laura, móvil y Campo) ----------
    Copia del padrón (animales_caravana de este establecimiento) en IndexedDB, base `potreros_padron` (aparte de
    `potreros_fotos`: subirle la versión a esa dejaría a la cola de fotos sin poder abrirla). Un solo registro por
    establecimiento: {establecimiento, dispositivo, animales:{id8: fila}, n, maxLectura, completaEn, actualizadoEn}.
@@ -16008,7 +16203,8 @@ function renderInterpretacionVoz(datos){
           <option value="venta" ${datos.accion==='venta'?'selected':''}>Venta</option>
         </select>
       </div>
-      <div class="form-row"><label>Categoría</label><select id="vz-cat">${opcionesCategorias(datos.categoria)}</select></div>
+      <div class="form-row"><label>Especie</label><select id="vz-especie">${opcionesEspecies(CATEGORIA_ESPECIE[datos.categoria] || 'bovino')}</select></div>
+      <div class="form-row"><label>Categoría</label><select id="vz-cat">${opcionesCategorias(datos.categoria, CATEGORIA_ESPECIE[datos.categoria] || 'bovino')}</select></div>
       <div class="form-row" id="vz-grupo-fila" style="display:none;"><label>Ternero (solo muerte)</label><select id="vz-grupo">${opcionesGrupoTernero()}</select></div>
             <div class="form-row"><label>${CONFIG.duenoLabel}</label><select id="vz-dueno">${opcionesDuenos(datos.dueno)}</select></div>
             <div class="form-row"><label>Cantidad</label><input type="number" id="vz-cant" min="1" value="${datos.cantidad||1}"></div>
@@ -16027,6 +16223,10 @@ function renderInterpretacionVoz(datos){
   };
   document.getElementById('vz-accion').addEventListener('change', mostrarGrupoVoz);
   document.getElementById('vz-cat').addEventListener('change', mostrarGrupoVoz);
+  document.getElementById('vz-especie').addEventListener('change', ()=>{
+    document.getElementById('vz-cat').innerHTML = opcionesCategorias(undefined, document.getElementById('vz-especie').value);
+    mostrarGrupoVoz();
+  });
   mostrarGrupoVoz();
   document.getElementById('vz-confirmar').addEventListener('click', confirmarAccionVoz);
   document.getElementById('vz-descartar').addEventListener('click', ()=>{ cont.innerHTML=''; });

@@ -113,9 +113,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.02</span></li>
-    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">4.02</span></li>
-    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">3.02</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.03</span></li>
+    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">4.03</span></li>
+    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">3.03</span></li>
   </ul>
   <p class="nota">La versión de tu PC está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.81 (completa)</b>). Si tu número es más viejo, abrí la app con conexión y esperá un momento: se actualiza sola.</p>
 </div>
@@ -123,6 +123,10 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🔧 Reportes con nivel de urgencia</b>: al cargar un reporte de <span class="b">🔧 Infraestructura</span> o <span class="b">🌾 Capín Annoni</span> ahora elegís el <b>Nivel de urgencia</b> (es obligatorio): 🔴 rojo (urgente), 🟠 naranja o 🟡 amarillo. El marcador del mapa toma ese color y, cuando el reporte se resuelve, deja de verse en el mapa; en la lista y en "Ver en el mapa" se ve 🟢 verde. La lista muestra primero los rojos y, arriba, cuántos reportes hay de cada nivel y qué porcentaje son; cada reporte tiene un desplegable para <b>cambiarle el nivel</b>. Además hay dos tipos de problema nuevos: <b>Problema con boya</b> y <b>Portera rota</b>. Ver <a href="#reportes">📋 Reportes de campo</a>.</li>
+    <li><b>💧 Aguadas y 🚧 Instal. también muestran los reportes</b>: esos dos botones del mapa ahora prenden y apagan también los reportes. Con <span class="b">💧 Aguadas</span> van los problemas de agua (caño, bebedero y boya); con <span class="b">🚧 Instal.</span>, la portera, el alambrado, “Otro” y todo el Capín Annoni. Si cargás un reporte con su capa apagada, la app la prende y te avisa.</li>
+    <li><b>⇄ Mover una categoría</b>, <b>⇄⇄ Mover TODO el potrero</b> y la <b>🎤 carga por voz</b> preguntan o muestran la <b>Especie</b>. En los dos formularios de mover arranca en Bovinos (si no hay bovinos, en la especie que haya) y solo salen las especies que hay en el potrero; en Mover una categoría, la lista y las categorías destino son las de esa especie. En Mover TODO hay además <b>Todas las especies</b>, que pasa todo el rodeo como siempre; con una sola especie elegida se mueve esa y lo demás queda en el potrero. Si editás (✏️) un movimiento que mezclaba especies, la Especie dice <b>Varias especies</b> y se ven todas las categorías del potrero, con tildadas las del movimiento, para que no se pierda ninguna. En la voz, “Revisá antes de confirmar” muestra la especie de la categoría que dijiste.</li>
+    <li><b>⇄ Mover una categoría</b> <span class="campo">(La Vuelta)</span>: ya no te borra la firma. Antes, si no tocabas <b>Dueño destino</b>, los animales quedaban “sin firma”; ahora arranca en “— mantener el dueño de cada una —” y la firma solo se borra si elegís a propósito “— sin asignar —”.</li>
     <li><b>🎤 El micrófono ya no tapa Herramientas</b>: el botón redondo rojo <span class="b">🎤</span> ahora queda un poco más arriba, por encima de la barra de abajo. Antes tapaba parte del botón <span class="b">🛠 Herramientas</span>. Funciona igual que siempre.</li>
     <li><b>🧾 Propietario según el SNIG</b> <span class="campo">(La Vuelta y María Laura)</span>: la ficha de <span class="b">🔎 Buscar caravana</span>, los casilleros de caravana y la pestaña <span class="b">Por propietario SNIG</span> del <span class="b">📊 Stock total</span> muestran de quién es cada animal según el SNIG. Solo avisa: no cambia el stock ni bloquea nada. Ver <a href="#snig">Propietario según el SNIG</a>.</li>
     <li><b>📋 Cuenta completa por propietario según el SNIG</b> <span class="campo">(La Vuelta y María Laura)</span>: arriba de la pestaña <span class="b">Por propietario SNIG</span> del <span class="b">📊 Stock total</span>, una fila por propietario con leídos, sin lectura, dados de baja acá y el total según el SNIG: leídos + sin lectura + dados de baja acá = total del SNIG, para comparar con el export del SNIG. Solo lee: no cambia el stock.</li>
@@ -250,7 +254,7 @@
 <p class="para">Para qué sirve: ver cuántos animales hay en cada potrero y entrar a cargar.</p>
 <ul>
   <li><b>Franja de arriba</b>: los números del campo en tarjetas: <b>Potreros</b>, <b>Hectáreas</b>, <b>Vacunos</b>, <b>Ovinos</b>, <b>Equinos</b>, <b>UG totales</b>, <b>UG / ha</b> (la carga), <b>Cabezas</b> (vacunos + ovinos + equinos) y <b>Con animales</b> (cuántos potreros tienen animales, por ejemplo “12 de 31”). Debajo del nombre del campo dice la versión y, abajo de eso, <b>“🟢 En línea”</b> o <b>“⚪ Sin conexión”</b>.</li>
-  <li><b>El mapa</b>, a la izquierda. <span class="b">🛰 Satelital: ON</span> (arriba a la derecha del mapa) prende o apaga la imagen de satélite (necesita conexión). <span class="b">💧 Aguadas</span> y <span class="b">🚧 Instal.</span> (en el borde de arriba del mapa, al lado de los botones del zoom) prenden o apagan cada capa de puntos: las aguadas, y las instalaciones (mangas, corrales, bretes y embarcaderos). Apagada, la capa no se ve y su botón queda gris y tachado; la elección queda guardada en esa PC, para ese campo. <span class="b">🗺 Ver en el mapa</span> de un punto con su capa apagada muestra solo ese punto, y la capa sigue apagada. Un punto nuevo que cargás con su capa apagada prende la capa para que se vea. Los potreros con animales se ven más oscuros que los vacíos. <span class="campo">En María Laura y Pone Chico</span> cada potrero muestra su nombre y su total, y al hacerle clic sale un cartel con el detalle por categoría y dueño. La PC no tiene GPS.</li>
+  <li><b>El mapa</b>, a la izquierda. <span class="b">🛰 Satelital: ON</span> (arriba a la derecha del mapa) prende o apaga la imagen de satélite (necesita conexión). <span class="b">💧 Aguadas</span> y <span class="b">🚧 Instal.</span> (en el borde de arriba del mapa, al lado de los botones del zoom) prenden o apagan cada capa de puntos: las aguadas, y las instalaciones (mangas, corrales, bretes y embarcaderos). Apagada, la capa no se ve y su botón queda gris y tachado; la elección queda guardada en esa PC, para ese campo. <span class="b">🗺 Ver en el mapa</span> de un punto con su capa apagada muestra solo ese punto, y la capa sigue apagada. Un punto nuevo que cargás con su capa apagada prende la capa para que se vea. Las dos capas también prenden y apagan los <b>reportes</b> activos: con <span class="b">💧 Aguadas</span>, los problemas de agua (caño, bebedero y boya); con <span class="b">🚧 Instal.</span>, la portera, el alambrado, “Otro” y todo el Capín Annoni. Un reporte que cargás con su capa apagada la prende, y <span class="b">🗺 Ver en el mapa</span> de un reporte con su capa apagada muestra solo ese reporte. Los potreros con animales se ven más oscuros que los vacíos. <span class="campo">En María Laura y Pone Chico</span> cada potrero muestra su nombre y su total, y al hacerle clic sale un cartel con el detalle por categoría y dueño. La PC no tiene GPS.</li>
   <li><b>La columna de la derecha</b>: el buscador (“Buscar potrero…”), la lista de potreros, la ficha del potrero elegido y, al pie, el estado de sincronización, el del backup y el botón <span class="b">🛠 Herramientas</span>.</li>
 </ul>
 <p>Cada tarjeta de la lista muestra las hectáreas, la carga en UG/ha, el total de animales, las categorías y si está <b>🟢 ocupado</b> (hace cuántos días), <b>⚪ en descanso</b> o <b>▫️ sin uso registrado</b>. Un <b>⚠️</b> avisa una alerta y un <b>❓</b> que faltan animales de ese potrero. Hacé clic en un potrero del mapa o de la lista y se abre la <b>ficha</b>:</p>
@@ -302,9 +306,10 @@
   <p class="para">Para qué sirve: pasar una o varias categorías a otro potrero, o cambiarles la categoría o el dueño.</p>
   <ol class="pasos">
     <li>Hacé clic en <span class="b">⇄ Mover una categoría</span>.</li>
+    <li>Elegí la <b>Especie</b>: arranca en <b>Bovinos</b> y solo aparecen las que hay en el potrero. Abajo se ven solo las categorías de esa especie, y también las de <b>Categoría destino</b>. Se mueve solo lo que se ve: para mover bovinos y ovinos hacés dos movimientos. Si editás (✏️) un movimiento que mezclaba especies, dice <b>Varias especies</b> y se ven todas las categorías del potrero, con tildadas las del movimiento.</li>
     <li>En <b>Potrero destino</b> elegí adónde van.</li>
     <li>En “Categorías a mover” <b>tildá</b> las que movés y, al lado, poné <b>cuántos</b> de cada una (viene cargado todo lo que hay).</li>
-    <li>Si querés cambiarles la categoría o el dueño al mismo tiempo, usá <b>Categoría destino (opcional)</b> y <b>Dueño destino (opcional)</b>. Dejados en blanco, cada categoría mantiene lo suyo.</li>
+    <li>Si querés cambiarles la categoría o el dueño al mismo tiempo, usá <b>Categoría destino (opcional)</b> y <b>Dueño destino (opcional)</b>. Dejados en blanco, cada categoría mantiene lo suyo. <span class="campo">En La Vuelta</span>, <b>Dueño destino</b> arranca en “— mantener el dueño de cada una —”: la firma solo se borra si elegís “— sin asignar —”.</li>
     <li>Si hace falta, escribí una nota en <b>Notas (opcional)</b>.</li>
     <li>Tocá <span class="b">Mover</span>.</li>
   </ol>
@@ -319,6 +324,7 @@
   <p class="para">Para qué sirve: pasar todo el rodeo de un potrero a otro, de una vez.</p>
   <ol class="pasos">
     <li>Hacé clic en <span class="b">⇄⇄ Mover TODO el potrero</span>. Arriba del formulario figura cuántos animales se van a mover y de qué categorías.</li>
+    <li>Elegí la <b>Especie</b>: arranca en <b>Bovinos</b>, y también está <b>Todas las especies</b>. Con una especie, el resumen y el botón (por ejemplo <span class="b">Mover bovinos (N)</span>) cuentan solo esa especie y lo demás queda en el potrero; con <b>Todas las especies</b> se pasa todo el rodeo. Si en el potrero hay una sola especie, arranca en Todas las especies.</li>
     <li>Elegí el <b>Potrero destino</b>.</li>
     <li>Revisá la fecha y tocá <span class="b">Mover todo (N)</span>.</li>
   </ol>
@@ -426,7 +432,7 @@
   <ol class="pasos">
     <li>Hacé clic en el botón redondo rojo <span class="b">🎤</span>, abajo a la derecha de la pantalla, justo arriba de la barra donde está <span class="b">🛠 Herramientas</span>.</li>
     <li>Tocá <span class="b">🎤 Empezar a hablar</span> y decí algo como <i>“mover 45 vacas del 12 al 15”</i>, <i>“agregar 20 ovejas al 8”</i>, <i>“nació un ternero en el 9”</i> o <i>“vendí 10 novillos del 7”</i>.</li>
-    <li>Aparece <b>“Revisá antes de confirmar”</b>: <b>Operación</b>, <b>Categoría</b>, <b>Cantidad</b>, <b>Potrero origen / donde ocurre</b>, <b>Potrero destino (solo si mueve)</b> y <b>Precio unitario USD</b> (solo compra y venta, opcional). <span class="campo">En María Laura y Pone Chico</span> también el <b>Dueño</b>. Si es una muerte de Terneros hay que elegir el grupo.</li>
+    <li>Aparece <b>“Revisá antes de confirmar”</b>: <b>Operación</b>, <b>Especie</b> (se deduce de la categoría que dijiste; si la cambiás, la lista de categorías cambia con ella), <b>Categoría</b>, <b>Cantidad</b>, <b>Potrero origen / donde ocurre</b>, <b>Potrero destino (solo si mueve)</b> y <b>Precio unitario USD</b> (solo compra y venta, opcional). <span class="campo">En María Laura y Pone Chico</span> también el <b>Dueño</b>. Si es una muerte de Terneros hay que elegir el grupo.</li>
     <li>Corregí lo que haga falta y tocá <span class="b">✔ Confirmar</span>, o <span class="b">Descartar</span>.</li>
   </ol>
   <p class="nota">Siempre se carga con la fecha de hoy. “Agregar” solo sirve para un potrero vacío. <span class="campo">En La Vuelta</span> no pregunta la firma: lo cargado queda “sin firma”.</p>
@@ -830,7 +836,8 @@
   <p class="para">Para qué sirve: marcar en el mapa un problema (un caño, un bebedero o un alambrado roto) o un foco de capín annoni, para encontrarlo después. Tocá <span class="b">📋 Reportes de campo ›</span>.</p>
   <ol class="pasos">
     <li>Tocá <span class="b">🔧 Infraestructura</span> o <span class="b">🌾 Capín Annoni</span>.</li>
-    <li>En Infraestructura elegí el <b>Tipo de problema</b> (Caño roto, Bebedero roto, Alambrado roto u Otro).</li>
+    <li>En Infraestructura elegí el <b>Tipo de problema</b> (Caño roto, Bebedero roto, Problema con boya, Alambrado roto, Portera rota u Otro).</li>
+    <li>Elegí el <b>Nivel de urgencia</b>, en Infraestructura y en Capín Annoni (es obligatorio; si no lo elegís, la app avisa y no sigue): 🔴 <b>Rojo — urgente</b>, 🟠 <b>Naranja</b> o 🟡 <b>Amarillo</b>.</li>
     <li>Revisá la <b>Fecha</b> y, si querés, escribí una observación.</li>
     <li>Opcional: <span class="b">📷 Agregar foto (hasta 3)</span>.</li>
     <li>Tocá <span class="b">🗺 Marcar en el mapa</span>: la ventana se cierra y hacés clic en el mapa donde está el problema. (El celular también puede usar el GPS.)</li>
@@ -839,7 +846,8 @@
   <ul>
     <li><span class="b">🗺 Ver en el mapa</span>.</li>
     <li><span class="b">📷 Agregar foto</span> (hasta 10 fotos por reporte).</li>
-    <li><span class="b">✓ Resuelto</span>: cuando ya se arregló. Podés sumar una foto del arreglo (<b>“Foto del arreglo”</b>) y tocar <b>“Confirmar resuelto”</b>. Sale de la lista en todos los equipos y no se puede deshacer. Los resueltos quedan en “Resueltos (N)”.</li>
+    <li><span class="b">✓ Resuelto</span>: cuando ya se arregló. Podés sumar una foto del arreglo (<b>“Foto del arreglo”</b>) y tocar <b>“Confirmar resuelto”</b>. Sale de la lista en todos los equipos y no se puede deshacer. Los resueltos quedan en “Resueltos (N)”. Un reporte resuelto se ve 🟢 verde.</li>
+    <li><b>Nivel</b>: arriba de la lista hay un resumen con cuántos reportes hay de cada nivel (🔴, 🟠, 🟡 y 🟢 Verde, los concluidos) y qué porcentaje son; los rojos salen primero. Mientras el reporte no esté resuelto, su desplegable de nivel te deja <b>cambiarlo</b>.</li>
     <li><span class="b">Eliminar</span>: borra el reporte. Pide confirmar.</li>
   </ul>
 </div>

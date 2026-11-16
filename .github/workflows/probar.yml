@@ -55,6 +55,9 @@ jobs:
       - name: Saldo negativo al mover
         run: node tests/probar_saldo_negativo.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
 
+      - name: Mover por especie (Mover una categoria / Mover TODO)
+        run: node tests/probar_mover_especie.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html
+
       - name: Lluvias
         run: node tests/probar_lluvias.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html
 
@@ -172,8 +175,8 @@ jobs:
       - name: "Pesadas (solo La Vuelta) -- historial en la ficha, resumen por lote de la sesion del baston, proporcion contra el stock"
         run: node tests/probar_pesadas.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-movil/index.html pone-chico-movil/index.html
 
-      - name: "Padron sin senal (La Vuelta movil y Campo) -- copia en IndexedDB, diferencias por ultima_lectura, carga completa diaria, aviso de fecha, restablecer la borra"
-        run: node tests/probar_padron_offline.js la-vuelta-movil/index.html la-vuelta-movil-campo/index.html la-vuelta-pc/index.html maria-laura-movil/index.html pone-chico-movil/index.html
+      - name: "Padron sin senal (La Vuelta y Maria Laura, movil y Campo) -- copia en IndexedDB, diferencias por ultima_lectura, carga completa diaria, aviso de fecha, restablecer la borra"
+        run: node tests/probar_padron_offline.js la-vuelta-movil/index.html la-vuelta-movil-campo/index.html la-vuelta-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html maria-laura-pc/index.html pone-chico-movil/index.html
 
       - name: "Reportes de campo (Infraestructura / Capin Annoni) -- GPS de un toque, tocar el mapa, marcar resuelto, sincronizado"
         run: node tests/probar_infraestructura.js la-vuelta-pc/index.html la-vuelta-movil/index.html maria-laura-pc/index.html maria-laura-movil/index.html pone-chico-pc/index.html pone-chico-movil/index.html
