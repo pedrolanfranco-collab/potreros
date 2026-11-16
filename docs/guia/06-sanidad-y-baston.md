@@ -97,7 +97,7 @@ apenas existan las columnas (`supabase_rodeo_nota.sql`, que corre Pedro **antes*
 de publicar: sin las columnas la PC publica sin esos campos y la ficha queda
 como estaba). Sin dato la fila no aparece. Test: `tests/probar_ficha_rodeo_nota.js`.
 
-### Padrón sin señal (31/10/2026, a pedido de Pedro, `CONFIG.padronOffline`, solo La Vuelta móvil y Campo)
+### Padrón sin señal (31/10/2026, a pedido de Pedro, `CONFIG.padronOffline`: La Vuelta y María Laura, móvil y Campo)
 
 "🔎 Buscar caravana" sin señal usa una copia del padrón guardada en el celular. La copia es la base IndexedDB `potreros_padron`
 (aparte de `potreros_fotos`: subirle la versión para agregar un store dejaría a la cola de fotos sin poder abrirla), con **un solo
@@ -183,10 +183,16 @@ catálogo), dosis, producto 2 / dosis 2 opcionales, potrero (los 31 de La Vuelta
 (mismo nombre, separador, saltos `\r` y codificación; las celdas no tocadas salen idénticas) con `PRODUCTO`, `DOSIS`,
 `PRODUCTO2`, `DOSIS 2`, `POTRERO` llenos (las agrega al final si faltan). Ese va a `Entrada\`: el Lector registra la carencia por
 animal y `sanidad_puente.py` crea el tratamiento. Las filas que ya traían producto no se tocan.
-- **No escribe nada**: solo lee `productos_catalogo` (con una copia de los 50 nombres al 18/10/2026 si no hay señal). El
+- **No escribe nada**: solo lee `productos_catalogo` (con una copia de los 59 nombres al 15/11/2026 si no hay señal). El
   producto se escribe con el nombre **exacto** del catálogo, que `sanidad_puente.py` acepta sin `productos_sanidad.csv`; uno
   que no está en la lista no se deja usar. Dosis con coma o punto (sale con punto); campos de texto, no `type=number`, que
   descarta "2,5".
+- **Costo del catálogo = última factura (21/10/2026):** los costos de la Planilla son fórmulas que Pedro no puede tocar, y cada
+  publicación borra y reinserta `productos_catalogo`. El trigger `trg_catalogo_ultimo_precio` (BEFORE INSERT, ver
+  `scripts/sanidad/catalogo_ultimo_precio_factura.sql`) pone `valor_dosis_ml` = USD/ml de `precio_ultimo` (facturas cargadas con la
+  skill de precios veterinarios) cuando el producto tiene factura; sin factura queda el valor de la Planilla. Los nombres de la
+  Planilla mandan: alias y `precios_vet` deben llevar el nombre exacto del catálogo (hoy "Tickxan Pour on plus", renombrado el
+  20/10/2026 con `scripts/sanidad/renombrar_tickxan_plus.sql`).
 - La lista de potreros está copiada en la página: `tests/probar_completar_sanidad.js` falla si deja de coincidir con
   `potrerosGeo` de `template/configs/la-vuelta.js` (contra esos valida `sanidad_puente.py`).
 - Verificado el 18/10/2026 con el export real de la sesión 1154 pasado por `csv_con_encabezado()` / `mapear()` del Lector:

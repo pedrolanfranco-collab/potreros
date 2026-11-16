@@ -61,7 +61,7 @@ Stock de un potrero (la app los aplica sumando o restando en `potreros[potrero].
 | `muerte` | potrero | `{categoria, dueno, cantidad, obs?, caravana?, grupoTernero?, lat?, lon?}` | resta y cuenta como muerte (`grupoTernero`, solo en Terneros: `temporada` o `marcado`; `lat`/`lon`, opcionales: dónde se encontró el animal, para "Ver en el mapa") |
 | `consumo` | potrero | `{categoria, dueno, cantidad, obs?, faltante?, sin_stock?}` | resta (solo lo que había: `faltante` = cuántos de `cantidad` no estaban en el stock de la app, con `sin_stock:true`; las apps viejas lo ignoran y restan con piso en 0); animales faenados para consumo del establecimiento (ovinos y eventualmente un vacuno). NO cuenta como muerte; tiene su propio resumen por ejercicio 1/jul–30/jun |
 | `movimiento` | origen | `{categoria, dueno, cantidad, destino}` | resta en el origen, suma en `destino`. Lo genera el comando de voz |
-| `movimiento_multi` | origen | `{destino, items:[{categoria, categoriaDestino, dueno, duenoDestino?, cantidad}], obs?}` | varias categorías al mismo destino; con `destino` = el propio potrero es una recategorización o un cambio de dueño |
+| `movimiento_multi` | origen | `{destino, items:[{categoria, categoriaDestino, dueno, duenoDestino?, cantidad}], obs?}` | varias categorías al mismo destino; con `destino` = el propio potrero es una recategorización o un cambio de dueño. También lo manda "Mover TODO" cuando se elige una sola especie (movimiento_multi con categoría y dueño sin cambios, solo de esa especie); con "Todas las especies" sigue saliendo `movimiento_todo` |
 | `movimiento_todo` | origen | `{destino, items:[{categoria, dueno, cantidad}]}` | vacía el potrero hacia `destino` |
 | `compra` | potrero | `{categoria, dueno, cantidad, precio, contraparte, guia, obs, fin?}` | suma. `precio` USD por cabeza o `null`; `guia` `A123456` o `null`; `fin` el detalle financiero completo (solo PC) |
 | `venta` | potrero | igual que `compra` | resta |
@@ -104,6 +104,9 @@ Registros del establecimiento (no tocan el stock):
 | `evento_clima` | `{id, tipo, obs, usuario}` |
 | `evento_clima_editado` | `{id, fecha, tipo, obs}` |
 | `evento_clima_eliminado` | `{id}` |
+| `limpieza_punto` | `{id, puntoId, puntoNombre, puntoSubtipo, fecha, quien, obs, usuario}`; limpieza de un bebedero o tanque; `quien` = quién limpió (texto libre), `usuario` = quién lo anotó; alta idempotente por id; en PC/móvil cumple la tarea de limpieza pendiente de ese punto y deja otra a 6 meses (`tarea_hecha`/`tarea_creada` con `event_id` derivado del id) |
+| `limpieza_punto_editada` | snapshot igual a `limpieza_punto`; reemplaza fecha, quien y obs por id; solo la PC la genera |
+| `limpieza_punto_eliminada` | `{id}`; solo la PC la genera |
 | `evento_manejo` | `{id, ts?, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?, usuario}`; fecha en `fecha_cliente`; alta idempotente por id; no modifica stock |
 | `evento_manejo_editado` | snapshot `{id, ts?, fecha, tipo, potrero?, categoria?, cantidad?, caravanas?, obs?}`; reemplaza el registro por id; no modifica stock |
 | `evento_manejo_eliminado` | `{id, ts?}`; conserva tombstone por id para impedir que una alta tardía lo reviva |
@@ -124,7 +127,9 @@ Registros del establecimiento (no tocan el stock):
 | `esquila_eliminada` | `{id}` |
 | `punto_creado` | `{id, tipo, subtipo, nombre, lat, lon}` |
 | `punto_eliminado` | `{id}` |
-| `reporte_creado` | `{id, categoria, subtipo, obs, fecha, lat, lon}` |
+| `reporte_creado` | `{id, categoria, subtipo, obs, fecha, lat, lon, nivel?}`; `nivel` = `rojo`, `naranja` o `amarillo` (urgencia); ausente o con otro valor se muestra amarillo |
+| `reporte_nivel` | `{id, nivel}`; cambia el nivel de urgencia (`rojo` / `naranja` / `amarillo`) de un reporte ya creado; un nivel inválido o un id desconocido se ignora. Un reporte resuelto se ve verde, sin evento aparte |
+| `punto_renombrado` | `{id, nombre}`; cambia el nombre de un punto sin cambiar su id (sus limpiezas, tareas y fotos siguen con él); solo la app completa lo genera, todas lo aplican |
 | `reporte_resuelto` | `{id, fecha}` |
 | `reporte_eliminado` | `{id}` |
 | `reporte_foto` | `{id, fotoId, path, momento, fecha}` (foto del reporte ya subida a Storage, bucket `fotos-reportes`; `path` = `<establecimiento>/<id>/<fotoId>.jpg`, `momento` = `reporte` o `resuelto`) |

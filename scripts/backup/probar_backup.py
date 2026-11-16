@@ -42,7 +42,9 @@ def chequear(nombre, cond, detalle=""):
 SECRETA = "sb_secret_de_prueba_0123456789"
 TEMA = "tema-ntfy-de-prueba-" + "z" * 20
 datos = {}                 # tabla -> lista de filas
-vistas = {"movimientos_dicose_vigentes": [{"a": 1}]}
+vistas = {"movimientos_dicose_vigentes": [{"a": 1}],
+          "comparacion_catalogo": [{"p": 1}, {"p": 2}, {"p": 3}],
+          "precio_ultimo": [{"p": 1}], "stock_insumos": [{"s": 1}], "bano_resumen_ciclo": [{"b": 1}]}
 pedidos = []               # (ruta, apikey)
 openapi_ok = {"valor": True}
 avisos = []                # lo que recibe el ntfy falso
@@ -117,7 +119,7 @@ carpetas = B.carpetas_backup(destino)
 chequear("se creo una carpeta de backup", len(carpetas) == 1, carpetas)
 c1 = os.path.join(destino, carpetas[0])
 archivos = sorted(f for f in os.listdir(c1) if f.endswith(".json") and f != "manifest.json")
-chequear("baja las 3 tablas descubiertas y deja afuera la vista", archivos == ["eventos_sync.json", "maestros_dicose.json", "stock_potreros.json"], archivos)
+chequear("baja las 3 tablas descubiertas y deja afuera las vistas", archivos == ["eventos_sync.json", "maestros_dicose.json", "stock_potreros.json"], archivos)
 filas_es = json.load(open(os.path.join(c1, "eventos_sync.json"), encoding="utf-8"))
 chequear("pagina: 2500 eventos completos (3 paginas de 1000)", len(filas_es) == 2500 and filas_es[-1]["id"] == 2499, len(filas_es))
 man = json.load(open(os.path.join(c1, "manifest.json"), encoding="utf-8"))
@@ -237,6 +239,21 @@ datos["maestros_dicose"] = []
 codigo, salida = correr(destinoP)
 chequear("chica: 2 -> 0 filas (vacia) si alerta", codigo == 2 and len(avisos) == 1 and "maestros_dicose: 2 -> 0" in avisos[0]["message"], (codigo, salida, avisos))
 datos["maestros_dicose"] = [{"n": i} for i in range(3)]
+
+# -- 5d) un backup anterior que respaldo vistas (antes del 15/11/2026) no da "desaparecio" ----------
+avisos.clear()
+destinoV = tempfile.mkdtemp()
+codigo, salida = correr(destinoV)
+manV = json.load(open(os.path.join(destinoV, B.carpetas_backup(destinoV)[0], "manifest.json"), encoding="utf-8"))
+chequear("las vistas no entran al manifest", not (set(manV["tablas"]) & B.VISTAS) and codigo == 0, sorted(manV["tablas"]))
+archivar(destinoV, "2026-01-01_0000")
+mf = os.path.join(destinoV, "2026-01-01_0000", "manifest.json")
+viejo = json.load(open(mf, encoding="utf-8"))
+viejo["tablas"]["comparacion_catalogo"] = {"filas": 3, "sha256": "0" * 64}   # como un backup hecho con la version anterior
+viejo["tablas"]["stock_insumos"] = {"filas": 40, "sha256": "0" * 64}
+json.dump(viejo, open(mf, "w", encoding="utf-8"))
+codigo, salida = correr(destinoV)
+chequear("vistas del backup anterior: no alerta (sale con 0, sin ntfy)", codigo == 0 and "ALERTA" not in salida and not avisos, (codigo, salida, avisos))
 
 # -- 6) clave publica puesta como privada --------------------------------------------------------
 import importlib

@@ -547,7 +547,14 @@ async function probarReintentoYRechazo(archivo){
   t.setEnLinea(true);
   await esperarHasta(() => s.intentos.length > n0, 1500);
   await esperar(80);
-  chequear('con un 503 en la primera, la segunda no se mandó en esa vuelta', s.intentos.length === n0 + 1 && s.intentos[n0].row.cantidad_animales === 8 && t.guardado().cola.length === 2 && !t.guardado().cola[0].permanente, s.intentos.slice(n0).map(i => i.row.cantidad_animales).join(','));
+  // 16/11/2026: la app tiene otros disparos automáticos (al volver la señal, a 1,5 s de abrir, cada 3 min). Si uno cae
+  // justo después del 503, otra vuelta reintenta el 8 y después manda el 9, y eso está bien. Lo que no puede pasar es
+  // que el 9 salga antes de que el 8 entre. Antes se exigía un solo intento y fallaba ~1 de cada 4 corridas (8,8,9).
+  const seq503 = s.intentos.slice(n0).map(i => i.row.cantidad_animales);
+  const primer9 = seq503.indexOf(9), ochoQueEntro = seq503.indexOf(8, 1);   // el primer 8 es el del 503
+  const ordenOk = seq503[0] === 8 && (primer9 === -1 || (ochoQueEntro !== -1 && ochoQueEntro < primer9));
+  const colaOk = primer9 !== -1 || (t.guardado().cola.length === 2 && !t.guardado().cola[0].permanente);
+  chequear('con un 503 en la primera, la de atrás no se adelanta (el 9 nunca sale antes de que entre el 8)', ordenOk && colaOk, seq503.join(','));
   t.click('bano-actualizar');
   await esperarHasta(() => t.guardado().cola.length === 0, 2000);
   const i8 = s.lecturas.find(l => l.cantidad_animales === 8), i9 = s.lecturas.find(l => l.cantidad_animales === 9);

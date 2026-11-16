@@ -1,11 +1,11 @@
 /*
- * Prueba: padrón de caravanas sin señal (31/10/2026, a pedido de Pedro; CONFIG.padronOffline, solo La Vuelta móvil y Campo).
+ * Prueba: padrón de caravanas sin señal (31/10/2026, a pedido de Pedro; CONFIG.padronOffline, La Vuelta y María Laura, móvil y Campo).
  * Copia de animales_caravana en IndexedDB (en jsdom: el respaldo en memoria). Se verifica: primera vez entera y paginada por
  * id8 con select explícito y la clave del campo; la ficha desde la copia es idéntica a la de con señal (no falta columna);
  * sin señal / con el pedido fallando / colgado usa la copia y dice "datos al"; con señal sigue como antes; diferencias
  * con gte ultima_lectura; 30 min de espera; la completa saca las que ya no están; una completa vacía (RLS) o fallida no
  * pisa; aviso de copia vieja; nada en localStorage ni en `estado` (Backup); otro ID de dispositivo y "Restablecer" la
- * invalidan; sin clave no baja; sin el flag (PC, María Laura, Pone Chico) no baja nada y la búsqueda es la de siempre.
+ * invalidan; sin clave no baja; sin el flag (PC de cualquier campo, Pone Chico) no baja nada y la búsqueda es la de siempre.
  */
 const fs = require('fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -77,7 +77,8 @@ const N_LV = 1100 + REALES.length; // 1103: dos páginas de 1000
 
 function crearServidor(){
   const s = { filas: [], consultas: [], headers: {}, modo: {} };
-  for(let i = 0; i < 1100; i++) s.filas.push(fila(String(10000000 + i)));
+  // relleno para los dos campos con padrón sin señal (La Vuelta y María Laura): la copia de uno no puede traer caravanas del otro. Cada campo tiene su propio rango de id8, asi un filtro de establecimiento que falte cambia la cuenta
+  ['la_vuelta', 'maria_laura'].forEach(e => { for(let i = 0; i < 1100; i++) s.filas.push(fila(String((e === 'maria_laura' ? 30000000 : 10000000) + i), { establecimiento: e })); });
   REALES.forEach(a => s.filas.push(JSON.parse(JSON.stringify(a))));
   REALES.forEach(a => s.filas.push(Object.assign(JSON.parse(JSON.stringify(a)), { establecimiento:'maria_laura' })));
   s.createClient = (url, key, opciones) => {
@@ -233,7 +234,7 @@ async function probarConFlag(archivo){
   t = await buscar(win, '44444444');
   chequear('si el pedido falla, usa la copia y lo dice', /SIN CONFIRMAR/.test(t) && /Sin señal: datos del padrón al/.test(t), t);
   s.modo.fallarBusqueda = false;
-  if(/la-vuelta-movil[\\/]/.test(archivo)){
+  if(/(la-vuelta|maria-laura)-movil[\\/]/.test(archivo)){
     s.modo.colgarBusqueda = true;
     t = await buscar(win, '37620042', 6600);
     chequear('si Supabase no contesta en 6 s, usa la copia', /Sin señal: datos del padrón al/.test(t) && /NO APTO/.test(t), t);
@@ -242,7 +243,7 @@ async function probarConFlag(archivo){
 
   // 7. diferencias
   const completaAntes = copia.completaEn;
-  s.filas.push(fila('90000001', { categoria:'Ternera', ultima_lectura:'2026-10-25' }));
+  s.filas.push(fila('90000001', { categoria:'Ternera', ultima_lectura:'2026-10-25', establecimiento: app.est }));
   const v = s.filas.find(r => r.establecimiento === app.est && r.id8 === '44444444'); v.estado_carencia = 'APTO'; v.producto_carencia = null;
   antes = s.consultas.length;
   await envejecer(win, 'actualizadoEn', MEDIA_HORA_Y_UN_POCO);
@@ -348,7 +349,11 @@ async function probarSinFlag(archivo, cfg){
     console.log('\n=== ' + a + ' ===');
     const cfg = JSON.parse(fs.readFileSync(a, 'utf-8').match(/const CONFIG = (\{.*?\});\n/)[1]);
     const esPc = /-pc[\\/]/.test(a);
-    if(cfg.padronOffline && cfg.caravanasHabilitado && !esPc){ conFlag++; await probarConFlag(a); await probarSinClave(a); }
+    // Quién tiene que guardar la copia se decide por campo + variante, NO leyendo el flag del CONFIG (eso es lo que se prueba):
+    // La Vuelta y María Laura en móvil y Campo sí; la PC no; Pone Chico no.
+    const debeTener = (cfg.establecimiento === 'la_vuelta' || cfg.establecimiento === 'maria_laura') && !esPc;
+    if(debeTener) chequear('el CONFIG de ' + cfg.establecimiento + ' prende padronOffline y caravanasHabilitado', cfg.padronOffline === true && cfg.caravanasHabilitado === true, JSON.stringify({ padronOffline: cfg.padronOffline, caravanasHabilitado: cfg.caravanasHabilitado }));
+    if(debeTener){ conFlag++; await probarConFlag(a); await probarSinClave(a); }
     else await probarSinFlag(a, cfg);
   }
   if(!conFlag){ console.log('\nNingún archivo con el padrón sin señal'); fallas++; }

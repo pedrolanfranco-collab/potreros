@@ -618,7 +618,7 @@
     <div class="brand">
       <div>
         <h1>María Laura <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v4.05</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v4.08</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -684,6 +684,7 @@
       <button class="btn btn-json" id="btn-bano" style="display:none;">🛁 Baño</button>
       <button class="btn btn-json" id="btn-lluvias">🌧 Lluvias y otros eventos</button>
       <button class="btn btn-json" id="btn-esquila">✂️ Esquila y limpieza</button>
+      <button class="btn btn-json" id="btn-limpiezas">🧽 Limpiezas</button>
       <button class="btn btn-json" id="btn-eventos-manejo" style="display:none;">📋 Eventos de manejo</button>
       <button class="btn btn-json" id="btn-tareas" style="display:none;">✅ Tareas</button>
       <button class="btn btn-json" id="btn-calendario" style="display:none;">📅 Calendario</button>
@@ -869,6 +870,35 @@
     </div>
     <div id="consumos-resumen"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="lluvias-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-limpiezas" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <h3>🧽 Limpieza de bebederos y tanques</h3>
+    <button class="btn-cerrar-x" id="limpiezas-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <div id="limpiezas-toca"></div>
+    <p id="limpiezas-sin-puntos" class="modal-info" style="display:none;">Primero cargá los puntos de agua (💧 Bebedero o Tanque) en el mapa.</p>
+    <div class="form-row"><label for="lp-punto">Bebedero o tanque</label><select id="lp-punto"></select></div>
+    <div class="form-row"><label for="lp-fecha">Fecha</label><input type="date" id="lp-fecha"></div>
+    <div class="form-row"><label for="lp-quien">Quién limpió</label><input id="lp-quien" maxlength="80" placeholder="Nombre de quien limpió"></div>
+    <div class="form-row"><label for="lp-obs">Observaciones (opcional)</label><textarea id="lp-obs" rows="2" maxlength="500"></textarea></div>
+    <div class="form-botones" style="margin-bottom:12px;">
+      <button class="btn btn-agregar" id="lp-guardar">Anotar limpieza</button>
+    </div>
+    <details class="historial-det historial-det-lista" open><summary>Limpiezas anotadas</summary>
+      <div class="form-row"><label for="lp-filtro">Punto</label><select id="lp-filtro"><option value="">Todos</option></select></div>
+      <div id="limpiezas-lista"></div>
+    </details>
+    <div class="form-botones"><button id="limpiezas-cerrar" class="btn btn-secundario">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-renombrar-punto" class="modal-overlay" style="display:none;z-index:10010;" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <h3>✏️ Renombrar punto</h3>
+    <button class="btn-cerrar-x" id="rn-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <p class="modal-info">Ahora se llama <b id="rn-actual"></b>. Cambia solo el nombre: sus limpiezas, tareas y fotos siguen con él.</p>
+    <div class="form-row"><label for="rn-nombre">Nombre nuevo</label><input id="rn-nombre" maxlength="80"></div>
+    <div class="form-botones"><button id="rn-guardar" class="btn btn-agregar">Guardar nombre</button><button id="rn-cancelar" class="btn btn-secundario">Cancelar</button></div>
   </div>
 </div>
 <div id="modal-esquila" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
@@ -1378,6 +1408,7 @@
     <button class="btn-cerrar-x" id="reporte-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <p class="modal-info" id="reporte-info">Reportá un problema encontrado en el campo — se guarda con su ubicación para poder encontrarlo después.</p>
     <div class="form-row" id="reporte-fila-subtipo"><label for="rp-subtipo">Tipo de problema</label><select id="rp-subtipo"></select></div>
+    <div class="form-row"><label for="rp-nivel">Nivel de urgencia</label><select id="rp-nivel"><option value="">Elegí…</option><option value="rojo">🔴 Rojo — urgente</option><option value="naranja">🟠 Naranja</option><option value="amarillo">🟡 Amarillo</option></select></div>
     <div class="form-row"><label for="rp-fecha">Fecha</label><input type="date" id="rp-fecha"></div>
     <div class="form-row"><label for="rp-obs">Observaciones (opcional)</label><input type="text" id="rp-obs" placeholder="Ej: cerca de la tranquera norte"></div>
     <div class="form-row" id="rp-fotos-fila">
@@ -1405,7 +1436,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"4.05","versionMovil":"4.05","manejo":true,"simpleHabilitado":true,"versionMovilSimple":"2.05","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"propietarioSnig":{"mapaDuenos":{}},"lecturaStock":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"maria_laura","storageKey":"maria_laura_potreros_v1","potrerosGeo":[{"nombre":"Tajamar","area":"105","coords":[[-31.9862405289836,-56.3413776051438],[-31.9875842735414,-56.3411138608048],[-31.9956046143929,-56.3463879824331],[-31.9985447867797,-56.3397262183214],[-31.9852255759918,-56.3312299917146],[-31.9850217616419,-56.3315872525512],[-31.986185516626,-56.3413717510553],[-31.9862405289836,-56.3413776051438]]},{"nombre":"Casco","area":"","coords":[[-31.9838554895387,-56.3425870583613],[-31.9823980139953,-56.3408467316838],[-31.9832407140343,-56.3399894100099],[-31.9837301507294,-56.3408410105815],[-31.98425969917,-56.3406593319481],[-31.9858344421215,-56.3403685160856],[-31.9860592736037,-56.3419635482279],[-31.9838505413426,-56.3426213908869],[-31.9838554895387,-56.3425870583613]]},{"nombre":"Uno","area":"151","coords":[[-31.93576959567678,-56.4081291624744],[-31.9452875874814,-56.38622311645682],[-31.95136253376021,-56.39002286388637],[-31.94126865468329,-56.40844213011457],[-31.94065616020247,-56.41013853247393],[-31.93752597951533,-56.40991766834384],[-31.93576959567678,-56.4081291624744]]},{"nombre":"Rincon","area":"","coords":[[-31.9837039062187,-56.3474209372114],[-31.9761150263722,-56.3533599701717],[-31.9740168257515,-56.3469270962241],[-31.9674262617362,-56.3522446535181],[-31.9726961364739,-56.3621352293382],[-31.9843417778031,-56.3530215211435],[-31.9837365791426,-56.3516130696197],[-31.9837365791426,-56.3516130696197],[-31.9837039062187,-56.3474209372114]]},{"nombre":"Manantial","area":"","coords":[[-31.984339782685,-56.3529940644301],[-31.9837518314776,-56.3516013339718],[-31.9836975228147,-56.3474322547496],[-31.9864206064913,-56.3453221543545],[-31.986987541999,-56.3509442280919],[-31.984339782685,-56.3529940644301]]}],"potrerosDobles":{},"puntosSeed":[],"duenos":["Silvia","Perico","Mili","Juan Pablo","Fito"],"cargaInicialSeed":{"Uno":{"animales":{"Novillitos 1-2 años||Silvia":18},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 18 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Tajamar":{"animales":{"Vacas||Silvia":1,"Vaquillonas 1-2 años||Silvia":4,"Novillitos 1-2 años||Silvia":5},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 1 Vacas (Silvia), 4 Vaquillonas 1-2 años (Silvia), 5 Novillitos 1-2 años (Silvia)"}],"fechaIngreso":"2026-08-20"},"Rincon":{"animales":{"Vacas||Silvia":8},"historial":[{"fecha":"20/08/2026","tipo":"ingreso","detalle":"Carga inicial desde planilla: 8 Vacas (Silvia)"}],"fechaIngreso":"2026-08-20"}},"nombresViejosPotrero":{"Cerro":"Rincon"},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"María Laura — Mapa de Potreros","themeColor":"#7a5236","nombre":"María Laura","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"4.08","versionMovil":"4.08","manejo":true,"simpleHabilitado":true,"versionMovilSimple":"2.08","duenoLabel":"Dueño","duenoObligatorio":true,"guiasHabilitado":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_maria_laura","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":true,"bano":true,"caravanasHabilitado":true,"padronOffline":true,"propietarioSnig":{"mapaDuenos":{}},"lecturaStock":true,"fixFechaIngreso":{"potreros":["Tajamar","Uno","Rincon"],"desde":"2026-08-11","hasta":"2026-08-20"},"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -1838,7 +1869,7 @@ const REPORTE_CATEGORIAS = {
     etiqueta: "Infraestructura",
     icono: "🔧",
     color: "#b23b3b",
-    subtipos: {"Caño roto":"🔧","Bebedero roto":"🚱","Alambrado roto":"✂️","Otro":"⚠️"}
+    subtipos: {"Caño roto":"🔧","Bebedero roto":"🚱","Problema con boya":"🛟","Alambrado roto":"✂️","Portera rota":"🚪","Otro":"⚠️"}
   },
   capin_annoni: {
     etiqueta: "Capín Annoni",
@@ -1847,6 +1878,28 @@ const REPORTE_CATEGORIAS = {
     subtipos: {"Foco de capín annoni":"🌾"}
   }
 };
+
+/* Nivel de urgencia de un reporte de campo: rojo (urgente), naranja o amarillo, que se elige al crearlo (obligatorio en el
+   formulario) y se puede cambiar después (evento reporte_nivel). Un reporte resuelto se ve verde. Un reporte sin nivel
+   (anteriores a esta función, o de un equipo viejo) es legal y se ve amarillo. */
+const REPORTE_NIVELES = {
+  rojo:     {etiqueta: 'Rojo',     emoji: '🔴', color: '#dc2626'},
+  naranja:  {etiqueta: 'Naranja',  emoji: '🟠', color: '#ea580c'},
+  amarillo: {etiqueta: 'Amarillo', emoji: '🟡', color: '#ca8a04'},
+  verde:    {etiqueta: 'Verde',    emoji: '🟢', color: '#16a34a'}
+};
+const REPORTE_NIVELES_ELEGIBLES = ['rojo', 'naranja', 'amarillo']; // los que se guardan; "verde" sale de resuelto
+function nivelDeReporte(r){
+  if(r && r.resuelto) return 'verde';
+  return (r && REPORTE_NIVELES_ELEGIBLES.includes(r.nivel)) ? r.nivel : 'amarillo';
+}
+/* Capa del mapa a la que pertenece un reporte de infraestructura: lo que tiene que ver con el agua va a 'agua'; el resto
+   (alambrado, portera, Otro y cualquier subtipo desconocido o de otra categoría) a 'instalacion'. */
+const REPORTE_SUBTIPO_CAPA = {"Caño roto":"agua","Bebedero roto":"agua","Problema con boya":"agua","Alambrado roto":"instalacion","Portera rota":"instalacion","Otro":"instalacion"};
+function capaDeReporte(r){
+  const s = r && r.subtipo;
+  return (typeof s === 'string' && Object.prototype.hasOwnProperty.call(REPORTE_SUBTIPO_CAPA, s)) ? REPORTE_SUBTIPO_CAPA[s] : 'instalacion';
+}
 
 /* ======================= ESTADO ======================= */
 const CONFIG_DEFAULT = { cargaMaxima: 1.3, diasOcupacionMax: 5 };
@@ -1896,7 +1949,7 @@ function estadoInicial(){
     };
   });
   return {
-    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], reportesProgramados: {}, pendientesPotrero: {}, transacciones: [], lluvias: [], eventosClima: [], eventosManejo: [], tareas: [], abortos: [], senaladas: [], esquilas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
+    potreros, ugCoef: {...UG_DEFAULT}, puntos: [], reportes: [], reportesProgramados: {}, pendientesPotrero: {}, transacciones: [], lluvias: [], limpiezas: [], eventosClima: [], eventosManejo: [], tareas: [], abortos: [], senaladas: [], esquilas: [], proximosConfirmados: [], config: {...CONFIG_DEFAULT},
     colaSync: [], colaSanidad: [], colaStock: [], historialSanidad: [], ultimaSincronizacion: null,
     maestros: {comprador: [], comisionista: [], contraparte: []}, colaMaestros: [],
     vacasPrenadasTemporada: CONFIG.vacasPrenadasTemporada || 0,
@@ -1941,6 +1994,7 @@ function cargarEstado(){
       if(!parsed.puntos) parsed.puntos = [];
       if(!parsed.transacciones) parsed.transacciones = [];
       if(!parsed.lluvias) parsed.lluvias = [];
+      if(!Array.isArray(parsed.limpiezas)) parsed.limpiezas = [];
       if(!Array.isArray(parsed.eventosManejo)) parsed.eventosManejo = [];
       if(!Array.isArray(parsed.tareas)) parsed.tareas = [];
       if(!parsed.reportesProgramados || typeof parsed.reportesProgramados!=='object') parsed.reportesProgramados = {};
@@ -2168,9 +2222,9 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'movil-4.05';
+const VERSION_APP = 'movil-4.08';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
-   "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta); la PC no guarda copia. */
+   "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta y María Laura); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
 /* `opciones` (opcional): {eventId} para fijar el id del evento, y {establecimiento}
    para escribirlo en el stream de OTRO establecimiento (traslados entre campos; la
@@ -2577,9 +2631,10 @@ const TIPOS_EVENTO_CONOCIDOS = new Set([
   'envio_campo_ajeno', 'retorno_campo_ajeno', 'traslado_salida', 'traslado_entrada', 'movimiento_guia',
   'lluvia', 'lluvia_editada', 'lluvia_eliminada', 'evento_clima', 'evento_clima_editado', 'evento_clima_eliminado',
   'evento_manejo', 'evento_manejo_editado', 'evento_manejo_eliminado',
+  'limpieza_punto', 'limpieza_punto_editada', 'limpieza_punto_eliminada',
   'tarea_creada', 'tarea_editada', 'tarea_hecha', 'tarea_eliminada', 'reporte_programado',
   'aborto', 'aborto_editado', 'aborto_eliminado', 'senalada', 'senalada_editada', 'senalada_eliminada', 'esquila', 'esquila_editada', 'esquila_eliminada',
-  'punto_creado', 'punto_eliminado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
+  'punto_creado', 'punto_eliminado', 'punto_renombrado', 'reporte_creado', 'reporte_resuelto', 'reporte_eliminado', 'reporte_nivel', 'reporte_foto', 'punto_foto', 'muerte_foto', 'proximo_confirmado',
   'potrero_creado', 'potrero_limite_actualizado', 'potrero_limite_revertido', 'potrero_eliminado',
   'vecino_paso', 'vecino_aparecido', 'vecino_retorno', 'vecino_perdida', 'vecino_muerte',
   'correccion'
@@ -2835,6 +2890,26 @@ function aplicarEventoManejoRemoto(row, d){
     Object.assign(previo, base, {_ts:marca, _creadoEn:String(row.creado_en||''), _ordenId:ordenId});
   }else estado.eventosManejo.push({...base, _ts:marca, _creadoEn:String(row.creado_en||''), _ordenId:ordenId});
 }
+/* 15/11/2026: limpieza de bebederos y tanques. Una limpieza es {id, puntoId, puntoNombre, puntoSubtipo,
+   fecha 'dd/mm/aaaa', quien, obs, usuario, dispositivo}. `quien` es quién limpió (se escribe a mano);
+   `usuario` es quién lo anotó en el equipo (en móvil enviarEvento() lo pisa con el usuario del equipo,
+   por eso quién limpió va en un campo propio). Ver docs/eventos.md (limpieza_punto). */
+const MESES_LIMPIEZA = 6;
+const SUBTIPOS_LIMPIEZA = ['Bebedero','Tanque'];
+function normalizarLimpieza(d, row){
+  if(!d || typeof d !== 'object') return null;
+  const id = textoTareaSeguro(d.id, 80), puntoId = textoTareaSeguro(d.puntoId, 80), quien = textoTareaSeguro(d.quien, 80);
+  const fecha = fechaTareaVisible(d.fecha) || fechaTareaVisible(row && row.fecha_cliente);
+  if(!id || !puntoId || !quien || !fecha) return null;
+  return {
+    id, puntoId, fecha, quien,
+    puntoNombre: textoTareaSeguro(d.puntoNombre, 80),
+    puntoSubtipo: textoTareaSeguro(d.puntoSubtipo, 40),
+    obs: textoTareaSeguro(d.obs, 500),
+    usuario: textoTareaSeguro(d.usuario, 80),
+    dispositivo: (row && typeof row.dispositivo === 'string') ? row.dispositivo : null
+  };
+}
 function aplicarEventoRemoto(row, potrerosSucios){
   const eventIdPrevio = _eventIdRemoto;
   _aplicandoRemoto = true;
@@ -2889,6 +2964,25 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
+  // 15/11/2026: limpieza de un bebedero o tanque (registro del establecimiento, no toca stock). Va antes
+  // del guard de potrero, como la lluvia. Alta idempotente por id. Cualquier variante (Campo incluido)
+  // aplica también la corrección y el borrado, que solo genera la PC.
+  if(row.tipo === 'limpieza_punto' || row.tipo === 'limpieza_punto_editada'){
+    const l = normalizarLimpieza(d, row);
+    if(!l) return;
+    estado.limpiezas = Array.isArray(estado.limpiezas) ? estado.limpiezas : [];
+    const previa = estado.limpiezas.find(x=>x.id===l.id);
+    if(row.tipo === 'limpieza_punto'){
+      if(!previa) estado.limpiezas.unshift(l);
+    } else if(previa){
+      Object.assign(previa, {fecha: l.fecha, quien: l.quien, obs: l.obs});
+    }
+    return;
+  }
+  if(row.tipo === 'limpieza_punto_eliminada'){
+    estado.limpiezas = (estado.limpiezas||[]).filter(x=>x.id!==d.id);
+    return;
+  }
   if(row.tipo === 'evento_clima'){
     // Mismo criterio que "lluvia": es del establecimiento entero, sin
     // potrero -- se aplica antes del guard de abajo.
@@ -3013,6 +3107,18 @@ function aplicarEventoRemoto(row, potrerosSucios){
     return;
   }
 
+  // 16/11/2026: cambio de nombre de un punto (conserva el id: sus limpiezas, tareas y fotos siguen con él).
+  // Solo la app completa lo genera; cualquier variante (Campo incluido) lo aplica.
+  if(row.tipo === 'punto_renombrado'){
+    const nombre = textoTareaSeguro(d.nombre, 80);
+    if(typeof d.id !== 'string' || !nombre) return;
+    if(!aplicarNombrePunto(d.id, nombre)) return;
+    actualizarPopupPunto(estado.puntos.find(p=>p.id===d.id));
+    redibujarListaPuntosSiAbierta();
+    guardarEstado();
+    return;
+  }
+
   // 30/9/2026: "reportes de campo" (Infraestructura / Capín Annoni) --
   // mismo criterio que "punto_creado": no tienen potrero real, se aplican
   // antes del guard de abajo. Idempotentes por id.
@@ -3020,7 +3126,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
     estado.reportes = estado.reportes || [];
     if(!Object.prototype.hasOwnProperty.call(REPORTE_CATEGORIAS, d.categoria) || !Number.isFinite(d.lat) || !Number.isFinite(d.lon) || typeof d.id !== 'string') return;
     if(!estado.reportes.some(r=>r.id===d.id)){
-      const reporte = {id: d.id, categoria: d.categoria, subtipo: d.subtipo, obs: d.obs||null, fecha: d.fecha || row.fecha_cliente || fechaHoy(), lat: d.lat, lon: d.lon, resuelto: false, fechaResuelto: null};
+      const reporte = {id: d.id, categoria: d.categoria, subtipo: d.subtipo, obs: d.obs||null, fecha: d.fecha || row.fecha_cliente || fechaHoy(), lat: d.lat, lon: d.lon, nivel: REPORTE_NIVELES_ELEGIBLES.includes(d.nivel) ? d.nivel : undefined, resuelto: false, fechaResuelto: null};
       estado.reportes.push(reporte);
       crearMarcadorReporte(reporte);
       guardarEstado();
@@ -3064,6 +3170,17 @@ function aplicarEventoRemoto(row, potrerosSucios){
       if(reportesLayers[d.id]){ map.removeLayer(reportesLayers[d.id]); delete reportesLayers[d.id]; }
       guardarEstado();
     }
+    return;
+  }
+
+  // Cambio de nivel de urgencia de un reporte (rojo / naranja / amarillo). Idempotente; un nivel inválido o un id desconocido se ignora.
+  if(row.tipo === 'reporte_nivel'){
+    const r = (estado.reportes||[]).find(x=>x.id===d.id);
+    if(!r || !REPORTE_NIVELES_ELEGIBLES.includes(d.nivel) || r.nivel === d.nivel) return;
+    r.nivel = d.nivel;
+    refrescarMarcadorReporte(r);
+    guardarEstado();
+    redibujarListaSiAbierta();
     return;
   }
 
@@ -3767,6 +3884,7 @@ async function sincronizar(mostrarToast){
       if(row.dispositivo !== miId){ aplicarEventoRemoto(row, potrerosSucios); cambios++; }
       estado.ultimaSincronizacion = row.creado_en;
     });
+    if(cambios>0) procesarLimpiezas(); // 15/11/2026: limpiezas que llegaron de otro equipo (Campo incluido)
     guardarEstado();
     if(cambios>0){
       actualizarTodo();
@@ -4919,11 +5037,19 @@ function actualizarBotonesCapas(){
     btn.classList.toggle('capa-off', !visible);
   });
 }
-/* Prende o apaga la capa de un tipo: agrega o saca del mapa cada marcador de ese tipo. Los que quedan fuera siguen guardados
+/* Prende o apaga la capa de un tipo: agrega o saca del mapa cada marcador de ese tipo (puntos y reportes). Los que quedan fuera siguen guardados
    en puntosLayers, así se prenden después sin volver a crearlos. */
 function ponerCapaPuntos(tipo, visible){
   capasPuntos[tipo] = !!visible;
   try{ localStorage.setItem(CAPAS_PUNTOS_KEY, JSON.stringify(capasPuntos)); }catch(e){}
+  // los reportes activos de esa capa (reportesLayers solo tiene los activos) siguen a la capa igual que los puntos
+  Object.keys(reportesLayers).forEach(id => {
+    const r = (estado.reportes||[]).find(x => x.id === id);
+    const m = reportesLayers[id];
+    if(!r || !m || capaDeReporte(r) !== tipo) return;
+    if(visible && !map.hasLayer(m)) m.addTo(map);
+    if(!visible && map.hasLayer(m)) map.removeLayer(m);
+  });
   (estado.puntos||[]).filter(p => p.tipo === tipo).forEach(p => {
     const m = puntosLayers[p.id];
     if(!m) return;
@@ -5022,6 +5148,21 @@ function actualizarPopupPunto(p){
   marker.setPopupContent(popupPuntoHTML(p));
   if(marker.isPopupOpen && marker.isPopupOpen()) mostrarFotosEn(marker.getPopup().getElement());
 }
+/* 16/11/2026: cambia el nombre de un punto y las copias de ese nombre que guardan sus limpiezas y tareas para
+   mostrarlo (también el tema "Limpieza de bebedero · <nombre>" del recordatorio automático). El id no cambia. */
+function aplicarNombrePunto(id, nombre){
+  const p = (estado.puntos||[]).find(x=>x.id===id);
+  if(!p) return false;
+  const viejo = p.nombre || p.subtipo;
+  p.nombre = nombre;
+  (estado.limpiezas||[]).forEach(l=>{ if(l.puntoId===id) l.puntoNombre = nombre; });
+  (estado.tareas||[]).forEach(t=>{
+    if(t.puntoId!==id) return;
+    t.puntoNombre = nombre;
+    if(t.tema === `${t.tipo} · ${viejo}`) t.tema = `${t.tipo} · ${nombre}`;
+  });
+  return true;
+}
 function redibujarListaPuntosSiAbierta(){
   const m = document.getElementById('modal-puntos');
   if(m && m.style.display === 'flex') renderListaPuntos();
@@ -5119,14 +5260,14 @@ map.on('click', (e)=>{
    Mismo mecanismo que PUNTOS de arriba (mismo pin en gota, mismo modo
    "tocar el mapa"), pero en `estado.reportes` -- son problemas puntuales
    que se resuelven (campo `resuelto`), no cosas permanentes del campo. */
-let modoColocarReporte = null; // {categoria, subtipo, obs, fecha, fotos}
+let modoColocarReporte = null; // {categoria, subtipo, nivel, obs, fecha, fotos}
 const reportesLayers = {}; // id -> marker
 let _marcadorVerTemporal = null; // marcador gris de un reporte resuelto (no tiene pin activo), ver verUbicacionEnMapa()
 
 function iconoReporte(reporte, resuelto){
   const cat = REPORTE_CATEGORIAS[reporte.categoria];
   const emoji = cat.subtipos[reporte.subtipo] || cat.icono;
-  const color = resuelto ? '#8c8c8c' : cat.color;
+  const color = REPORTE_NIVELES[resuelto ? 'verde' : nivelDeReporte(reporte)].color;
   return L.divIcon({
     className:'icono-punto',
     html:`<div style="background:${color};width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,0.35);border:2px solid #fff;"><span style="transform:rotate(45deg);font-size:13px;">${emoji}</span></div>`,
@@ -5533,16 +5674,25 @@ function actualizarPopupReporte(r){
 }
 
 function crearMarcadorReporte(reporte){
-  const marker = L.marker([reporte.lat, reporte.lon], {icon: iconoReporte(reporte, reporte.resuelto)}).addTo(map);
+  const marker = L.marker([reporte.lat, reporte.lon], {icon: iconoReporte(reporte, reporte.resuelto)});
   marker.bindPopup(popupReporteHTML(reporte));
   marker.on('popupopen', e => mostrarFotosEn(e.popup && e.popup.getElement && e.popup.getElement()));
+  // con su capa apagada el marcador queda guardado en reportesLayers pero fuera del mapa (ver ponerCapaPuntos)
+  if(capaPuntoVisible(capaDeReporte(reporte))) marker.addTo(map);
   reportesLayers[reporte.id] = marker;
+}
+
+/* Vuelve a dibujar el ícono del marcador de un reporte (cambio de nivel); si no tiene pin activo no hace nada. */
+function refrescarMarcadorReporte(r){
+  const marker = reportesLayers[r.id];
+  if(marker && marker.setIcon) marker.setIcon(iconoReporte(r, r.resuelto));
 }
 
 function guardarReporte(datos){
   const reporte = {
     id: 'rp_' + Date.now() + '_' + Math.floor(Math.random()*1000),
     categoria: datos.categoria, subtipo: datos.subtipo, obs: datos.obs||null,
+    nivel: REPORTE_NIVELES_ELEGIBLES.includes(datos.nivel) ? datos.nivel : undefined,
     fecha: datos.fecha || fechaISOHoy(), lat: datos.lat, lon: datos.lon,
     resuelto: false, fechaResuelto: null, fotos: []
   };
@@ -5551,10 +5701,11 @@ function guardarReporte(datos){
   crearMarcadorReporte(reporte);
   guardarEstado();
   renderListaReportes(reporte.categoria);
-  enviarEvento('reporte_creado', ESTABLECIMIENTO, {id: reporte.id, categoria: reporte.categoria, subtipo: reporte.subtipo, obs: reporte.obs, fecha: reporte.fecha, lat: reporte.lat, lon: reporte.lon});
+  enviarEvento('reporte_creado', ESTABLECIMIENTO, {id: reporte.id, categoria: reporte.categoria, subtipo: reporte.subtipo, obs: reporte.obs, fecha: reporte.fecha, lat: reporte.lat, lon: reporte.lon, nivel: reporte.nivel});
   // las fotos van después del reporte: reporte_creado queda primero en la cola, y cada reporte_foto sale detrás
   (datos.fotos || []).forEach(blob => encolarFotoReporte(reporte.id, blob, 'reporte'));
-  toast(`${reporte.subtipo} agregado al mapa`);
+  const capasPrendidas = prenderCapasSiApagadas([capaDeReporte(reporte)]);
+  toast(`${reporte.subtipo} agregado al mapa` + (capasPrendidas.length ? ` · se prendió la capa ${capasPrendidas.join(', ')}` : ''));
 }
 
 function colocarReporteEn(latlng){
@@ -5583,7 +5734,10 @@ function verReporteEnMapa(id){
   const r = (estado.reportes||[]).find(x => x.id === id);
   if(!r) return;
   document.getElementById('modal-reporte').style.display = 'none';
-  verUbicacionEnMapa({lat: r.lat, lon: r.lon, marker: reportesLayers[id] || null, popupHtml: popupReporteHTML(r), icono: iconoReporte(r, r.resuelto)});
+  // con la capa apagada su marcador no está en el mapa: se muestra uno temporal y la capa NO se prende (igual que un punto)
+  const apagada = !r.resuelto && !capaPuntoVisible(capaDeReporte(r));
+  verUbicacionEnMapa({lat: r.lat, lon: r.lon, marker: apagada ? null : (reportesLayers[id] || null), popupHtml: popupReporteHTML(r), icono: iconoReporte(r, r.resuelto)});
+  if(apagada) toast(`La capa ${CAPAS_PUNTO[capaDeReporte(r)].etiqueta} está apagada: se muestra solo este reporte`);
 }
 
 // recrear marcadores de reportes activos (los resueltos no se muestran en el mapa)
@@ -6260,7 +6414,62 @@ function opcionesDuenosConsumo(nombre, seleccionado){
   return enBlanco + lista.map(d=>`<option value="${esc(d)}" ${d===seleccionado?'selected':''}>${esc(d)}</option>`).join('')
     + '<option value="__otro__">Otro (escribir)…</option>';
 }
-function opcionesCategorias(seleccionada){
+/* 11/11/2026: al mover animales (y al cargar por voz) se pregunta primero la ESPECIE. 'otras' agrupa las categorías que no
+   están en CATEGORIA_ESPECIE (datos viejos o raros) para que esos animales nunca queden sin poder moverse. */
+const ESPECIE_OTRAS = 'otras';
+function especieDeCategoria(cat){ return CATEGORIA_ESPECIE[cat] || ESPECIE_OTRAS; }
+function etiquetaEspecie(esp){
+  return esp === 'todas' ? 'Todas las especies' : esp === ESPECIE_OTRAS ? 'Otras categorías' : (ESPECIE_LABEL[esp] || esp);
+}
+function opcionesEspecies(seleccionada){
+  return Object.keys(ESPECIES).map(esp=>`<option value="${esp}" ${esp===seleccionada?'selected':''}>${etiquetaEspecie(esp)}</option>`).join('');
+}
+function opcionesCategoriasDeEspecie(seleccionada, especie){
+  const cats = ESPECIES[especie] ? Object.keys(ESPECIES[especie]) : [];
+  if(!cats.length) return '';
+  return `<optgroup label="${ESPECIE_LABEL[especie]}">${cats.map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('')}</optgroup>`;
+}
+/* Animales con stock positivo de un potrero, de una especie ('otras' o una de ESPECIES); sin especie, todos. */
+function entradasMoverPorEspecie(nombre, especie){
+  return detalleAnimales(estado.potreros[nombre].animales).filter(x=>x.cant>0 && (!especie || especieDeCategoria(x.cat)===especie));
+}
+/* Especies (en el orden de ESPECIES, más 'otras' al final) que tienen animales en el potrero. */
+function especiesConAnimales(nombre){
+  const hay = {};
+  entradasMoverPorEspecie(nombre).forEach(x=>{ hay[especieDeCategoria(x.cat)] = true; });
+  return Object.keys(ESPECIES).concat([ESPECIE_OTRAS]).filter(e=>hay[e]);
+}
+/* Desplegable "Especie" de los formularios de mover: solo las que hay en el potrero (+ "Todas" en Mover TODO). */
+function opcionesEspeciesPotrero(nombre, conTodas, seleccionada){
+  const lista = especiesConAnimales(nombre).concat(conTodas ? ['todas'] : []);
+  return lista.map(e=>`<option value="${e}" ${e===seleccionada?'selected':''}>${etiquetaEspecie(e)}</option>`).join('');
+}
+/* Valor inicial: Bovino si hay; si no, la primera presente. En Mover TODO con una sola especie presente queda 'todas' (movimiento_todo, como siempre). */
+function especieInicialMover(nombre, conTodas){
+  const hay = especiesConAnimales(nombre);
+  if(conTodas && hay.length < 2) return 'todas';
+  return hay.includes('bovino') ? 'bovino' : (hay[0] || 'bovino');
+}
+/* Texto del resumen y del botón de "Mover TODO" según la especie elegida ('todas' = el texto de siempre). */
+function textoMoverTodo(nombre, esp){
+  if(esp === 'todas'){
+    const total = totalPotrero(nombre);
+    const resumen = detalleAnimales(estado.potreros[nombre].animales).filter(d=>d.cant>0).map(d=>`${d.cant} ${d.cat} (${textoFirma(d.dueno)})`).join(', ');
+    return {texto: `Se van a mover ${total} animales: ${resumen}`, boton: `Mover todo (${total})`};
+  }
+  const ent = entradasMoverPorEspecie(nombre, esp);
+  const n = ent.reduce((s,x)=>s+x.cant,0);
+  const que = etiquetaEspecie(esp).toLowerCase();
+  return {
+    texto: `Se van a mover solo ${n} ${que} (lo demás queda en el potrero): ${ent.map(x=>`${x.cant} ${x.cat} (${textoFirma(x.dueno)})`).join(', ')}`,
+    boton: `Mover ${que} (${n})`
+  };
+}
+/* Categorías destino de "Mover": las de la especie elegida; con "Varias especies" ('', al editar un movimiento que mezcla especies) o 'otras'
+   (categorías sueltas de especie desconocida, que hay que poder pasar a una categoría real) la lista completa, como antes de elegir especie. */
+function especieParaDestinoMover(esp){ return (!esp || esp === ESPECIE_OTRAS) ? undefined : esp; }
+function opcionesCategorias(seleccionada, especie){
+  if(especie !== undefined) return opcionesCategoriasDeEspecie(seleccionada, especie);
   return Object.entries(ESPECIES).map(([esp,cats])=>{
     const opts = Object.keys(cats).map(c=>`<option value="${c}" ${c===seleccionada?'selected':''}>${c}</option>`).join('');
     return `<optgroup label="${ESPECIE_LABEL[esp]}">${opts}</optgroup>`;
@@ -6310,9 +6519,55 @@ function opcionesCategoriasNacimiento(seleccionada){
 function opcionesPotreros(excluir){
   return POTREROS_GEO.map(p=>p.nombre).filter(n=>n!==excluir).sort().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
-function filasCategoriasMover(nombre){
-  const animales = estado.potreros[nombre].animales;
-  const entradas = detalleAnimales(animales).filter(x=>x.cant>0);
+/* Aplica un movimiento de varias categorías y lo envía como UN evento 'movimiento_multi'. Lo usan "⇄ Mover una categoría" y
+   "Mover TODO" cuando se elige una sola especie (así un dispositivo remoto lo reproduce con el mismo aplicarEventoRemoto).
+   filas: [{key, cat, dueno, cant}]. opc: {catDestinoCompartida, huboEleccionDueno, duenoDestinoSel, fechaISO, obs}.
+   Cierra el detalle y devuelve {detalleTxt}. */
+function aplicarMovimientoMulti(nombre, destino, filas, opc){
+  const {catDestinoCompartida, huboEleccionDueno, duenoDestinoSel, fechaISO, obs} = opc;
+  const fecha = fechaISOaDisplay(fechaISO);
+  const origenAnimales = estado.potreros[nombre].animales;
+  const totalAntesOrigen = totalPotrero(nombre);
+  const totalAntesDestino = totalPotrero(destino);
+  const destAnimales = estado.potreros[destino].animales;
+  const items = [];
+  const detalleTxt = [];
+  filas.forEach(f=>{
+    const catDestino = catDestinoCompartida || f.cat;
+    // huboEleccionDueno puede valer '' (elegido "sin asignar" a propósito
+    // en La Vuelta) -- comparar contra undefined, nunca con "||", o se
+    // pierde esa elección tratándola como "no elegido".
+    const duenoDestino = huboEleccionDueno ? duenoDestinoSel : f.dueno;
+    const keyDestino = claveAnimal(catDestino, duenoDestino);
+    origenAnimales[f.key] = (origenAnimales[f.key]||0) - f.cant;
+    destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + f.cant;
+    items.push({categoria: f.cat, categoriaDestino: catDestino, dueno: f.dueno, duenoDestino: huboEleccionDueno ? duenoDestinoSel : undefined, cantidad: f.cant});
+    const cambioCat = catDestino!==f.cat, cambioDueno = huboEleccionDueno && duenoDestino!==f.dueno;
+    let txt = `${f.cant} ${f.cat}`;
+    if(cambioCat && cambioDueno) txt += ` (${textoFirma(f.dueno)}) → ${catDestino} (${textoFirma(duenoDestino)})`;
+    else if(cambioCat) txt += ` (${textoFirma(f.dueno)}) → ${catDestino}`;
+    else if(cambioDueno) txt += `: ${textoFirma(f.dueno)} → ${textoFirma(duenoDestino)}`;
+    else txt += ` (${textoFirma(f.dueno)})`;
+    detalleTxt.push(txt);
+  });
+  registrarCambioOcupacion(nombre, totalAntesOrigen, fecha);
+  registrarCambioOcupacion(destino, totalAntesDestino, fecha);
+  const grupoIdMov = generarIdHistorial();
+  const extraMov = {potrero: nombre, destino, items, obs: obs||null};
+  const sufObs = obs ? ` (${obs})` : '';
+  const eventId = crypto.randomUUID();
+  if(destino===nombre){
+    registrarHistorial(nombre, 'movimiento_multi', `Recategorización: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
+  }else{
+    registrarHistorial(nombre, 'movimiento_multi', `→ ${destino}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
+    registrarHistorial(destino, 'movimiento_multi', `← ${nombre}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
+  }
+  enviarEvento('movimiento_multi', nombre, {destino, items, obs: obs||null}, fecha, {eventId});
+  guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre, destino]);
+  return {detalleTxt};
+}
+function filasCategoriasMover(nombre, especie){
+  const entradas = entradasMoverPorEspecie(nombre, especie);
   if(!entradas.length) return '<p style="font-size:13px;color:var(--texto-suave);margin:4px 0;">No hay animales en este potrero.</p>';
   return entradas.map(x=>{
     const key = claveAnimal(x.cat, x.dueno);
@@ -6709,11 +6964,12 @@ function mostrarFormulario(nombre, accion, prefill){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Mover animales desde ${esc(nombre)}</h3>
+        <div class="form-row"><label for="f-especie">Especie</label><select id="f-especie">${opcionesEspeciesPotrero(nombre, false, especieInicialMover(nombre, false))}</select></div>
         <div class="form-row"><label for="f-destino">Potrero destino</label><select id="f-destino"><option value="${esc(nombre)}">(sin mover — recategorizar en ${esc(nombre)})</option>${opcionesPotreros(nombre)}</select></div>
-        <div class="form-row"><label for="f-cat-destino">Categoría destino (opcional)</label><select id="f-cat-destino"><option value="">— mantener la categoría de cada una —</option>${opcionesCategorias()}</select></div>
-        <div class="form-row"><label for="f-dueno-destino">Dueño destino (opcional)</label><select id="f-dueno-destino"><option value="__mantener__" selected>— mantener el dueño de cada una —</option>${opcionesDuenos()}</select></div>
+        <div class="form-row"><label for="f-cat-destino">Categoría destino (opcional)</label><select id="f-cat-destino"><option value="">— mantener la categoría de cada una —</option>${opcionesCategorias(undefined, especieParaDestinoMover(especieInicialMover(nombre, false)))}</select></div>
+        <div class="form-row"><label for="f-dueno-destino">Dueño destino (opcional)</label><select id="f-dueno-destino"><option value="__mantener__" selected>— mantener el dueño de cada una —</option>${opcionesDuenos('__mantener__')}</select></div>
         <label style="font-size:13px;font-weight:600;display:block;margin:10px 0 4px;">Categorías a mover</label>
-        <div id="f-categorias-mover">${filasCategoriasMover(nombre)}</div>
+        <div id="f-categorias-mover">${filasCategoriasMover(nombre, especieInicialMover(nombre, false))}</div>
         <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-row"><label for="f-obs">Notas (opcional)</label><input type="text" id="f-obs" placeholder="Ej: arreo por sequía, pastoreo rotativo..." value=""></div>
         <p style="font-size:11px;color:var(--texto-suave);margin:2px 0 0 0;">Tildá una o más categorías. Si elegís una categoría destino, todas las tildadas pasan a esa categoría; si elegís un dueño destino, todas las tildadas pasan a ese dueño (sirve para asignarle el dueño a animales "sin asignar" a medida que los identificás); dejar cualquiera de los dos en blanco mantiene lo que ya tenía cada una.</p>
@@ -6749,53 +7005,21 @@ function mostrarFormulario(nombre, accion, prefill){
         }).join('\n');
         if(!confirm(`Vas a dejar saldo negativo en ${nombre}:\n${detalleFaltantes}\n¿Continuar de todos modos?`)) return;
       }
-      const fecha = fechaISOaDisplay(fechaISO);
-      const totalAntesOrigen = totalPotrero(nombre);
-      const totalAntesDestino = totalPotrero(destino);
-      const destAnimales = estado.potreros[destino].animales;
-      const items = [];
-      const detalleTxt = [];
-      filas.forEach(f=>{
-        const catDestino = catDestinoCompartida || f.cat;
-        // huboEleccionDueno puede valer '' (elegido "sin asignar" a propósito
-        // en La Vuelta) -- comparar contra undefined, nunca con "||", o se
-        // pierde esa elección tratándola como "no elegido".
-        const duenoDestino = huboEleccionDueno ? duenoDestinoSel : f.dueno;
-        const keyDestino = claveAnimal(catDestino, duenoDestino);
-        origenAnimales[f.key] = (origenAnimales[f.key]||0) - f.cant;
-        destAnimales[keyDestino] = (destAnimales[keyDestino]||0) + f.cant;
-        items.push({categoria: f.cat, categoriaDestino: catDestino, dueno: f.dueno, duenoDestino: huboEleccionDueno ? duenoDestinoSel : undefined, cantidad: f.cant});
-        const cambioCat = catDestino!==f.cat, cambioDueno = huboEleccionDueno && duenoDestino!==f.dueno;
-        let txt = `${f.cant} ${f.cat}`;
-        if(cambioCat && cambioDueno) txt += ` (${textoFirma(f.dueno)}) → ${catDestino} (${textoFirma(duenoDestino)})`;
-        else if(cambioCat) txt += ` (${textoFirma(f.dueno)}) → ${catDestino}`;
-        else if(cambioDueno) txt += `: ${textoFirma(f.dueno)} → ${textoFirma(duenoDestino)}`;
-        else txt += ` (${textoFirma(f.dueno)})`;
-        detalleTxt.push(txt);
-      });
-      registrarCambioOcupacion(nombre, totalAntesOrigen, fecha);
-      registrarCambioOcupacion(destino, totalAntesDestino, fecha);
-      const grupoIdMov = generarIdHistorial();
-      const extraMov = {potrero: nombre, destino, items, obs: obs||null};
-      const sufObs = obs ? ` (${obs})` : '';
-      const eventId = crypto.randomUUID();
-      if(destino===nombre){
-        registrarHistorial(nombre, 'movimiento_multi', `Recategorización: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
-      }else{
-        registrarHistorial(nombre, 'movimiento_multi', `→ ${destino}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
-        registrarHistorial(destino, 'movimiento_multi', `← ${nombre}: ${detalleTxt.join(', ')}${sufObs}`, extraMov, grupoIdMov, fecha).eventId = eventId;
-      }
-      enviarEvento('movimiento_multi', nombre, {destino, items, obs: obs||null}, fecha, {eventId});
-      guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre, destino]);
+      const {detalleTxt} = aplicarMovimientoMulti(nombre, destino, filas, {catDestinoCompartida, huboEleccionDueno, duenoDestinoSel, fechaISO, obs});
       toast(destino===nombre ? `Se recategorizaron: ${detalleTxt.join(', ')}` : `Se movieron a ${destino}: ${detalleTxt.join(', ')}`);
+    });
+    // 11/11/2026: cambiar la especie vuelve a pintar las filas y las categorías destino; el resto de los campos no se toca.
+    document.getElementById('f-especie').addEventListener('change', ()=>{
+      const esp = document.getElementById('f-especie').value;
+      document.getElementById('f-categorias-mover').innerHTML = filasCategoriasMover(nombre, esp);
+      document.getElementById('f-cat-destino').innerHTML = '<option value="">— mantener la categoría de cada una —</option>' + opcionesCategorias(undefined, especieParaDestinoMover(esp));
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
 
   if(accion==='mover-todo'){
     const total = totalPotrero(nombre);
-    const animales = estado.potreros[nombre].animales;
-    const resumen = detalleAnimales(animales).filter(d=>d.cant>0).map(d=>`${d.cant} ${d.cat} (${textoFirma(d.dueno)})`).join(', ');
+    const espIniTodo = especieInicialMover(nombre, true);
     if(total===0){
       zona.innerHTML = `<div class="form-accion"><p style="font-size:13px;color:var(--texto-suave);margin:0;">No hay animales en ${esc(nombre)} para mover.</p></div>`;
       return;
@@ -6803,11 +7027,12 @@ function mostrarFormulario(nombre, accion, prefill){
     zona.innerHTML = `
       <div class="form-accion">
         <h3>Mover TODO el potrero ${esc(nombre)}</h3>
-        <p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 8px 0;">Se van a mover ${total} animales: ${resumen}</p>
+        <div class="form-row"><label for="f-especie">Especie</label><select id="f-especie">${opcionesEspeciesPotrero(nombre, true, espIniTodo)}</select></div>
+        <p id="f-todo-resumen" style="font-size:12.5px;color:var(--texto-suave);margin:0 0 8px 0;">${esc(textoMoverTodo(nombre, espIniTodo).texto)}</p>
         <div class="form-row"><label for="f-destino">Potrero destino</label><select id="f-destino">${opcionesPotreros(nombre)}</select></div>
         <div class="form-row"><label for="f-fecha">Fecha</label><input type="date" id="f-fecha" value="${fechaISOHoy()}" max="${fechaISOHoy()}"></div>
         <div class="form-botones">
-          <button class="btn btn-mover" id="f-confirmar">Mover todo (${total})</button>
+          <button class="btn btn-mover" id="f-confirmar">${esc(textoMoverTodo(nombre, espIniTodo).boton)}</button>
           <button class="btn btn-secundario" id="f-cancelar">Cancelar</button>
         </div>
       </div>`;
@@ -6815,6 +7040,16 @@ function mostrarFormulario(nombre, accion, prefill){
       const destino = document.getElementById('f-destino').value;
       const fechaISO = document.getElementById('f-fecha').value;
       if(!fechaISO){ toast('Elegí una fecha'); return; }
+      // 11/11/2026: una sola especie = el mismo evento movimiento_multi de "Mover una categoría" (categoría y dueño se mantienen);
+      // 'todas' sigue por el camino de siempre (movimiento_todo).
+      const espElegida = document.getElementById('f-especie').value;
+      if(espElegida !== 'todas'){
+        const filasEsp = entradasMoverPorEspecie(nombre, espElegida).map(x=>({key: claveAnimal(x.cat, x.dueno), cat: x.cat, dueno: x.dueno, cant: x.cant}));
+        if(!filasEsp.length){ toast('No hay animales de esa especie para mover'); return; }
+        aplicarMovimientoMulti(nombre, destino, filasEsp, {catDestinoCompartida: '', huboEleccionDueno: false, duenoDestinoSel: '__mantener__', fechaISO, obs: ''});
+        toast(`Se movieron ${etiquetaEspecie(espElegida).toLowerCase()} de ${nombre} a ${destino}`);
+        return;
+      }
       const fecha = fechaISOaDisplay(fechaISO);
       const origenAnimales = estado.potreros[nombre].animales;
       const destAnimales = estado.potreros[destino].animales;
@@ -6842,6 +7077,11 @@ function mostrarFormulario(nombre, accion, prefill){
       enviarEvento('movimiento_todo', nombre, {destino, items}, fecha, {eventId});
       guardarEstado(); actualizarTodo(); cerrarDetalle(); publicarStockPotreros([nombre, destino]);
       toast(`Se movió todo el rodeo de ${nombre} a ${destino}`);
+    });
+    document.getElementById('f-especie').addEventListener('change', ()=>{
+      const r = textoMoverTodo(nombre, document.getElementById('f-especie').value);
+      document.getElementById('f-todo-resumen').textContent = r.texto;
+      document.getElementById('f-confirmar').textContent = r.boton;
     });
     document.getElementById('f-cancelar').addEventListener('click', cerrarDetalle);
   }
@@ -7496,6 +7736,10 @@ function importarBackupTexto(texto){
   }
   estado = nuevo;
   migrarClavesSinFirma(estado.potreros);
+  // recrear marcadores de los reportes activos (los resueltos no tienen pin); respetan su capa igual que al abrir la app
+  Object.values(reportesLayers).forEach(m=> map.removeLayer(m));
+  Object.keys(reportesLayers).forEach(k=> delete reportesLayers[k]);
+  (estado.reportes||[]).filter(r=>!r.resuelto).forEach(r=> crearMarcadorReporte(r));
   // recrear marcadores de puntos en el mapa
   Object.values(puntosLayers).forEach(m=> map.removeLayer(m));
   Object.keys(puntosLayers).forEach(k=> delete puntosLayers[k]);
@@ -7529,12 +7773,21 @@ function poblarSelectSubtipo(){
   const sel = document.getElementById('np-subtipo');
   sel.innerHTML = TIPOS_PUNTO[tipo].subtipos.map(s=>`<option value="${s}">${s}</option>`).join('');
 }
+/* 15/11/2026: junta las limpiezas anotadas (estado.limpiezas, con quién limpió) y las tareas de limpieza
+   cumplidas. Una tarea cumplida el mismo día que una limpieza anotada del punto no se repite. */
 function bloqueLimpiezaPunto(p){
-  if(!CONFIG.manejo) return '';
-  const tareasPunto=(estado.tareas||[]).filter(t=>!t.eliminada&&t.puntoId===p.id&&['Limpieza de tanque','Limpieza de bebedero'].includes(t.tipo));
-  const ultima=tareasPunto.filter(t=>t.hecha).sort((a,b)=>compararOrdenTarea(b._hechaTs,b.id,a._hechaTs,a.id))[0];
-  const proxima=tareasPunto.filter(t=>!t.hecha).sort(ordenarTareas)[0];
-  return `<div class="rp-bloque"><b>Última limpieza:</b> ${esc(ultima?.fechaHecha||'sin registrar')} · <b>Próxima:</b> ${esc(proxima?.fechaPrevista||'sin programar')}<details class="historial-det"><summary>Historial de limpieza (${tareasPunto.length})</summary>${tareasPunto.sort((a,b)=>compararOrdenTarea(b._hechaTs||b._ts,b.id,a._hechaTs||a._ts,a.id)).map(t=>`<div>${t.hecha?'✅':'○'} ${esc(t.fechaHecha||t.fechaPrevista||'sin fecha')} · ${esc(t.tipo)}</div>`).join('')}</details></div>`;
+  const limpiable = p.tipo==='agua' && SUBTIPOS_LIMPIEZA.includes(p.subtipo);
+  const tareasPunto = CONFIG.manejo ? (estado.tareas||[]).filter(t=>!t.eliminada && t.puntoId===p.id && TIPOS_TAREA_LIMPIEZA.includes(t.tipo)) : [];
+  const registros = (estado.limpiezas||[]).filter(l=>l.puntoId===p.id);
+  if(!limpiable && !tareasPunto.length && !registros.length) return '';
+  const hechas = registros.map(l=>({fecha: l.fecha, icono: '✅', txt: `limpió ${l.quien}`}))
+    .concat(tareasPunto.filter(t=>t.hecha && !registros.some(l=>l.fecha===t.fechaHecha)).map(t=>({fecha: t.fechaHecha||'', icono: '✅', txt: t.usuario ? `${t.tipo} · ${t.usuario}` : t.tipo})))
+    .sort((a,b)=> parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha));
+  const pendientes = tareasPunto.filter(t=>!t.hecha).sort(ordenarTareas);
+  const ultima = hechas[0];
+  const proxima = (pendientes[0] && pendientes[0].fechaPrevista) || (ultima ? sumarMesesLimpieza(ultima.fecha, MESES_LIMPIEZA) : 'sin programar');
+  const items = hechas.concat(pendientes.map(t=>({fecha: t.fechaPrevista||'sin fecha', icono: '○', txt: t.tipo})));
+  return `<div class="rp-bloque"><b>Última limpieza:</b> ${esc(ultima ? `${ultima.fecha} (${ultima.txt})` : 'sin registrar')} · <b>Próxima:</b> ${esc(proxima)}<details class="historial-det"><summary>Historial de limpieza (${items.length})</summary>${items.map(x=>`<div>${x.icono} ${esc(x.fecha||'sin fecha')} · ${esc(x.txt)}</div>`).join('')}</details></div>`;
 }
 function renderListaPuntos(){
   const cont = document.getElementById('lista-puntos');
@@ -7554,6 +7807,8 @@ function renderListaPuntos(){
       <div class="acciones">
         <button data-ver-punto="${esc(p.id)}" style="color:#1d4fa8;">🗺 Ver en el mapa</button>
         <button data-foto-punto="${esc(p.id)}" style="color:#8a6d1f;"${nFotos >= FOTOS_MAX_REPORTE ? ' disabled' : ''}>📷 Agregar foto</button>
+        <button data-renombrar-punto="${esc(p.id)}" style="color:#1d4fa8;">✏️ Renombrar</button>
+        ${p.tipo==='agua' && SUBTIPOS_LIMPIEZA.includes(p.subtipo) ? `<button data-limpiar-punto="${esc(p.id)}" style="color:#0b6e4f;">🧽 Anotar limpieza</button>` : ''}
         <button data-del="${esc(p.id)}">Eliminar</button>
       </div>
       ${nFotos ? `<div class="rp-bloque"><div class="rp-fotos">${thumbsFotosHTML(p, 'punto')}</div></div>` : ''}
@@ -7574,8 +7829,56 @@ function renderListaPuntos(){
   cont.querySelectorAll('[data-del]').forEach(btn=>{
     btn.addEventListener('click', ()=> eliminarPunto(btn.dataset.del));
   });
+  cont.querySelectorAll('[data-limpiar-punto]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const modalPuntos = document.getElementById('modal-puntos');
+      if(modalPuntos) modalPuntos.style.display = 'none';
+      abrirLimpiezas(btn.dataset.limpiarPunto);
+    });
+  });
+  cont.querySelectorAll('[data-renombrar-punto]').forEach(btn=>{
+    btn.addEventListener('click', ()=> abrirRenombrarPunto(btn.dataset.renombrarPunto));
+  });
   mostrarFotosEn(cont);
 }
+/* 16/11/2026: "✏️ Renombrar" en la lista de puntos (PC y móvil completa). Cambia solo el nombre y conserva el id: borrar
+   y volver a crear un punto le da otro id y sus limpiezas, tareas y fotos quedan colgando del viejo. Viaja como
+   punto_renombrado (ver aplicarNombrePunto). */
+let renombrandoPuntoId = null;
+function abrirRenombrarPunto(id){
+  const p = (estado.puntos||[]).find(x=>x.id===id);
+  if(!p) return;
+  renombrandoPuntoId = id;
+  document.getElementById('rn-actual').textContent = `${p.nombre || '(sin nombre)'} (${p.subtipo})`;
+  document.getElementById('rn-nombre').value = p.nombre || '';
+  document.getElementById('modal-renombrar-punto').style.display = 'flex';
+  document.getElementById('rn-nombre').focus();
+}
+function cerrarRenombrarPunto(){
+  renombrandoPuntoId = null;
+  document.getElementById('modal-renombrar-punto').style.display = 'none';
+}
+function guardarRenombrarPunto(){
+  const p = (estado.puntos||[]).find(x=>x.id===renombrandoPuntoId);
+  if(!p){ cerrarRenombrarPunto(); return; }
+  const nombre = textoTareaSeguro(document.getElementById('rn-nombre').value, 80);
+  if(!nombre){ toast('Escribí el nombre nuevo'); return; }
+  if(nombre === p.nombre){ cerrarRenombrarPunto(); return; }
+  const repetido = (estado.puntos||[]).some(x=> x.id!==p.id && String(x.nombre||'').trim().toLowerCase() === nombre.toLowerCase());
+  if(repetido && !confirm(`Ya hay otro punto que se llama "${nombre}". ¿Usar el mismo nombre igual?`)) return;
+  aplicarNombrePunto(p.id, nombre);
+  actualizarPopupPunto(p);
+  guardarEstado();
+  enviarEvento('punto_renombrado', ESTABLECIMIENTO, {id: p.id, nombre});
+  cerrarRenombrarPunto();
+  renderListaPuntos();
+  toast(`Ahora se llama "${nombre}"`);
+}
+document.getElementById('rn-guardar').addEventListener('click', guardarRenombrarPunto);
+document.getElementById('rn-nombre').addEventListener('keydown', e=>{ if(e.key === 'Enter') guardarRenombrarPunto(); });
+document.getElementById('rn-cancelar').addEventListener('click', cerrarRenombrarPunto);
+document.getElementById('rn-cerrar-x').addEventListener('click', cerrarRenombrarPunto);
+document.getElementById('modal-renombrar-punto').addEventListener('click', e=>{ if(e.target.id === 'modal-renombrar-punto') cerrarRenombrarPunto(); });
 function eliminarPunto(id){
   estado.puntos = estado.puntos.filter(p=>p.id!==id);
   if(puntosLayers[id]){ map.removeLayer(puntosLayers[id]); delete puntosLayers[id]; }
@@ -7696,19 +7999,30 @@ function renderListaReportes(categoria){
   const cont = document.getElementById('reporte-lista');
   const cat = REPORTE_CATEGORIAS[categoria];
   const todos = (estado.reportes||[]).filter(r=>r.categoria===categoria);
-  const activos = todos.filter(r=>!r.resuelto);
+  // rojo, naranja, amarillo; dentro de cada nivel queda el orden de siempre (el sort es estable)
+  const ORDEN_NIVEL = {rojo: 0, naranja: 1, amarillo: 2};
+  const activos = todos.filter(r=>!r.resuelto).sort((a,b)=> ORDEN_NIVEL[nivelDeReporte(a)] - ORDEN_NIVEL[nivelDeReporte(b)]);
   const resueltos = todos.filter(r=>r.resuelto);
+  // resumen: cuántos hay de cada nivel y qué % son, sobre el total de esta lista (los verdes son los concluidos)
+  const cuentas = {rojo: 0, naranja: 0, amarillo: 0, verde: 0};
+  todos.forEach(r=>{ cuentas[nivelDeReporte(r)]++; });
+  const resumen = todos.length
+    ? `<div class="rp-resumen" style="display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;margin:2px 0 8px;">${['rojo','naranja','amarillo','verde'].map(n=>`<span data-nivel-cuenta="${n}">${REPORTE_NIVELES[n].emoji} ${n==='verde' ? 'Verde (concluidos)' : REPORTE_NIVELES[n].etiqueta} ${cuentas[n]} (${Math.round(cuentas[n]*100/todos.length)}%)</span>`).join('')}</div>`
+    : '';
   const fila = (r)=>{
     const nFotos = fotosDeReporte(r).length;
+    const nv = nivelDeReporte(r);
     return `
-    <div class="punto-item rp-item">
+    <div class="punto-item rp-item" data-nivel="${nv}">
       <div class="info">
+        <span class="rp-nivel-punto" title="${esc(REPORTE_NIVELES[nv].etiqueta)}" style="display:inline-block;flex:none;width:10px;height:10px;border-radius:50%;background:${REPORTE_NIVELES[nv].color};"></span>
         <span class="icono">${esc(cat.subtipos[r.subtipo]||cat.icono)}</span>
         <span>${esc(r.subtipo)} <span class="txt-sub">${esc(r.fecha)}${r.obs?(' — '+esc(r.obs)):''}</span></span>
       </div>
       <div class="acciones">
         <button data-ver="${esc(r.id)}" style="color:#1d4fa8;">🗺 Ver en el mapa</button>
         <button data-foto-agregar="${esc(r.id)}" style="color:#8a6d1f;"${nFotos >= FOTOS_MAX_REPORTE ? ' disabled' : ''}>📷 Agregar foto</button>
+        ${r.resuelto ? '' : `<select data-nivel-cambiar="${esc(r.id)}" aria-label="Cambiar el nivel de urgencia" title="Nivel de urgencia" style="font-size:12px;padding:2px 4px;border-radius:6px;">${REPORTE_NIVELES_ELEGIBLES.map(n=>`<option value="${n}"${n===nv?' selected':''}>${REPORTE_NIVELES[n].emoji} ${REPORTE_NIVELES[n].etiqueta}</option>`).join('')}</select>`}
         ${r.resuelto ? '' : `<button data-resolver="${esc(r.id)}" style="color:#3f6b2f;">✓ Resuelto</button>`}
         <button data-del="${esc(r.id)}">Eliminar</button>
       </div>
@@ -7716,7 +8030,7 @@ function renderListaReportes(categoria){
       ${_resolviendoId === r.id ? formResolverHTML(r) : ''}
     </div>`;
   };
-  let html = activos.length ? activos.map(fila).join('') : '<div class="puntos-vacio">Sin reportes activos.</div>';
+  let html = resumen + (activos.length ? activos.map(fila).join('') : '<div class="puntos-vacio">Sin reportes activos.</div>');
   if(resueltos.length){
     html += `<details style="margin:10px 0 6px;"><summary style="font-size:13px;font-weight:600;cursor:pointer;">Resueltos (${resueltos.length})</summary><div style="margin-top:6px;">${resueltos.map(fila).join('')}</div></details>`;
   }
@@ -7733,6 +8047,9 @@ function renderListaReportes(categoria){
       _fotoExtraPara = {tipo: 'reporte', id: r.id};
       document.getElementById('rp-fotos-extra').click();
     });
+  });
+  cont.querySelectorAll('[data-nivel-cambiar]').forEach(sel=>{
+    sel.addEventListener('change', ()=> cambiarNivelReporte(sel.dataset.nivelCambiar, sel.value, categoria));
   });
   cont.querySelectorAll('[data-resolver]').forEach(btn=>{
     btn.addEventListener('click', ()=> abrirFormResolver(btn.dataset.resolver, categoria));
@@ -7804,6 +8121,18 @@ function resolverReporte(id, categoria){
   toast('Marcado como resuelto');
 }
 
+/* Cambia el nivel de urgencia de un reporte activo: local + evento reporte_nivel (mismo patrón que resolverReporte). */
+function cambiarNivelReporte(id, nivel, categoria){
+  const r = (estado.reportes||[]).find(x=>x.id===id);
+  if(!r || r.resuelto || !REPORTE_NIVELES_ELEGIBLES.includes(nivel) || r.nivel === nivel) return;
+  r.nivel = nivel;
+  refrescarMarcadorReporte(r);
+  guardarEstado();
+  renderListaReportes(categoria);
+  enviarEvento('reporte_nivel', ESTABLECIMIENTO, {id, nivel});
+  toast('Nivel cambiado a ' + REPORTE_NIVELES[nivel].etiqueta.toLowerCase());
+}
+
 function eliminarReporte(id, categoria){
   if(!confirm('¿Eliminar este reporte? No se puede deshacer.')) return;
   estado.reportes = (estado.reportes||[]).filter(r=>r.id!==id);
@@ -7834,10 +8163,19 @@ function abrirModalReporte(categoria){
   document.getElementById('rp-fecha').value = fechaISOHoy();
   document.getElementById('rp-fecha').max = fechaISOHoy();
   document.getElementById('rp-obs').value = '';
+  document.getElementById('rp-nivel').value = '';
   limpiarFotosCrear();
   _resolviendoId = null;
   renderListaReportes(categoria);
   document.getElementById('modal-reporte').style.display = 'flex';
+}
+
+/* Nivel elegido en el formulario ('' si no eligió). Es obligatorio: sin nivel se avisa y no se avanza. */
+function nivelReporteElegido(){
+  const n = document.getElementById('rp-nivel').value;
+  if(REPORTE_NIVELES_ELEGIBLES.includes(n)) return n;
+  toast('Elegí el nivel del reporte (rojo, naranja o amarillo)');
+  return '';
 }
 
 function subtipoReporteSeleccionado(){
@@ -7851,10 +8189,13 @@ document.getElementById('reporte-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-reporte').style.display = 'none';
 });
 document.getElementById('rp-mapa').addEventListener('click', ()=>{
+  const nivel = nivelReporteElegido();
+  if(!nivel) return;
   const usadas = _fotosCrear.slice();
   modoColocarReporte = {
     categoria: modalReporteCategoria,
     subtipo: subtipoReporteSeleccionado(),
+    nivel,
     obs: document.getElementById('rp-obs').value.trim(),
     fecha: document.getElementById('rp-fecha').value || fechaISOHoy(),
     fotos: usadas.map(f => f.blob)
@@ -7864,16 +8205,20 @@ document.getElementById('rp-mapa').addEventListener('click', ()=>{
   mostrarAvisoModo();
 });
 document.getElementById('rp-gps').addEventListener('click', ()=>{
+  const nivel = nivelReporteElegido();
+  if(!nivel) return;
   const usadas = _fotosCrear.slice();
   const datos = {
     categoria: modalReporteCategoria,
     subtipo: subtipoReporteSeleccionado(),
+    nivel,
     obs: document.getElementById('rp-obs').value.trim(),
     fecha: document.getElementById('rp-fecha').value || fechaISOHoy()
   };
   capturarUbicacionActual((lat, lon)=>{
     guardarReporte(Object.assign({}, datos, {lat, lon, fotos: usadas.map(f => f.blob)}));
     document.getElementById('rp-obs').value = '';
+    document.getElementById('rp-nivel').value = '';
     soltarFotosCrear(usadas);
   });
 });
@@ -8831,7 +9176,7 @@ function normalizarCaravana(txt){
   return d.slice(-8).padStart(8,'0');   // el EID trae 15, el visual 8
 }
 
-/* ---------- PADRÓN SIN SEÑAL (31/10/2026, CONFIG.padronOffline: La Vuelta, móvil y Campo) ----------
+/* ---------- PADRÓN SIN SEÑAL (31/10/2026, CONFIG.padronOffline: La Vuelta y María Laura, móvil y Campo) ----------
    Copia del padrón (animales_caravana de este establecimiento) en IndexedDB, base `potreros_padron` (aparte de
    `potreros_fotos`: subirle la versión a esa dejaría a la cola de fotos sin poder abrirla). Un solo registro por
    establecimiento: {establecimiento, dispositivo, animales:{id8: fila}, n, maxLectura, completaEn, actualizadoEn}.
@@ -11591,7 +11936,7 @@ const TEMAS_TAREA={
 };
 const tareaEl=id=>document.getElementById(id);
 function potreroTareaVisible(nombre){const p=textoTareaSeguro(nombre,80);return POTREROS_GEO.some(x=>x.nombre===p)?p:null;}
-function emitirEventoTarea(tipo,detalle,fecha){const eventId=crypto.randomUUID(),fechaCliente=fecha||fechaISOaDisplay(fechaISOHoy());aplicarTareaRemota({tipo,detalle,fecha_cliente:fechaCliente,creado_en:new Date().toISOString(),event_id:eventId,dispositivo:idDispositivo()},detalle);guardarEstado();if(tipo==='tarea_creada')enviarEvento('tarea_creada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_editada')enviarEvento('tarea_editada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_hecha')enviarEvento('tarea_hecha',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_eliminada')enviarEvento('tarea_eliminada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='reporte_programado')enviarEvento('reporte_programado',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});}
+function emitirEventoTarea(tipo,detalle,fecha,eventIdFijo){const eventId=eventIdFijo||crypto.randomUUID(),fechaCliente=fecha||fechaISOaDisplay(fechaISOHoy());aplicarTareaRemota({tipo,detalle,fecha_cliente:fechaCliente,creado_en:new Date().toISOString(),event_id:eventId,dispositivo:idDispositivo()},detalle);guardarEstado();if(tipo==='tarea_creada')enviarEvento('tarea_creada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_editada')enviarEvento('tarea_editada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_hecha')enviarEvento('tarea_hecha',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='tarea_eliminada')enviarEvento('tarea_eliminada',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});else if(tipo==='reporte_programado')enviarEvento('reporte_programado',ESTABLECIMIENTO,detalle,fechaCliente,{eventId});}
 function fechaSiguienteTarea(fecha,dias){const [d,m,y]=String(fecha||'').split('/').map(Number);if(!d||!m||!y)return '';const x=new Date(Date.UTC(y,m-1,d+Number(dias)));return `${String(x.getUTCDate()).padStart(2,'0')}/${String(x.getUTCMonth()+1).padStart(2,'0')}/${x.getUTCFullYear()}`;}
 function diasHastaTarea(fecha){const f=fechaTareaVisible(fecha);if(!f)return null;const [d,m,y]=f.split('/').map(Number);return Math.round((Date.UTC(y,m-1,d)-Date.UTC(...fechaISOHoy().split('-').map(Number)))/86400000);}
 function ordenarTareas(a,b){const da=diasHastaTarea(a.fechaPrevista),db=diasHastaTarea(b.fechaPrevista);if(da===null&&db!==null)return 1;if(db===null&&da!==null)return -1;return (da??0)-(db??0)||compararOrdenTarea(a._ts,a.id,b._ts,b.id);}
@@ -11621,6 +11966,45 @@ function abrirTareas(){if(!CONFIG.manejo)return;const modal=tareaEl('modal-tarea
 function limpiarFormularioTarea(){editandoTareaId=null;tareaEl('tarea-fecha').value=fechaISOHoy();tareaEl('tarea-potrero').value='';tareaEl('tarea-punto').value='';tareaEl('tarea-tema-grupo').value='Ganado';tareaTipoActualizar();tareaEl('tarea-otro').value='';tareaEl('tarea-cada-dias').value='';tareaEl('tarea-obs').value='';tareaEl('tarea-guardar').textContent='Guardar tarea';tareaEl('tarea-cancelar').style.display='none';}
 function guardarTarea(){const fechaPrevista=fechaTareaVisible(tareaEl('tarea-fecha').value),temaGrupo=tareaEl('tarea-tema-grupo').value,select=tareaEl('tarea-tipo').value,tipo=textoTareaSeguro(select==='Otra…'?tareaEl('tarea-otro').value:select,80),cadaRaw=tareaEl('tarea-cada-dias').value,cadaDias=cadaRaw?Number(cadaRaw):null;if(!fechaPrevista||!tipo||(cadaRaw&&(!Number.isInteger(cadaDias)||cadaDias<1||cadaDias>730))){toast('Completá la tarea y revisá la fecha y la repetición (1–730 días).');return;}const previa=editandoTareaId?(estado.tareas||[]).find(x=>x.id===editandoTareaId):null,punto=(estado.puntos||[]).find(x=>x.id===tareaEl('tarea-punto').value),detalle={id:editandoTareaId||crypto.randomUUID(),ts:new Date().toISOString(),temaGrupo,tipo,tema:tipo==='Otra…'?textoTareaSeguro(tareaEl('tarea-otro').value,160):tipo,fechaPrevista,potrero:potreroTareaVisible(tareaEl('tarea-potrero').value),puntoId:punto?.id||null,puntoNombre:textoTareaSeguro(punto?.nombre||punto?.subtipo,80),cadaDias,serieId:previa?.serieId||editandoTareaId||undefined,serieN:previa?.serieN||0,obs:textoTareaSeguro(tareaEl('tarea-obs').value,500),usuario:textoTareaSeguro(usuarioActual(),80)};if(!detalle.tema){toast('Especificá la tarea.');return;}emitirEventoTarea(editandoTareaId?'tarea_editada':'tarea_creada',detalle,fechaPrevista);const editando=!!editandoTareaId;limpiarFormularioTarea();renderTareas();toast(editando?'Tarea actualizada':'Tarea guardada');}
 function marcarTareaHecha(id){const t=(estado.tareas||[]).find(x=>x.id===id&&!x.eliminada);if(!t||t.hecha)return;const fechaHecha=fechaISOaDisplay(fechaISOHoy()),serieId=t.serieId||t.id,serieN=(Number(t.serieN)||0)+1,siguiente=t.cadaDias?{id:`${serieId}#${serieN}`,serieId,serieN,fechaPrevista:fechaSiguienteTarea(fechaHecha,t.cadaDias)}:null;emitirEventoTarea('tarea_hecha',{id,ts:new Date().toISOString(),fechaHecha,siguiente,usuario:textoTareaSeguro(usuarioActual(),80)},fechaHecha);renderTareas();const mereceDestete=['Destete final','Fin destete temporario (DT)'].includes(t.tipo);if(mereceDestete&&confirm('¿Querés registrar también el evento Destete? Se abrirá el formulario para que lo revises.')){abrirEventosManejo();emEl('em-tipo').value='Destete';emEl('em-fecha').value=fechaISOHoy();emEl('em-potrero').value=t.potrero||'';emEl('em-obs').value=t.obs||'';}}
+/* 15/11/2026: una limpieza anotada (acá o en otro equipo, Campo incluido) cumple la tarea de limpieza pendiente
+   de ese punto y deja el recordatorio a MESES_LIMPIEZA meses. Los event_id son deterministas a partir del id
+   de la limpieza: si dos equipos lo hacen, Supabase rechaza el segundo (UNIQUE en event_id, 23505) y en la
+   memoria queda una sola tarea. Una limpieza ya procesada deja marca (la tarea "limp-<id>", o una tarea_hecha
+   con su event_id, o la lista local limpiezasProcesadas), así que una resincronización no vuelve a cerrar nada. */
+const TIPOS_TAREA_LIMPIEZA = ['Limpieza de tanque','Limpieza de bebedero'];
+function uuidDerivadoLimpieza(id, n){
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id||''))) return null;
+  const ultimo = parseInt(id.slice(-1), 16);
+  return id.slice(0,-1) + ((ultimo + n) % 16).toString(16);
+}
+function procesarLimpiezas(){
+  if(!CONFIG.manejo) return;
+  const procesadas = new Set(Array.isArray(estado.limpiezasProcesadas) ? estado.limpiezasProcesadas : []);
+  const tamanoAntes = procesadas.size;
+  const lista = (estado.limpiezas||[]).slice().sort((a,b)=> parseFechaDMY(a.fecha)-parseFechaDMY(b.fecha) || String(a.id).localeCompare(String(b.id)));
+  lista.forEach(l=>{
+    if(procesadas.has(l.id)) return;
+    const idCierre = uuidDerivadoLimpieza(l.id, 1), idRecordatorio = uuidDerivadoLimpieza(l.id, 2), idTarea = `limp-${l.id}`;
+    if(!idCierre){ procesadas.add(l.id); return; } // id que no es UUID: no se puede derivar un event_id válido
+    procesadas.add(l.id);
+    if((estado.tareas||[]).some(t=>t.id===idTarea || t._hechaOrdenId===idCierre)) return; // ya la procesó otro equipo
+    // Solo la limpieza más nueva de cada punto toca las tareas: una más vieja (llegó tarde, o vinieron varias juntas
+    // desde Campo, o es un equipo recién instalado) queda en el registro, pero no cierra el recordatorio nuevo ni crea uno viejo.
+    if(ultimaLimpiezaDe(l.puntoId) !== l) return;
+    const deLimpieza = t=> !t.eliminada && t.puntoId===l.puntoId && TIPOS_TAREA_LIMPIEZA.includes(t.tipo);
+    const pendiente = (estado.tareas||[]).filter(t=>deLimpieza(t) && !t.hecha).sort(ordenarTareas)[0];
+    if(pendiente){
+      const serieId = pendiente.serieId||pendiente.id, serieN = (Number(pendiente.serieN)||0)+1;
+      const siguiente = pendiente.cadaDias ? {id:`${serieId}#${serieN}`, serieId, serieN, fechaPrevista: fechaSiguienteTarea(l.fecha, pendiente.cadaDias)} : null;
+      emitirEventoTarea('tarea_hecha', {id: pendiente.id, ts: new Date().toISOString(), fechaHecha: l.fecha, siguiente, usuario: l.quien}, l.fecha, idCierre);
+    }
+    if((estado.tareas||[]).some(t=>deLimpieza(t) && !t.hecha)) return; // ya hay otra pendiente (p. ej. la siguiente de una serie)
+    const tipo = l.puntoSubtipo==='Tanque' ? 'Limpieza de tanque' : 'Limpieza de bebedero';
+    const fechaPrevista = sumarMesesLimpieza(l.fecha, MESES_LIMPIEZA);
+    emitirEventoTarea('tarea_creada', {id: idTarea, ts: new Date().toISOString(), temaGrupo: 'Mantenimiento', tipo, tema: `${tipo} · ${l.puntoNombre||''}`, fechaPrevista, potrero: null, puntoId: l.puntoId, puntoNombre: l.puntoNombre, cadaDias: null, obs: null, usuario: l.quien}, fechaPrevista, idRecordatorio);
+  });
+  if(procesadas.size !== tamanoAntes){ estado.limpiezasProcesadas = [...procesadas]; guardarEstado(); }
+}
 if(CONFIG.manejo){tareaEl('btn-tareas').style.display='';tareaEl('btn-tareas').addEventListener('click',abrirTareas);tareaEl('tarea-guardar').addEventListener('click',guardarTarea);tareaEl('tarea-cancelar').addEventListener('click',limpiarFormularioTarea);tareaEl('tarea-tema-grupo').addEventListener('change',()=>tareaTipoActualizar());tareaEl('tarea-tipo').addEventListener('change',()=>{tareaEl('tarea-otro-wrap').style.display=tareaEl('tarea-tipo').value==='Otra…'?'':'none';});tareaEl('tarea-reporte-programar').addEventListener('click',programarReporteInfraestructura);tareaEl('tareas-cerrar-x').addEventListener('click',()=>tareaEl('modal-tareas').style.display='none');tareaEl('tareas-cerrar').addEventListener('click',()=>tareaEl('modal-tareas').style.display='none');tareaEl('modal-tareas').addEventListener('click',e=>{if(e.target.id==='modal-tareas')e.target.style.display='none';});['tarea-filtro-estado','tarea-filtro-potrero','tarea-filtro-tema'].forEach(id=>tareaEl(id).addEventListener('change',renderTareas));renderTareas();}else{const rail=document.querySelector('#pc-rail [data-pc-seccion="tareas"]');if(rail)rail.style.display='none';}
 // Calendario mensual de solo lectura: deriva todo de los registros existentes, sin emitir eventos.
 const CALENDARIO_MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -12175,6 +12559,116 @@ if(CONFIG.guiasHabilitado && document.getElementById('btn-guias')){
     toast(`Venta ${textoFirma(desde)} → ${textoFirma(hacia)} registrada (guía ${guia})`);
   });
 }
+/* ======================= LIMPIEZA DE BEBEDEROS Y TANQUES (15/11/2026) =======================
+   Registro de cada limpieza: qué punto, qué fecha y quién limpió. Lo anotan PC, móvil y Campo;
+   corregir y borrar, solo la PC. Ver normalizarLimpieza(), procesarLimpiezas() y docs/eventos.md. */
+function puntosLimpiables(){
+  return (estado.puntos||[]).filter(p=>p.tipo==='agua' && SUBTIPOS_LIMPIEZA.includes(p.subtipo))
+    .sort((a,b)=>String(a.nombre||a.subtipo).localeCompare(String(b.nombre||b.subtipo),'es',{numeric:true}));
+}
+function nombrePuntoLimpieza(p){ return `${p.nombre||p.subtipo} (${p.subtipo})`; }
+/* Suma meses calendario a 'dd/mm/aaaa'. Si el día no existe en el mes de llegada, queda el último día
+   (31/08 + 6 meses = 28/02, o 29/02 en bisiesto). */
+function sumarMesesLimpieza(fecha, meses){
+  const f = fechaTareaVisible(fecha); if(!f) return '';
+  const [d,m,y] = f.split('/').map(Number);
+  const total = (m-1) + meses, anio = y + Math.floor(total/12), mes = total % 12;
+  const ultimo = new Date(Date.UTC(anio, mes+1, 0)).getUTCDate();
+  const dos = n => String(n).padStart(2,'0');
+  return `${dos(Math.min(d, ultimo))}/${dos(mes+1)}/${anio}`;
+}
+function ordenLimpiezaReciente(a,b){ return parseFechaDMY(b.fecha)-parseFechaDMY(a.fecha) || String(b.id).localeCompare(String(a.id)); }
+function ultimaLimpiezaDe(puntoId){
+  return (estado.limpiezas||[]).filter(l=>l.puntoId===puntoId).sort(ordenLimpiezaReciente)[0] || null;
+}
+/* Los bebederos y tanques vencidos (más de MESES_LIMPIEZA meses o nunca anotados) y los que vencen en 15 días. */
+function puntosTocaLimpiar(){
+  const hoy = parseFechaDMY(fechaISOaDisplay(fechaISOHoy()));
+  return puntosLimpiables().map(p=>{
+    const ultima = ultimaLimpiezaDe(p.id);
+    const proxima = ultima ? sumarMesesLimpieza(ultima.fecha, MESES_LIMPIEZA) : null;
+    const dias = proxima ? Math.round((parseFechaDMY(proxima)-hoy)/86400000) : null;
+    return {p, ultima, proxima, dias};
+  }).filter(x=> x.dias===null || x.dias<=15)
+    .sort((a,b)=> (a.dias===null ? -1e9 : a.dias) - (b.dias===null ? -1e9 : b.dias));
+}
+function renderLimpiezasToca(){
+  const cont = document.getElementById('limpiezas-toca'); if(!cont) return;
+  if(!puntosLimpiables().length){ cont.innerHTML = ''; return; }
+  const lista = puntosTocaLimpiar();
+  cont.innerHTML = `<h4>Toca limpiar (${lista.length})</h4>` + (!lista.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Todos los bebederos y tanques están al día.</p>'
+    : lista.map(x=>{
+        const rojo = x.dias===null || x.dias<0;
+        const txt = x.ultima ? `última ${esc(x.ultima.fecha)} · le toca el ${esc(x.proxima)}` : 'sin limpieza anotada';
+        return `<div class="potrero-card" data-limpieza-toca="${esc(x.p.id)}" data-color="${rojo?'rojo':'amarillo'}" style="cursor:pointer;"><div class="nombre">${rojo?'🔴':'🟡'} ${esc(nombrePuntoLimpieza(x.p))}</div><div style="font-size:12px;margin-top:4px;">${txt}</div></div>`;
+      }).join(''));
+  cont.querySelectorAll('[data-limpieza-toca]').forEach(el=>el.addEventListener('click', ()=>{
+    document.getElementById('lp-punto').value = el.dataset.limpiezaToca;
+    document.getElementById('lp-quien').focus();
+  }));
+}
+function renderLimpiezasLista(){
+  const cont = document.getElementById('limpiezas-lista'); if(!cont) return;
+  const filtro = document.getElementById('lp-filtro').value;
+  const lista = (estado.limpiezas||[]).filter(l=>!filtro || l.puntoId===filtro).slice().sort(ordenLimpiezaReciente).slice(0,20);
+  cont.innerHTML = !lista.length
+    ? '<p style="font-size:13px;color:var(--texto-suave);">Sin limpiezas anotadas todavía.</p>'
+    : lista.map(l=>`
+      <div class="potrero-card">
+        <div class="nombre">${esc(l.fecha)} · ${esc(l.puntoNombre||'')}${l.puntoSubtipo?(' ('+esc(l.puntoSubtipo)+')'):''}
+        </div>
+        <div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">Limpió: ${esc(l.quien)}${l.obs?(' — '+esc(l.obs)):''}</div>
+      </div>`).join('');
+}
+function abrirLimpiezas(puntoId){
+  const puntos = puntosLimpiables();
+  const opciones = puntos.map(p=>`<option value="${esc(p.id)}">${esc(nombrePuntoLimpieza(p))}</option>`).join('');
+  const sel = document.getElementById('lp-punto'), filtro = document.getElementById('lp-filtro');
+  sel.innerHTML = opciones;
+  const filtroPrevio = filtro.value;
+  filtro.innerHTML = '<option value="">Todos</option>' + opciones;
+  filtro.value = puntos.some(p=>p.id===filtroPrevio) ? filtroPrevio : '';
+  if(puntoId && puntos.some(p=>p.id===puntoId)) sel.value = puntoId;
+  document.getElementById('limpiezas-sin-puntos').style.display = puntos.length ? 'none' : '';
+  document.getElementById('lp-guardar').disabled = !puntos.length;
+  document.getElementById('lp-fecha').value = fechaISOHoy();
+  document.getElementById('lp-fecha').max = fechaISOHoy();
+  document.getElementById('lp-quien').value = usuarioActual();
+  document.getElementById('lp-obs').value = '';
+  renderLimpiezasToca();
+  renderLimpiezasLista();
+  document.getElementById('modal-limpiezas').style.display = 'flex';
+}
+function guardarLimpieza(){
+  const fechaISO = document.getElementById('lp-fecha').value;
+  const quien = textoTareaSeguro(document.getElementById('lp-quien').value, 80);
+  const obs = textoTareaSeguro(document.getElementById('lp-obs').value, 500);
+  if(!fechaISO){ toast('Elegí una fecha'); return; }
+  if(fechaISO > fechaISOHoy()){ toast('La fecha no puede ser futura'); return; }
+  if(!quien){ toast('Escribí quién limpió'); return; }
+  const fecha = fechaISOaDisplay(fechaISO);
+  const punto = puntosLimpiables().find(p=>p.id===document.getElementById('lp-punto').value);
+  if(!punto){ toast('Elegí el bebedero o tanque'); return; }
+  const usuario = usuarioActual() || null;
+  const l = {id: crypto.randomUUID(), puntoId: punto.id, puntoNombre: textoTareaSeguro(punto.nombre||punto.subtipo, 80), puntoSubtipo: punto.subtipo, fecha, quien, obs, usuario, dispositivo: idDispositivo()};
+  estado.limpiezas = Array.isArray(estado.limpiezas) ? estado.limpiezas : [];
+  estado.limpiezas.unshift(l);
+  guardarEstado();
+  enviarEvento('limpieza_punto', ESTABLECIMIENTO, {id: l.id, puntoId: l.puntoId, puntoNombre: l.puntoNombre, puntoSubtipo: l.puntoSubtipo, fecha, quien, obs, usuario}, fecha);
+  procesarLimpiezas();
+  document.getElementById('lp-obs').value = '';
+  renderLimpiezasToca();
+  renderLimpiezasLista();
+  if(document.getElementById('lista-puntos')) renderListaPuntos();
+  toast(`Anotada. Próxima: ${sumarMesesLimpieza(fecha, MESES_LIMPIEZA)}`);
+}
+document.getElementById('btn-limpiezas').addEventListener('click', ()=>abrirLimpiezas());
+document.getElementById('lp-guardar').addEventListener('click', guardarLimpieza);
+document.getElementById('lp-filtro').addEventListener('change', renderLimpiezasLista);
+document.getElementById('limpiezas-cerrar').addEventListener('click', ()=>{ document.getElementById('modal-limpiezas').style.display = 'none'; });
+document.getElementById('limpiezas-cerrar-x').addEventListener('click', ()=>{ document.getElementById('modal-limpiezas').style.display = 'none'; });
+document.getElementById('modal-limpiezas').addEventListener('click', e=>{ if(e.target.id==='modal-limpiezas') e.target.style.display = 'none'; });
 document.getElementById('lluvias-cerrar').addEventListener('click', ()=>{
   document.getElementById('modal-lluvias').style.display = 'none';
 });
@@ -13337,7 +13831,8 @@ function renderInterpretacionVoz(datos){
           <option value="venta" ${datos.accion==='venta'?'selected':''}>Venta</option>
         </select>
       </div>
-      <div class="form-row"><label for="vz-cat">Categoría</label><select id="vz-cat">${opcionesCategorias(datos.categoria)}</select></div>
+      <div class="form-row"><label for="vz-especie">Especie</label><select id="vz-especie">${opcionesEspecies(CATEGORIA_ESPECIE[datos.categoria] || 'bovino')}</select></div>
+      <div class="form-row"><label for="vz-cat">Categoría</label><select id="vz-cat">${opcionesCategorias(datos.categoria, CATEGORIA_ESPECIE[datos.categoria] || 'bovino')}</select></div>
       <div class="form-row" id="vz-grupo-fila" style="display:none;"><label for="vz-grupo">Ternero (solo muerte)</label><select id="vz-grupo">${opcionesGrupoTernero()}</select></div>
             <div class="form-row"><label for="vz-dueno">${CONFIG.duenoLabel}</label><select id="vz-dueno">${opcionesDuenos(datos.dueno)}</select></div>
             <div class="form-row"><label for="vz-cant">Cantidad</label><input type="number" id="vz-cant" min="1" value="${datos.cantidad||1}"></div>
@@ -13356,6 +13851,10 @@ function renderInterpretacionVoz(datos){
   };
   document.getElementById('vz-accion').addEventListener('change', mostrarGrupoVoz);
   document.getElementById('vz-cat').addEventListener('change', mostrarGrupoVoz);
+  document.getElementById('vz-especie').addEventListener('change', ()=>{
+    document.getElementById('vz-cat').innerHTML = opcionesCategorias(undefined, document.getElementById('vz-especie').value);
+    mostrarGrupoVoz();
+  });
   mostrarGrupoVoz();
   document.getElementById('vz-confirmar').addEventListener('click', confirmarAccionVoz);
   document.getElementById('vz-descartar').addEventListener('click', ()=>{ cont.innerHTML=''; });

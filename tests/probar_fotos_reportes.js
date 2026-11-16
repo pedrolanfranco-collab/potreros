@@ -235,6 +235,7 @@ async function probarArchivo(archivo){
   chequear('el modal muestra las 2 fotos elegidas', doc.querySelectorAll('#rp-fotos-lista .rp-foto-elegida').length === 2);
   doc.getElementById('rp-subtipo').value = 'Caño roto';
   doc.getElementById('rp-obs').value = 'Caño con pérdida';
+  doc.getElementById('rp-nivel').value = 'amarillo'; // el nivel es obligatorio
   click(win, doc.getElementById('rp-mapa'));
   chequear('al marcar en el mapa, el formulario suelta sus fotos (van con el reporte)', doc.querySelectorAll('#rp-fotos-lista .rp-foto-elegida').length === 0);
   win.colocarReporteEn({ lat: -31.40, lng: -55.43 });
@@ -260,6 +261,7 @@ async function probarArchivo(archivo){
     await elegirFotos(win, doc.getElementById('rp-fotos'), [foto(win, 'gps.jpg')]);
     doc.getElementById('rp-obs').value = 'Foco por GPS';
     win.__gpsCoords = { lat: -31.41, lon: -55.44, acc: 8 };
+    doc.getElementById('rp-nivel').value = 'amarillo'; // el nivel es obligatorio
     click(win, doc.getElementById('rp-gps'));
     await esperar(60);
     const gps = reportes().find(r => r.obs === 'Foco por GPS');
@@ -272,6 +274,7 @@ async function probarArchivo(archivo){
   const subidasAntes = servidor.subidas.length;
   await elegirFotos(win, doc.getElementById('rp-fotos'), [foto(win, 'c.jpg'), foto(win, 'd.jpg')]);
   doc.getElementById('rp-obs').value = 'Sin señal';
+  doc.getElementById('rp-nivel').value = 'amarillo'; // el nivel es obligatorio
   click(win, doc.getElementById('rp-mapa'));
   win.colocarReporteEn({ lat: -31.43, lng: -55.46 });
   const rep2 = reportes().find(r => r.obs === 'Sin señal');
@@ -307,6 +310,7 @@ async function probarArchivo(archivo){
   const rep4 = (() => { click(win, doc.getElementById('rp-fotos-boton')); return null; })();
   await elegirFotos(win, doc.getElementById('rp-fotos'), [foto(win, 'e.jpg')]);
   doc.getElementById('rp-obs').value = 'Con error de red';
+  doc.getElementById('rp-nivel').value = 'amarillo'; // el nivel es obligatorio
   click(win, doc.getElementById('rp-mapa'));
   win.colocarReporteEn({ lat: -31.44, lng: -55.47 });
   const rep4b = reportes().find(r => r.obs === 'Con error de red');
@@ -386,6 +390,7 @@ async function probarArchivo(archivo){
   click(win, doc.getElementById('btn-infraestructura'));
   doc.getElementById('rp-subtipo').value = 'Caño roto';
   doc.getElementById('rp-obs').value = 'Para agregar fotos';
+  doc.getElementById('rp-nivel').value = 'amarillo'; // el nivel es obligatorio
   click(win, doc.getElementById('rp-mapa'));
   win.colocarReporteEn({ lat: -31.46, lng: -55.49 });
   const rep7 = reportes().find(r => r.obs === 'Para agregar fotos');
@@ -482,6 +487,7 @@ async function probarArchivo(archivo){
   doc.getElementById('rp-subtipo').value = 'Otro';
   doc.getElementById('rp-obs').value = 'Para borrar';
   await elegirFotos(win, doc.getElementById('rp-fotos'), [foto(win, 'borrar.jpg')]);
+  doc.getElementById('rp-nivel').value = 'amarillo'; // el nivel es obligatorio
   click(win, doc.getElementById('rp-mapa'));
   win.colocarReporteEn({ lat: -31.48, lng: -55.51 });
   const rep10 = reportes().find(r => r.obs === 'Para borrar');

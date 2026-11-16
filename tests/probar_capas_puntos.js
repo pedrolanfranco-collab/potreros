@@ -362,6 +362,86 @@ async function probarArchivo(archivo){
   chequear('y de la lista de puntos', !dos.win.__puntos().some(p => p.id === pA.id));
   chequear('la capa de Aguadas sigue OFF tras eliminar', texto(dos.win, 'agua') === '💧 Aguadas: OFF');
 
+  // ---------- 7b. Reportes (Infraestructura / Capín Annoni): siguen a la capa de su tipo ----------
+  // Boya, caño y bebedero van con Aguadas; alambrado, portera, Otro y todo Capín Annoni con Instalaciones.
+  // Acá Aguadas está OFF e Instalaciones ON.
+  const repEnMapa = (w, id) => { const m = w.__reportesLayers()[id]; return !!m && w.__mapa().hasLayer(m); };
+  const crearReporte = (w, categoria, subtipo, lat, lon) => {
+    w.guardarReporte({ categoria, subtipo, nivel: 'amarillo', lat, lon });
+    return w.__reportes().filter(r => r.subtipo === subtipo).pop();
+  };
+  const rBoya = crearReporte(dos.win, 'infraestructura', 'Problema con boya', -31.50, -55.50);
+  chequear('un reporte propio de boya con Aguadas apagada prende la capa y su marcador queda en el mapa',
+    texto(dos.win, 'agua') === '💧 Aguadas: ON' && lsCapas(dos.win).agua === true && repEnMapa(dos.win, rBoya.id), texto(dos.win, 'agua'));
+  chequear('el aviso del reporte dice qué capa se prendió', /se prendió la capa 💧 Aguadas/.test(toastDe(dos.win)), toastDe(dos.win));
+  const rCano = crearReporte(dos.win, 'infraestructura', 'Caño roto', -31.51, -55.51);
+  const rPortera = crearReporte(dos.win, 'infraestructura', 'Portera rota', -31.52, -55.52);
+  const rCapin = crearReporte(dos.win, 'capin_annoni', 'Foco de capín annoni', -31.53, -55.53);
+  chequear('con las dos capas ON los cuatro reportes están en el mapa',
+    [rBoya, rCano, rPortera, rCapin].every(r => repEnMapa(dos.win, r.id)));
+  click(dos.win, boton(dos.win, 'agua')); // OFF
+  chequear('apagar Aguadas saca del mapa los reportes de boya y de caño', !repEnMapa(dos.win, rBoya.id) && !repEnMapa(dos.win, rCano.id));
+  chequear('y deja en el mapa la portera rota y el Capín Annoni (van con Instalaciones)', repEnMapa(dos.win, rPortera.id) && repEnMapa(dos.win, rCapin.id));
+  chequear('los marcadores de reporte apagados siguen guardados en reportesLayers', !!dos.win.__reportesLayers()[rBoya.id] && !!dos.win.__reportesLayers()[rCano.id]);
+  click(dos.win, boton(dos.win, 'instalacion')); // OFF
+  chequear('apagar Instalaciones saca la portera y el Capín Annoni', !repEnMapa(dos.win, rPortera.id) && !repEnMapa(dos.win, rCapin.id));
+  click(dos.win, boton(dos.win, 'instalacion')); // ON
+  chequear('volver a prender Instalaciones los devuelve al mapa; los de agua siguen fuera',
+    repEnMapa(dos.win, rPortera.id) && repEnMapa(dos.win, rCapin.id) && !repEnMapa(dos.win, rBoya.id));
+  click(dos.win, boton(dos.win, 'agua')); // ON
+  chequear('volver a prender Aguadas devuelve al mapa los reportes de boya y de caño', repEnMapa(dos.win, rBoya.id) && repEnMapa(dos.win, rCano.id));
+  click(dos.win, boton(dos.win, 'agua')); // OFF: así queda guardado para reabrir
+  const cuatro = await levantar(archivo, servidor, tomarAlmacen(dos.win));
+  chequear('al reabrir con Aguadas apagada no hay errores', cuatro.errores.length === 0, cuatro.errores[0] || '');
+  chequear('al reabrir, los reportes de boya y de caño se crean pero NO se agregan al mapa',
+    !!cuatro.win.__reportesLayers()[rBoya.id] && !!cuatro.win.__reportesLayers()[rCano.id] && !repEnMapa(cuatro.win, rBoya.id) && !repEnMapa(cuatro.win, rCano.id));
+  chequear('al reabrir, la portera y el Capín Annoni sí están en el mapa', repEnMapa(cuatro.win, rPortera.id) && repEnMapa(cuatro.win, rCapin.id));
+  const idRepRemoto = 'rp_remoto_' + uuid();
+  await cuatro.win.aplicarEventoRemoto({ tipo: 'reporte_creado', potrero: est, dispositivo: 'otro-equipo', fecha_cliente: '11/11/2026',
+    detalle: { id: idRepRemoto, categoria: 'infraestructura', subtipo: 'Bebedero roto', obs: null, fecha: '2026-11-11', lat: -31.54, lon: -55.54 } });
+  chequear('un reporte_creado de otro equipo (de agua, con la capa apagada) crea el marcador fuera del mapa y no prende la capa',
+    !!cuatro.win.__reportesLayers()[idRepRemoto] && !repEnMapa(cuatro.win, idRepRemoto) && texto(cuatro.win, 'agua') === '💧 Aguadas: OFF' && lsCapas(cuatro.win).agua === false);
+  // "Ver en el mapa" de un reporte con su capa apagada: igual que un punto (marcador temporal, la capa sigue OFF)
+  const antesVerRep = cuatro.log.length;
+  cuatro.win.__ver(rBoya.id);
+  const svRep = cuatro.log.slice(antesVerRep).filter(e => e[0] === 'setView').pop();
+  chequear('"Ver en el mapa" de un reporte con su capa apagada centra con zoom 17', !!svRep && svRep[2] === 17 && Math.abs(svRep[1][0] - rBoya.lat) < 1e-9, JSON.stringify(svRep));
+  const abrRep = cuatro.log.slice(antesVerRep).filter(e => e[0] === 'openPopup');
+  chequear('abre el popup en un marcador temporal, no en el del reporte apagado',
+    abrRep.length === 1 && abrRep[0][1] !== cuatro.win.__reportesLayers()[rBoya.id], abrRep.length + ' popups');
+  chequear('la capa sigue OFF y el marcador del reporte sigue fuera del mapa',
+    texto(cuatro.win, 'agua') === '💧 Aguadas: OFF' && lsCapas(cuatro.win).agua === false && !repEnMapa(cuatro.win, rBoya.id));
+  chequear('avisa que la capa está apagada y que se muestra solo ese reporte', /está apagada: se muestra solo este reporte/.test(toastDe(cuatro.win)), toastDe(cuatro.win));
+  const antesVerPort = cuatro.log.length;
+  cuatro.win.__ver(rPortera.id);
+  const abrPort = cuatro.log.slice(antesVerPort).filter(e => e[0] === 'openPopup');
+  chequear('"Ver en el mapa" de un reporte con su capa prendida abre el popup en su propio marcador',
+    abrPort.length === 1 && abrPort[0][1] === cuatro.win.__reportesLayers()[rPortera.id]);
+  cuatro.win.resolverReporte(rCano.id, 'infraestructura');
+  chequear('resolver un reporte con su capa apagada lo saca de reportesLayers sin errores', !cuatro.win.__reportesLayers()[rCano.id] && cuatro.errores.length === 0, cuatro.errores[0] || '');
+  const rBoya2 = crearReporte(cuatro.win, 'infraestructura', 'Bebedero roto', -31.55, -55.55);
+  chequear('un reporte propio de agua con la capa apagada la prende y vuelven al mapa los de agua activos',
+    texto(cuatro.win, 'agua') === '💧 Aguadas: ON' && repEnMapa(cuatro.win, rBoya2.id) && repEnMapa(cuatro.win, rBoya.id) && repEnMapa(cuatro.win, idRepRemoto));
+
+  // ---------- 7c. Restaurar un backup: los marcadores de reporte se rehacen y siguen a la capa ----------
+  if(typeof cuatro.win.importarBackupTexto === 'function'){
+    cuatro.win.confirm = () => true;
+    const rViejo = crearReporte(cuatro.win, 'infraestructura', 'Caño roto', -31.56, -55.56); // activo ahora, pero NO esta en el backup
+    const marcViejo = cuatro.win.__reportesLayers()[rViejo.id];
+    const backupRep = JSON.parse(JSON.stringify(cuatro.win.__est()));
+    backupRep.reportes = (backupRep.reportes || []).filter(r => r.id !== rViejo.id);
+    const resImp = cuatro.win.importarBackupTexto(JSON.stringify(backupRep));
+    chequear('restaurar un backup con reportes anda', resImp.ok === true, JSON.stringify(resImp));
+    chequear('al restaurar, el marcador de un reporte que no esta en el backup sale del mapa y de reportesLayers',
+      !cuatro.win.__reportesLayers()[rViejo.id] && !cuatro.win.__mapa().hasLayer(marcViejo));
+    chequear('al restaurar, los reportes activos del backup vuelven a tener marcador en el mapa (su capa esta prendida)',
+      repEnMapa(cuatro.win, rBoya2.id) && repEnMapa(cuatro.win, rBoya.id) && repEnMapa(cuatro.win, idRepRemoto) && repEnMapa(cuatro.win, rPortera.id));
+    click(cuatro.win, boton(cuatro.win, 'agua')); // OFF
+    chequear('despues de restaurar, apagar Aguadas saca del mapa los reportes de agua y deja los de Instalaciones',
+      !repEnMapa(cuatro.win, rBoya2.id) && !repEnMapa(cuatro.win, rBoya.id) && !repEnMapa(cuatro.win, idRepRemoto) && repEnMapa(cuatro.win, rPortera.id));
+    click(cuatro.win, boton(cuatro.win, 'agua')); // ON, como estaba
+  }
+
   // ---------- 8. La preferencia es por campo ----------
   const otraClave = otroEst + '_capas_puntos';
   const otroValor = '{"agua":false,"instalacion":false}';
@@ -386,7 +466,7 @@ async function probarArchivo(archivo){
   }
 
   // ---------- 10. Sin errores de consola ----------
-  chequear('sin errores de consola durante la prueba', [uno.errores, dos.errores, tres.errores].every(e => e.length === 0),
+  chequear('sin errores de consola durante la prueba', [uno.errores, dos.errores, tres.errores, cuatro.errores].every(e => e.length === 0),
     (uno.errores[0] || dos.errores[0] || tres.errores[0] || ''));
 }
 
