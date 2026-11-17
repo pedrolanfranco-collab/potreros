@@ -225,6 +225,12 @@ y `bano_estado_app` siguen ejecutables, `rls_auto_enable` ya no. Antes de correr
 los registros era el respaldo diario de la PC (`backup_supabase.py`, con la clave privada). Respaldos en
 `auditoria_privilegios_antes_fase6` y `auditoria_politicas_antes_fase6`; se deshace con `fase6_endurecer_deshacer.sql`.
 
+**Facturas por Hermes (17/11/2026):** `scripts/hermes/cargar_factura.py` escribe `comprobantes`, `precios_vet`,
+`alias_productos`, `cotizaciones` e `insumos_ajustes` con la **clave privada** de `~/.potreros/.env` (no se abrió
+nada a `anon`). Antes de publicarlo va `scripts/sanidad/comprobantes_unico.sql` (índice único
+`comprobantes (proveedor_id, tipo, numero)`, aditivo; se deshace con `comprobantes_unico_deshacer.sql`), para que
+la misma factura no cuente doble en el stock de Insumos.
+
 Dos cosas que explican comportamiento ya visto, no teoría:
 - **`productos_catalogo` sin UPDATE** es la causa raíz del incidente del
   12/9/2026 (ver memoria `planilla-sanitaria-v22`): un `PATCH` contra esa
