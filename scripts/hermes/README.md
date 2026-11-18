@@ -133,7 +133,8 @@ python scripts\hermes\cargar_factura.py --json factura.json --foto factura.jpg -
  "lineas": [
    {"codigo": "100533", "texto": "MEXIVER x 500 ml", "cantidad": 4, "precio_unitario": 14.00},
    {"codigo": "200111", "texto": "IVERMECTINA 1% x 500 ml", "cantidad": 2, "precio_unitario": 30.00,
-    "producto": "Ivermectina 1%", "contenido_ml": 500, "dosis_por_envase": null}]}
+    "producto": "Ivermectina 1%", "contenido_ml": 500, "dosis_por_envase": null},
+   {"codigo": "300200", "texto": "BALDE 10 L", "cantidad": 1, "precio_unitario": 6.50, "no_stock": true}]}
 ```
 
 - `establecimiento`: `la_vuelta` / `maria_laura` (acepta "LV", "ML", "La Vuelta", "María Laura"). **Si Pedro no
@@ -145,6 +146,12 @@ python scripts\hermes\cargar_factura.py --json factura.json --foto factura.jpg -
   5000). Desde ahí queda el alias y la próxima vez alcanza con el código.
 - `cotizacion_usd` (solo BRL/UYU): USD que vale 1 real ese día (BCU). Sin ella se usa la última guardada; sin
   ninguna, el stock entra igual y el precio por ml queda pendiente.
+- `"no_stock": true` en una línea que **no es un producto veterinario** (caravana, balde, alambre: suelen venir con
+  IVA y la factura lo especifica). Cuenta para que las líneas sumen el subtotal / total, pero no entra al stock, no
+  crea alias ni toca precios; puede ir en 0 (un regalo). La simulación la muestra como "no va al stock". Si todas las
+  líneas son `no_stock`, frena: no hay nada para Insumos (la factura igual va a la contabilidad).
+- Proveedores dados de alta: El Gaucho (USD, sin IVA), Santana (BRL, total) y Agronorte (USD, sin IVA, desde el
+  18/11/2026). Otro se agrega en `proveedores` con el OK de Pedro antes de cargar su factura.
 - No transcribir RUT ni dirección del comprador.
 
 ### Qué valida (si algo falla, código 1 y no escribe nada)

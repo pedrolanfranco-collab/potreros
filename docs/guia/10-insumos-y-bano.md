@@ -41,6 +41,7 @@ template bajo el banner `INSUMOS`.
   `inicial` de **0 ml el día anterior a la factura** (`dispositivo='hermes-script'`): arranca con lo comprado y lo que
   ya hubiera en el galpón se suma con un ajuste o un conteo. La misma factura no entra dos veces (número normalizado
   en el script + índice único `comprobantes (proveedor_id, tipo, numero)`, `scripts/sanidad/comprobantes_unico.sql`).
+  Una línea que no es un producto veterinario (caravana, balde) va con `"no_stock": true`: suma para el total y nada más.
   Detalle y protocolo en `scripts/hermes/README.md`; prueba con red falsa `scripts/hermes/probar_cargar_factura.py` (en el CI).
 
 ### Baño de aspersión (4/11/2026, a pedido de Pedro, `CONFIG.bano`)
