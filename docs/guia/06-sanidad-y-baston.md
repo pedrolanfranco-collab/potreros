@@ -187,6 +187,12 @@ animal y `sanidad_puente.py` crea el tratamiento. Las filas que ya traían produ
   producto se escribe con el nombre **exacto** del catálogo, que `sanidad_puente.py` acepta sin `productos_sanidad.csv`; uno
   que no está en la lista no se deja usar. Dosis con coma o punto (sale con punto); campos de texto, no `type=number`, que
   descarta "2,5".
+- **Categorías unificadas (18/11/2026, a pedido de Pedro):** el patrón son las 24 categorías de la app (`ESPECIES`);
+  `public.categorias_alias` traduce los nombres viejos de la Planilla ("Vaca", "V. Inv.", "Teros/as", "Nov. 1 a 2"…), del
+  bastón ("VACA", "VINV", "NOV12"…) y de DICOSE. `actualizar_sanidad_supabase.py` traduce al publicar Próximos y Últimos
+  (no se reescribe `sanidad_carga`, que coincide con el Excel). "Consumo" y "Sin categoría" quedan como están. SQL,
+  equivalencias aprobadas y prueba en `scripts/categorias/`. **Desde ese día el script corre desde el repo**, no desde
+  OneDrive (`scripts/sanidad/README.md`).
 - **Costo del catálogo = última factura (21/10/2026):** los costos de la Planilla son fórmulas que Pedro no puede tocar, y cada
   publicación borra y reinserta `productos_catalogo`. El trigger `trg_catalogo_ultimo_precio` (BEFORE INSERT, ver
   `scripts/sanidad/catalogo_ultimo_precio_factura.sql`) pone `valor_dosis_ml` = USD/ml de `precio_ultimo` (facturas cargadas con la

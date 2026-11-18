@@ -325,6 +325,9 @@ jobs:
       - name: "Cargar tratamientos de Sanidad desde un CSV (scripts/sanidad) -- valida todo o nada, producto contra el catalogo, idempotente, no manda la clave a otro destino"
         run: python3 scripts/sanidad/probar_cargar_sanidad_csv.py
 
+      - name: "Categorias unificadas al publicar Proximos y Ultimos (scripts/sanidad) -- traduce con categorias_alias, junta Vaca + Vacas en la mas nueva, sin tabla publica igual"
+        run: python3 scripts/sanidad/probar_unificar_categorias.py
+
       - name: "Pasar traslados a Excel y a movimientos_dicose (automatico cada hora) -- Excel abierto no corre, avisos sin repetir, poda de respaldos"
         run: python3 scripts/dicose/probar_pasar_traslados_automatico.py
 
