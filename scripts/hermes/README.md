@@ -177,8 +177,9 @@ están cerradas a la llave pública (que está en este repo público). Así que 
 `~\.potreros\.env` (la misma que el respaldo y `cargar_sanidad_csv.py`): rechaza la llave pública, nunca la
 imprime y solo la manda a Supabase. Solo escribe esas filas, nunca `stock_potreros` ni `eventos_sync`.
 
-Necesita antes el índice único de `scripts/sanidad/comprobantes_unico.sql` (sin él también anda, porque mira antes
-si la factura ya estaba, pero una respuesta perdida podría duplicarla). Auditar lo que cargó Hermes:
+Usa el índice único de `scripts/sanidad/comprobantes_unico.sql` (aplicado el 18/11/2026; sin él también anda,
+porque mira antes si la factura ya estaba y el índice parcial `comprobantes_uq`, que ya existía, frena un número
+repetido). Auditar lo que cargó Hermes:
 `select * from insumos_ajustes where dispositivo='hermes-script'` y `comprobantes` por `creado`.
 
 ## Clave del campo (aviso)

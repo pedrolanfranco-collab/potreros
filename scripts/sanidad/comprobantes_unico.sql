@@ -1,6 +1,9 @@
 -- 17/11/2026, a pedido de Pedro: facturas de veterinaria por Hermes (scripts/hermes/cargar_factura.py).
 -- Que la MISMA factura no se pueda cargar dos veces: si se duplicara, el stock de Insumos contaria la compra doble
--- (movimientos_insumo suma precios_vet x comprobantes). Hasta hoy comprobantes no tenia ningun unico.
+-- (movimientos_insumo suma precios_vet x comprobantes). Ya existia `comprobantes_uq` (mismas columnas, pero PARCIAL:
+-- where numero is not null), que sirve para el "on conflict do nothing" de la skill de precios pero que PostgREST no
+-- puede usar con on_conflict. Por eso este indice nuevo, no parcial. Se dejan los dos.
+-- APLICADO el 18/11/2026 por el conector de Supabase (migracion "comprobantes_unico"), con el OK de Pedro.
 --
 -- Aditivo: solo agrega un indice unico. No cambia permisos (comprobantes sigue cerrado a la llave publica desde la
 -- Fase 6; lo escribe la clave privada). No es parcial a proposito: PostgREST (on_conflict) no puede usar un indice
