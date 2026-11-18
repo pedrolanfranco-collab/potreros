@@ -32,6 +32,16 @@ template bajo el banner `INSUMOS`.
 - Tests: `tests/probar_insumos.js` (9 variantes, Supabase falso con `uid` único; en el CI). `probar_clave_campo.js` ahora ignora las RPC que no son
   `verificar_clave` (antes contaba cualquiera y `stock_insumos_app` lo ponía en rojo). Los instructivos (`instructivo-*`) llevan la sección
   "🧴 Insumos", la fila de "Según tu campo" y el flag `insumos` en `probar_instructivos.js`.
+- **Entradas por factura (Hermes, 17/11/2026)**: las compras salen de `comprobantes` (con `establecimiento`) +
+  `precios_vet` (`cantidad × contenido_envase` ml); las carga `scripts/hermes/cargar_factura.py` (Hermes lee la foto de
+  El Gaucho o Santana y le pasa un JSON; simula, Pedro dice "sí", aplica) o la skill de precios de Claude. Escriben con
+  la clave privada (Fase 6). La app no cambió: las ve como "entradas" de `stock_insumos_app()`. Dos reglas de la vista
+  que hay que tener presentes: un producto **sin conteo inicial no aparece**, y una compra solo suma si su fecha es
+  **posterior** al último conteo. Por eso, a pedido de Pedro, el script le crea al producto sin conteo en ese campo un
+  `inicial` de **0 ml el día anterior a la factura** (`dispositivo='hermes-script'`): arranca con lo comprado y lo que
+  ya hubiera en el galpón se suma con un ajuste o un conteo. La misma factura no entra dos veces (número normalizado
+  en el script + índice único `comprobantes (proveedor_id, tipo, numero)`, `scripts/sanidad/comprobantes_unico.sql`).
+  Detalle y protocolo en `scripts/hermes/README.md`; prueba con red falsa `scripts/hermes/probar_cargar_factura.py` (en el CI).
 
 ### Baño de aspersión (4/11/2026, a pedido de Pedro, `CONFIG.bano`)
 
