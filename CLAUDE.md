@@ -50,6 +50,9 @@ Cada una salió de un error real. El porqué y el detalle están en el archivo d
 4. Mostrar el dueño/firma siempre con `textoFirma(dueno)`, nunca `${dueno}` suelto (en La Vuelta puede ser `""`).
 5. Lo que corre al cargar y usa un `const` va **después** de su declaración (un `TIPOS_FOTO` usado antes dejó la app
    sin cargar; jsdom no lo detectó, Chromium sí). jsdom tampoco cubre service worker, GPS, voz ni IndexedDB real.
+   Tampoco aplica la **Content-Security-Policy** que `generar.js` pone en cada app desde el 18/11/2026: un `onclick="..."`
+   en HTML o `innerHTML` no corre (usar `addEventListener`), y una librería, capa de mapa o servidor nuevo va en
+   `politicaCsp()` del generador o el navegador lo bloquea sin avisar. Se prueba en Chromium con `la-vuelta-test/`.
 
 **Eventos y sincronización** (`03-sincronizacion-y-eventos.md`, `docs/eventos.md`)
 6. Es un **registro de eventos de solo agregar** (`eventos_sync`): borrar o editar = un evento `correccion`, nunca
