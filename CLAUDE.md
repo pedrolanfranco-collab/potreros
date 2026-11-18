@@ -85,6 +85,9 @@ Cada una salió de un error real. El porqué y el detalle están en el archivo d
 17. Un agente con navegador nunca prueba una app que escribe en Supabase: solo `la-vuelta-test/` o páginas que solo
     leen.
 18. Hermes y los scripts de la PC modifican el stock **con eventos**, nunca editando `stock_potreros` (es una foto).
+19. **En la PC, `C:\Users\Pedro\repos\potreros` queda siempre en `main`**: desde el 18/11/2026 la tarea programada
+    "Sanidad - Subir a Supabase (potreros)" corre cada hora `scripts/sanidad/actualizar_sanidad_supabase.py` desde ahí.
+    Para trabajar en una rama en la PC, usar otro worktree (`git worktree add ..\potreros-rama <rama>`), no cambiar de rama ahí.
 
 ## Guía por tema (`docs/guia/`)
 
