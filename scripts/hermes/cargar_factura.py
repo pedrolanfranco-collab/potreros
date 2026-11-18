@@ -16,7 +16,10 @@ Formato del JSON (ver README.md de esta carpeta):
      "moneda": "USD", "subtotal": 312.5, "total": 312.5, "condicion": "credito",
      "establecimiento": "la_vuelta", "cotizacion_usd": null,
      "lineas": [{"codigo": "100533", "texto": "MEXIVER x 500 ml", "cantidad": 4, "precio_unitario": 38.9,
-                 "producto": null, "contenido_ml": null, "dosis_por_envase": null}]}
+                 "producto": null, "contenido_ml": null, "dosis_por_envase": null},
+                {"codigo": "300200", "texto": "BALDE 10 L", "cantidad": 1, "precio_unitario": 6.5, "no_stock": true}]}
+Una linea con "no_stock": true (caravana, balde, alambre: lo que no es un producto veterinario) cuenta para que
+las lineas sumen el total, pero no entra al stock ni toca precios.
 
 Que escribe (todo con la clave PRIVADA: desde la Fase 6 estas tablas estan cerradas a la llave publica):
   1. alias_productos  -- solo para lineas sin alias, con el producto EXACTO del catalogo que confirmo Pedro.
@@ -268,13 +271,15 @@ def leer_factura(texto, hoy):
         if not isinstance(l, dict):
             raise Rechazo("línea %d: no es un objeto" % i)
         que = "línea %d (%s)" % (i, l.get("texto") or l.get("codigo") or "?")
+        no_stock = l.get("no_stock") is True or norm(l.get("no_stock")) in ("true", "si", "1")
         salida.append({
             "n": i,
+            "no_stock": no_stock,
             "codigo": str(l.get("codigo") or "").strip() or None,
             "texto": " ".join(str(l.get("texto") or "").split()) or None,
             "cantidad": numero(l.get("cantidad"), "%s: cantidad" % que),
             "precio_unitario": numero(l.get("precio_unitario"), "%s: precio_unitario (una línea bonificada "
-                                      "en 0 no se carga por acá: va como ajuste)" % que),
+                                      "en 0 no se carga por acá: va como ajuste)" % que, positivo=not no_stock),
             "producto": str(l.get("producto") or "").strip() or None,
             "contenido_ml": numero(l.get("contenido_ml"), "%s: contenido_ml" % que)
             if l.get("contenido_ml") not in (None, "") else None,
@@ -283,6 +288,9 @@ def leer_factura(texto, hoy):
         })
         if not salida[-1]["codigo"] and not salida[-1]["texto"]:
             raise Rechazo("%s: sin código ni texto no se puede emparejar" % que)
+    if all(l["no_stock"] for l in salida):
+        raise Rechazo("todas las líneas están marcadas \"no_stock\": no hay productos veterinarios para cargar al "
+                      "stock (la factura igual va a la contabilidad)")
 
     suma = round(sum(l["cantidad"] * l["precio_unitario"] for l in salida), 2)
     contra, cual = (subtotal, "subtotal") if subtotal is not None else (total, "total")
@@ -326,9 +334,12 @@ def preparar(fac, supa):
     por_codigo = {norm(a["codigo_proveedor"]): a for a in alias if a.get("codigo_proveedor")}
     por_texto = {norm(a["texto_proveedor"]): a for a in alias}
 
-    errores, items, alias_nuevos = [], {}, []
+    errores, items, alias_nuevos, fuera = [], {}, [], []
     for l in fac["lineas"]:
         que = "línea %d (%s)" % (l["n"], l["texto"] or l["codigo"])
+        if l["no_stock"]:             # no es un producto veterinario (caravana, balde...): solo cuenta para el total
+            fuera.append(l)
+            continue
         a = (por_codigo.get(norm(l["codigo"])) if l["codigo"] else None) or \
             (por_texto.get(norm(l["texto"])) if l["texto"] else None)
         if a:
@@ -457,7 +468,7 @@ def preparar(fac, supa):
         it["usd_ml_actual"] = float(actual) if actual is not None else None
 
     sin_conteo = sorted({it["nombre_stock"] for it in items.values() if not it["conteo"]})
-    return {"prov": prov, "items": list(items.values()), "alias_nuevos": alias_nuevos, "cot_nueva": cot_nueva,
+    return {"prov": prov, "items": list(items.values()), "fuera": fuera, "alias_nuevos": alias_nuevos, "cot_nueva": cot_nueva,
             "tc": tc, "existente": existente, "sin_conteo": sin_conteo, "avisos": avisos}
 
 
@@ -491,6 +502,9 @@ def mostrar(fac, plan):
         print("  %-28s %s × %s ml = %s ml   %s%s%s" % (
             it["producto"], ml(it["cantidad"]), ml(it["contenido"]), ml(it["ml"]), efecto, precio,
             "   [producto nuevo para este proveedor]" if it["alias_nuevo"] else ""))
+    for l in plan.get("fuera", []):
+        print("  %-28s %s × %s %s   no va al stock (no es un producto veterinario)" % (
+            (l["texto"] or l["codigo"])[:28], ml(l["cantidad"]), ("%.2f" % l["precio_unitario"]), fac["moneda"]))
     for av in plan["avisos"]:
         print("AVISO: %s" % av)
 

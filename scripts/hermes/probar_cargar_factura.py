@@ -15,6 +15,8 @@ Verifica:
   - frena (sin escribir nada): sin campo, Pone Chico, total que no cierra, proveedor desconocido, fecha futura,
     lista de precios, linea en 0, factura de otro campo;
   - dos lineas del mismo producto y envase se suman (precios_vet guarda una);
+  - una linea "no_stock" (balde, caravana) cuenta para el total pero no entra al stock ni crea alias; puede ir en 0;
+    si todas son "no_stock", frena;
   - sin el indice unico de comprobantes (SQL sin correr) igual carga;
   - si el servidor dice OK pero no guarda, lo detecta (codigo 2);
   - la foto va al bucket fotos-precios y queda en foto_path;
@@ -408,6 +410,37 @@ cod, out = correr(dup, "--aplicar", "--si")
 pv = [p for p in Falso.db["precios_vet"] if p["producto"] == "MEXIVER" and p["fecha"] == "2026-11-15"]
 chequear("se suman en una fila con precio promedio", cod == 0 and len(pv) == 1 and pv[0]["cantidad"] == 4
          and abs(pv[0]["precio_unitario"] - 15.0) < 1e-9, pv)
+
+print("Lineas que no son productos veterinarios (no_stock)")
+reset()
+mixta = gaucho(subtotal=62.5, total=63.93,
+               lineas=[{"codigo": "100533", "texto": "MEXIVER x 500 ml", "cantidad": 4, "precio_unitario": 14.0},
+                       {"codigo": "300200", "texto": "BALDE 10 L", "cantidad": 1, "precio_unitario": 6.5,
+                        "no_stock": True}])
+cod, out = correr(mixta)
+chequear("simula: el balde sale como 'no va al stock' y no frena", cod == 0 and "BALDE 10 L" in out
+         and "no va al stock" in out and "1000 → 3000" in out, out)
+cod, out = correr(mixta, "--aplicar", "--si")
+c4 = [c for c in Falso.db["comprobantes"] if c["numero"] == "A 107001"]
+pv = [p for p in Falso.db["precios_vet"] if c4 and p["comprobante_id"] == c4[0]["id"]]
+chequear("carga solo el MEXIVER; el comprobante guarda el total con IVA",
+         cod == 0 and [p["producto"] for p in pv] == ["MEXIVER"] and c4[0]["total"] == 63.93, (out, pv))
+chequear("el balde no crea alias ni conteo", not any("BALDE" in (x.get("texto_proveedor") or "") for x in Falso.db["alias_productos"])
+         and not any("balde" in (x.get("producto") or "").lower() for x in Falso.db["insumos_ajustes"]))
+reset()
+mal_total = gaucho(total=56.0, lineas=[{"codigo": "100533", "texto": "MEXIVER x 500 ml", "cantidad": 4, "precio_unitario": 14.0},
+                                       {"texto": "BALDE 10 L", "cantidad": 1, "precio_unitario": 6.5, "no_stock": True}])
+cod, out = correr(mal_total)
+chequear("la linea no_stock cuenta para la suma (si falta en el total, frena)", cod == 1 and "suman 62.50" in out, out)
+reset()
+regalo = gaucho(total=56.0, lineas=[{"codigo": "100533", "texto": "MEXIVER x 500 ml", "cantidad": 4, "precio_unitario": 14.0},
+                                    {"texto": "GORRO PROMOCION", "cantidad": 1, "precio_unitario": 0, "no_stock": True}])
+cod, out = correr(regalo)
+chequear("una linea no_stock en 0 se acepta", cod == 0 and "GORRO PROMOCION" in out, out)
+reset()
+solo_balde = gaucho(total=6.5, lineas=[{"texto": "BALDE 10 L", "cantidad": 1, "precio_unitario": 6.5, "no_stock": True}])
+cod, out = correr(solo_balde, "--aplicar", "--si")
+chequear("todas no_stock: frena sin escribir", cod == 1 and "no hay productos veterinarios" in out and not escrituras(), out)
 
 print("Sin el indice unico de comprobantes (SQL sin correr)")
 reset()
