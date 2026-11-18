@@ -1,30 +1,50 @@
 # `actualizar_sanidad_supabase.py`
 
-Copia de historial/backup. El archivo que de verdad corre es el de OneDrive,
-vía una tarea programada de Windows (Task Scheduler) que corre por hora —
-**editá siempre ese** y después copiá el cambio acá, nunca al revés:
+**Desde el 18/11/2026 la copia que corre es la del repo** (a pedido de Pedro): la tarea programada de Windows (Task
+Scheduler, cada hora) apunta a
 
 ```
-C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Sanidad\Automatizacion\actualizar_sanidad_supabase.py
+C:\Users\Pedro\repos\potreros\scripts\sanidad\actualizar_sanidad_supabase.py
 ```
+
+así cada `git pull` en `main` deja corriendo la versión revisada y probada en el CI, sin copiar archivos a mano. Los
+`.xlsx` que lee siguen en OneDrive (`CARPETA`) y el log sigue en `Sanidad\Automatizacion\actualizar_sanidad_supabase.log`
+(o donde diga la variable `SANIDAD_LOG`), no adentro del repo. Condición: la carpeta del repo en la PC queda en la rama
+`main` (si una sesión de trabajo cambia de rama ahí, la tarea corre esa rama).
+
+Hasta el 18/11/2026 corría la copia de OneDrive
+(`...\Sanidad\Automatizacion\actualizar_sanidad_supabase.py`) y esta era solo historial. Esa copia queda sin uso: se
+puede renombrar a `.viejo`.
+
+### Pasar la tarea programada a la copia del repo (una sola vez, en PowerShell)
+
+1. Ver qué corre hoy la tarea (no cambia nada):
+   ```powershell
+   $t = Get-ScheduledTask | Where-Object { ($_.Actions | ForEach-Object { "$($_.Execute) $($_.Arguments)" }) -match 'actualizar_sanidad_supabase' }
+   $t | Select-Object TaskName, TaskPath, @{n='Programa';e={$_.Actions[0].Execute}}, @{n='Argumentos';e={$_.Actions[0].Arguments}}
+   ```
+2. Si `Programa` es Python (`python.exe` / `pythonw.exe`) y `Argumentos` es la ruta del `.py` de OneDrive, cambiarla:
+   ```powershell
+   $a = $t.Actions[0]
+   $nueva = New-ScheduledTaskAction -Execute $a.Execute -Argument '"C:\Users\Pedro\repos\potreros\scripts\sanidad\actualizar_sanidad_supabase.py"' -WorkingDirectory 'C:\Users\Pedro\repos\potreros\scripts\sanidad'
+   Set-ScheduledTask -TaskName $t.TaskName -TaskPath $t.TaskPath -Action $nueva
+   Start-ScheduledTask -TaskName $t.TaskName -TaskPath $t.TaskPath
+   ```
+   (si la tarea corre un `.bat` u otra cosa, no cambiar: mirar primero qué hace.)
+3. Mirar el final del log: tiene que aparecer una corrida nueva sin `ERROR`.
+
+### Categorías unificadas (18/11/2026)
+
+Al publicar Próximos y Últimos traduce cada categoría al patrón (las 24 de la app) con `public.categorias_alias`
+(`scripts/categorias/`). En Próximos, si dos filas quedan con la misma categoría y sanidad (p. ej. "Vaca" y "Vacas" con
+Garrapata) queda la del tratamiento más nuevo: así los vencimientos con nombre viejo se cierran solos. Sin la tabla, o
+sin poder leerla, publica como antes sin traducir y deja un `AVISO` en el log. Prueba:
+`scripts/sanidad/probar_unificar_categorias.py` (en el CI).
 
 Publica el catálogo compartido de productos (`productos_catalogo`, leído
 directo de la hoja "Costo productos" del Excel de La Vuelta) y los paneles
 de solo lectura `sanidad_proximos`/`sanidad_ultimos`, a partir de los
-`.xlsx` que la Planilla Sanitaria ya exporta. Nada de esto se ejecuta desde
-este repo ni desde CI — la tarea programada apunta a la ruta de OneDrive de
-arriba, no a esta carpeta. Este copia solo existe para tener historial con
-`git log`/`git blame` de un script que, hasta el 12/9/2026, no estaba
-versionado en ningún lado.
-
-Para verificar que las dos copias coinciden:
-
-```bash
-diff "/c/Users/Pedro/OneDrive/A Registros PEDRO LANFRANCO CRESPO/Sanidad/Automatizacion/actualizar_sanidad_supabase.py" \
-     "actualizar_sanidad_supabase.py"
-```
-
-Sin salida = coinciden.
+`.xlsx` que la Planilla Sanitaria ya exporta.
 
 ## Qué clave de Supabase usa cada script de la PC (13/10/2026, Fase 4)
 

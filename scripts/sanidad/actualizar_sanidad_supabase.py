@@ -17,7 +17,9 @@ from datetime import datetime, date
 from urllib import request, error
 
 CARPETA = r"C:\Users\Pedro\OneDrive\A Registros PEDRO LANFRANCO CRESPO\Sanidad"
-LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "actualizar_sanidad_supabase.log")
+# 18/11/2026: el log va siempre a Sanidad\Automatizacion (donde estuvo siempre), asi el script puede correr desde la
+# carpeta del repo (C:\Users\Pedro\repos\potreros\scripts\sanidad) sin dejar el log adentro del repo.
+LOG = os.environ.get("SANIDAD_LOG") or os.path.join(CARPETA, "Automatizacion", "actualizar_sanidad_supabase.log")
 SUPA_URL = "https://skkknfjpwcstefcroqjt.supabase.co"
 
 # 10/10/2026 (auditoria, Fase 2): la llave publica de las apps YA NO puede escribir en productos_catalogo, sanidad_ultimos y sanidad_proximos
@@ -142,6 +144,60 @@ def a_ultimos(filas, establecimiento):
             "actualizado": a_iso(r.get("Actualizado")),
         })
     return filas_out
+
+
+# 18/11/2026, a pedido de Pedro: nombres de categoria unificados. La Planilla todavia arrastra nombres viejos
+# ("Vaca", "V. Inv.", "Teros/as", "Nov. 1 a 2"...) y por eso los vencimientos con nombre viejo de Proximos nunca se
+# cerraban solos. Al publicar se traduce cada nombre a la categoria del patron (las 24 de la app) con la tabla
+# public.categorias_alias (scripts/categorias/categorias.sql). Si la tabla no esta o no se puede leer, se sube como
+# antes, sin traducir, y queda un AVISO en el log: nunca deja de publicar por esto.
+def leer_equivalencias():
+    """{alias en minusculas: categoria del patron} desde Supabase; {} si no se puede leer."""
+    try:
+        status, cuerpo = rest("GET", "categorias_alias", "?select=alias,categoria")
+    except Exception as e:
+        log(f"AVISO: no se pudo leer categorias_alias ({e}): las categorias se suben sin unificar")
+        return {}
+    if status != 200:
+        log(f"AVISO: no se pudo leer categorias_alias ({status}): las categorias se suben sin unificar")
+        return {}
+    try:
+        filas = json.loads(cuerpo)
+    except ValueError:
+        log("AVISO: categorias_alias contesto algo que no es JSON: las categorias se suben sin unificar")
+        return {}
+    return {str(f["alias"]).strip().lower(): f["categoria"] for f in filas if f.get("alias") and f.get("categoria")}
+
+
+def categoria_patron(nombre, mapa):
+    """Nombre del patron para un nombre viejo; cualquier otro (p. ej. "Consumo") queda igual."""
+    if nombre is None:
+        return None
+    return mapa.get(str(nombre).strip().lower(), nombre)
+
+
+def unificar_ultimos(filas, mapa):
+    """Ultimos: cada fila es un tratamiento; solo se traduce la categoria."""
+    return [dict(f, categoria=categoria_patron(f.get("categoria"), mapa)) for f in filas]
+
+
+def unificar_proximos(filas, mapa):
+    """Proximos: se traduce la categoria y, si dos filas quedan con la misma categoria y sanidad (p. ej. "Vaca" y
+    "Vacas" con Garrapata), queda la del tratamiento mas nuevo: la vieja es justo el vencimiento que no se cerraba.
+    Las filas sin categoria no se juntan entre si. Se respeta el orden de la Planilla."""
+    elegidas, orden = {}, []
+    for i, f in enumerate(filas):
+        g = dict(f, categoria=categoria_patron(f.get("categoria"), mapa))
+        k = (g["categoria"], g.get("sanidad")) if g["categoria"] is not None else ("__sin_categoria__", i)
+        if k not in elegidas:
+            elegidas[k] = g
+            orden.append(k)
+            continue
+        nueva = (str(g.get("ultimo_tratamiento") or ""), str(g.get("fecha_prevista") or ""))
+        vieja = (str(elegidas[k].get("ultimo_tratamiento") or ""), str(elegidas[k].get("fecha_prevista") or ""))
+        if nueva > vieja:
+            elegidas[k] = g
+    return [elegidas[k] for k in orden]
 
 
 def _num(v):
@@ -288,6 +344,7 @@ if __name__ == "__main__":
     if not _clave:
         log(f"ERROR: {_problema}. No se sube nada.")
         raise SystemExit(1)
+    equivalencias = leer_equivalencias()
     for nombre_archivo, establecimiento, tabla in ARCHIVOS:
         ruta = f"{CARPETA}\\{nombre_archivo}"
         try:
@@ -299,9 +356,9 @@ if __name__ == "__main__":
             log(f"ERROR leyendo {nombre_archivo}: {e}")
             continue
         if tabla == "sanidad_proximos":
-            filas = a_proximos(filas_crudas, establecimiento)
+            filas = unificar_proximos(a_proximos(filas_crudas, establecimiento), equivalencias)
         else:
-            filas = a_ultimos(filas_crudas, establecimiento)
+            filas = unificar_ultimos(a_ultimos(filas_crudas, establecimiento), equivalencias)
         try:
             n = reemplazar(tabla, establecimiento, filas)
             log(f"{tabla} / {establecimiento}: {n} filas (desde {nombre_archivo})")
