@@ -7,6 +7,8 @@ Tres cosas, que son las que pide por WhatsApp:
   - *limpieza*  -> `limpieza_punto` (limpieza de un bebedero o un tanque; el punto se busca por nombre).
   - *arreglo* / *tarea* -> `tarea_creada` (Infraestructura/Mantenimiento: algo roto para reparar;
                   con --tema Ganado sirve para programar un trabajo, p. ej. el dia 7 de una IATF).
+  - *corregir*  -> `evento_manejo_editado`: rehace un evento de manejo ya cargado (mismo id) cuando se anoto mal.
+  - *anular*    -> `evento_manejo_eliminado`: lo deja sin efecto (tombstone por id).
 
 Simula siempre por defecto: para escribir hay que pasar `--aplicar` (y pide el SI; con `--si` no lo pide,
 que es lo que usa Hermes despues del OK de Pedro).
@@ -170,16 +172,51 @@ def construir_evento(args, est, fecha, pedir_fn):
     return CE.evento(est, "evento_manejo", potrero or est, detalle, fecha), trabajo
 
 
+def construir_corregir(args, est, fecha, pedir_fn):
+    """Corrige un evento de manejo ya cargado (mismo id): `evento_manejo_editado`."""
+    ident = str(args.event_id or "").strip()
+    if not ident:
+        raise CE.Rechazo("falta --event-id (el id del evento de manejo que se corrige)")
+    trabajo = str(args.trabajo or "").strip()
+    if not trabajo:
+        raise CE.Rechazo("falta --trabajo (el tipo corregido)")
+    potrero = str(args.potrero or "").strip()
+    detalle = {"id": ident, "ts": datetime.datetime.now().isoformat(timespec="seconds"),
+               "fecha": fecha, "tipo": trabajo[:80], "usuario": (args.quien or "Hermes").strip()}
+    if potrero:
+        detalle["potrero"] = potrero
+    if args.categoria:
+        detalle["categoria"] = str(args.categoria).strip()
+    if args.cantidad:
+        detalle["cantidad"] = int(args.cantidad)
+    if args.obs:
+        detalle["obs"] = str(args.obs).strip()
+    return CE.evento(est, "evento_manejo_editado", potrero or est, detalle, fecha), \
+        "correccion de %s" % ident[:8]
+
+
+def construir_anular(args, est, fecha, pedir_fn):
+    """Anula un evento de manejo ya cargado: `evento_manejo_eliminado` (deja el tombstone por id)."""
+    ident = str(args.event_id or "").strip()
+    if not ident:
+        raise CE.Rechazo("falta --event-id (el id del evento de manejo que se anula)")
+    detalle = {"id": ident, "ts": datetime.datetime.now().isoformat(timespec="seconds")}
+    return CE.evento(est, "evento_manejo_eliminado", est, detalle, fecha), \
+        "anulacion de %s" % ident[:8]
+
+
 CONSTRUCTORES = {"destete": construir_destete, "limpieza": construir_limpieza,
                  "arreglo": construir_arreglo, "tarea": construir_arreglo,
-                 "evento": construir_evento}
+                 "evento": construir_evento, "corregir": construir_corregir,
+                 "anular": construir_anular}
 TAREAS = ("arreglo", "tarea")          # los unicos que pueden programarse para adelante
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Anota un trabajo de campo en eventos_sync (simula por defecto).")
     ap.add_argument("--tipo", required=True, choices=sorted(CONSTRUCTORES),
-                    help="destete | evento | limpieza | arreglo (tarea)")
+                    help="destete | evento | tarea (arreglo) | limpieza | corregir | anular")
+    ap.add_argument("--event-id", dest="event_id", help="con corregir/anular: el id del evento de manejo")
     ap.add_argument("--establecimiento", default="la_vuelta",
                     choices=("la_vuelta", "maria_laura", "pone_chico"))
     ap.add_argument("--fecha", "--fecha-prevista", dest="fecha",

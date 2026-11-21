@@ -190,6 +190,37 @@ cod, out, err = correr(["--tipo", "limpieza", "--punto", "monte", "--aplicar", "
 chequear("limpieza: el nombre renombrado cuenta", cod == 0 and fake.posts()
          and fake.posts()[0]["cuerpo"]["detalle"]["puntoId"] == "p1", (cod, err))
 
+print("== corregir y anular un evento ya cargado ==")
+ID_MANEJO = "0bc31e29-7883-428a-aa6e-9a96de130b8b"
+fake = FakeSupa()
+cod, out, err = correr(["--tipo", "corregir", "--event-id", ID_MANEJO,
+                        "--trabajo", "Destete temporario - tablillas nasales", "--potrero", "11",
+                        "--categoria", "Terneros", "--cantidad", "98", "--fecha", "21/11/2026",
+                        "--obs", "Tablillas nasales 11 dias + Ectosules Plus 10 cc", "--aplicar", "--si"], fake)
+posts = fake.posts()
+chequear("corregir: 1 POST evento_manejo_editado", cod == 0 and len(posts) == 1
+         and posts[0]["cuerpo"]["tipo"] == "evento_manejo_editado", (cod, err))
+if posts:
+    d = posts[0]["cuerpo"]["detalle"]
+    chequear("corregir: el mismo id", d["id"] == ID_MANEJO, d["id"])
+    chequear("corregir: el tipo corregido", d["tipo"] == "Destete temporario - tablillas nasales", d["tipo"])
+    chequear("corregir: la fecha del hecho", d["fecha"] == "21/11/2026", d.get("fecha"))
+
+fake = FakeSupa()
+cod, out, err = correr(["--tipo", "corregir", "--event-id", ID_MANEJO, "--fecha", "21/11/2026"], fake)
+chequear("corregir sin --trabajo: no carga", cod == 1 and not fake.posts() and "NO SE CARGA" in err, (cod, err))
+
+fake = FakeSupa()
+cod, out, err = correr(["--tipo", "anular"], fake)
+chequear("anular sin --event-id: no carga", cod == 1 and not fake.posts() and "NO SE CARGA" in err, (cod, err))
+
+fake = FakeSupa()
+cod, out, err = correr(["--tipo", "anular", "--event-id", ID_MANEJO, "--aplicar", "--si"], fake)
+posts = fake.posts()
+chequear("anular: 1 POST evento_manejo_eliminado con el id", cod == 0 and len(posts) == 1
+         and posts[0]["cuerpo"]["tipo"] == "evento_manejo_eliminado"
+         and posts[0]["cuerpo"]["detalle"]["id"] == ID_MANEJO, (cod, err))
+
 print("")
 if fallas:
     print("FALLARON %d: %s" % (len(fallas), " | ".join(fallas)))
