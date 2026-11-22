@@ -83,7 +83,9 @@ def _sql_default(valor):
     s = str(valor)
     if "nextval" in s:
         return None
-    if "(" in s or s.lower() in ("true", "false", "null") or re.match(r"^'.*'(::[a-z ]+)?$", s):
+    palabras_sql = ("true", "false", "null", "current_date", "current_timestamp", "current_time",
+                    "localtimestamp", "localtime")   # sin parentesis pero son SQL, no texto
+    if "(" in s or s.lower() in palabras_sql or re.match(r"^'.*'(::[a-z ]+)?$", s):
         return s                                   # funcion (now(), gen_random_uuid()) o literal ya con comillas
     return "'" + s.replace("'", "''") + "'"
 
