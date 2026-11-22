@@ -53,6 +53,26 @@ in `@prueba`), the first line of `clienteSupabase()` (`@prueba`: returns `null`)
 Adding the markers did not change a byte of the 9 real apps. A new code path that reaches Supabase without `clienteSupabase()`
 would leak into the test copy: `tests/probar_test_aislado.js` fails if the file contains the URL or the key.
 
+**Content-Security-Policy (18/11/2026, punto 9 del informe de auditoría)** — cada app lleva en el `<head>`
+`<meta http-equiv="Content-Security-Policy" content="__CSP__">`, que `generar.js` (`politicaCsp()`) llena al final, sobre el
+HTML ya generado: `script-src` con los dos CDN (cdnjs, jsdelivr) y el **hash sha256 de cada `<script>` en línea de esa app**
+(sin `'unsafe-inline'`), `'unsafe-hashes'` solo para el `onload="this.media='all'"` de las fuentes; `connect-src` solo el
+sitio y el Supabase de la app (sacado de `SUPABASE_URL`; la copia de prueba no tiene); `img-src` con arcgisonline (teselas),
+cdnjs (íconos de Leaflet), Supabase (fotos), `data:` y `blob:`. Efecto: un `<script>` o un `onclick="..."` que se cuele por
+`innerHTML` no corre, y nada puede mandar datos a otro servidor con `fetch`. Reglas: **un `onclick="..."` nuevo en el HTML
+o en un `innerHTML` no anda** (usar `addEventListener`, como el resto de la app); **una librería, capa de mapa o servidor
+nuevo va en `politicaCsp()`**, si no el navegador lo bloquea sin avisar (en la consola dice "violates the following Content
+Security Policy directive"). jsdom no aplica CSP: `tests/probar_csp.js` controla la política, y un cambio en ella se prueba
+en Chromium con `la-vuelta-test/`. Las páginas hechas a mano (tableros, `completar-sanidad`, instructivos) todavía no llevan CSP.
+
+**Librerías (18/11/2026)** — jsPDF 4.2.1 y jspdf-autotable 5.0.9 se cargan de `cdn.jsdelivr.net/npm/` (el mismo archivo que
+el paquete de npm), con `integrity`. Sus versiones están también en `tests/package.json`: `tests/probar_pdf_real.js` genera
+los 3 PDF de la PC con esos archivos de verdad y falla si la versión o el `integrity` del template no coinciden con el
+paquete. Para subir una versión: cambiar las dos cosas, la URL del `PRECACHE_URLS` de los 3 `sw.js` de PC, y correr esa
+prueba. SheetJS queda en 0.18.5 (la última publicada en npm/cdnjs): sus fallas conocidas (CVE-2023-30533, CVE-2024-22363)
+son al **leer** planillas, y las apps solo las **escriben** (`XLSX.writeFile`); si algún día se lee un Excel con SheetJS,
+antes hay que pasar a la versión de `cdn.sheetjs.com`.
+
 **Contrast and accessibility rules (12/11/2026, audit)** — text on `--ocre` is dark (`var(--texto)`, 5.5:1), never white
 (2.96:1); ocre *as text* on a cream background uses `--ocre-texto` (`#8f5f12`), never `--ocre` or `#b7791f`. Text is at least
 12px, except the map controls and the calendar cells. A new form field is `<label for="id">` + a control with that `id`; an

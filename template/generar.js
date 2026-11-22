@@ -148,7 +148,44 @@ function generar(templateText, config, variant) {
 
   texto = texto.replace('<!DOCTYPE html>\n', `<!DOCTYPE html>\n${CABECERA_GENERADO}`);
 
+  texto = texto.replace('__CSP__', politicaCsp(texto));
+
   return texto;
+}
+
+// Content-Security-Policy de cada app (18/11/2026, punto 9 del informe de auditoría). Va en un <meta> porque GitHub
+// Pages no deja poner encabezados. Se calcula al final, sobre el HTML ya generado:
+//   - script-src: solo los dos CDN de las librerías y los <script> en línea de ESTA app, por su hash sha256. Un
+//     <script> o un onclick="..." que alguien logre meter con innerHTML (p. ej. en el nombre de un potrero que llega
+//     de Supabase) no corre. 'unsafe-hashes' + hash solo para el onload="this.media='all'" de las fuentes.
+//   - connect-src: solo el propio sitio y el Supabase de esta app (la copia de prueba no tiene). Aunque algo se
+//     colara, no puede mandar la clave del campo ni datos a otro servidor con fetch.
+//   - img-src: teselas del mapa (arcgisonline), íconos de Leaflet (cdnjs), fotos de Supabase y data:/blob:.
+// Si se agrega una librería, una capa de mapa o un servidor nuevo, va acá; tests/probar_csp.js lo controla.
+// jsdom no aplica CSP: un cambio acá se prueba en Chromium con la-vuelta-test.
+function sha256(texto) {
+  return 'sha256-' + require('crypto').createHash('sha256').update(texto, 'utf8').digest('base64');
+}
+function politicaCsp(html) {
+  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => `'${sha256(m[1])}'`);
+  const sinScripts = html.replace(/<script\b[\s\S]*?<\/script>/g, '');
+  const manejadores = [...new Set([...sinScripts.matchAll(/\son[a-z]+="([^"]*)"/g)].map(m => m[1]))].map(h => `'${sha256(h)}'`);
+  const supa = (html.match(/const SUPABASE_URL = '(https:\/\/[a-z0-9]+\.supabase\.co)';/) || [])[1];
+  const directivas = [
+    "default-src 'self'",
+    ["script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net", ...scripts,
+      ...(manejadores.length ? ["'unsafe-hashes'", ...manejadores] : [])].join(' '),
+    "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    ['img-src', "'self'", 'data:', 'blob:', 'https://server.arcgisonline.com', 'https://cdnjs.cloudflare.com', ...(supa ? [supa] : [])].join(' '),
+    ['connect-src', "'self'", ...(supa ? [supa, supa.replace('https://', 'wss://')] : [])].join(' '),
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ];
+  return directivas.join('; ');
 }
 
 function cacheEsperado(est, variant) {

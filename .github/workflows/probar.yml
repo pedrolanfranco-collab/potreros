@@ -286,6 +286,12 @@ jobs:
       - name: "Fase 5 de la auditoria (10/10/2026) -- el boton PDF: Animales por potrero (nacimientos por especie) se guarda con y sin conexion"
         run: node tests/probar_pdf_animales.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
 
+      - name: "Punto 9 de la auditoria (18/11/2026) -- los 3 PDF de la PC con jsPDF 4.2.1 y autotable 5.0.9 de verdad; version e integrity iguales a tests/package.json"
+        run: node tests/probar_pdf_real.js la-vuelta-pc/index.html maria-laura-pc/index.html pone-chico-pc/index.html
+
+      - name: "Punto 9 de la auditoria (18/11/2026) -- Content-Security-Policy de las 10 apps: hashes de los scripts en linea, CDN, mapa y Supabase permitidos"
+        run: node tests/probar_csp.js la-vuelta-pc/index.html la-vuelta-movil/index.html la-vuelta-movil-campo/index.html maria-laura-pc/index.html maria-laura-movil/index.html maria-laura-movil-campo/index.html pone-chico-pc/index.html pone-chico-movil/index.html pone-chico-movil-campo/index.html la-vuelta-test/index.html
+
       - name: "Fase 5 de la auditoria (10/10/2026) -- contrato de eventos: docs/eventos.md al dia con el template y los eventos reales cumplen lo que leen los scripts"
         run: node tests/probar_contrato_eventos.js la-vuelta-pc/index.html maria-laura-pc/index.html
 
