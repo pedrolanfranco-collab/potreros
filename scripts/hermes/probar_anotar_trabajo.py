@@ -221,6 +221,26 @@ chequear("anular: 1 POST evento_manejo_eliminado con el id", cod == 0 and len(po
          and posts[0]["cuerpo"]["tipo"] == "evento_manejo_eliminado"
          and posts[0]["cuerpo"]["detalle"]["id"] == ID_MANEJO, (cod, err))
 
+print("== corregir una tarea (por ejemplo, agregarle repeticion) ==")
+ID_TAREA = "e42dbce5-e119-4b19-b80d-a7b4dfb85959"
+fake = FakeSupa()
+cod, out, err = correr(["--tipo", "tarea-corregir", "--event-id", ID_TAREA, "--tema", "Otras",
+                        "--tipo-tarea", "Otra…", "--fecha-prevista", "12/12/2026", "--cada-dias", "20",
+                        "--obs", "Comprar pastillas para los perros (Lola y Miley)", "--aplicar", "--si"], fake)
+posts = fake.posts()
+chequear("tarea-corregir: 1 POST tarea_editada", cod == 0 and len(posts) == 1
+         and posts[0]["cuerpo"]["tipo"] == "tarea_editada", (cod, err))
+if posts:
+    d = posts[0]["cuerpo"]["detalle"]
+    chequear("tarea-corregir: el mismo id", d["id"] == ID_TAREA, d["id"])
+    chequear("tarea-corregir: la repeticion", d.get("cadaDias") == 20, d.get("cadaDias"))
+    chequear("tarea-corregir: fecha prevista futura", d["fechaPrevista"] == "12/12/2026", d.get("fechaPrevista"))
+    chequear("tarea-corregir: tema y tipo", d["temaGrupo"] == "Otras" and d["tipo"] == "Otra…")
+
+fake = FakeSupa()
+cod, out, err = correr(["--tipo", "tarea-corregir", "--tema", "Otras", "--tipo-tarea", "Otra…"], fake)
+chequear("tarea-corregir sin --event-id: no carga", cod == 1 and not fake.posts() and "NO SE CARGA" in err, (cod, err))
+
 print("")
 if fallas:
     print("FALLARON %d: %s" % (len(fallas), " | ".join(fallas)))
