@@ -20,6 +20,11 @@ reemplaza por dos scripts de Python que usan **solo la clave pública**:
   sincronice; no saltear la validación.
 - Probado con un insert real: `mover` (ida y vuelta) y `eliminar`. **`nacimiento` y `muerte` solo con red falsa.**
   Protocolo para Hermes (simular, mostrarle a Pedro, esperar su "sí") en `scripts/hermes/README.md`.
+- `cargar_factura.py` (17/11/2026): factura de veterinaria (El Gaucho / Santana) → entrada de stock de Insumos
+  (`comprobantes` + `precios_vet`, y conteo 0 si el producto no tenía). **Este sí usa la clave privada**
+  (`SUPABASE_SECRET_KEY`): esas tablas están cerradas a la llave pública desde la Fase 6. Mismo protocolo (simular,
+  mostrar, "sí", `--aplicar --si`). Hermes lee la foto; el script no adivina el campo ni crea productos. Ver
+  `docs/guia/10-insumos-y-bano.md` y `scripts/hermes/README.md`.
 - Pruebas con red falsa en el CI (`scripts/hermes/probar_*.py`). Auditar lo que cargó Hermes:
   `select … from eventos_sync where dispositivo='hermes-script'`.
 - **Cierre de la Fase 4**: estos scripts leen y escriben con la clave pública, así que también necesitan

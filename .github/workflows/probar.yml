@@ -343,6 +343,12 @@ jobs:
       - name: "Hermes -- cargar eventos (simula por defecto, SI antes de escribir, stock insuficiente frena, 409 cuenta como cargado, eliminar no se hace dos veces) con red falsa"
         run: python3 scripts/hermes/probar_cargar_evento.py
 
+      - name: "Hermes -- cargar factura de veterinaria a Insumos (simula por defecto, SI antes de escribir, no duplica la factura, conteo 0 si no habia, producto contra el catalogo, clave privada solo a Supabase) con red falsa"
+        run: python3 scripts/hermes/probar_cargar_factura.py
+
+      - name: "Hermes -- anotar trabajo de campo (IATF, destete, tarea programada, limpieza): simula por defecto, SI antes de escribir, evento_manejo/tarea_creada con la forma de la app, fechas futuras solo en tareas, con red falsa"
+        run: python3 scripts/hermes/probar_anotar_trabajo.py
+
       - name: "Hermes -- perfiles de consulta (solo lectura, basico sin costos ni pesos, campos fijados por entorno) con red falsa"
         run: python3 scripts/hermes/probar_consultar_mcp.py
 
