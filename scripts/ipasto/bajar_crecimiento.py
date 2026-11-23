@@ -263,6 +263,11 @@ def sin_dato(fila):
     return all(fila[k] == 0 for k in TC)
 
 
+def sin_medicion(fila):
+    """Mes sin crecimiento real medido (iPasto trae el promedio historico igual)."""
+    return not fila["tc_actual"]
+
+
 def bajar_ultimo_mes(transp, potreros):
     """[(fila, area)] del ultimo mes, de los potreros que tienen dato."""
     salida = []
@@ -270,21 +275,22 @@ def bajar_ultimo_mes(transp, potreros):
         j = ipasto_get(transp, "/api/establecimientos/%d/indicadores-seguimiento-forrajero?id=%d&potreroId=%s&tipoUsoSueloId=%s"
                        % (ID_IPASTO, ID_IPASTO, p["id"], TIPOS_USO))
         fila = fila_de(p["nombre"], j)
-        if not sin_dato(fila):
+        if not sin_dato(fila) and not sin_medicion(fila):
             salida.append((fila, numero(p.get("area"))))
     return salida
 
 
-def bajar_historia(transp, potreros, desde, hasta):
-    """Serie mensual por potrero desde 'AAAA-MM' hasta hoy. Saltea los meses en cero."""
+def bajar_historia(transp, potreros, desde, hasta, tope):
+    """Serie mensual por potrero desde 'AAAA-MM' hasta el mes de iPasto (tope). Saltea meses sin medicion y meses posteriores a tope."""
     filas = []
     for p in potreros:
         ruta = ("/api/establecimientos/%d/seguimiento-forrajero-tc-mensual-total?fechaComienzo=%s-01&fechaFin=%s"
                 "&potreroId=%s&tipoUsoSueloId=%s" % (ID_IPASTO, desde, hasta.isoformat(), p["id"], TIPOS_USO))
         for j in ipasto_get(transp, ruta) or []:
             fila = fila_de(p["nombre"], dict(j, mes=j["month"]))
-            if not sin_dato(fila):
-                filas.append(fila)
+            if (fila["anio"], fila["mes"]) > tope or sin_dato(fila) or sin_medicion(fila):
+                continue
+            filas.append(fila)
     return filas
 
 
@@ -327,8 +333,7 @@ def sin_repetidos(filas):
 def mensaje_subida(mes_ip, pares):
     actual = [(f["tc_actual"], area) for f, area in pares if (f["anio"], f["mes"]) == mes_ip]
     promedio = [(f["tc_promedio"], area) for f, area in pares if (f["anio"], f["mes"]) == mes_ip]
-    return ("iPasto subió %s %d: el pasto creció en promedio %s kg MS/ha/día (promedio histórico %s). "
-            "Mirá 'Pintar por: Pasto' en la PC de La Vuelta."
+    return ("iPasto subió %s %d: el pasto creció en promedio %s kg MS/ha/día (promedio histórico %s)."
             % (MESES[mes_ip[1] - 1], mes_ip[0], fmt(ponderado(actual)), fmt(ponderado(promedio))))
 
 
@@ -354,7 +359,7 @@ def correr(args, transp, ahora, avisar, estado, ruta_est):
         raise FallaUrgente("iPasto no devolvió datos para ningún potrero")
     mes_ip = max((f["anio"], f["mes"]) for f, _ in pares)
     guardado = ultimo_guardado(transp, skey)
-    historia = bajar_historia(transp, potreros, args.historia, hoy) if args.historia else []
+    historia = bajar_historia(transp, potreros, args.historia, hoy, mes_ip) if args.historia else []
     estado.setdefault("ultimo_mes_nuevo_en", hoy.isoformat())
 
     # Todos los dias se sube lo que iPasto trae (idempotente: pega potreros tardios y correcciones).
