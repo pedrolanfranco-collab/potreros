@@ -5383,7 +5383,7 @@ function tooltipPotreroPC(nombre){
   let lineaPasto = '';
   if(pp){
     const texto = `Pasto de ${MESES_PASTO[pp.mes-1]}${pp.campo ? ' (promedio del campo)' : ''}: crecía ${coma1(pp.tc)} kg/ha/día`
-      + (pp.prom !== null ? ` (normal ${coma1(pp.prom)})` : '')
+      + (pp.prom > 0 ? ` (normal ${coma1(pp.prom)})` : '')
       + (pp.cubre !== null ? ` · cubre ${Math.round(pp.cubre)} % de la carga de hoy` : '')
       + (pp.viejo ? ' · dato viejo' : '');
     let color = '';

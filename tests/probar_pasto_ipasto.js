@@ -135,6 +135,27 @@ async function probarLaVuelta(){
   chequear('potrero sin animales se pinta gris', win.eval("colorPastoMapa('5')") === '#9a9a8c', win.eval("colorPastoMapa('5')"));
   chequear('colorPastoMapa 18 da el mismo color que el mapa', win.eval("colorPastoMapa('18')") === colorEsperado, win.eval("colorPastoMapa('18')"));
 
+  // 3. Numeros fijos escritos a mano (no se usa la formula del codigo para el esperado):
+  // 776 Ovejas x 0,15 UG = 116,4 UG (Ovejas no tiene regla de temporada, vale 0,15 todo el año).
+  // cubre = 16,25 tc x 23 ha / (116,4 UG x 10) x 100 = 32,1 %  ->  "cubre 32 %".
+  p.estado.potreros['18'].animales = {['Ovejas||'+dueno]: 776};
+  p.refrescarColoresMapa();
+  const txtFijo = textoPlano(tooltipTexto(p.poligonos['18'].layer));
+  chequear('potrero 18 tiene 23 ha', p.areaHa('18') === 23, p.areaHa('18'));
+  chequear('potrero 18 tiene 116,4 UG con 776 ovejas', Math.abs(win.eval("totalUG('18')") - 116.4) < 1e-9, win.eval("totalUG('18')"));
+  chequear('tooltip 18 dice "UG: 116,40"', /UG: 116,40/.test(txtFijo), txtFijo);
+  chequear('tooltip 18 dice "cubre 32 %" (16,25 x 23 / (116,4 x 10))', /cubre 32 %/.test(txtFijo), txtFijo);
+
+  // 2. Color real de la capa en modo Pasto (cambio por el selector, disparando 'change')
+  const sel1 = win.document.getElementById('mapa-pintar-por');
+  sel1.value = 'pasto';
+  sel1.dispatchEvent(new win.Event('change', {bubbles:true}));
+  chequear('el selector pasa a pasto y se guarda', win.localStorage.getItem('la_vuelta_pintar_por') === 'pasto', win.localStorage.getItem('la_vuelta_pintar_por'));
+  chequear('potrero 18 (cubre 32 %) se pinta #c2452d en modo Pasto', p.poligonos['18'].layer.estilo.fillColor === '#c2452d', p.poligonos['18'].layer.estilo.fillColor);
+  p.estado.potreros['5'].animales = {};
+  p.refrescarColoresMapa();
+  chequear('potrero 5 sin animales se pinta gris en modo Pasto', p.poligonos['5'].layer.estilo.fillColor === '#9a9a8c', p.poligonos['5'].layer.estilo.fillColor);
+
   // Modo pasto guardado: el selector y la leyenda lo muestran
   cerrar();
   const conModo = await levantar('la-vuelta-pc/index.html', {la_vuelta_pasto_ipasto: datos, la_vuelta_pintar_por: 'pasto'});
@@ -150,6 +171,15 @@ async function probarLaVuelta(){
   const opt = selSin.win.document.querySelector('#mapa-pintar-por option[value="pasto"]');
   chequear('el selector de La Vuelta PC tiene la opcion pasto', !!opt && !opt.disabled);
   selSin.cerrar();
+
+  // 4. Cruce con tc_promedio 0 (lo que deja la sincronizacion con Number(null)): el tooltip NO dice "normal"
+  const promCero = await levantar('la-vuelta-pc/index.html', {la_vuelta_pasto_ipasto: datosPasto(MES_PREVIO.anio, MES_PREVIO.mes, {"LV 11":{tc_actual:16.25,tc_promedio:0}})});
+  const pc = promCero.win.__prueba;
+  pc.estado.potreros['18'].animales = {['Vacas||'+((pc.config.duenos||[])[0]||'')]: 50};
+  pc.refrescarColoresMapa();
+  const txtCero = textoPlano(tooltipTexto(pc.poligonos['18'].layer));
+  chequear('tc_promedio 0: el tooltip dice "crecía 16,3" y NO dice "normal"', /crecía 16,3 kg\/ha\/día/.test(txtCero) && !/normal/.test(txtCero), txtCero);
+  promCero.cerrar();
 }
 
 async function probarSinDatos(){

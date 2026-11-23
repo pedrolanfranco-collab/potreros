@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-qVzmEL2170bxD8aYOmkhSsXJbZGkmNGFHaK2P58nxX0=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-owDkYtR5cVQ6K9BZjcg09K/n9Di/lTqNK6LhsYZb2qA=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>María Laura — Mapa de Potreros</title>
 <link rel="manifest" href="manifest.json">
@@ -4971,7 +4971,7 @@ function tooltipPotreroPC(nombre){
   let lineaPasto = '';
   if(pp){
     const texto = `Pasto de ${MESES_PASTO[pp.mes-1]}${pp.campo ? ' (promedio del campo)' : ''}: crecía ${coma1(pp.tc)} kg/ha/día`
-      + (pp.prom !== null ? ` (normal ${coma1(pp.prom)})` : '')
+      + (pp.prom > 0 ? ` (normal ${coma1(pp.prom)})` : '')
       + (pp.cubre !== null ? ` · cubre ${Math.round(pp.cubre)} % de la carga de hoy` : '')
       + (pp.viejo ? ' · dato viejo' : '');
     let color = '';
