@@ -8,7 +8,7 @@
 $ErrorActionPreference = "Stop"
 $nombre = "iPasto - Vigilar crecimiento (potreros)"
 $repo = "C:\Users\Pedro\repos\potreros"
-if (-not (Test-Path "$repo\scripts\ipasto\bajar_crecimiento.py")) { throw "Falta el script en $repo: primero mergear la rama y actualizar main" }
+if (-not (Test-Path "$repo\scripts\ipasto\bajar_crecimiento.py")) { throw "Falta el script en ${repo}: primero mergear la rama y actualizar main" }
 $script = Join-Path $repo "scripts\ipasto\bajar_crecimiento.py"
 
 # pythonw.exe no abre ventana; si no existe, usa python.exe
