@@ -125,7 +125,8 @@ def construir_limpieza(args, est, fecha, pedir_fn):
     return CE.evento(est, "limpieza_punto", est, detalle, fecha), "Limpieza de %s" % p["nombre"]
 
 
-def construir_arreglo(args, est, fecha, pedir_fn):
+def _detalle_tarea(args, fecha, pedir_fn, est, ident=None):
+    """El detalle de una tarea (lo comparten el alta `tarea_creada` y la correccion `tarea_editada`)."""
     tema = str(args.tema or "Mantenimiento").strip()
     if tema not in TEMAS:
         raise CE.Rechazo("tema '%s' (tiene que ser uno de: %s)" % (tema, ", ".join(TEMAS)))
@@ -133,9 +134,13 @@ def construir_arreglo(args, est, fecha, pedir_fn):
     if tipo not in TEMAS_TAREA[tema]:
         raise CE.Rechazo("tipo '%s' no esta en el tema %s (hay: %s)"
                          % (tipo, tema, ", ".join(TEMAS_TAREA[tema])))
-    detalle = {"id": str(uuid.uuid4()), "ts": datetime.datetime.now().isoformat(timespec="seconds"),
+    detalle = {"ts": datetime.datetime.now().isoformat(timespec="seconds"),
                "temaGrupo": tema, "tema": str(args.obs or tipo).strip()[:160], "tipo": tipo,
                "fechaPrevista": fecha, "usuario": (args.quien or "Hermes").strip()}
+    if ident:
+        detalle["id"] = ident
+    else:
+        detalle["id"] = str(uuid.uuid4())
     if args.punto:
         p = buscar_punto(est, args.punto, pedir_fn)
         detalle["puntoId"] = p["id"]
@@ -146,8 +151,24 @@ def construir_arreglo(args, est, fecha, pedir_fn):
         detalle["cadaDias"] = int(args.cada_dias)
     if args.obs:
         detalle["obs"] = str(args.obs).strip()
+    return detalle
+
+
+def construir_arreglo(args, est, fecha, pedir_fn):
+    detalle = _detalle_tarea(args, fecha, pedir_fn, est)
     return CE.evento(est, "tarea_creada", detalle.get("potrero") or (detalle.get("puntoNombre") or est),
-                     detalle, fecha), "%s (%s)" % (tipo, tema)
+                     detalle, fecha), "%s (%s)" % (detalle["tipo"], detalle["temaGrupo"])
+
+
+def construir_tarea_corregir(args, est, fecha, pedir_fn):
+    """Rehace una tarea ya creada (mismo id): `tarea_editada`. Sirve, por ejemplo, para agregarle repeticion."""
+    ident = str(args.event_id or "").strip()
+    if not ident:
+        raise CE.Rechazo("falta --event-id (el id de la tarea que se corrige)")
+    detalle = _detalle_tarea(args, fecha, pedir_fn, est, ident=ident)
+    return CE.evento(est, "tarea_editada", detalle.get("potrero") or (detalle.get("puntoNombre") or est),
+                     detalle, fecha), "correccion de la tarea %s: %s (%s)" % (ident[:8], detalle["tipo"],
+                                                                            detalle["temaGrupo"])
 
 
 def construir_evento(args, est, fecha, pedir_fn):
@@ -207,15 +228,16 @@ def construir_anular(args, est, fecha, pedir_fn):
 
 CONSTRUCTORES = {"destete": construir_destete, "limpieza": construir_limpieza,
                  "arreglo": construir_arreglo, "tarea": construir_arreglo,
+                 "tarea-corregir": construir_tarea_corregir,
                  "evento": construir_evento, "corregir": construir_corregir,
                  "anular": construir_anular}
-TAREAS = ("arreglo", "tarea")          # los unicos que pueden programarse para adelante
+TAREAS = ("arreglo", "tarea", "tarea-corregir")   # los unicos que pueden programarse para adelante
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Anota un trabajo de campo en eventos_sync (simula por defecto).")
     ap.add_argument("--tipo", required=True, choices=sorted(CONSTRUCTORES),
-                    help="destete | evento | tarea (arreglo) | limpieza | corregir | anular")
+                    help="destete | evento | tarea (arreglo) | tarea-corregir | limpieza | corregir | anular")
     ap.add_argument("--event-id", dest="event_id", help="con corregir/anular: el id del evento de manejo")
     ap.add_argument("--establecimiento", default="la_vuelta",
                     choices=("la_vuelta", "maria_laura", "pone_chico"))
