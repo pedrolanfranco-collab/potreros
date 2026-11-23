@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-Bqk7mMLBkvixF/oiyJRS1gyTzR5oFkxjWJkxMqBENS4=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-Y+YiY/C2g1dxBS96RF6rbKDMpPLWpmWiZQ2yodfeNHk=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pone Chico — Mapa de Potreros</title>
 <link rel="manifest" href="manifest.json">
@@ -731,6 +731,7 @@
         <select id="mapa-pintar-por" aria-label="Pintar potreros por">
           <option value="dotacion">Dotación (UG/ha)</option>
           <option value="eventos">Eventos de manejo</option>
+          <option value="pasto">Pasto (iPasto)</option>
           <option value="ocupado">Ocupado</option>
         </select>
       </div>
@@ -4262,6 +4263,7 @@ async function sincronizar(mostrarToast){
   verificarClaveGuardada(); // Fase 4: una vez por apertura, no espera ni frena la sincronización
   if(CONFIG.insumos) insumosAlSincronizar(); // 3/11/2026: cola y stock de Insumos; en segundo plano, no frena ni rompe la sincronización
   if(CONFIG.bano) banoAlSincronizar(); // 4/11/2026: cola del Baño de aspersión; en segundo plano, no frena ni rompe la sincronización
+  if(CONFIG.ipasto) pastoAlSincronizar(client); // 23/11/2026: crecimiento del pasto de iPasto; en segundo plano, no frena ni rompe la sincronización
   try{
     // Antes de que el forEach de abajo pise ultimaSincronizacion -- si es
     // null, esta es la primera sincronización de este dispositivo (recién
@@ -4921,6 +4923,40 @@ function cargaPotrero(nombre){
   if(!ha) return 0;
   return totalUG(nombre) / ha;
 }
+const CLAVE_PASTO_IPASTO = ESTABLECIMIENTO + '_pasto_ipasto';
+const MESES_PASTO = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function leerPastoIpasto(){
+  try { const d = JSON.parse(localStorage.getItem(CLAVE_PASTO_IPASTO) || 'null'); return d && d.anio && d.mes && d.filas ? d : null; }
+  catch(e){ return null; }
+}
+function coma1(x){ return Number(x).toFixed(1).replace('.', ','); }
+// Crecimiento del pasto (iPasto) de un potrero. Va un mes atras: el dato es del ultimo mes medido.
+function pastoPotrero(nombre){
+  if(!CONFIG.ipasto) return null;
+  const d = leerPastoIpasto();
+  if(!d) return null;
+  const clave = CONFIG.ipasto.cruce ? CONFIG.ipasto.cruce[nombre] : undefined;
+  let tc, prom, campo;
+  if(clave && d.filas[clave]){
+    tc = d.filas[clave].tc_actual;
+    prom = d.filas[clave].tc_promedio;
+    campo = false;
+  } else {
+    const valores = Object.values(d.filas);
+    const tcs = valores.map(f => f.tc_actual).filter(v => Number.isFinite(v));
+    const proms = valores.map(f => f.tc_promedio).filter(v => Number.isFinite(v) && v > 0);
+    if(!tcs.length) return null;
+    tc = tcs.reduce((s,v)=>s+v,0) / tcs.length;
+    prom = proms.length ? proms.reduce((s,v)=>s+v,0) / proms.length : null;
+    campo = true;
+  }
+  const ha = areaHa(nombre);
+  const ug = totalUG(nombre);
+  const cubre = (ug > 0 && ha > 0) ? tc * ha / (ug * (CONFIG.ipasto.consumoUG || 10)) * 100 : null;
+  const hoy = new Date();
+  const viejo = ((hoy.getFullYear()*12 + hoy.getMonth()+1) - (d.anio*12 + d.mes)) > 2;
+  return {tc, prom, campo, cubre, mes: d.mes, anio: d.anio, viejo};
+}
 function tooltipPotreroPC(nombre){
   const datosNombre = parteTapada(nombre) || nombre;
   const total = totalPotrero(datosNombre);
@@ -4931,7 +4967,20 @@ function tooltipPotreroPC(nombre){
   const avisoDoble = datosNombre !== nombre ? ' <small>(doble en uso)</small>' : '';
   const reciente = eventoManejoMasReciente(datosNombre);
   const lineaEvento = reciente ? `<br>Último evento: ${esc(reciente.tipo)} · ${esc(reciente.fecha)}` : '';
-  return `<strong>${esc(datosNombre)}</strong>${avisoDoble}<br>Animales: ${total}<br>UG: ${ug.toFixed(2).replace('.', ',')}<br>Área: ${area}<br>Carga: ${carga}${lineaEvento}`;
+  const pp = (typeof pastoPotrero === 'function') ? pastoPotrero(datosNombre) : null;
+  let lineaPasto = '';
+  if(pp){
+    const texto = `Pasto de ${MESES_PASTO[pp.mes-1]}${pp.campo ? ' (promedio del campo)' : ''}: crecía ${coma1(pp.tc)} kg/ha/día`
+      + (pp.prom !== null ? ` (normal ${coma1(pp.prom)})` : '')
+      + (pp.cubre !== null ? ` · cubre ${Math.round(pp.cubre)} % de la carga de hoy` : '')
+      + (pp.viejo ? ' · dato viejo' : '');
+    let color = '';
+    if(pp.viejo) color = '#888';
+    else if(pp.cubre !== null && pp.cubre < 60) color = '#c2452d';
+    else if(pp.cubre !== null && pp.cubre >= 150) color = '#3b6d11';
+    lineaPasto = `<br><span${color ? ` style="color:${color}"` : ''}>${texto}</span>`;
+  }
+  return `<strong>${esc(datosNombre)}</strong>${avisoDoble}<br>Animales: ${total}<br>UG: ${ug.toFixed(2).replace('.', ',')}<br>Área: ${area}<br>Carga: ${carga}${lineaEvento}${lineaPasto}`;
 }
 /* Área geométrica aproximada en hectáreas a partir de coordenadas [lat,lon],
    usando proyección equirectangular simple (suficiente para la escala de un potrero). */
@@ -6744,9 +6793,18 @@ const CORTES_DOTACION_MAPA = [0.5, 0.8, 1.2];
 const COLORES_DOTACION_MAPA = ['#cfe3a8','#7fb04f','#e0a62a','#c2452d'];
 const COLOR_VACIO_MAPA = '#9a9a8c';
 const CLAVE_PINTAR_MAPA = ESTABLECIMIENTO + '_pintar_por';
+function modosPintarMapa(){ return ['dotacion','ocupado',...(CONFIG.manejo ? ['eventos'] : []),...(CONFIG.ipasto ? ['pasto'] : [])]; }
 function leerModoPintarMapa(){
-  try { return ['dotacion','ocupado',...(CONFIG.manejo ? ['eventos'] : [])].includes(localStorage.getItem(CLAVE_PINTAR_MAPA)) ? localStorage.getItem(CLAVE_PINTAR_MAPA) : 'dotacion'; }
+  try { return modosPintarMapa().includes(localStorage.getItem(CLAVE_PINTAR_MAPA)) ? localStorage.getItem(CLAVE_PINTAR_MAPA) : 'dotacion'; }
   catch(e){ return 'dotacion'; }
+}
+function colorPastoMapa(nombre){
+  const p = pastoPotrero(nombre);
+  if(!p || p.cubre === null || p.viejo) return COLOR_VACIO_MAPA;
+  if(p.cubre < 60) return '#c2452d';
+  if(p.cubre < 100) return '#e0a62a';
+  if(p.cubre < 150) return '#cfe3a8';
+  return '#7fb04f';
 }
 function eventoManejoMasReciente(nombre){
   return (estado.eventosManejo||[]).filter(e=>!e.eliminado && POTREROS_GEO.some(p=>p.nombre===e.potrero) && e.potrero===nombre && e.fecha)
@@ -6775,6 +6833,14 @@ function actualizarLeyendaMapa(){
     el.innerHTML = cuad(COLOR_VACIO_MAPA, 'Sin animales') + cuad('#5c7a4a', 'Con animales');
   } else if(modoPintarMapa === 'eventos'){
     el.innerHTML = cuad('#c2452d', '0–7 días') + cuad('#e0a62a', '8–14 días') + cuad('#cfe3a8', '15–30 días') + cuad(COLOR_VACIO_MAPA, 'Sin evento en 30 días');
+  } else if(modoPintarMapa === 'pasto'){
+    const d = leerPastoIpasto();
+    if(!d){
+      el.innerHTML = cuad(COLOR_VACIO_MAPA, 'Sin datos de iPasto todavía');
+    } else {
+      el.innerHTML = `<span>Pasto de ${MESES_PASTO[d.mes-1]} ${d.anio}, cubre:</span>`
+        + cuad('#c2452d', 'menos de 60 %') + cuad('#e0a62a', '60–99 %') + cuad('#cfe3a8', '100–149 %') + cuad('#7fb04f', '150 % o más') + cuad(COLOR_VACIO_MAPA, 'Sin animales / dato viejo');
+    }
   } else {
     el.innerHTML = cuad(COLOR_VACIO_MAPA, 'Sin animales / sin área')
       + cuad(COLORES_DOTACION_MAPA[0], 'menos de 0,5 UG/ha')
@@ -6786,10 +6852,11 @@ function actualizarLeyendaMapa(){
 const selectorPintarMapa = document.getElementById('mapa-pintar-por');
 if(selectorPintarMapa){
   if(!CONFIG.manejo){ selectorPintarMapa.querySelector('option[value="eventos"]')?.remove(); if(modoPintarMapa==='eventos') modoPintarMapa='dotacion'; }
+  if(!CONFIG.ipasto){ selectorPintarMapa.querySelector('option[value="pasto"]')?.remove(); if(modoPintarMapa==='pasto') modoPintarMapa='dotacion'; }
   selectorPintarMapa.value = modoPintarMapa;
   selectorPintarMapa.addEventListener('change', ()=>{
     const nuevo = selectorPintarMapa.value;
-    if(!['dotacion','ocupado',...(CONFIG.manejo ? ['eventos'] : [])].includes(nuevo)){
+    if(!modosPintarMapa().includes(nuevo)){
       selectorPintarMapa.value = modoPintarMapa;
       return;
     }
@@ -6798,6 +6865,34 @@ if(selectorPintarMapa){
     actualizarLeyendaMapa();
     refrescarColoresMapa();
   });
+}
+// Se guarda solo el ultimo mes de iPasto en localStorage (para funcionar sin señal).
+async function pastoAlSincronizar(client){
+  try {
+    if(!CONFIG.ipasto || !client) return;
+    let previo = null;
+    try { previo = JSON.parse(localStorage.getItem(CLAVE_PASTO_IPASTO) || 'null'); } catch(e){ previo = null; }
+    if(previo && previo.leidoEn && (Date.now() - previo.leidoEn) < 6*60*60*1000) return;
+    const res = await client.from('crecimiento_pasto')
+      .select('establecimiento,potrero_ipasto,anio,mes,tc_actual,tc_promedio')
+      .eq('establecimiento', ESTABLECIMIENTO)
+      .order('anio',{ascending:false})
+      .order('mes',{ascending:false})
+      .order('potrero_ipasto',{ascending:true})
+      .limit(200);
+    if(!res || res.error || !Array.isArray(res.data) || !res.data.length) return;
+    const primera = res.data[0];
+    const filas = {};
+    res.data.forEach(f => {
+      if(f.anio !== primera.anio || f.mes !== primera.mes) return;
+      const tcActual = Number(f.tc_actual);
+      if(f.tc_actual === null || !Number.isFinite(tcActual) || tcActual === 0) return;
+      filas[f.potrero_ipasto] = {tc_actual: tcActual, tc_promedio: Number(f.tc_promedio)};
+    });
+    if(!Object.keys(filas).length) return;
+    try { localStorage.setItem(CLAVE_PASTO_IPASTO, JSON.stringify({anio: primera.anio, mes: primera.mes, filas, leidoEn: Date.now()})); } catch(e){}
+    if(modoPintarMapa === 'pasto'){ actualizarLeyendaMapa(); refrescarColoresMapa(); }
+  } catch(e){ console.warn('pasto iPasto: no se pudo leer crecimiento_pasto', e); }
 }
 actualizarLeyendaMapa();
 function refrescarColoresMapa(){
@@ -6816,7 +6911,7 @@ function refrescarColoresMapa(){
       return;
     }
     item.layer.setStyle({
-      fillColor: modoPintarMapa === 'dotacion' ? colorDotacionMapa(p.nombre) : modoPintarMapa === 'eventos' ? colorEventosMapa(p.nombre) : (total>0 ? '#5c7a4a' : '#8fae72'),
+      fillColor: modoPintarMapa === 'dotacion' ? colorDotacionMapa(p.nombre) : modoPintarMapa === 'eventos' ? colorEventosMapa(p.nombre) : modoPintarMapa === 'pasto' ? colorPastoMapa(p.nombre) : (total>0 ? '#5c7a4a' : '#8fae72'),
       fillOpacity: activo ? 0.55 : (total>0 ? 0.4 : 0.2),
       color: activo ? '#c68a3b' : '#5c7a4a',
       weight: activo ? 3 : 2,

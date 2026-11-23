@@ -98,3 +98,13 @@ mapa) elige **Dotación (UG/ha)** (por defecto; cortes 0,5 / 0,8 / 1,2 UG/ha, gr
 eventos en los últimos 30 días; solo con `CONFIG.manejo`) u **Ocupado**. La elección se acuerda en
 `localStorage['<ESTABLECIMIENTO>_pintar_por']` y la leyenda (abajo a la izquierda) explica los colores con texto. La móvil no cambia.
 Test: `tests/probar_mapa_pc.js`.
+
+**"Pintar por: Pasto" y el cartelito con iPasto (23/11/2026, solo La Vuelta PC).** Se activa con `CONFIG.ipasto` (`cruce`: nombre del potrero
+de la app → nombre del potrero en iPasto, p. ej. `"18": "LV 11"`; `consumoUG`, 10 por defecto). Los datos vienen de la tabla
+`crecimiento_pasto` (la escribe `scripts/ipasto` con la clave privada; las apps solo leen con la clave del campo). `pastoAlSincronizar()`
+lee el último mes y lo guarda en `localStorage['<ESTABLECIMIENTO>_pasto_ipasto']` (`{anio, mes, filas, leidoEn}`) para que ande sin señal;
+no vuelve a leer antes de 6 horas. iPasto va **un mes atrás**: el dato es del último mes medido y el texto siempre dice de qué mes es.
+Sin cruce, el potrero usa el promedio simple del campo. La fórmula es `cubre = tc × ha efectiva / (UG × consumoUG) × 100`: colores
+rojo < 60 %, naranja 60–99 %, verde claro 100–149 %, verde ≥ 150 %; gris sin animales o dato de más de 2 meses. Lo calcula `pastoPotrero()`
+(en el bloque `@pc` antes de `tooltipPotreroPC`); el cartelito agrega el renglón "Pasto de <mes>…". Los potreros de María Laura y Pone Chico no
+tienen `ipasto`, así que la opción se saca sola. Test: `tests/probar_pasto_ipasto.js`.
