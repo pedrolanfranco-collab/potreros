@@ -10,7 +10,10 @@ Verifica:
   e) 46 dias sin mes nuevo -> avisa una vez; la segunda corrida no vuelve a avisar;
   f) --simular -> no escribe, no avisa, no guarda estado;
   g) --historia -> sube la serie mensual (sin repetir la clave potrero/mes, sin meses en cero);
-  h) falta usuario o clave -> sale 1 sin pedir nada; clave publica -> sale 1 sin pedir nada.
+  h) falta usuario o clave -> sale 1 sin pedir nada; clave publica -> sale 1 sin pedir nada;
+  k) --historia no sube el mes posterior al de indicadores (la serie de iPasto lo trae);
+  l) --historia saltea los meses sin medicion (tcActual 0, con promedio);
+  m) el aviso de mes nuevo no nombra 'Pintar por'.
 """
 import datetime as dt
 import json
@@ -46,9 +49,12 @@ class Falso:
         {"id": 5, "nombre": "Potrero C", "area": "80"},   # sin dato: todos los tc en 0
     ]
 
-    def __init__(self, mes=(2026, 10), guardado=(2026, 9), login=200, subida="todas", nuevo_potrero=False):
+    def __init__(self, mes=(2026, 10), guardado=(2026, 9), login=200, subida="todas", nuevo_potrero=False,
+                 con_posterior=False, sin_medicion_en=None):
         self.mes, self.guardado, self.login, self.subida = mes, guardado, login, subida
         self.nuevo_potrero = nuevo_potrero
+        self.con_posterior = con_posterior          # la serie trae tambien el mes siguiente al de indicadores
+        self.sin_medicion_en = sin_medicion_en      # Potrero A: ese mes con tcActual 0 y tcPromedio 18
         self.pedidos = []      # (metodo, url)
         self.subidas = []      # filas que llegaron al POST
 
@@ -78,12 +84,17 @@ class Falso:
         if "seguimiento-forrajero-tc-mensual-total" in url:
             pid = int(re.search(r"potreroId=(\d+)", url).group(1))
             serie = []
+            hasta = (2026, 11) if self.con_posterior else self.mes
             for anio in (2025, 2026):
                 for mes in range(1, 13):
-                    if (anio, mes) > self.mes:
+                    if (anio, mes) > hasta:
                         break
                     if pid == 5 or (pid == 3 and (anio, mes) == (2025, 3)):
                         valores = ("0", "0", "0", "0")
+                    elif (anio, mes) > self.mes:
+                        valores = ("10", "20", "5", "30")
+                    elif pid == 1 and (anio, mes) == self.sin_medicion_en:
+                        valores = ("0", "18", "0", "25")
                     else:
                         valores = ("9,0", "8,0", "4,0", "12,0")
                     serie.append({"month": mes, "anio": anio, "tcActual": valores[0], "tcPromedio": valores[1],
@@ -166,6 +177,31 @@ def main():
         nombres = {r["potrero_ipasto"] for r in f.subidas}
         chequear("b2) mismo mes con potrero nuevo: sube el potrero nuevo sin avisar",
                  cod == 0 and "Potrero D" in nombres and av == [], (cod, nombres, av))
+
+        # k) historia con un mes posterior al de indicadores: ese mes no se sube
+        tmp = nuevo_tmp(); tmps.append(tmp); preparar(tmp)
+        f = Falso(mes=(2026, 10), guardado=(2026, 9), con_posterior=True)
+        cod, av = correr(f, tmp, extra=["--historia", "2025-01"])
+        meses_subidos = {(r["anio"], r["mes"]) for r in f.subidas}
+        chequear("k) historia: el mes posterior a indicadores (nov 2026) no se sube",
+                 cod == 0 and (2026, 11) not in meses_subidos and (2026, 10) in meses_subidos,
+                 (cod, sorted(meses_subidos)[-3:]))
+
+        # l) historia con un mes sin medicion (tcActual 0, tcPromedio 18): ese mes no se sube, los demas si
+        tmp = nuevo_tmp(); tmps.append(tmp); preparar(tmp)
+        f = Falso(mes=(2026, 10), guardado=(2026, 9), sin_medicion_en=(2026, 8))
+        cod, av = correr(f, tmp, extra=["--historia", "2025-01"])
+        a_subidos = {(r["anio"], r["mes"]) for r in f.subidas if r["potrero_ipasto"] == "Potrero A"}
+        chequear("l) historia: el mes sin medicion (ago 2026) no se sube y el resto de Potrero A si",
+                 cod == 0 and (2026, 8) not in a_subidos and (2026, 7) in a_subidos and (2026, 9) in a_subidos
+                 and len(a_subidos) == 21, (cod, len(a_subidos)))
+
+        # m) el aviso de mes nuevo no nombra 'Pintar por'
+        tmp = nuevo_tmp(); tmps.append(tmp); preparar(tmp)
+        f = Falso(mes=(2026, 10), guardado=(2026, 9))
+        cod, av = correr(f, tmp)
+        chequear("m) el aviso de mes nuevo no contiene 'Pintar por'",
+                 cod == 0 and len(av) == 1 and "Pintar por" not in av[0][1], av)
 
         # i) --simular con login 401: sale 1, cero avisos, no toca el estado
         tmp = nuevo_tmp(); tmps.append(tmp); preparar(tmp)
