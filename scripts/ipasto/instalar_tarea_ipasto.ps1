@@ -1,15 +1,15 @@
 # Registra la tarea programada "iPasto - Vigilar crecimiento (potreros)" (una vez por dia, 9:00).
-# Correr una sola vez en la PC, desde PowerShell, en la carpeta del clon del repo:
-#   powershell -ExecutionPolicy Bypass -File scripts\ipasto\instalar_tarea_ipasto.ps1
+# Correr una sola vez en la PC, desde PowerShell, despues del merge a main:
+#   powershell -ExecutionPolicy Bypass -File C:\Users\Pedro\repos\potreros\scripts\ipasto\instalar_tarea_ipasto.ps1
 # Es idempotente: si la tarea ya existe, la reemplaza.
 # Para ver el resultado: Get-ScheduledTaskInfo -TaskName "iPasto - Vigilar crecimiento (potreros)"
 # Para correrla ya:      Start-ScheduledTask -TaskName "iPasto - Vigilar crecimiento (potreros)"
 
 $ErrorActionPreference = "Stop"
 $nombre = "iPasto - Vigilar crecimiento (potreros)"
-$repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$repo = "C:\Users\Pedro\repos\potreros"
+if (-not (Test-Path "$repo\scripts\ipasto\bajar_crecimiento.py")) { throw "Falta el script en $repo: primero mergear la rama y actualizar main" }
 $script = Join-Path $repo "scripts\ipasto\bajar_crecimiento.py"
-if (-not (Test-Path $script)) { throw "No encuentro $script. Correr desde el clon de potreros." }
 
 # pythonw.exe no abre ventana; si no existe, usa python.exe
 $py = (Get-Command pythonw.exe -ErrorAction SilentlyContinue).Source

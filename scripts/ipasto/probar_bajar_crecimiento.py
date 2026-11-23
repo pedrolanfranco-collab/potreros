@@ -46,8 +46,9 @@ class Falso:
         {"id": 5, "nombre": "Potrero C", "area": "80"},   # sin dato: todos los tc en 0
     ]
 
-    def __init__(self, mes=(2026, 10), guardado=(2026, 9), login=200, subida="todas"):
+    def __init__(self, mes=(2026, 10), guardado=(2026, 9), login=200, subida="todas", nuevo_potrero=False):
         self.mes, self.guardado, self.login, self.subida = mes, guardado, login, subida
+        self.nuevo_potrero = nuevo_potrero
         self.pedidos = []      # (metodo, url)
         self.subidas = []      # filas que llegaron al POST
 
@@ -56,7 +57,10 @@ class Falso:
         if "/api/auth/sign-in" in url:
             return self.login, json.dumps({"msg": "usuario %s clave %s no valida" % (CEDULA, CLAVE)}).encode()
         if "/potreros?" in url:
-            return 200, json.dumps({"data": self.POTREROS}).encode()
+            lista = list(self.POTREROS)
+            if self.nuevo_potrero:
+                lista.append({"id": 6, "nombre": "Potrero D", "area": "60"})
+            return 200, json.dumps({"data": lista}).encode()
         if "indicadores-seguimiento-forrajero" in url:
             pid = int(re.search(r"potreroId=(\d+)", url).group(1))
             anio, mes = self.mes
@@ -64,6 +68,8 @@ class Falso:
                 tc = ("0", "0", "0", "0")
             elif pid == 1:
                 tc = ("12,5", "10,0", "5,0", "30,0")
+            elif pid == 6:
+                tc = ("7,0", "6,0", "2,0", "9,0")
             else:
                 tc = ("20,0", "15,0", "5,0", "30,0")
             j = {"anio": anio, "mes": mes, "tcActual": tc[0], "tcPromedio": tc[1],
@@ -146,12 +152,27 @@ def main():
         chequear("a) guarda estado: ultimo mes nuevo hoy, aviso_45 falso",
                  est.get("ultimo_mes_nuevo_en") == "2026-11-16" and est.get("aviso_45") is False, est)
 
-        # b) mismo mes que el guardado
+        # b) mismo mes que el guardado: sube lo que trae (upsert) pero no avisa
         tmp = nuevo_tmp(); tmps.append(tmp); preparar(tmp)
         f = Falso(mes=(2026, 10), guardado=(2026, 10))
         cod, av = correr(f, tmp)
-        chequear("b) mismo mes: no escribe ni avisa, sale 0",
-                 cod == 0 and not f.pidio_post() and av == [], (cod, av))
+        chequear("b) mismo mes: hace upsert de sus filas, no avisa, sale 0",
+                 cod == 0 and f.pidio_post() and len(f.subidas) == 2 and av == [], (cod, len(f.subidas), av))
+
+        # b2) mismo mes con un potrero nuevo: lo sube sin avisar
+        tmp = nuevo_tmp(); tmps.append(tmp); preparar(tmp)
+        f = Falso(mes=(2026, 10), guardado=(2026, 10), nuevo_potrero=True)
+        cod, av = correr(f, tmp)
+        nombres = {r["potrero_ipasto"] for r in f.subidas}
+        chequear("b2) mismo mes con potrero nuevo: sube el potrero nuevo sin avisar",
+                 cod == 0 and "Potrero D" in nombres and av == [], (cod, nombres, av))
+
+        # i) --simular con login 401: sale 1, cero avisos, no toca el estado
+        tmp = nuevo_tmp(); tmps.append(tmp); preparar(tmp)
+        f = Falso(login=401)
+        cod, av = correr(f, tmp, extra=["--simular"])
+        chequear("i) --simular con login 401: sale 1 y no avisa",
+                 cod == 1 and av == [] and not os.path.exists(os.path.join(tmp, "estado.json")), (cod, av))
 
         # c) upsert devuelve lista vacia
         tmp = nuevo_tmp(); tmps.append(tmp); preparar(tmp)

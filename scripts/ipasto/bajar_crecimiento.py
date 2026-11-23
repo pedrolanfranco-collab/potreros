@@ -344,6 +344,8 @@ def correr(args, transp, ahora, avisar, estado, ruta_est):
     skey, problema = clave_privada(env)
     if problema:
         raise FallaUrgente(problema)
+    if len(skey) >= 3:
+        _secretos.append(skey)
 
     ipasto_login(transp, cedula, clave)
     potreros = potreros_vigilados(transp)
@@ -355,24 +357,24 @@ def correr(args, transp, ahora, avisar, estado, ruta_est):
     historia = bajar_historia(transp, potreros, args.historia, hoy) if args.historia else []
     estado.setdefault("ultimo_mes_nuevo_en", hoy.isoformat())
 
-    if guardado is None or mes_ip > guardado:
-        escribir = sin_repetidos(historia + [f for f, _ in pares])
-        if args.simular:
-            anotar("SIMULAR: subiría %d fila(s) de iPasto (%s %d); no se escribe ni se avisa"
-                   % (len(escribir), MESES[mes_ip[1] - 1], mes_ip[0]))
-            anotar(mensaje_subida(mes_ip, pares))
-            return 0
+    # Todos los dias se sube lo que iPasto trae (idempotente: pega potreros tardios y correcciones).
+    escribir = sin_repetidos(historia + [f for f, _ in pares])
+    nuevo = guardado is None or mes_ip > guardado
+    if args.simular:
+        anotar("SIMULAR: subiría %d fila(s) a crecimiento_pasto (iPasto %s %d); no se escribe"
+               % (len(escribir), MESES[mes_ip[1] - 1], mes_ip[0]))
+    else:
         n = guardar(transp, skey, escribir)
         anotar("subidas %d fila(s) a crecimiento_pasto (iPasto %s %d)" % (n, MESES[mes_ip[1] - 1], mes_ip[0]))
-        avisar("iPasto: crecimiento del pasto", mensaje_subida(mes_ip, pares), False)
-        estado.update({"ultimo_mes_nuevo_en": hoy.isoformat(), "aviso_45": False, "ultimo_error": None})
+
+    if nuevo:
+        # aviso y reinicio de la cuenta de 45 dias solo cuando el mes es mas nuevo que el guardado
+        if args.simular:
+            anotar("SIMULAR: avisaría: " + mensaje_subida(mes_ip, pares))
+        else:
+            avisar("iPasto: crecimiento del pasto", mensaje_subida(mes_ip, pares), False)
+        estado.update({"ultimo_mes_nuevo_en": hoy.isoformat(), "aviso_45": False})
     else:
-        if historia:
-            if args.simular:
-                anotar("SIMULAR: subiría %d fila(s) de historia; no se escribe" % len(sin_repetidos(historia)))
-            else:
-                n = guardar(transp, skey, sin_repetidos(historia))
-                anotar("historia: subidas %d fila(s)" % n)
         try:
             ultimo = dt.date.fromisoformat(estado["ultimo_mes_nuevo_en"])
         except (ValueError, TypeError):
@@ -389,7 +391,7 @@ def correr(args, transp, ahora, avisar, estado, ruta_est):
             else:
                 avisar("iPasto: sin datos nuevos", mensaje, False)
                 estado["aviso_45"] = True
-        estado["ultimo_error"] = None
+    estado["ultimo_error"] = None
 
     if not args.simular:
         guardar_estado(ruta_est, estado)
@@ -397,10 +399,10 @@ def correr(args, transp, ahora, avisar, estado, ruta_est):
 
 
 def _urgente(mensaje, avisar, estado, ruta_est, simular):
-    """Aviso urgente una sola vez por mensaje distinto."""
+    """Aviso urgente una sola vez por mensaje distinto. Con --simular no avisa ni toca el estado."""
     mensaje = redactar(mensaje)
     anotar("FALLA: %s" % mensaje)
-    if estado.get("ultimo_error") != mensaje:
+    if not simular and estado.get("ultimo_error") != mensaje:
         estado["ultimo_error"] = mensaje
         avisar("iPasto: falla", mensaje, True)
     if not simular:
