@@ -352,6 +352,9 @@ jobs:
       - name: "Hermes -- perfiles de consulta (solo lectura, basico sin costos ni pesos, campos fijados por entorno) con red falsa"
         run: python3 scripts/hermes/probar_consultar_mcp.py
 
+      - name: "iPasto -- bajar crecimiento (a Supabase con la clave privada, solo mes nuevo, avisos una vez, fallas con exit 1, --simular y --historia) con red falsa"
+        run: python3 scripts/ipasto/probar_bajar_crecimiento.py
+
       - name: "Consulta a modelos externos (scripts/consulta) -- filtro de claves, tope de tamaño, presupuesto diario, cada clave solo a su proveedor, un reintento si es pasajero, registro sin material ni claves, con red falsa"
         run: python3 scripts/consulta/probar_consultar.py
 
