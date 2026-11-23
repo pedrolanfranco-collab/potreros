@@ -337,6 +337,21 @@ def mensaje_subida(mes_ip, pares):
             % (MESES[mes_ip[1] - 1], mes_ip[0], fmt(ponderado(actual)), fmt(ponderado(promedio))))
 
 
+def resumen_meses(filas, areas):
+    """Una linea por mes (del mas viejo al mas nuevo) con el ponderado por area, actual e historico.
+
+    Sirve para tener el numero comparable con el aviso del mes nuevo cuando se baja la historia.
+    """
+    salida = []
+    for anio, mes in sorted({(f["anio"], f["mes"]) for f in filas}):
+        del_mes = [f for f in filas if (f["anio"], f["mes"]) == (anio, mes)]
+        act = [(f["tc_actual"], areas.get(f["potrero_ipasto"]) or 0.0) for f in del_mes]
+        pro = [(f["tc_promedio"], areas.get(f["potrero_ipasto"]) or 0.0) for f in del_mes]
+        salida.append("%s %d: %s kg MS/ha/día (promedio histórico %s) sobre %d potrero(s)"
+                      % (MESES[mes - 1], anio, fmt(ponderado(act)), fmt(ponderado(pro)), len(del_mes)))
+    return salida
+
+
 def correr(args, transp, ahora, avisar, estado, ruta_est):
     ahora_dt = ahora()
     hoy = ahora_dt.date()
@@ -371,6 +386,11 @@ def correr(args, transp, ahora, avisar, estado, ruta_est):
     else:
         n = guardar(transp, skey, escribir)
         anotar("subidas %d fila(s) a crecimiento_pasto (iPasto %s %d)" % (n, MESES[mes_ip[1] - 1], mes_ip[0]))
+
+    # El ponderado por area de cada mes de la serie (para comparar con el aviso del mes nuevo).
+    areas = {f["potrero_ipasto"]: a for f, a in pares}
+    for linea in resumen_meses(escribir, areas):
+        anotar(linea)
 
     if nuevo:
         # aviso y reinicio de la cuenta de 45 dias solo cuando el mes es mas nuevo que el guardado

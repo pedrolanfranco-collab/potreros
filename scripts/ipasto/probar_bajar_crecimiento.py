@@ -158,6 +158,10 @@ def main():
         chequear("a) el aviso trae mes, promedio ponderado por area (18,1) e historico (13,8)",
                  len(av) == 1 and "octubre 2026" in av[0][1] and "18,1" in av[0][1] and "13,8" in av[0][1],
                  av[0][1] if av else av)
+        with open(os.path.join(tmp, "ipasto.log"), encoding="utf-8") as fh:
+            log = fh.read()
+        chequear("a) el log trae el ponderado por area del mes (octubre 2026: 18,1 / historico 13,8)",
+                 "octubre 2026: 18,1 kg MS/ha/día (promedio histórico 13,8)" in log, log[-500:])
         with open(os.path.join(tmp, "estado.json"), encoding="utf-8") as fh:
             est = json.load(fh)
         chequear("a) guarda estado: ultimo mes nuevo hoy, aviso_45 falso",
