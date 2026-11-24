@@ -41,6 +41,8 @@ jobs:
         run: node template/generar.js --check
       - name: Tablero de Campos -- tablero-campos/index.html coincide con fuente.html + potrerosGeo de los configs
         run: node tablero-campos/generar.js --check
+      - name: "Content-Security-Policy de las paginas hechas a mano (tableros, completar-sanidad, instructivos) al dia con su HTML"
+        run: node template/csp_paginas.js --check
 
       - name: Instalar jsdom
         working-directory: tests

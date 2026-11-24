@@ -63,7 +63,12 @@ cdnjs (íconos de Leaflet), Supabase (fotos), `data:` y `blob:`. Efecto: un `<sc
 o en un `innerHTML` no anda** (usar `addEventListener`, como el resto de la app); **una librería, capa de mapa o servidor
 nuevo va en `politicaCsp()`**, si no el navegador lo bloquea sin avisar (en la consola dice "violates the following Content
 Security Policy directive"). jsdom no aplica CSP: `tests/probar_csp.js` controla la política, y un cambio en ella se prueba
-en Chromium con `la-vuelta-test/`. Las páginas hechas a mano (tableros, `completar-sanidad`, instructivos) todavía no llevan CSP.
+en Chromium con `la-vuelta-test/`. **Páginas hechas a mano (24/11/2026):** `tablero-sanidad/`, `completar-sanidad/` y los 3
+instructivos llevan su propia CSP, que calcula `template/csp_paginas.js` desde el HTML de cada una (hash de sus `<script>`, los
+servidores de sus `<script src>`/estilos, la capa del mapa y el Supabase que usan; los instructivos, sin scripts:
+`script-src 'none'`). `tablero-campos/index.html` la recibe de `tablero-campos/generar.js`, que usa ese mismo módulo. **Después
+de editar a mano el `<script>` de una de esas páginas hay que correr `node template/csp_paginas.js`** (si no, el navegador no
+corre el script y la página queda sin datos); el CI lo controla con `--check`.
 
 **Librerías (18/11/2026)** — jsPDF 4.2.1 y jspdf-autotable 5.0.9 se cargan de `cdn.jsdelivr.net/npm/` (el mismo archivo que
 el paquete de npm), con `integrity`. Sus versiones están también en `tests/package.json`: `tests/probar_pdf_real.js` genera
