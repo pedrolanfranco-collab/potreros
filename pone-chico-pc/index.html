@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-kCFVVZWlVnn5llfhj5dZAHJHvMe/mCiJVDoXVUSo/GM=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-8aJXvhilCMyOPd4izBTmuFKzRbc3GrqnCNk/+2pYDpQ=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pone Chico — Mapa de Potreros</title>
 <link rel="manifest" href="manifest.json">
@@ -806,6 +806,7 @@
             <button class="btn btn-json" data-sub="puntos">📍 Puntos ›</button>
             <button class="btn btn-json" data-sub="reportes">📋 Reportes de campo ›</button>
             <button class="btn btn-json" id="btn-coeficientes">⚙ Coeficientes UG</button>
+            <button class="btn btn-json" id="btn-ranking-pasto" style="display:none;">📊 Ranking de pasto</button>
           </div>
         </div>
         <div class="hg">
@@ -872,6 +873,36 @@
     <button class="btn-cerrar-x" id="pc-seccion-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
     <div id="pc-seccion-lista"></div>
     <div class="form-botones"><button class="btn btn-secundario" id="pc-seccion-cerrar">Cerrar</button></div>
+  </div>
+</div>
+<div id="modal-ranking-pasto" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
+  <style>
+    #rp-vistas{display:flex;gap:6px;margin:0 0 10px;}
+    #rp-vistas button{flex:1;padding:8px;border:1px solid #c9c9bd;background:#fff;color:inherit;border-radius:6px;cursor:pointer;font-weight:600;}
+    #rp-vistas button.activo{background:#2f6b3a;color:#fff;border-color:#2f6b3a;}
+    #rp-lista{max-height:60vh;overflow:auto;}
+    .rp-fila{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #eee;}
+    .rp-n{width:22px;text-align:right;font-weight:700;color:var(--texto-suave);}
+    .rp-cuerpo{flex:1;min-width:0;}
+    .rp-titulo{display:flex;gap:8px;align-items:baseline;}
+    .rp-titulo small{color:var(--texto-suave);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .rp-valor{font-weight:700;font-variant-numeric:tabular-nums;}
+    .rp-barra{height:8px;background:#eef2e8;border-radius:4px;margin-top:4px;}
+    .rp-barra span{display:block;height:100%;background:#7fb04f;border-radius:4px;}
+    .rp-pct{font-size:12px;color:var(--texto-suave);}
+    .rp-pct.rp-bajo{color:#c2452d;font-weight:600;}
+  </style>
+  <div class="modal-box">
+    <h3>📊 Ranking de pasto (iPasto)</h3>
+    <button class="btn-cerrar-x" id="rp-cerrar-x" aria-label="Cerrar" title="Cerrar">✕</button>
+    <div id="rp-vistas">
+      <button type="button" data-rp-vista="mes" class="activo">Último mes</button>
+      <button type="button" data-rp-vista="anio">Últimos 12 meses</button>
+    </div>
+    <div id="rp-mensaje" class="modal-info" role="status"></div>
+    <div id="rp-lista"></div>
+    <p id="rp-sin-dato" class="modal-info"></p>
+    <div class="form-botones"><button class="btn btn-secundario" id="rp-cerrar">Cerrar</button></div>
   </div>
 </div>
 <div id="modal-voz" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
@@ -6904,6 +6935,123 @@ async function pastoAlSincronizar(client){
     if(modoPintarMapa === 'pasto'){ actualizarLeyendaMapa(); refrescarColoresMapa(); }
   } catch(e){ console.warn('pasto iPasto: no se pudo leer crecimiento_pasto', e); }
 }
+/* 📊 Ranking de pasto (iPasto), 24/11/2026: ordena los potreros de iPasto por crecimiento del pasto.
+   Dos vistas: el ultimo mes medido (kg MS/ha/dia y % de lo normal) y los ultimos 12 meses (kg MS/ha).
+   Lee toda la historia de crecimiento_pasto (pagina de a 1000) y guarda una copia para verla sin señal. */
+const CLAVE_PASTO_HISTORIA = ESTABLECIMIENTO + '_pasto_ipasto_historia';
+let vistaRankingPasto = 'mes';
+function leerHistoriaPasto(){
+  try { const d = JSON.parse(localStorage.getItem(CLAVE_PASTO_HISTORIA) || 'null'); return d && Array.isArray(d.filas) ? d : null; }
+  catch(e){ return null; }
+}
+async function bajarHistoriaPasto(){
+  const client = clienteSupabase();
+  if(!client) return {error: 'sin conexión'};
+  try {
+    const data = [];
+    for(let desde = 0; ; desde += 1000){
+      const res = await client.from('crecimiento_pasto')
+        .select('establecimiento,potrero_ipasto,anio,mes,tc_actual,tc_promedio')
+        .eq('establecimiento', ESTABLECIMIENTO)
+        .order('anio',{ascending:true})
+        .order('mes',{ascending:true})
+        .order('potrero_ipasto',{ascending:true})
+        .range(desde, desde + 999);
+      if(!res || res.error) return {error: (res && res.error && res.error.message) || 'error'};
+      const lote = Array.isArray(res.data) ? res.data : [];
+      data.push(...lote);
+      if(lote.length < 1000) break;
+    }
+    const filas = data
+      .map(f => ({p: f.potrero_ipasto, anio: Number(f.anio), mes: Number(f.mes), tc: Number(f.tc_actual), prom: Number(f.tc_promedio)}))
+      .filter(f => f.p && Number.isFinite(f.tc) && f.tc > 0);
+    try { localStorage.setItem(CLAVE_PASTO_HISTORIA, JSON.stringify({filas, leidoEn: Date.now()})); } catch(e){}
+    return {filas};
+  } catch(e){ return {error: String((e && e.message) || e)}; }
+}
+function calcularRankingPasto(filas, vista){
+  if(!filas || !filas.length) return null;
+  const ultimo = filas.reduce((m,f)=> Math.max(m, f.anio*12 + f.mes), 0);
+  const anio = Math.floor((ultimo-1)/12), mes = ((ultimo-1) % 12) + 1;
+  const porPotrero = {};
+  filas.forEach(f => { (porPotrero[f.p] = porPotrero[f.p] || []).push(f); });
+  const renglones = [];
+  Object.keys(porPotrero).forEach(p => {
+    const lista = porPotrero[p];
+    if(vista === 'mes'){
+      const f = lista.find(x => x.anio*12 + x.mes === ultimo);
+      if(!f) return;
+      renglones.push({p, valor: f.tc, pct: f.prom > 0 ? f.tc / f.prom * 100 : null});
+    } else {
+      const ult12 = lista.filter(x => { const k = x.anio*12 + x.mes; return k > ultimo-12 && k <= ultimo; });
+      if(!ult12.length) return;
+      const kg = ult12.reduce((s,x)=> s + x.tc * new Date(x.anio, x.mes, 0).getDate(), 0);
+      renglones.push({p, valor: kg, meses: ult12.length});
+    }
+  });
+  renglones.sort((a,b)=> (b.valor - a.valor) || a.p.localeCompare(b.p));
+  return {anio, mes, renglones};
+}
+function potrerosAppDeIpasto(p){
+  const cruce = (CONFIG.ipasto && CONFIG.ipasto.cruce) || {};
+  return Object.keys(cruce).filter(n => cruce[n] === p);
+}
+function milesPunto(v){ return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function pintarRankingPasto(){
+  const d = leerHistoriaPasto();
+  const r = calcularRankingPasto(d ? d.filas : null, vistaRankingPasto);
+  const lista = document.getElementById('rp-lista');
+  const msg = document.getElementById('rp-mensaje');
+  const sinDato = document.getElementById('rp-sin-dato');
+  document.querySelectorAll('#rp-vistas [data-rp-vista]').forEach(b => b.classList.toggle('activo', b.getAttribute('data-rp-vista') === vistaRankingPasto));
+  if(!r || !r.renglones.length){ lista.innerHTML = ''; sinDato.textContent = ''; return false; }
+  const nombreMes = MESES_PASTO[r.mes-1];
+  document.querySelector('#rp-vistas [data-rp-vista="mes"]').textContent = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1) + ' ' + r.anio;
+  msg.textContent = vistaRankingPasto === 'mes'
+    ? 'Cuánto creció el pasto en ' + nombreMes + ' de ' + r.anio + ', en kg de materia seca por hectárea por día. iPasto va un mes atrás.'
+    : 'Cuánto pasto creció en los 12 meses hasta ' + nombreMes + ' de ' + r.anio + ', en kg de materia seca por hectárea.';
+  const max = r.renglones[0].valor || 1;
+  lista.innerHTML = r.renglones.map((x,i) => {
+    const apps = potrerosAppDeIpasto(x.p);
+    const valor = vistaRankingPasto === 'mes' ? coma1(x.valor) : milesPunto(x.valor);
+    let extra = '';
+    if(vistaRankingPasto === 'mes' && x.pct !== null) extra = '<span class="rp-pct' + (x.pct < 80 ? ' rp-bajo' : '') + '">' + Math.round(x.pct) + ' % de lo normal</span>';
+    if(vistaRankingPasto !== 'mes' && x.meses < 12) extra = '<span class="rp-pct">solo ' + x.meses + ' meses con dato</span>';
+    return '<div class="rp-fila"><span class="rp-n">' + (i+1) + '</span><div class="rp-cuerpo"><div class="rp-titulo"><b>' + esc(x.p) + '</b><small>'
+      + esc(apps.join(', ') || '—') + '</small><span class="rp-valor">' + valor + '</span></div><div class="rp-barra"><span style="width:'
+      + Math.max(2, x.valor / max * 100).toFixed(1) + '%"></span></div>' + extra + '</div></div>';
+  }).join('');
+  const cruce = (CONFIG.ipasto && CONFIG.ipasto.cruce) || {};
+  const conDato = new Set(r.renglones.map(x => x.p));
+  const sin = POTREROS_GEO.map(g => g.nombre).filter(n => !esDoble(n) && !conDato.has(cruce[n]));
+  sinDato.textContent = sin.length ? 'Sin dato de iPasto: ' + sin.join(', ') + '.' : '';
+  return true;
+}
+async function abrirRankingPasto(){
+  document.getElementById('modal-ranking-pasto').style.display = 'flex';
+  const msg = document.getElementById('rp-mensaje');
+  const habia = pintarRankingPasto();
+  if(!habia) msg.textContent = 'Cargando…';
+  const r = await bajarHistoriaPasto();
+  if(r.error){
+    if(!habia) msg.textContent = 'No se pudo leer el pasto de iPasto (' + String(r.error).slice(0, 120) + '). La primera vez necesitás señal.';
+    return;
+  }
+  if(!pintarRankingPasto()) msg.textContent = 'Todavía no hay datos de iPasto.';
+}
+if(CONFIG.ipasto){
+  const btnRanking = document.getElementById('btn-ranking-pasto');
+  btnRanking.style.display = '';
+  btnRanking.addEventListener('click', abrirRankingPasto);
+  document.getElementById('rp-cerrar').addEventListener('click', ()=> document.getElementById('modal-ranking-pasto').style.display = 'none');
+  document.getElementById('rp-cerrar-x').addEventListener('click', ()=> document.getElementById('rp-cerrar').click());
+  document.getElementById('rp-vistas').addEventListener('click', (e)=>{
+    const b = e.target.closest('[data-rp-vista]');
+    if(!b) return;
+    vistaRankingPasto = b.getAttribute('data-rp-vista');
+    pintarRankingPasto();
+  });
+}
 actualizarLeyendaMapa();
 function refrescarColoresMapa(){
   POTREROS_GEO.forEach(p=>{
@@ -7329,7 +7477,7 @@ document.getElementById('herramientas-cerrar').addEventListener('click', ()=>{
    ningún botón se esconde, y una con uno solo lo abre directo. */
 const SECCIONES_PC = {
   stock:       { titulo: '📊 Stock total', ids: ['btn-stock'] },
-  potreros:    { titulo: '🌾 Potreros', ids: ['btn-importar-kml', 'btn-dibujar-potrero', 'btn-coeficientes'] },
+  potreros:    { titulo: '🌾 Potreros', ids: ['btn-importar-kml', 'btn-dibujar-potrero', 'btn-coeficientes', 'btn-ranking-pasto'] },
   hacienda:    { titulo: '🐄 Hacienda', ids: ['btn-desaparecidos', 'btn-vecinos', 'btn-caravana', 'btn-pesadas', 'btn-alertas', 'btn-verificar-stock', 'btn-lecturas-stock', 'btn-faltantes', 'btn-snig-sin-lectura'] },
   sanidad:     { titulo: '🏥 Sanidad e insumos', ids: ['btn-sanidad', 'btn-insumos', 'btn-bano'] },
   lluvias:     { titulo: '🌧 Lluvias y eventos', ids: ['btn-lluvias', 'btn-esquila'] },
