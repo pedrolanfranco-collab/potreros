@@ -211,6 +211,9 @@ jobs:
       - name: "PC: mapa por dotacion (5/11/2026) -- tooltip dinamico, colores UG/ha, leyenda; movil sin cambios"
         run: node tests/probar_mapa_pc.js
 
+      - name: "La Vuelta PC: pasto de iPasto (23/11/2026) -- cartelito Pasto de <mes>, Pintar por Pasto, sincronizacion de crecimiento_pasto; maria laura sin el modo"
+        run: node tests/probar_pasto_ipasto.js
+
       - name: "Eventos de manejo por lote y animal (5/11/2026) -- sincronizacion, caravanas Datamars y mapa"
         run: node tests/probar_eventos_manejo.js
 
