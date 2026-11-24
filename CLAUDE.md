@@ -53,6 +53,7 @@ Cada una salió de un error real. El porqué y el detalle están en el archivo d
    Tampoco aplica la **Content-Security-Policy** que `generar.js` pone en cada app desde el 18/11/2026: un `onclick="..."`
    en HTML o `innerHTML` no corre (usar `addEventListener`), y una librería, capa de mapa o servidor nuevo va en
    `politicaCsp()` del generador o el navegador lo bloquea sin avisar. Se prueba en Chromium con `la-vuelta-test/`.
+   Las páginas hechas a mano también tienen CSP: después de editar su `<script>`, correr `node template/csp_paginas.js`.
 
 **Eventos y sincronización** (`03-sincronizacion-y-eventos.md`, `docs/eventos.md`)
 6. Es un **registro de eventos de solo agregar** (`eventos_sync`): borrar o editar = un evento `correccion`, nunca

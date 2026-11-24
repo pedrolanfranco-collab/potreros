@@ -65,3 +65,9 @@ la URL/clave de Supabase, el título y los cortes de carga. `node tablero-campos
 Si cambian los límites en un config de las apps o `config.js`, correr ese generador (CI corre `--check`). También dibuja los potreros importados en ese navegador (`<campo>_potreros_nuevos`, `<campo>_limites_potreros`,
 validados con `coordsValidas`). Sin `sw.js` ni íconos propios (para no servir datos viejos).
 Test: `tests/probar_tablero_campos.js`.
+
+**Content-Security-Policy (24/11/2026).** `tablero-sanidad/index.html` y `completar-sanidad/index.html` llevan un `<meta>` CSP
+que calcula `template/csp_paginas.js` (hash del `<script>`, solo Supabase en `connect-src`); `tablero-campos/index.html` lo
+recibe de `tablero-campos/generar.js`. Después de editar a mano el `<script>` de `tablero-sanidad` o `completar-sanidad`,
+correr `node template/csp_paginas.js` (el CI falla con `--check` si no). Un `onclick="..."` en el HTML no anda: usar
+`addEventListener`. Detalle en `02-template-y-variantes.md`.

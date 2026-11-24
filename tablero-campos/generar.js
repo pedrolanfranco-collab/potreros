@@ -115,9 +115,11 @@ function construir() {
   const fuente = fs.readFileSync(path.join(__dirname, 'fuente.html'), 'utf8');
   if (!fuente.includes('/*__TABLERO__*/{}')) falla('fuente.html no tiene el marcador /*__TABLERO__*/{}');
   const titulo = tablero.titulo.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-  return fuente
+  const html = fuente
     .replace('/*__TABLERO__*/{}', () => JSON.stringify(tablero).replace(/</g, '\\u003c'))
     .replace('<title>Tablero de Campos</title>', () => '<title>' + titulo + '</title>');
+  // Content-Security-Policy (24/11/2026): se calcula sobre el HTML ya armado (el hash del <script> incluye los datos).
+  return require('../template/csp_paginas.js').conCsp(html);
 }
 
 const salida = path.join(__dirname, 'index.html');

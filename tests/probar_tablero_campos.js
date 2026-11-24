@@ -131,6 +131,8 @@ function generarCon(nombre, cfgTexto, archivos = {}){
   fs.symlinkSync(path.join(raiz, 'template', 'configs'), path.join(dir, 'template', 'configs'), 'junction');
   fs.copyFileSync(path.join(raiz, 'tablero-campos', 'fuente.html'), path.join(tab, 'fuente.html'));
   fs.copyFileSync(path.join(raiz, 'tablero-campos', 'generar.js'), path.join(tab, 'generar.js'));
+  // generar.js pone la Content-Security-Policy con template/csp_paginas.js (24/11/2026)
+  fs.copyFileSync(path.join(raiz, 'template', 'csp_paginas.js'), path.join(dir, 'template', 'csp_paginas.js'));
   fs.writeFileSync(path.join(tab, 'x.geojson'), JSON.stringify(GEOJSON_X));
   for(const n in archivos) fs.writeFileSync(path.join(tab, n), archivos[n]);
   fs.writeFileSync(path.join(tab, 'config.js'), cfgTexto);
