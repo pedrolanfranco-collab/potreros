@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-RmM7JJ3nyZ3TUl2KC2wSSRwmz35RXvvPRsq2nL3gCOw=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-NMshVQMYgYE+XvlQocCqugOcxS3SyCUqa7PlzxUcsvo=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pone Chico — Mapa de Potreros</title>
 <link rel="manifest" href="manifest.json">
@@ -619,7 +619,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.10</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.11</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1437,7 +1437,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.10","manejo":false,"versionMovil":"3.10","simpleHabilitado":true,"versionMovilSimple":"2.10","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.11","manejo":false,"versionMovil":"3.11","simpleHabilitado":true,"versionMovilSimple":"2.11","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -1916,7 +1916,7 @@ const NOMBRES_VIEJOS_POTRERO = CONFIG.nombresViejosPotrero;
    abajo, cuando hay claves por migrar): con `let` declarado más adelante, esa llamada pisaba la
    zona muerta temporal. Antes el error se tragaba en el try/catch y el guardado inicial no ocurría. */
 let _ultimoGuardado = null; // lo último que ESTA página escribió o leyó de STORAGE_KEY
-let _noGuardado = false, _avisoNoGuardadoCerrado = false;
+let _noGuardado = false, _avisoNoGuardadoCerrado = false, _noGuardadoAparte = false;
 /* Fotos de los reportes (24/10/2026): estado de la cola de fotos y de sus URLs. Va acá, antes de cargarEstado(), por la
    misma razón que _reconstruyendo: actualizarEstadoSync() puede correr antes de la sección de reportes. */
 let _pendientesCache = [];      // copia en memoria de la cola de fotos de este establecimiento (para pintar sin esperar)
@@ -2079,16 +2079,26 @@ function mostrarAvisoNoGuardado(mostrar){
     el.setAttribute('role', 'alert');
     el.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:100000;background:#a1402e;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.35;box-shadow:0 2px 10px rgba(0,0,0,.4);cursor:pointer;';
     el.textContent = '⚠ No se pudo guardar en este equipo (memoria llena o navegador bloqueado). Lo que cargues ahora puede perderse al cerrar la app. Si podés, hacé un Backup JSON o avisá a quien administra la app. (Tocá para ocultar)';
-    el.addEventListener('click', ()=>{ _avisoNoGuardadoCerrado = true; el.remove(); });
+    el.addEventListener('click', ()=>{ _avisoNoGuardadoCerrado = true; _noGuardadoAparte = false; el.remove(); });
     document.body.appendChild(el);
   }catch(e){}
+}
+/* 24/11/2026 (punto 10 de la auditoría): los potreros nuevos y los límites cambiados se guardan aparte de `estado`
+   (POTREROS_NUEVOS_KEY, LIMITES_KEY). Si ese guardado falla (memoria llena, navegador bloqueado) antes no se avisaba
+   nada; ahora sale el mismo cartel que cuando falla guardarEstado(). No se pierde para siempre: el potrero o el
+   límite ya viajó como evento y vuelve al sincronizar, pero el equipo sin señal no lo tiene al reabrir la app. */
+function avisarNoGuardado(e){
+  console.warn('No se pudo guardar en este navegador', e);
+  _noGuardadoAparte = true;   // el cartel queda hasta que se toque: un guardarEstado() que anda no lo saca
+  _avisoNoGuardadoCerrado = false;   // cada falla nueva vuelve a avisar, aunque se haya tocado el cartel antes
+  mostrarAvisoNoGuardado(true);
 }
 function guardarEstado(){
   try{
     const json = JSON.stringify(estado);
     localStorage.setItem(STORAGE_KEY, json);
     _ultimoGuardado = json;
-    if(_noGuardado){ _noGuardado = false; _avisoNoGuardadoCerrado = false; mostrarAvisoNoGuardado(false); }
+    if(_noGuardado){ _noGuardado = false; _avisoNoGuardadoCerrado = false; if(!_noGuardadoAparte) mostrarAvisoNoGuardado(false); }
   }catch(e){
     console.warn("No se pudo guardar en este navegador", e);
     _noGuardado = true;
@@ -2223,7 +2233,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'movil-3.10';
+const VERSION_APP = 'movil-3.11';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta y María Laura); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -3212,7 +3222,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
         nuevosGuardados.push(p);
         localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevosGuardados));
       }
-    }catch(e){}
+    }catch(e){ avisarNoGuardado(e); }
     estado.potreros[potrero] = {animales:{}, historial:[], fechaIngreso:null, fechaSalida:null};
     AREA_CALCULADA[potrero] = calcAreaHa(p.coords);
     dibujarPotrero(p);
@@ -3228,7 +3238,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
       const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
       limitesGuardados[potrero] = {coords: p.coords, area: p.area};
       localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados));
-    }catch(e){}
+    }catch(e){ avisarNoGuardado(e); }
     const entry = poligonos[potrero];
     if(entry){ entry.layer.setLatLngs(p.coords); entry.label.setLatLng(entry.layer.getBounds().getCenter()); entry.area = p.area; }
     return;
@@ -3243,7 +3253,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
       const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
       delete limitesGuardados[potrero];
       localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados));
-    }catch(e){}
+    }catch(e){ avisarNoGuardado(e); }
     const entry = poligonos[potrero];
     if(entry){ entry.layer.setLatLngs(p.coords); entry.label.setLatLng(entry.layer.getBounds().getCenter()); entry.area = p.area; }
     return;
@@ -3258,7 +3268,7 @@ function aplicarEventoRemoto(row, potrerosSucios){
       localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevosGuardados.filter(x=>x.nombre!==potrero)));
       const limitesGuardados = JSON.parse(localStorage.getItem(LIMITES_KEY) || '{}');
       if(limitesGuardados[potrero]){ delete limitesGuardados[potrero]; localStorage.setItem(LIMITES_KEY, JSON.stringify(limitesGuardados)); }
-    }catch(e){}
+    }catch(e){ avisarNoGuardado(e); }
     delete estado.potreros[potrero];
     delete AREA_CALCULADA[potrero];
     const entry = poligonos[potrero];
@@ -5852,7 +5862,7 @@ function terminarDibujoPotrero(){
     const nuevosGuardados = JSON.parse(localStorage.getItem(POTREROS_NUEVOS_KEY) || '[]');
     nuevosGuardados.push(p);
     localStorage.setItem(POTREROS_NUEVOS_KEY, JSON.stringify(nuevosGuardados));
-  }catch(e){}
+  }catch(e){ avisarNoGuardado(e); }
   guardarEstado();
   actualizarTodo();
   if(typeof actualizarEtiquetasMapa === 'function') actualizarEtiquetasMapa();
