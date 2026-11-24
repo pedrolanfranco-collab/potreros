@@ -19,32 +19,35 @@ const path = require('path');
 
 const TESTS_DIR = __dirname;
 
-// Dónde vive la skill depende de cómo se instaló Claude (31/10/2026: pasó de Roaming\Claude a
-// Local\Claude-Data\<id>), así que se busca en las dos raíces, en
-// local-agent-mode-sessions\skills-plugin\<id>\<id>\skills\apps-potreros\scripts, y se toma la tocada último.
-// POTREROS_SKILL_SCRIPTS_DIR manda sobre la búsqueda.
-function subcarpetas(dir) {
-  try {
-    return fs.readdirSync(dir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => path.join(dir, d.name));
-  } catch (e) { return []; }
+// Dónde vive la skill depende de cómo se instaló Claude y cambia con las actualizaciones: estuvo en Roaming\Claude, el
+// 31/10/2026 pasó a Local\Claude-Data\<id>\local-agent-mode-sessions\skills-plugin\<id>\<id>\skills\..., y el
+// 24/11/2026 apareció en Local\Claude-Data\<id>\rpm\<id>\<id>\plugin_<id>\skills\.... Por eso ya no se arma una
+// ruta fija: se recorren las dos raíces buscando cualquier carpeta skills\apps-potreros\scripts (hasta 10 niveles,
+// salteando las carpetas de caché grandes) y se toma la tocada último. POTREROS_SKILL_SCRIPTS_DIR manda sobre la búsqueda.
+const SALTEAR = new Set(['node_modules', 'Cache', 'Code Cache', 'GPUCache', 'IndexedDB', 'Service Worker', 'blob_storage',
+  'Crashpad', 'logs', '.git']);
+function buscarEn(dir, nivel, candidatas) {
+  if (nivel > 10) return;
+  let entradas;
+  try { entradas = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+  for (const d of entradas) {
+    if (!d.isDirectory() || SALTEAR.has(d.name)) continue;
+    const sub = path.join(dir, d.name);
+    if (d.name === 'apps-potreros' && path.basename(dir) === 'skills') {
+      const scripts = path.join(sub, 'scripts');
+      try { candidatas.push({ scripts, mtime: fs.statSync(scripts).mtimeMs }); } catch (e) {}
+      continue;
+    }
+    buscarEn(sub, nivel + 1, candidatas);
+  }
 }
 function buscarCarpetaSkill() {
   if (process.env.POTREROS_SKILL_SCRIPTS_DIR) return process.env.POTREROS_SKILL_SCRIPTS_DIR;
   const raices = [];
   if (process.env.APPDATA) raices.push(path.join(process.env.APPDATA, 'Claude'));
-  if (process.env.LOCALAPPDATA) {
-    const datos = path.join(process.env.LOCALAPPDATA, 'Claude-Data');
-    raices.push(datos, ...subcarpetas(datos));
-  }
+  if (process.env.LOCALAPPDATA) raices.push(path.join(process.env.LOCALAPPDATA, 'Claude-Data'));
   const candidatas = [];
-  for (const raiz of raices) {
-    for (const id1 of subcarpetas(path.join(raiz, 'local-agent-mode-sessions', 'skills-plugin'))) {
-      for (const id2 of subcarpetas(id1)) {
-        const scripts = path.join(id2, 'skills', 'apps-potreros', 'scripts');
-        if (fs.existsSync(scripts)) candidatas.push({ scripts, mtime: fs.statSync(scripts).mtimeMs });
-      }
-    }
-  }
+  for (const raiz of raices) buscarEn(raiz, 0, candidatas);
   candidatas.sort((a, b) => b.mtime - a.mtime);
   return candidatas.length ? candidatas[0].scripts : null;
 }
@@ -54,7 +57,7 @@ function main() {
   const check = process.argv.includes('--check');
 
   if (!SKILL_SCRIPTS_DIR || !fs.existsSync(SKILL_SCRIPTS_DIR)) {
-    console.error(`No se encontró la carpeta de la skill apps-potreros${SKILL_SCRIPTS_DIR ? ': ' + SKILL_SCRIPTS_DIR : ' (se buscó en Roaming\\Claude y Local\\Claude-Data)'}.`);
+    console.error(`No se encontró la carpeta de la skill apps-potreros${SKILL_SCRIPTS_DIR ? ': ' + SKILL_SCRIPTS_DIR : ' (se buscó skills\\apps-potreros\\scripts en Roaming\\Claude y Local\\Claude-Data)'}.`);
     console.error('Si la skill está en otra ruta, pasá POTREROS_SKILL_SCRIPTS_DIR=<ruta> antes del comando.');
     process.exit(1);
   }
