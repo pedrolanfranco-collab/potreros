@@ -108,3 +108,5 @@ Sin cruce, el potrero usa el promedio simple del campo. La fórmula es `cubre = 
 rojo < 60 %, naranja 60–99 %, verde claro 100–149 %, verde ≥ 150 %; gris sin animales o dato de más de 2 meses. Lo calcula `pastoPotrero()`
 (en el bloque `@pc` antes de `tooltipPotreroPC`); el cartelito agrega el renglón "Pasto de <mes>…". Los potreros de María Laura y Pone Chico no
 tienen `ipasto`, así que la opción se saca sola. Test: `tests/probar_pasto_ipasto.js`.
+
+**📊 Ranking de pasto (24/11/2026, PC La Vuelta 4.11).** Ventana `modal-ranking-pasto`, botón `btn-ranking-pasto` (solo con `CONFIG.ipasto`, también en `SECCIONES_PC.potreros`). Lee toda la historia de `crecimiento_pasto` con `.range()` de a 1000 (orden anio, mes, potrero_ipasto) y la guarda en `<establecimiento>_pasto_ipasto_historia`. Vista mes: `tc_actual` del último mes y % de `tc_promedio` (rojo < 80 %). Vista 12 meses: suma de `tc_actual` × días del mes de los 12 meses que terminan en el último mes. Prueba: `tests/probar_ranking_pasto.js`.

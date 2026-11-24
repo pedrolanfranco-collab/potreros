@@ -80,7 +80,7 @@ const PAGINAS = [
     ocultoPorConfig: { 'btn-caravana': 'caravanasHabilitado', 'btn-guias': 'guiasHabilitado', 'btn-pesadas': 'pesadasHistorial',
       'btn-faltantes': 'datosFaltantes', 'btn-reproduccion': 'reproduccion', 'btn-lecturas-stock': 'lecturaStock', 'btn-csv-baston': 'completarCsvBaston', 'btn-voz': 'siempre', 'btn-insumos': 'insumos', 'btn-bano': 'bano',
       'vs-csv': 'siempre', 'df-csv': 'datosFaltantes', 'btn-eventos-manejo': 'manejo', 'btn-tareas': 'manejo', 'btn-calendario': 'manejo',
-      'btn-snig-sin-lectura': 'propietarioSnig' },
+      'btn-snig-sin-lectura': 'propietarioSnig', 'btn-ranking-pasto': 'ipasto' },
     esperado: {
       'la-vuelta':   { claveCampo: true, insumos: true,  bano: true, manejo: true, caravanasHabilitado: true,  duenoLabel: 'Firma',  duenoObligatorio: false, guiasHabilitado: true,  dicoseHabilitado: true,  trasladoHabilitado: true,  pesadasHistorial: true,  datosFaltantes: true,  completarCsvBaston: true,  usaExcelBridge: true,  mapLabels: false, puntosSeed: true, lecturaStock: true },
       'maria-laura': { claveCampo: true, insumos: true,  bano: true, manejo: true, caravanasHabilitado: true,  duenoLabel: 'Dueño', duenoObligatorio: true,  guiasHabilitado: true,  dicoseHabilitado: false, trasladoHabilitado: false, pesadasHistorial: false, datosFaltantes: false, completarCsvBaston: false, usaExcelBridge: false, mapLabels: true,  puntosSeed: false, lecturaStock: true },

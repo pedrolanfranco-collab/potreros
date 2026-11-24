@@ -216,6 +216,9 @@ jobs:
       - name: "La Vuelta PC: pasto de iPasto (23/11/2026) -- cartelito Pasto de <mes>, Pintar por Pasto, sincronizacion de crecimiento_pasto; maria laura sin el modo"
         run: node tests/probar_pasto_ipasto.js
 
+      - name: "La Vuelta PC: ranking de pasto (24/11/2026) -- ventana con dos vistas, orden por crecimiento, copia sin señal; maria laura sin el boton"
+        run: node tests/probar_ranking_pasto.js
+
       - name: "Eventos de manejo por lote y animal (5/11/2026) -- sincronizacion, caravanas Datamars y mapa"
         run: node tests/probar_eventos_manejo.js
 

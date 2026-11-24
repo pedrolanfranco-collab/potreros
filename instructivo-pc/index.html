@@ -114,7 +114,7 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.10</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.11</span></li>
     <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">4.09</span></li>
     <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">3.10</span></li>
   </ul>
@@ -124,6 +124,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>📊 Ranking de pasto</b> <span class="campo">(solo La Vuelta, PC)</span>: ventana nueva en Herramientas › Mapa y potreros (y en 🌾 Potreros del menú de la izquierda). Ordena los potreros de iPasto por cuánto creció el pasto: el último mes medido (con el % de un mes normal, en rojo si es menos de 80 %) o los últimos 12 meses. Ver <a href="#ranking-pasto">📊 Ranking de pasto</a>.</li>
     <li><b>🌱 Pasto de iPasto</b> <span class="campo">(solo La Vuelta, PC)</span>: en el cartelito de cada potrero aparece el renglón <b>“Pasto de &lt;mes&gt;…”</b> con cuánto creció el pasto y cuánto de lo que comen los animales cubre. Y en <span class="b">Pintar por</span> hay una opción nueva, <span class="b">Pasto (iPasto)</span>. Ver <a href="#mapa-pasto">Pasto (iPasto)</a>.</li>
     <li><b>✂️ Esquila y limpieza</b>: botón nuevo en 🌧 Lluvias y eventos, para anotar una esquila o una limpieza de majada (desoje y descole) con las categorías ovinas, la lana por tipo, la comparsa y el precio por lata. No cambia el stock. Ver <a href="#lluvias">🌧 Lluvias y otros eventos</a>.</li>
     <li><b>🔧 Reportes con nivel de urgencia</b>: al cargar un reporte de <span class="b">🔧 Infraestructura</span> o <span class="b">🌾 Capín Annoni</span> ahora elegís el <b>Nivel de urgencia</b> (es obligatorio): 🔴 rojo (urgente), 🟠 naranja o 🟡 amarillo. El marcador del mapa toma ese color y, cuando el reporte se resuelve, deja de verse en el mapa; en la lista y en "Ver en el mapa" se ve 🟢 verde. La lista muestra primero los rojos y, arriba, cuántos reportes hay de cada nivel y qué porcentaje son; cada reporte tiene un desplegable para <b>cambiarle el nivel</b>. Además hay dos tipos de problema nuevos: <b>Problema con boya</b> y <b>Portera rota</b>. Ver <a href="#reportes">📋 Reportes de campo</a>.</li>
@@ -833,6 +834,11 @@
 <div class="fn" id="mapa-pasto">
   <h3>🌱 Pasto (iPasto)</h3>
   <p class="para">Solo en La Vuelta. Con <span class="b">Pintar por › Pasto (iPasto)</span>, cada potrero se pinta según qué parte de lo que comen los animales cubre lo que crece el pasto: <span class="b">rojo</span> menos de 60 %, <span class="b">naranja</span> 60–99 %, <span class="b">verde claro</span> 100–149 %, <span class="b">verde</span> 150 % o más; <span class="b">gris</span> sin animales o dato viejo. El dato es del último mes que midió iPasto, que va un mes atrás: el texto de la leyenda y del cartelito dice siempre de qué mes es. Los potreros que iPasto no tiene usan el promedio del campo. El cartelito del potrero muestra el renglón <span class="b">“Pasto de &lt;mes&gt;…”</span> con cuánto creció el pasto. Sin señal, muestra el último dato que se bajó.</p>
+</div>
+
+<div class="fn" id="ranking-pasto">
+  <h3>📊 Ranking de pasto</h3>
+  <p class="para">Solo en La Vuelta. Tocá <span class="b">📊 Ranking de pasto</span> en Herramientas › Mapa y potreros. Arriba hay dos botones. El del mes (por ejemplo <span class="b">Octubre 2026</span>) ordena los potreros de iPasto por cuánto creció el pasto ese mes, en kg de materia seca por hectárea por día, y dice qué % es de un mes normal; en <span class="b">rojo</span> si es menos de 80 %. <span class="b">Últimos 12 meses</span> los ordena por todo el pasto que creció en el año, en kg por hectárea. iPasto junta potreros: cada renglón dice qué potreros de la app incluye. Abajo dice qué potreros no tienen dato de iPasto. iPasto va un mes atrás. Sin señal, muestra lo último que se bajó.</p>
 </div>
 
 <div class="fn" id="agregar-potrero">
