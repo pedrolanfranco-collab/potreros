@@ -88,7 +88,8 @@ function levantarApp(archivo){
       ' guardar: guardarEstado, popup: (typeof popupContenidoPotrero === "function" ? popupContenidoPotrero : null), form: mostrarFormulario, listaPg: (typeof listaPostgrest === "function" ? listaPostgrest : null),' +
       ' pub: publicarStockPotrero, detalle: renderDetalle,' +
       ' imp: (typeof importarBackupTexto === "function" ? importarBackupTexto : null),' +
-      ' ajeno: (typeof renderCampoAjenoLista === "function" ? renderCampoAjenoLista : null) };');
+      ' ajeno: (typeof renderCampoAjenoLista === "function" ? renderCampoAjenoLista : null),' +
+      ' aplicar: aplicarEventoRemoto };');
   } catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   return new Promise(r => setTimeout(() => r({ win, errores, llamadas }), 80));
 }
@@ -185,6 +186,30 @@ async function probarArchivo(archivo){
     proto.setItem = original;
     x.guardar();
     chequear('al recuperarse el guardado, el cartel desaparece solo', cartel().length === 0);
+
+    // 24/11/2026 (punto 10): los potreros nuevos y los límites se guardan aparte (…_potreros_nuevos, …_limites_potreros).
+    // Antes, si ESE guardado fallaba, no se avisaba nada.
+    proto.setItem = function(k, v){
+      if(/_potreros_nuevos$|_limites_potreros$/.test(k)) throw new Error('QuotaExceededError');
+      return original.call(this, k, v);
+    };
+    const avisos = [];
+    const warnOriginal = win.console.warn; win.console.warn = (...a) => avisos.push(a.join(' '));
+    x.aplicar({ tipo: 'potrero_creado', potrero: 'Prueba Aviso', detalle: { coords: COORDS_OK, area: 2 } }, new Set());
+    chequear('potrero que llega de otro equipo y no se puede guardar: aparece el cartel', cartel().length === 1);
+    chequear('el potrero igual queda en el mapa de esta sesión', x.geo().some(p => p.nombre === 'Prueba Aviso'));
+    chequear('queda anotado en la consola', avisos.some(a => /No se pudo guardar/.test(a)), avisos.join(' | '));
+    x.guardar();
+    chequear('un guardarEstado() que anda no saca ese cartel (el potrero sigue sin guardar)', cartel().length === 1);
+    cartel()[0].click();
+    chequear('tocarlo lo oculta', cartel().length === 0);
+    x.aplicar({ tipo: 'potrero_limite_actualizado', potrero: 'Prueba Aviso', detalle: { coords: COORDS_OK, area: 3 } }, new Set());
+    chequear('una falla nueva (límite cambiado) vuelve a avisar aunque se haya tocado antes', cartel().length === 1);
+    cartel()[0].click();
+    win.console.warn = warnOriginal;
+    proto.setItem = original;
+    x.aplicar({ tipo: 'potrero_limite_actualizado', potrero: 'Prueba Aviso', detalle: { coords: COORDS_OK, area: 4 } }, new Set());
+    chequear('con el guardado andando, cambiar un límite no muestra cartel', cartel().length === 0);
   }
 
   // ---------------------------------------------------------------- 3. filtro `in` del borrado de stock
