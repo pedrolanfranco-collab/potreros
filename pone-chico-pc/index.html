@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-8aJXvhilCMyOPd4izBTmuFKzRbc3GrqnCNk/+2pYDpQ=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-jyIM4CE0u210SVJcprW09Wxz7HmOcea1G6f2p0LHhVs=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pone Chico — Mapa de Potreros</title>
 <link rel="manifest" href="manifest.json">
@@ -383,6 +383,7 @@
   #menu-herramientas .btn{width:100%;margin-bottom:12px;font-size:19px;padding:18px 16px;}
   #menu-herramientas .btn-kmz{background:var(--verde-monte);color:#fff;}
   #menu-herramientas .btn-json{background:#fff;color:var(--texto);border:1px solid var(--linea);}
+  .pdf-especies{display:flex;gap:12px;font-size:12px;margin:-2px 0 6px 6px}
   /* 10/10/2026: caja de la PC ordenada por funciones (grupos en 2 columnas y
      sub-menus para exportar/backup/potrero/puntos/reportes). Solo la PC usa estas clases. */
   #menu-herramientas .hg{margin-bottom:14px;}
@@ -695,14 +696,14 @@
   <button data-pc-seccion="puntos" title="Puntos y reportes"><span aria-hidden="true">📍</span> <span class="pr-txt">Puntos y reportes</span></button>
   <button data-pc-seccion="exportar" title="Exportar y respaldo"><span aria-hidden="true">⬇</span> <span class="pr-txt">Exportar y respaldo</span></button>
   <button data-pc-seccion="dispositivo" title="Este dispositivo"><span aria-hidden="true">⚙</span> <span class="pr-txt">Este dispositivo</span></button>
-  <div class="pr-pie">v3.11 (completa)</div>
+  <div class="pr-pie">v3.12 (completa)</div>
 </nav>
 <div id="app">
   <header>
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">Gestión de hacienda por potrero y dueño · v3.11 (completa)</div>
+        <div class="sub">Gestión de hacienda por potrero y dueño · v3.12 (completa)</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -850,6 +851,11 @@
         <button class="btn btn-kmz" id="btn-exportar-kmz">⬇ Exportar KMZ</button>
         <button class="btn btn-kmz" id="btn-exportar-pdf">⬇ Exportar PDF</button>
         <button class="btn btn-kmz" id="btn-exportar-pdf-animales">⬇ PDF: Animales por potrero</button>
+        <div id="pdf-animales-especies" class="pdf-especies">
+          <label><input type="checkbox" data-especie="bovino" checked> Bovinos</label>
+          <label><input type="checkbox" data-especie="ovino" checked> Ovinos</label>
+          <label><input type="checkbox" data-especie="equino" checked> Equinos</label>
+        </div>
         <button class="btn btn-kmz" id="btn-exportar-pdf-historial">⬇ PDF: Historial por potrero</button>
         <button class="btn btn-kmz" id="btn-exportar-excel">⬇ Exportar Excel</button>
         <button class="btn btn-secundario" data-volver>← Volver</button>
@@ -1866,7 +1872,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js" integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@5.0.9/dist/jspdf.plugin.autotable.min.js" integrity="sha384-A77YsHWitrPuAj8E0AuB033EXzymUxIajnWKPzrrzqFoYYSCEpFennDUjMG2R1L3" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.11","manejo":false,"versionMovil":"3.11","simpleHabilitado":true,"versionMovilSimple":"2.11","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.12","manejo":false,"versionMovil":"3.11","simpleHabilitado":true,"versionMovilSimple":"2.11","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -2672,7 +2678,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'pc-3.11';
+const VERSION_APP = 'pc-3.12';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta y María Laura); la PC no guarda copia. */
 const PADRON_OFFLINE = false;
@@ -9625,20 +9631,43 @@ document.getElementById('btn-exportar-pdf').addEventListener('click', async ()=>
 });
 
 /* ======================= EXPORTAR PDF: ANIMALES POR POTRERO ======================= */
+/* Tildes de especie debajo del botón. La elección se recuerda en este navegador. */
+const CLAVE_PDF_ESPECIES = ESTABLECIMIENTO + '_pdf_animales_especies';
+function especiesElegidasPdf(){
+  const cont = document.getElementById('pdf-animales-especies');
+  if(!cont) return ['bovino','ovino','equino'];
+  return Array.from(cont.querySelectorAll('input[data-especie]')).filter(i=>i.checked).map(i=>i.dataset.especie);
+}
+function guardarEspeciesPdf(){
+  try{ localStorage.setItem(CLAVE_PDF_ESPECIES, JSON.stringify(especiesElegidasPdf())); }catch(e){}
+}
+(function cargarEspeciesPdf(){
+  const cont = document.getElementById('pdf-animales-especies');
+  if(!cont) return;
+  let guardadas = null;
+  try{
+    const arr = JSON.parse(localStorage.getItem(CLAVE_PDF_ESPECIES) || 'null');
+    if(Array.isArray(arr)) guardadas = arr.filter(e=>typeof e === 'string');
+  }catch(e){ guardadas = null; }
+  cont.querySelectorAll('input[data-especie]').forEach(i=>{
+    if(guardadas) i.checked = guardadas.includes(i.dataset.especie);
+    i.addEventListener('change', guardarEspeciesPdf);
+  });
+})();
+
 document.getElementById('btn-exportar-pdf-animales').addEventListener('click', async ()=>{
+  const sel = especiesElegidasPdf();
+  if(!sel.length){ toast('Elegí al menos una especie'); return; }
   const rep = reunirDatosReporte();
   const nac = await calcularEstadisticasNacimientos();
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const ordenados = POTREROS_GEO.slice().sort((a,b)=>{
-    const conA = totalPotrero(a.nombre) !== 0, conB = totalPotrero(b.nombre) !== 0;
-    if(conA !== conB) return conA ? -1 : 1;
-    return a.nombre.localeCompare(b.nombre,'es');
-  });
+  const doc = new jsPDF({orientation:'landscape'});
   doc.setFontSize(16);
   doc.text(CONFIG.nombre, 14, 16);
   doc.setFontSize(10);
-  doc.text(`Animales por potrero — ${rep.fecha}`, 14, 22);
+  let subtitulo = `Animales por potrero — ${rep.fecha}`;
+  if(sel.length < 3) subtitulo += ' — Especies: ' + sel.map(e=>ESPECIE_LABEL[e]).join(', ');
+  doc.text(subtitulo, 14, 22);
 
   /* 10/10/2026: el 12/9 los nacimientos pasaron a calcularse por especie
      ({bovino, ovino, filasPorCategoria}) y este PDF siguió leyendo los campos viejos
@@ -9670,35 +9699,105 @@ document.getElementById('btn-exportar-pdf-animales').addEventListener('click', a
     });
   }
 
-  const totalesPorCategoria = {};
-  ordenados.forEach(p=>{
-    detalleAnimales(estado.potreros[p.nombre].animales).forEach(x=>{
-      totalesPorCategoria[x.cat] = (totalesPorCategoria[x.cat]||0) + x.cant;
+  /* Tabla principal: una fila por potrero con animales de las especies elegidas,
+     una columna por categoría (agrupadas por especie). */
+  const cantidadEn = (nombre, cat)=> detalleAnimales(estado.potreros[nombre].animales)
+    .filter(x=>x.cat===cat).reduce((s,x)=>s+x.cant, 0);
+  const listados = POTREROS_GEO.filter(p=>
+    detalleAnimales(estado.potreros[p.nombre].animales).some(x=> sel.includes(CATEGORIA_ESPECIE[x.cat]) && x.cant !== 0)
+  ).slice().sort((a,b)=> a.nombre.localeCompare(b.nombre,'es',{numeric:true}));
+  const columnas = [];
+  ['bovino','ovino','equino'].filter(e=>sel.includes(e)).forEach(esp=>{
+    CATEGORIAS.filter(c=> CATEGORIA_ESPECIE[c]===esp && listados.some(p=> cantidadEn(p.nombre, c) !== 0))
+      .forEach(c=> columnas.push({cat: c, esp}));
+  });
+  // UG de las especies elegidas. Con las tres, es totalUG(). Si no, suma solo esas categorías,
+  // y el extra de vaca con ternero (solo bovinos) se suma si bovino está elegido.
+  const ugSel = nombre=>{
+    if(sel.length === 3) return totalUG(nombre);
+    let ug = 0;
+    Object.entries(estado.potreros[nombre].animales).forEach(([key,cant])=>{
+      const n = Number(cant || 0);
+      if(!n) return;
+      const {cat} = partesClave(key);
+      if(sel.includes(CATEGORIA_ESPECIE[cat])) ug += n * coefUG(cat);
     });
+    if(sel.includes('bovino')){
+      const v = vacasConTerneroEnPotrero(nombre);
+      if(v.nCon) ug += v.nCon * v.extraPorVaca;
+    }
+    return ug;
+  };
+  const sumaCol = columnas.map(()=>0);
+  let sumaTotal = 0, sumaUG = 0;
+  const filasPrincipal = listados.map(p=>{
+    const ha = areaHa(p.nombre);
+    const ug = ugSel(p.nombre);
+    let total = 0;
+    const celdas = columnas.map((c,i)=>{
+      const n = cantidadEn(p.nombre, c.cat);
+      sumaCol[i] += n; total += n;
+      return n === 0 ? '—' : n;
+    });
+    sumaTotal += total; sumaUG += ug;
+    const ugha = ha > 0 ? (ug/ha).toFixed(2).replace('.',',') : '—';
+    return [p.nombre, ha > 0 ? Math.round(ha) : '—', ...celdas, total, coma1(ug), ugha];
   });
-  const filasCategoria = Object.entries(totalesPorCategoria).sort((a,b)=> b[1]-a[1]);
+  const head1 = ['', ''];
+  ['bovino','ovino','equino'].forEach(esp=>{
+    const k = columnas.filter(c=>c.esp===esp).length;
+    if(k) head1.push({content: ESPECIE_LABEL[esp], colSpan: k, styles:{halign:'center'}});
+  });
+  head1.push('', '', '');
+  const head2 = ['Potrero','ha', ...columnas.map(c=>c.cat), 'Total','UG','UG/ha'];
   doc.autoTable({
     startY: doc.lastAutoTable.finalY + 8,
-    head: [['Categoría','Animales']],
-    body: filasCategoria,
-    theme: 'striped', headStyles:{fillColor:[122,82,54]}, styles:{fontSize:8}
+    head: [head1, head2],
+    body: filasPrincipal,
+    foot: [['TOTAL', '', ...sumaCol, sumaTotal, coma1(sumaUG), '']],
+    showFoot: 'lastPage',
+    footStyles: {fontStyle:'bold', fillColor:[230,230,230], textColor:20},
+    theme: 'grid',
+    headStyles: {fillColor:[92,122,74], fontSize:7, halign:'center', valign:'middle'},
+    styles: {fontSize:7, halign:'center', cellPadding:1},
+    columnStyles: {0:{halign:'left', cellWidth:22}}
   });
 
-  const filas = ordenados.map(p=>{
-    const animales = estado.potreros[p.nombre].animales;
-    const categorias = detalleAnimales(animales).map(x=>`${x.cat} (${textoFirma(x.dueno)}): ${x.cant}`).join(', ') || '—';
-    const alertas = calcularAlertas(p.nombre).join(' / ') || '—';
-    return [p.nombre, areaHa(p.nombre).toFixed(1), totalPotrero(p.nombre), categorias, cargaPotrero(p.nombre).toFixed(2), alertas];
-  });
+  /* Por dueño: solo si hay más de un dueño con animales de las especies elegidas. */
+  const duenos = new Set();
+  POTREROS_GEO.forEach(p=> detalleAnimales(estado.potreros[p.nombre].animales).forEach(x=>{
+    if(sel.includes(CATEGORIA_ESPECIE[x.cat]) && x.cant !== 0) duenos.add(x.dueno);
+  }));
+  if(duenos.size > 1){
+    const cantidadDueno = (dueno, cat)=>{
+      let s = 0;
+      POTREROS_GEO.forEach(p=> detalleAnimales(estado.potreros[p.nombre].animales).forEach(x=>{
+        if(x.dueno===dueno && x.cat===cat) s += x.cant;
+      }));
+      return s;
+    };
+    const filasDueno = Array.from(duenos).sort((a,b)=> textoFirma(a).localeCompare(textoFirma(b),'es')).map(d=>{
+      let total = 0;
+      const celdas = columnas.map(c=>{
+        const n = cantidadDueno(d, c.cat);
+        total += n;
+        return n === 0 ? '—' : n;
+      });
+      return [textoFirma(d), ...celdas, total];
+    });
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 8,
+      head: [['Dueño', ...columnas.map(c=>c.cat), 'Total']],
+      body: filasDueno,
+      theme: 'grid',
+      headStyles: {fillColor:[122,82,54], fontSize:7, halign:'center', valign:'middle'},
+      styles: {fontSize:7, halign:'center', cellPadding:1},
+      columnStyles: {0:{halign:'left'}}
+    });
+  }
 
-  doc.autoTable({
-    startY: doc.lastAutoTable.finalY + 8,
-    head: [['Potrero','Área (ha)','Animales','Categorías (dueño)','UG/ha','Alertas']],
-    body: filas,
-    theme: 'striped', headStyles:{fillColor:[92,122,74]}, styles:{fontSize:8}
-  });
-
-  doc.save(`${ESTABLECIMIENTO}_animales_por_potrero_${new Date().toISOString().slice(0,10)}.pdf`);
+  const sufijo = sel.length < 3 ? '_' + sel.map(e=>ESPECIE_LABEL[e].toLowerCase()).join('_') : '';
+  doc.save(`${ESTABLECIMIENTO}_animales_por_potrero${sufijo}_${new Date().toISOString().slice(0,10)}.pdf`);
   toast('PDF exportado');
 });
 

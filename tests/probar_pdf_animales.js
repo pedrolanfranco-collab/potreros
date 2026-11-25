@@ -63,14 +63,15 @@ function stubLeaflet(win){
   win.JSZip = function(){ return { file(){}, generateAsync(){ return Promise.resolve(new win.Blob([])); } }; };
 }
 
-// jsPDF falso: guarda cada autoTable (cabecera y cuerpo) y el nombre con que se hizo save()
+// jsPDF falso: guarda cada autoTable (cabecera, cuerpo y pie) y el nombre con que se hizo save()
 function stubJsPDF(win){
-  const registro = { tablas: [], guardados: [], textos: [] };
-  win.jspdf = { jsPDF: function(){
+  const registro = { tablas: [], guardados: [], textos: [], opciones: null };
+  win.jspdf = { jsPDF: function(opts){
+    registro.opciones = opts || null;
     const doc = {
       setFontSize(){}, setTextColor(){}, setFont(){},
       text(t){ registro.textos.push(String(t)); },
-      autoTable(o){ registro.tablas.push({ head: o.head, body: o.body }); doc.lastAutoTable = { finalY: 40 + registro.tablas.length * 20 }; },
+      autoTable(o){ registro.tablas.push({ head: o.head, body: o.body, foot: o.foot }); doc.lastAutoTable = { finalY: 40 + registro.tablas.length * 20 }; },
       save(nombre){ registro.guardados.push(nombre); },
       lastAutoTable: { finalY: 0 }
     };
@@ -101,7 +102,9 @@ async function levantarApp(archivo, { eventos, enLinea }){
   Object.defineProperty(win.navigator, 'onLine', { value: !!enLinea, configurable: true });
   win.alert = () => {}; win.confirm = () => true; win.prompt = () => null;
   win.URL.createObjectURL = () => 'blob:x'; win.URL.revokeObjectURL = () => {};
-  const codigo = Array.from(win.document.querySelectorAll('script')).map(s => s.textContent).filter(Boolean).join('\n');
+  // CATEGORIA_ESPECIE es const del script: un win.eval posterior no la ve, así que se expone aparte
+  const codigo = Array.from(win.document.querySelectorAll('script')).map(s => s.textContent).filter(Boolean).join('\n')
+    + '\nwindow.__CATEGORIA_ESPECIE = CATEGORIA_ESPECIE;\nwindow.__estado = () => estado; window.__geo = POTREROS_GEO;';
   try { win.eval(codigo); } catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await dormir(80);
   return { win, errores, pdf };
@@ -146,6 +149,114 @@ async function probarArchivo(archivo){
     chequear('corderos/as: 2 en octubre', !!mensual && mensual.body[1][3] === 2 && mensual.body[1][6] === 2, JSON.stringify(mensual && mensual.body[1]));
   }
 
+  // ---- 3) tabla principal por potrero y categoría, elección de especies (tildes)
+  {
+    const texto = c => (c && typeof c === 'object') ? String(c.content) : String(c);
+    const esPrincipal = t => !!t.head && t.head.length === 2 && t.head[1] && texto(t.head[1][0]) === 'Potrero';
+
+    // a) con las tres especies
+    const { win, errores, pdf } = await levantarApp(archivo, { eventos: [], enLinea: true });
+    if(errores.length){ chequear('(3 especies) carga sin errores', false, errores[0]); return; }
+    rechazosNode.length = 0;
+    win.document.getElementById('btn-exportar-pdf-animales').click();
+    await dormir(150);
+    chequear('(3 especies) no hubo errores sin atrapar', rechazosNode.length === 0, rechazosNode.join(' | '));
+    chequear('(3 especies) hoja acostada', !!pdf.opciones && pdf.opciones.orientation === 'landscape', JSON.stringify(pdf.opciones));
+    const principal = pdf.tablas.find(esPrincipal);
+    chequear('(3 especies) hay tabla con cabecera Potrero / ha', !!principal, JSON.stringify(pdf.tablas.map(t => t.head)));
+    chequear('(3 especies) ninguna cabecera tiene Alertas',
+      !pdf.tablas.some(t => (t.head || []).some(f => (Array.isArray(f) ? f : [f]).some(c => texto(c).includes('Alertas')))));
+    if(principal){
+      const iT = principal.head[1].map(texto).indexOf('Total');
+      chequear('(3 especies) la columna Total existe', iT > 0, JSON.stringify(principal.head[1]));
+      if(principal.body.length === 0) console.log('  --  esta variante no tiene animales en el stock de prueba: no hay filas por potrero');
+      else chequear('(3 especies) ninguna fila del cuerpo tiene Total 0',
+        principal.body.every(f => f[iT] !== 0), JSON.stringify(principal.body));
+      const pie = principal.foot && principal.foot[0];
+      chequear('(3 especies) el pie tiene TOTAL', !!pie && pie[0] === 'TOTAL', JSON.stringify(pie));
+      if(pie){
+        const sumaCats = pie.slice(2, iT).reduce((s, n) => s + Number(n || 0), 0);
+        chequear('(3 especies) suma de categorías del pie = Total del pie', sumaCats === pie[iT], sumaCats + ' vs ' + pie[iT]);
+        const sumaTotalCuerpo = principal.body.reduce((s, f) => s + Number(f[iT] || 0), 0);
+        chequear('(3 especies) Total del pie = suma de la columna Total', pie[iT] === sumaTotalCuerpo, pie[iT] + ' vs ' + sumaTotalCuerpo);
+      }
+    }
+    const duenos = pdf.tablas.find(t => t.head && t.head[0] && texto(t.head[0][0]) === 'Dueño');
+    if(duenos) chequear('(3 especies) tabla por dueño sin "undefined"', !duenos.body.some(f => texto(f[0]).includes('undefined')), JSON.stringify(duenos.body));
+    else console.log('  --  esta variante tiene un solo dueño con animales: no hay tabla por dueño');
+
+    // b) solo bovinos: el archivo se llama _bovinos_ y las categorías son bovinas
+    const b = await levantarApp(archivo, { eventos: [], enLinea: true });
+    b.win.document.querySelectorAll('#pdf-animales-especies input').forEach(i => {
+      i.checked = i.dataset.especie === 'bovino';
+      i.dispatchEvent(new b.win.Event('change'));
+    });
+    b.win.document.getElementById('btn-exportar-pdf-animales').click();
+    await dormir(150);
+    const nombreB = b.pdf.guardados[0] || '';
+    chequear('(solo bovinos) el archivo termina en _bovinos_AAAA-MM-DD.pdf', /_bovinos_\d{4}-\d{2}-\d{2}\.pdf$/.test(nombreB), JSON.stringify(b.pdf.guardados));
+    const pB = b.pdf.tablas.find(esPrincipal);
+    if(pB){
+      const cats = pB.head[1].map(texto).slice(2, pB.head[1].map(texto).indexOf('Total'));
+      const especieDe = b.win.__CATEGORIA_ESPECIE;
+      if(cats.length === 0) console.log('  --  sin animales bovinos en el stock de prueba: no hay columnas que revisar');
+      else chequear('(solo bovinos) todas las categorías de la tabla son bovinas', cats.every(c => especieDe[c] === 'bovino'), JSON.stringify(cats));
+    } else chequear('(solo bovinos) hay tabla por potrero', false, JSON.stringify(b.pdf.tablas.map(t => t.head)));
+
+    // c) ninguna especie: no se guarda nada
+    const c = await levantarApp(archivo, { eventos: [], enLinea: true });
+    c.win.document.querySelectorAll('#pdf-animales-especies input').forEach(i => {
+      i.checked = false;
+      i.dispatchEvent(new c.win.Event('change'));
+    });
+    c.win.document.getElementById('btn-exportar-pdf-animales').click();
+    await dormir(150);
+    chequear('(ninguna especie) no se guarda ningún PDF', c.pdf.guardados.length === 0, JSON.stringify(c.pdf.guardados));
+
+    // d) armado conocido: dos dueños (A y B), total 24 con las tres especies; solo ovinos, total 7
+    // (la clave de dueño va como 'categoria||dueno', separador de partesClave)
+    const armar = (win, especies) => {
+      const e = win.__estado();
+      // Pone Chico no tiene potreros en su config: se agregan dos de prueba (geometría y estado)
+      const geo = win.__geo;
+      ['PRUEBA 1', 'PRUEBA 2'].forEach((nombre, i) => {
+        if(geo.length < i + 1) geo.push({ nombre, area: '20', coords: [] });
+        if(!e.potreros[geo[i].nombre]) e.potreros[geo[i].nombre] = { animales: {}, historial: [] };
+      });
+      const [p1, p2] = geo;
+      Object.keys(e.potreros).forEach(n => { e.potreros[n].animales = {}; });
+      e.potreros[p1.nombre].animales = { 'Vacas||A': 10, 'Terneros||A': 4, 'Ovejas||B': 7 };
+      e.potreros[p2.nombre].animales = { 'Vacas||B': 3 };
+      win.document.querySelectorAll('#pdf-animales-especies input').forEach(i => {
+        i.checked = especies.includes(i.dataset.especie);
+        i.dispatchEvent(new win.Event('change'));
+      });
+    };
+    const totalPie = p => p.foot[0][p.head[1].map(texto).indexOf('Total')];
+
+    const d3 = await levantarApp(archivo, { eventos: [], enLinea: true });
+    armar(d3.win, ['bovino', 'ovino', 'equino']);
+    d3.win.document.getElementById('btn-exportar-pdf-animales').click();
+    await dormir(150);
+    const pTodas = d3.pdf.tablas.find(esPrincipal);
+    const tabDueno = d3.pdf.tablas.find(t => t.head && t.head[0] && texto(t.head[0][0]) === 'Dueño');
+    chequear('(d) hay tabla con cabecera Dueño', !!tabDueno, JSON.stringify(d3.pdf.tablas.map(t => t.head)));
+    chequear('(d) ninguna celda de la tabla por dueño dice undefined',
+      !!tabDueno && !tabDueno.body.some(f => f.some(c => texto(c).includes('undefined'))), JSON.stringify(tabDueno && tabDueno.body));
+    chequear('(d) Total del pie de la tabla principal = 24', !!pTodas && !!pTodas.foot && totalPie(pTodas) === 24,
+      pTodas && pTodas.foot ? JSON.stringify(pTodas.foot) : 'sin pie');
+    chequear('(d) la tabla principal tiene 2 filas', !!pTodas && pTodas.body.length === 2, JSON.stringify(pTodas && pTodas.body));
+
+    const d1 = await levantarApp(archivo, { eventos: [], enLinea: true });
+    armar(d1.win, ['ovino']);
+    d1.win.document.getElementById('btn-exportar-pdf-animales').click();
+    await dormir(150);
+    const pOvino = d1.pdf.tablas.find(esPrincipal);
+    chequear('(d, solo ovino) Total del pie = 7', !!pOvino && !!pOvino.foot && totalPie(pOvino) === 7,
+      pOvino && pOvino.foot ? JSON.stringify(pOvino.foot) : 'sin pie');
+    chequear('(d, solo ovino) 1 fila de potrero', !!pOvino && pOvino.body.length === 1, JSON.stringify(pOvino && pOvino.body));
+  }
+
   // ---- 2) sin conexión y sin datos guardados: igual se guarda, con N/D y sin la tabla mensual
   {
     const { win, errores, pdf } = await levantarApp(archivo, { eventos: [], enLinea: false });
@@ -164,7 +275,10 @@ async function probarArchivo(archivo){
 (async () => {
   const archivos = process.argv.slice(2);
   if(!archivos.length){ console.log('Uso: node tests/probar_pdf_animales.js <index.html> [...]'); process.exit(2); }
-  for(const a of archivos) await probarArchivo(a);
+  for(const a of archivos){
+    try { await probarArchivo(a); }
+    catch(e){ chequear('el caso ' + a + ' termina sin excepciones', false, e.stack || String(e)); }
+  }
   console.log(fallas ? `\n${fallas} FALLA(S)` : '\nTodo OK');
   process.exit(fallas ? 1 : 0);
 })();
