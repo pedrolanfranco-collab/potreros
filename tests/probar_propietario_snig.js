@@ -5,7 +5,7 @@
  * = no hay export de ese campo) y campo_snig (dónde ubica el SNIG al animal). La app SOLO LEE. Se verifica:
  *  - La Vuelta y María Laura: "Propietario (SNIG)" con el nombre traducido por mapaDuenos, justo antes de la fila del
  *    dueño del bastón; en_snig=false dice "Sin SNIG — firma: ..." (con textoFirma: sin dueño no sale "undefined");
- *    en_snig=true sin nombre dice "Propietario sin nombre en el SNIG"; en_snig=null no sale nada.
+ *    en_snig=true sin nombre dice "Sin dato" (25/11/2026; antes "Propietario sin nombre en el SNIG"); en_snig=null no sale nada.
  *  - campo_snig de otro campo: la línea de alerta "⚠ Según el SNIG está en ..." debajo del cartel; nunca bloquea.
  *    Del mismo campo, no.
  *  - Un animal solo-SNIG (sin lectura del bastón, propietario vacío) no rompe la ficha.
@@ -172,7 +172,10 @@ async function levantar(archivo, filas, opciones){
       + ' window.__snigAusente = propietarioSnigAusente; window.__padronLocal = padronLocal; window.__idDisp = idDispositivo;'
       + ' window.__est = function(){ return estado; }; window.__snigEstado = snigEstadoSinLectura; window.__geo = function(){ return POTREROS_GEO; };'
       + ' window.__familia = familiaCategoriaSnig; window.__resumenStock = resumenPorPropietarioSnig; window.__htmlStock = htmlPorPropietarioSnig;'
-      + ' window.__resumenPot = resumenSnigPotrero; window.__especies = ESPECIES;');
+      + ' window.__resumenPot = resumenSnigPotrero; window.__especies = ESPECIES;'
+      + ' window.__cargarPadronPot = cargarPadronSnigPotreros; window.__lineaPotDatos = lineaSnigPotreroDatos;'
+      + ' window.__asociacion = asociacionDuenosSnig; window.__renderLista = renderLista;'
+      + ' window.__tooltipPC = (typeof tooltipPotreroPC === "function") ? tooltipPotreroPC : null;');
   } catch(e){ errores.push('ERROR AL CARGAR: ' + e.stack); }
   await new Promise(r => setTimeout(r, 60));
   return { win, errores };
@@ -238,8 +241,8 @@ async function probarCampo(archivo, est){
   caja = await buscar(win, '20000004');
   f = filasDeCaja(caja);
   snig = f.find(x => x[0] === 'Propietario (SNIG)');
-  chequear('en_snig=true sin nombre: "Propietario sin nombre en el SNIG"',
-    !!snig && snig[1] === 'Propietario sin nombre en el SNIG', JSON.stringify(f));
+  chequear('en_snig=true sin nombre: "Sin dato"',
+    !!snig && snig[1] === 'Sin dato', JSON.stringify(f));
 
   caja = await buscar(win, '20000005');
   f = filasDeCaja(caja);
@@ -925,7 +928,9 @@ async function probarListaVaciaYPaginada(archivo, est){
   doc.getElementById('btn-snig-sin-lectura').dispatchEvent(new win.Event('click', { bubbles: true }));
   await esperar(400);
   const rangos = LLAMADAS.filter(l => l.tabla === 'animales_caravana').map(l => l.rango.join('-'));
-  chequear('paginado: pide las páginas 0-999 y 1000-1999', rangos.join(' ') === '0-999 1000-1999', JSON.stringify(rangos));
+  // 25/11/2026: la app trae el padrón por su cuenta a los 1,5 s (línea "Vacunos según SNIG" del potrero) y ese pedido puede
+  // caer dentro de la espera: lo que se verifica es que la ventana pidió las dos primeras páginas, en orden.
+  chequear('paginado: pide las páginas 0-999 y 1000-1999', rangos.slice(0, 2).join(' ') === '0-999 1000-1999', JSON.stringify(rangos));
   chequear('se cuentan las 1100 filas', doc.getElementById('sl-resumen').textContent
     === '1100 animales: 1100 vivos sin registro en el predio · 0 pendientes de primera lectura', doc.getElementById('sl-resumen').textContent);
   chequear('la tabla muestra las 1100', filasTabla(doc).length === 1100, String(filasTabla(doc).length));
@@ -1575,8 +1580,9 @@ async function probarCuentaCompleta(archivo, est){
   await esperar(20);
   const p4 = doc.getElementById('stock-panel-4');
   const t = tablaCon(p4, CUENTA_TITULO);
-  chequear('la cuenta completa es la PRIMERA tabla del panel (arriba de la de tipo de animal)',
-    !!t && p4.querySelectorAll('table')[0] === t, p4.textContent.slice(0, 200));
+  // 25/11/2026: arriba de todo va la tabla de asociación dueño ↔ propietario SNIG; la cuenta completa es la siguiente.
+  chequear('la cuenta completa es la PRIMERA tabla del panel después de la de asociación (arriba de la de tipo de animal)',
+    !!t && p4.querySelectorAll('table')[0].closest('.snig-asociacion') !== null && p4.querySelectorAll('table')[1] === t, p4.textContent.slice(0, 200));
   const enc = t ? Array.from(t.querySelectorAll('thead th')).map(th => th.textContent.trim()) : null;
   chequear('encabezados: Leídos por el bastón / Sin lectura / Dados de baja acá / Total según el SNIG',
     JS(enc) === JS([CUENTA_TITULO, 'Leídos por el bastón', 'Sin lectura', 'Dados de baja acá', 'Total según el SNIG']), JS(enc));
@@ -1654,6 +1660,183 @@ async function probarTrasladoSinPedro(archivo){
   chequear('traslado: "Pedro" no es opción del dueño destino', ops.indexOf('Pedro') < 0 && ops.indexOf('Silvia') >= 0, ops.join('|'));
 }
 
+/* ---------- 25/11/2026: línea "Vacunos según SNIG (última lectura)" en el potrero + tabla de asociación dueño ↔ SNIG ---------- */
+const clavesPot = est => JSON.stringify(est.potreros);
+function tarjetaPot(doc, nombre){
+  return Array.from(doc.querySelectorAll('#lista-potreros .potrero-card')).find(c => {
+    const n = c.querySelector('.nombre');
+    return n && n.firstChild && n.firstChild.textContent.trim() === nombre;
+  }) || null;
+}
+const lineaPot = (doc, nombre) => { const c = tarjetaPot(doc, nombre); const l = c && c.querySelector('.snig-potrero'); return l ? l.textContent.trim() : null; };
+const excesoPot = (doc, nombre) => { const c = tarjetaPot(doc, nombre); const l = c && c.querySelector('.snig-potrero-exceso'); return l ? l.textContent.trim() : null; };
+
+async function probarLineaPotrero(archivo, est){
+  const C = CAMPOS[est];
+  const pc = /-pc[\\/]/.test(archivo);
+  console.log('\n=== Línea del potrero "Vacunos según SNIG" (' + est + ', ' + archivo + ') ===');
+  // Se arma con la geo real del config: 5 potreros comunes (María Laura tiene justo 5).
+  const probe = await levantar(archivo, [], { hoy: HOY_TEST });
+  if(probe.errores.length){ chequear('carga sin errores', false, probe.errores[0]); return; }
+  const nombres = probe.win.__geo().map(p => p.nombre).filter(n => n.indexOf('+') < 0);
+  const dobles = Object.keys(probe.win.__cfg.potrerosDobles || {});
+  probe.win.close();
+  const [p0, p1, p2, p3, p4] = nombres;
+  const leida = (potrero, extra) => Object.assign({ categoria: 'Vacas', potrero, propietario_snig: C.snig }, extra || {});
+  const extras = {};
+  let k = 0;
+  const poner = (n, f) => { for(let i = 0; i < n; i++) extras['8' + String(k++).padStart(7, '0')] = f(); };
+  poner(5, () => leida(p0));                                                         // C.snig x5
+  poner(2, () => leida(p0, { propietario_snig: 'Fideicomiso' }));                    // Fideicomiso x2
+  poner(1, () => leida(p0, { propietario_snig: '', propietario: 'PERICO' }));        // en el SNIG sin nombre, firma PERICO
+  poner(1, () => leida(p0, { campo_snig: C.otro }));                                 // el SNIG lo ubica en otro campo: no cuenta
+  poner(1, () => leida(p0, { estado_vida: 'VENDIDO' }));                             // baja: no cuenta
+  poner(1, () => leida(p0, { en_snig: false }));                                     // el SNIG no lo tiene: no cuenta
+  poner(1, () => leida(p0, { ultima_lectura: null, potrero: null }));                // solo-SNIG sin lectura: no cuenta
+  poner(3, () => leida(p2, { categoria: 'Ovejas' }));                                // potrero de ovinos con lecturas
+  poner(2, () => leida(p3));                                                         // potrero vacío con lecturas
+  poner(4, () => leida(p4));                                                         // 4 leídos para un stock de 2: exceso 2
+  if(dobles.length){
+    poner(2, () => leida('1'));                                                      // partes del doble 1+2
+    poner(1, () => leida('2'));
+  }
+  const filas = padronDe(est, extras);
+  const { win, errores } = await levantar(archivo, filas, { hoy: HOY_TEST });
+  if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
+  const doc = win.document;
+  const e = win.__est();
+  Object.keys(e.potreros).forEach(n => { e.potreros[n].animales = {}; });
+  e.potreros[p0].animales = { ['Vacas||' + C.esperado]: 6, ['Terneros||' + C.esperado]: 4 };   // 10 vacunos
+  e.potreros[p1].animales = { ['Vacas||' + C.esperado]: 3 };                                    // sin lecturas
+  e.potreros[p2].animales = { ['Ovejas||' + C.esperado]: 5 };                                   // solo ovinos
+  e.potreros[p4].animales = { ['Vacas||' + C.esperado]: 2 };
+  if(dobles.length) e.potreros[dobles[0]].animales = { ['Vacas||' + C.esperado]: 4 };
+  const antes = clavesPot(e);
+  win.__renderLista('');
+  chequear('antes de traer el padrón no hay línea en ningún potrero', !doc.querySelector('#lista-potreros .snig-potrero'));
+  await win.__cargarPadronPot();
+  await esperar(30);
+  const L = lineaPot(doc, p0);
+  const nomCinco = C.esperado;
+  chequear('potrero con vacunos y lecturas: "Vacunos según SNIG (última lectura): ' + nomCinco + ' 5 · Fideicomiso 2 · Sin dato 3"',
+    L === 'Vacunos según SNIG (última lectura): ' + nomCinco + ' 5 · Fideicomiso 2 · Sin dato 3', L);
+  chequear('un SNIG sin nombre nunca sale como nombre (ni la firma PERICO ni "Propietario sin nombre")',
+    !!L && L.indexOf('PERICO') < 0 && L.indexOf('sin nombre') < 0, L);
+  chequear('sin exceso: no hay aviso "⚠ La última lectura tiene…"', excesoPot(doc, p0) === null, excesoPot(doc, p0));
+  chequear('potrero con vacunos pero sin lecturas: sin línea', lineaPot(doc, p1) === null, lineaPot(doc, p1));
+  chequear('potrero de ovinos (sin vacunos): sin línea aunque haya lecturas', lineaPot(doc, p2) === null, lineaPot(doc, p2));
+  chequear('potrero vacío: sin línea aunque haya lecturas', lineaPot(doc, p3) === null, lineaPot(doc, p3));
+  const L4 = lineaPot(doc, p4), X4 = excesoPot(doc, p4);
+  chequear('más leídos que stock: línea sin "Sin dato"', L4 === 'Vacunos según SNIG (última lectura): ' + nomCinco + ' 4', L4);
+  chequear('más leídos que stock: "⚠ La última lectura tiene 2 más que el stock"', X4 === '⚠ La última lectura tiene 2 más que el stock', X4);
+  if(dobles.length){
+    const LD = lineaPot(doc, dobles[0]);
+    chequear('potrero doble ' + dobles[0] + ': suma las lecturas de sus partes (3) y deja 1 en "Sin dato"',
+      LD === 'Vacunos según SNIG (última lectura): ' + nomCinco + ' 3 · Sin dato 1', LD);
+  }
+  chequear('el stock (estado.potreros) queda IGUAL antes y después', clavesPot(win.__est()) === antes);
+  const d0 = win.__lineaPotDatos(p0, filas);
+  chequear('lineaSnigPotreroDatos: vacunos 10, sin dato 3, exceso 0', !!d0 && d0.vacunos === 10 && d0.sinDato === 3 && d0.exceso === 0, JSON.stringify(d0));
+  chequear('lineaSnigPotreroDatos sin padrón (null) devuelve null', win.__lineaPotDatos(p0, null) === null);
+  if(pc){
+    const tip = win.__tooltipPC(p0);
+    chequear('PC: tooltipPotreroPC incluye la línea', tip.indexOf('Vacunos según SNIG (última lectura): ' + nomCinco + ' 5 · Fideicomiso 2 · Sin dato 3') >= 0, tip);
+    chequear('PC: el tooltip del exceso avisa', win.__tooltipPC(p4).indexOf('⚠ La última lectura tiene 2 más que el stock') >= 0, win.__tooltipPC(p4));
+    chequear('PC: el tooltip de un potrero sin lecturas no tiene la línea', win.__tooltipPC(p1).indexOf('según SNIG') < 0, win.__tooltipPC(p1));
+  }
+  win.close();
+
+  // Sin señal: el padrón falla y no hay copia: no rompe y no hay línea.
+  const s = await levantar(archivo, filas, { hoy: HOY_TEST });
+  if(s.errores.length){ chequear('carga sin errores (sin señal)', false, s.errores[0]); return; }
+  const es = s.win.__est();
+  Object.keys(es.potreros).forEach(n => { es.potreros[n].animales = {}; });
+  es.potreros[p0].animales = { ['Vacas||' + C.esperado]: 10 };
+  RED.caida = true;
+  let tiro = null;
+  try{ await s.win.__cargarPadronPot(); }catch(x){ tiro = x; }
+  await esperar(30);
+  s.win.__renderLista('');
+  chequear('sin señal (el padrón da error): no rompe y no hay línea', tiro === null && lineaPot(s.win.document, p0) === null, String(tiro));
+  RED.caida = false;
+  s.win.close();
+}
+
+async function probarLineaPoneChico(archivo){
+  console.log('\n=== Línea del potrero (Pone Chico, flag apagado) ===');
+  const filas = padronDe('pone_chico', { '81000001': { potrero: '23', propietario_snig: 'Silvia' } });
+  const { win, errores } = await levantar(archivo, filas, { hoy: HOY_TEST });
+  if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
+  CONSULTAS.length = 0;
+  await win.__cargarPadronPot();
+  await esperar(1700);   // incluso pasado el 1,5 s del arranque
+  chequear('Pone Chico: cargarPadronSnigPotreros no consulta nada', CONSULTAS.indexOf('animales_caravana') < 0, JS(CONSULTAS));
+  chequear('Pone Chico: no hay línea del SNIG en ningún potrero', !win.document.querySelector('#lista-potreros .snig-potrero'));
+  win.close();
+}
+
+async function probarAsociacion(archivo, est){
+  const C = CAMPOS[est];
+  console.log('\n=== Asociación dueño de la app ↔ propietario SNIG (' + est + ', ' + archivo + ') ===');
+  const lv = est === 'la_vuelta';
+  const nombreMismo = lv ? 'Pedro Lanfranco' : 'Silvia';
+  const variantes = lv ? ['pedro lanfranco', 'PÉDRO  LANFRANCO'] : ['SILVIA', 'Silvía'];
+  const filas = padronDe(est, {
+    '82000001': { propietario_snig: nombreMismo, propietario: 'FIDEICOMISO' },
+    '82000002': { propietario_snig: nombreMismo, propietario: 'FIDEICOMISO' },
+    '82000003': { propietario_snig: variantes[0] },
+    '82000004': { propietario_snig: variantes[1] },
+    '82000005': { propietario_snig: 'Juan Perez', propietario: 'perico' },
+    '82000006': { propietario_snig: 'Juan Perez', propietario: 'PERICO' },
+    '82000007': { propietario_snig: 'Juan Perez', propietario: 'Mili' },
+    '82000008': { propietario_snig: '', propietario: 'PERICO' },
+    '82000009': { propietario_snig: '', propietario: '' },
+    '82000010': { propietario_snig: 'Juan Perez', estado_vida: 'VENDIDO' },        // baja: no cuenta
+    '82000011': { propietario_snig: 'Juan Perez', campo_snig: C.otro },            // otro campo: no cuenta
+    '82000012': { propietario_snig: 'Juan Perez', en_snig: false },                // el SNIG no lo tiene: no cuenta
+  });
+  if(lv) filas.push(Object.assign({}, BASE, { establecimiento: est, id8: '82000013', ide: '85800082000013', propietario_snig: 'Silvia', propietario: 'SILVIA' }));
+  const { win, errores } = await levantar(archivo, filas, { hoy: HOY_TEST });
+  if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
+  const a = win.__asociacion(filas);
+  const por = n => a.find(f => f.snig === n);
+  const mismo = por(nombreMismo);
+  chequear('"' + nombreMismo + '": Mismo nombre, dueño de la app = ese nombre, 2 animales',
+    !!mismo && mismo.como === 'mismo' && mismo.dueno === nombreMismo && mismo.n === 2, JS(a));
+  chequear('con mayúsculas/acentos/espacios distintos ("' + variantes.join('", "') + '") también es Mismo nombre',
+    variantes.every(v => { const f = por(v); return !!f && f.como === 'mismo' && f.dueno === nombreMismo; }), JS(a));
+  const ju = por('Juan Perez');
+  chequear('un nombre desconocido: Sin asociar, dueño vacío y 3 animales (no cuentan baja, otro campo ni en_snig=false)',
+    !!ju && ju.como === 'sin' && ju.dueno === '' && ju.n === 3, JS(ju));
+  chequear('...y la pista del bastón es la firma más leída (PERICO en 2 de 3)', !!ju && !!ju.pista && ju.pista.firma === 'PERICO' && ju.pista.n === 2, JS(ju));
+  const sd = por('Sin dato en el SNIG');
+  chequear('sin nombre: "Sin dato en el SNIG", dueño vacío, 2 animales', !!sd && sd.como === 'sindato' && sd.dueno === '' && sd.n === 2, JS(a));
+  chequear('"Sin dato en el SNIG" va al final', a.length > 0 && a[a.length - 1].snig === 'Sin dato en el SNIG', JS(a.map(f => f.snig)));
+  if(lv){
+    const si = por('Silvia');
+    chequear('La Vuelta: "Silvia" → "Silvia Dutra", Confirmado', !!si && si.como === 'confirmado' && si.dueno === 'Silvia Dutra', JS(si));
+  }
+  // La pestaña del Stock total (solo PC y móvil completa; Campo no tiene Stock total)
+  if(!/movil-campo[\\/]/.test(archivo)){
+    ponerStock(win, STOCK_A);
+    const doc = await abrirStock(win);
+    doc.querySelector('#stock-tabs [data-tab="4"]').dispatchEvent(new win.Event('click', { bubbles: true }));
+    await esperar(20);
+    const p4 = doc.getElementById('stock-panel-4');
+    const caja = p4.querySelector('.snig-asociacion');
+    chequear('la pestaña "Por propietario SNIG" muestra .snig-asociacion', !!caja, p4.textContent.slice(0, 200));
+    const enc = caja ? Array.from(caja.querySelectorAll('thead th')).map(th => th.textContent.trim()) : null;
+    chequear('encabezados: Propietario (SNIG) · Dueño en la app · Cómo · Animales · Qué dice el bastón',
+      JS(enc) === JS(['Propietario (SNIG)', 'Dueño en la app', 'Cómo', 'Animales', 'Qué dice el bastón']), JS(enc));
+    const txt = caja ? caja.textContent : '';
+    chequear('la tabla dice "Mismo nombre", "Sin asociar" y "Sin dato en el SNIG"',
+      txt.indexOf('Mismo nombre') >= 0 && txt.indexOf('Sin asociar') >= 0 && txt.indexOf('Sin dato en el SNIG') >= 0, txt.slice(0, 300));
+    chequear('la pista del bastón se muestra como "PERICO en 2 de 3"', txt.indexOf('PERICO en 2 de 3') >= 0, txt.slice(0, 400));
+    if(lv) chequear('La Vuelta: "Confirmado por Pedro" para Silvia', txt.indexOf('Confirmado por Pedro') >= 0, txt.slice(0, 300));
+  }
+  win.close();
+}
+
 (async () => {
   const archivos = process.argv.slice(2);
   if(!archivos.length){
@@ -1666,9 +1849,13 @@ async function probarTrasladoSinPedro(archivo){
       await probarCampoSinStock(a);
       // 9/11/2026 (revisión, punto 1): Ver por dueño con "Según el SNIG" en Campo (antes quedaba en "Cargando…")
       await probarVerPorDueno(a, 'la_vuelta');
+      await probarLineaPotrero(a, 'la_vuelta');
+      await probarAsociacion(a, 'la_vuelta');
     }
     else if(/maria-laura-movil-campo[\\/]/.test(a)){
       await probarVerPorDueno(a, 'maria_laura');
+      await probarLineaPotrero(a, 'maria_laura');
+      await probarAsociacion(a, 'maria_laura');
     }
     else if(/la-vuelta-movil[\\/]/.test(a)){
       await probarCacheMovil(a);
@@ -1677,6 +1864,8 @@ async function probarTrasladoSinPedro(archivo){
       await probarStockIgual(a, 'la_vuelta');
       await probarCuentaCompleta(a, 'la_vuelta');
       await probarVerPorDueno(a, 'la_vuelta');
+      await probarLineaPotrero(a, 'la_vuelta');
+      await probarAsociacion(a, 'la_vuelta');
     }
     else if(/la-vuelta-pc[\\/]/.test(a)){
       await probarFamilias(a, 'la_vuelta');
@@ -1700,6 +1889,8 @@ async function probarTrasladoSinPedro(archivo){
       await probarVerPorDueno(a, 'la_vuelta');
       await probarReportesSnig(a, 'la_vuelta');
       await probarTrasladoSinPedro(a);
+      await probarLineaPotrero(a, 'la_vuelta');
+      await probarAsociacion(a, 'la_vuelta');
     }
     else if(/maria-laura-pc[\\/]/.test(a)){
       await probarFamilias(a, 'maria_laura');
@@ -1722,6 +1913,8 @@ async function probarTrasladoSinPedro(archivo){
       await probarVerPorDueno(a, 'maria_laura');
       await probarReportesSnig(a, 'maria_laura');
       await probarSinPedroEnMariaLaura(a);
+      await probarLineaPotrero(a, 'maria_laura');
+      await probarAsociacion(a, 'maria_laura');
     }
     else if(/pone-chico-pc[\\/]/.test(a)){
       await probarPoneChico(a);
@@ -1731,6 +1924,7 @@ async function probarTrasladoSinPedro(archivo){
       await probarStockPoneChico(a);
       await probarVerPorDuenoPoneChico(a);
       await probarPoneChicoReportes(a);
+      await probarLineaPoneChico(a);
     }
     else { chequear('archivo reconocido: ' + a, false, 'no es LV/ML/PC'); }
   }

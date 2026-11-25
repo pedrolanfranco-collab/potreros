@@ -114,9 +114,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">4.11</span></li>
-    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">4.11</span></li>
-    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">3.12</span></li>
+    <li><b>La Vuelta</b>: móvil completa <span class="ver" data-version="la-vuelta">4.12</span></li>
+    <li><b>María Laura</b>: móvil completa <span class="ver" data-version="maria-laura">4.12</span></li>
+    <li><b>Pone Chico</b>: móvil completa <span class="ver" data-version="pone-chico">3.13</span></li>
   </ul>
   <p class="nota">La versión de tu celular está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.76</b>). Si tu número es más viejo, abrí la app con señal y esperá un momento: se actualiza sola.</p>
 </div>
@@ -124,6 +124,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🧾 Propietario del SNIG en cada potrero</b> <span class="campo">(La Vuelta y María Laura)</span>: en la tarjeta de cada potrero aparece una línea como <b>“Vacunos según SNIG (última lectura): Pedro Lanfranco 98 · Silvia Dutra 1 · Sin dato 3”</b>. Sale de la última vez que el bastón leyó los animales de ese potrero. <b>“Sin dato”</b> es lo que no se sabe (vacunos del potrero que el SNIG no nombra): la app no lo inventa. Si la última lectura tiene más animales que el stock, aparece <b>“⚠ La última lectura tiene N más que el stock”</b>. Solo muestra: no cambia el stock ni frena nada. En <span class="b">📊 Stock total</span>, la pestaña <span class="b">Por propietario SNIG</span> trae arriba una tabla con <b>Propietario (SNIG)</b>, <b>Dueño en la app</b>, <b>Cómo</b> (Confirmado por Pedro, Mismo nombre o Sin asociar), <b>Animales</b> y <b>Qué dice el bastón</b> (solo una pista). Ver <a href="#snig">Propietario según el SNIG</a>.</li>
     <li><b>🏥 Sanidad agrupada por potrero</b>: en <b>Últimos tratamientos</b>, <b>🚫 No aptos</b> y <b>🔁 Próximos tratamientos</b> ahora sale <b>una tarjeta por potrero y día</b>, no una por cada categoría. Adentro hay una línea por producto con el total de animales, cuántos de cada categoría y desde cuándo están aptos. <b>ver N filas</b> muestra los registros sueltos. En Próximos, <span class="b">✓ Hecho, ya se trató</span> marca todo el grupo junto. Ver <a href="#sanidad">🏥 Sanidad</a>.</li>
     <li><b>✂️ Esquila y limpieza</b>: botón nuevo en 🛠 Herramientas, junto a 🌧 Lluvias y otros eventos, para anotar una esquila o una limpieza de majada (desoje y descole) con las categorías ovinas, la lana por tipo, la comparsa y el precio por lata. No cambia el stock. Ver <a href="#lluvias">🌧 Lluvias y otros eventos</a>.</li>
     <li><b>🔧 Reportes con nivel de urgencia</b>: al cargar un reporte de <span class="b">🔧 Infraestructura</span> o <span class="b">🌾 Capín Annoni</span> ahora elegís el <b>Nivel de urgencia</b> (es obligatorio): 🔴 rojo (urgente), 🟠 naranja o 🟡 amarillo. El marcador del mapa toma ese color y, cuando el reporte se resuelve, deja de verse en el mapa; en la lista y en "Ver en el mapa" se ve 🟢 verde. La lista muestra primero los rojos y, arriba, cuántos reportes hay de cada nivel y qué porcentaje son; cada reporte tiene un desplegable para <b>cambiarle el nivel</b>. Además hay dos tipos de problema nuevos: <b>Problema con boya</b> y <b>Portera rota</b>. Ver <a href="#reportes">🔧 Infraestructura y 🌾 Capín Annoni</a>.</li>
@@ -716,7 +717,8 @@
   <ul>
     <li><b>Propietario (SNIG)</b> aparece en la ficha de <a href="#caravana">🔎 Buscar caravana</a> y debajo de cada casillero de caravana (la muerte, Desaparecidos, Vecinos, Sanidad y, en las apps completas, Eventos de manejo).</li>
     <li>Si el SNIG no tiene el animal: <b>“Sin SNIG — firma: …”</b>, con el dueño o firma que anotaste. Si no anotaste ninguno, sale “(sin firma)” en La Vuelta y “(sin dueño)” en María Laura.</li>
-    <li>Si el SNIG tiene el animal pero sin nombre de propietario: <b>“Propietario sin nombre en el SNIG”</b>.</li>
+    <li>Si el SNIG tiene el animal pero sin nombre de propietario: <b>“Sin dato”</b>. No se inventa un nombre.</li>
+    <li>En la tarjeta de cada <b>potrero</b> sale <b>“Vacunos según SNIG (última lectura): …”</b>, con los propietarios que el SNIG nombra en la última lectura del bastón y <b>“Sin dato”</b> para los vacunos que no se saben. Si la lectura tiene más animales que el stock, avisa <b>“⚠ La última lectura tiene N más que el stock”</b>. Solo muestra.</li>
     <li>Si el SNIG lo ubica en <b>otro campo</b>: <b>“⚠ Según el SNIG está en …”</b>. Solo avisa: podés seguir cargando igual.</li>
     <li>En la <b>muerte</b> con caravana: si el SNIG tiene el animal y no cambiaste el dueño a mano, el dueño se elige solo con el del SNIG y aparece “Dueño sugerido por el SNIG … (podés cambiarlo)”.</li>
     <li>Si la caravana no está ni en el padrón ni en el SNIG de este campo: <b>“⚠ No figura en el padrón ni en el SNIG de este campo”</b>. Puede ser un número mal escrito.</li>
