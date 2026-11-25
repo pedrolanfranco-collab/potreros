@@ -340,7 +340,9 @@ async function probarConfirmarProximo(archivo){
 
   servidor.filas[tablaSanidad] = [
     Object.assign({id:'confirmar1', fecha:hace10, categoria:'Vacas', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero),
-    Object.assign({id:'cancelar1', fecha:hace10, categoria:'Toros', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero),
+    // 25/11/2026: en OTRO potrero -- mismo potrero y día ahora es una sola
+    // tarjeta (ver probarAgrupadoPorPotrero).
+    Object.assign({id:'cancelar1', fecha:hace10, categoria:'Toros', cantidad:1, producto1:'Altis', dosis1:1}, registroPotrero, {potrero:'22'}),
   ];
   await win.__cargarSanidad();
   chequear('estado.proximosConfirmados arranca vacío', Array.isArray(win.__est().proximosConfirmados) && win.__est().proximosConfirmados.length===0);
@@ -402,6 +404,88 @@ async function probarConfirmarProximo(archivo){
     !doc.querySelector('[data-proximo-confirmar="noaplica"]'));
 }
 
+/* 25/11/2026, pedido de Pedro: las listas de Sanidad juntan por POTRERO Y
+   DÍA. El bastón parte una maniobra en una fila por categoría + generación y
+   el 21/11 el potrero 11 salía en ~30 tarjetas. Una tarjeta por grupo, una
+   línea por producto con total y desglose por categoría, "Apto desde" por
+   producto, costo total, y "ver N filas" con las tarjetas de siempre. */
+async function probarAgrupadoPorPotrero(archivo){
+  console.log('\n=== ' + archivo + ' (Sanidad: una tarjeta por potrero y día) ===');
+  const servidor = crearServidor(CATALOGO);
+  const { win, errores } = await levantar(archivo, servidor);
+  if(errores.length){ chequear('carga sin errores', false, errores[0]); return; }
+  await win.__cargarCatalogoProductos();
+  const doc = win.document;
+  const hoy = win.__fechaISOHoy();
+  const tablaSanidad = win.__tablaSanidad;
+  const extra = (tablaSanidad === 'sanidad_carga') ? {} : {dueno:null};
+  const hace5 = win.__sumarDiasISO(hoy, -5);
+  const fila = (id, potrero, categoria, cantidad, producto1, dosis1)=>
+    Object.assign({id, fecha:hace5, potrero, categoria, cantidad, producto1, dosis1}, extra);
+  servidor.filas[tablaSanidad] = [
+    fila('a', '11', 'Vacas', 4, 'Ricoverm', 2),
+    fila('b', '11', 'Toros', 3, 'Ricoverm', '2.0'),          // "2.0" es la misma dosis que 2
+    fila('c', '11', 'Vacas', 2, 'Ricoverm', 2),
+    fila('x', '11', '<img src=x>', 1, 'Ricoverm', 2),        // texto de afuera: tiene que salir escapado
+    fila('d', '11', 'Terneros', 10, 'Altis', 1),
+    fila('f', '11', 'Toros', 5, 'Altis', 1),
+    fila('e', '12', 'Vacas', 1, 'Ricoverm', 2),              // otro potrero, mismo día
+  ];
+  await win.__cargarSanidad();
+  let listaHtml = doc.getElementById('sanidad-lista').innerHTML;
+  const seccionUltimos = listaHtml.split('Últimos tratamientos')[1].split('No aptos')[0];
+  const grupo11 = doc.querySelector('.sanidad-grupo');
+  const textoGrupo = grupo11 ? grupo11.textContent.replace(/\s+/g, ' ') : '';
+
+  chequear('Últimos: 7 filas de 2 potreros el mismo día = 2 tarjetas ("Últimos tratamientos (2)")',
+    listaHtml.includes('Últimos tratamientos (2)'), listaHtml);
+  chequear('el potrero 11 es UNA tarjeta agrupada', doc.querySelectorAll('.sanidad-grupo').length >= 1 &&
+    (seccionUltimos.match(/sanidad-grupo"/g)||[]).length === 1, seccionUltimos);
+  chequear('el título del grupo dice "potrero 11"', textoGrupo.includes('potrero 11'), textoGrupo);
+  chequear('Ricoverm suma las 4 filas: × 10', textoGrupo.includes('Ricoverm 2 ml × 10'), textoGrupo);
+  chequear('"2" y "2.0" son la misma dosis (no sale "2 / 2")', !textoGrupo.includes('2 / 2'), textoGrupo);
+  chequear('desglose por categoría de Ricoverm: Vacas 6 · Toros 3', textoGrupo.includes('Vacas 6 · Toros 3'), textoGrupo);
+  chequear('Altis va en su propia línea: × 15, Terneros 10 · Toros 5',
+    textoGrupo.includes('Altis 1 ml × 15') && textoGrupo.includes('Terneros 10 · Toros 5'), textoGrupo);
+  chequear('"Apto desde" va por producto: Ricoverm (14 días) y Altis (30 días) con su propia fecha',
+    (grupo11 ? grupo11.querySelectorAll('.sanidad-grupo-producto').length : 0) === 2 &&
+    textoGrupo.includes('Apto desde ' + win.fechaISOaDisplay(win.__sumarDiasISO(hace5, 14))) &&
+    textoGrupo.includes('Apto desde ' + win.fechaISOaDisplay(win.__sumarDiasISO(hace5, 30))), textoGrupo);
+  // Ricoverm 0.05 x 2 ml x 10 + Altis 0.10 x 1 ml x 15 = 1.00 + 1.50
+  chequear('costo total del grupo = suma de las filas (USD 2.50)', textoGrupo.includes('Costo total USD 2.50'), textoGrupo);
+  chequear('se pueden ver las filas sueltas: "ver 6 filas"', textoGrupo.includes('ver 6 filas'), textoGrupo);
+  // La app limpia los < > de lo que viene de Supabase (limpiarTextoRemoto) y
+  // además pasa todo por esc(): lo que importa es que NO se cree un <img>.
+  chequear('una categoría con HTML no crea un <img> (se ve como texto)',
+    !doc.querySelector('#sanidad-lista img') && seccionUltimos.includes('img src=x'), seccionUltimos);
+  chequear('el potrero 12 (una sola fila) se ve como antes, sin agrupar',
+    seccionUltimos.includes('potrero 12') && (seccionUltimos.match(/class="potrero-card"/g)||[]).length >= 1, seccionUltimos);
+  if(/-pc[\\/]/.test(archivo)){
+    chequear('PC: adentro del grupo siguen los ✏️/🗑 de cada fila',
+      !!doc.querySelector('.sanidad-grupo [data-sanidad-editar="a"]') && !!doc.querySelector('.sanidad-grupo [data-sanidad-borrar="f"]'));
+  }
+
+  // No aptos: también agrupado (las 6 filas del 11 siguen en espera, y la del 12).
+  chequear('No aptos: también por potrero y día ("🚫 No aptos (2)")', listaHtml.includes('🚫 No aptos (2)'), listaHtml);
+
+  // Próximos: solo Altis (garrapaticida) -> un grupo con d y f; "✓ Hecho" marca los dos.
+  const boton = doc.querySelector('[data-proximo-confirmar="d,f"]');
+  chequear('Próximos: un grupo con un solo botón que lleva los 2 ids ("d,f")', !!boton, listaHtml);
+  chequear('el resumen de Próximos dice (1)', listaHtml.includes('Próximos tratamientos (garrapaticidas) (1)'), listaHtml);
+  let pregunta = '';
+  win.confirm = (t)=>{ pregunta = String(t); return true; };
+  if(boton) boton.dispatchEvent(new win.Event('click', { bubbles: true }));
+  chequear('la confirmación dice cuántos registros marca', pregunta.includes('2 registros'), pregunta);
+  chequear('"✓ Hecho" marca los 2 ids', win.__est().proximosConfirmados.includes('d') && win.__est().proximosConfirmados.includes('f'),
+    win.__est().proximosConfirmados);
+  listaHtml = doc.getElementById('sanidad-lista').innerHTML;
+  chequear('después, Próximos queda en (0)', listaHtml.includes('Próximos tratamientos (garrapaticidas) (0)'), listaHtml);
+  const eventosDe = ()=> (servidor.filas.eventos_sync||[]).filter(f=> f.tipo==='proximo_confirmado').map(f=> f.detalle && f.detalle.id);
+  for(let i=0; i<50 && eventosDe().length < 2; i++) await new Promise(r=>setTimeout(r, 20));
+  chequear('se manda un evento proximo_confirmado por cada id (el mismo evento de siempre)',
+    eventosDe().includes('d') && eventosDe().includes('f'), eventosDe());
+}
+
 /* 18/9/2026: antes de que Pedro corra el ALTER TABLE en Supabase, pedir
    "dias_residual" en el select() de productos_catalogo da un error real de
    Postgres (42703, columna inexistente). Sin el reintento, ESO tumbaba todo
@@ -427,6 +511,7 @@ async function probarFallbackColumnaFaltante(archivo){
   for(const a of archivos) await probarUltimosTope20(a);
   for(const a of archivos) await probarProximosPorAntelacion(a);
   for(const a of archivos) await probarConfirmarProximo(a);
+  for(const a of archivos) await probarAgrupadoPorPotrero(a);
   console.log('\n' + (fallas ? fallas + ' verificacion(es) fallaron' : 'Todo OK'));
   process.exit(fallas ? 1 : 0);
 })();
