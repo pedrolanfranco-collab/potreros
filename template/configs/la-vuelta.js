@@ -2608,15 +2608,15 @@ module.exports = {
   "themeColor": "#2b3a24",
   "nombre": "La Vuelta",
   "subtitulo": "Rivera, Uruguay · Gestión de hacienda por potrero",
-  "versionPc": "4.13",
-  "versionMovil": "4.10",
+  "versionPc": "4.14",
+  "versionMovil": "4.11",
   "manejo": true,
   "ipasto": {
     "consumoUG": 10,
     "cruce": {"7":"LV 7","8":"LV 8","9":"LV 9","10":"LV 10","OMBU":"LV 10","11":"LV 11","18":"LV 11","12":"LV 12","BOMBA":"LV 12","13":"LV 13","CERRO":"LV 13","14":"LV 14","15":"LV 15","TAJAMAR":"LV 15","16":"LV 16","17":"LV 16","19":"LV 16","20":"LV 16","21":"LV 16","TRI":"LV 16","26":"LV 20","PAST":"LV 21","23":"LV 23","CALLE":"Calle","CERRITO":"Calle","EMBARCADERO":"Embarcadero"}
   },
   "simpleHabilitado": true,
-  "versionMovilSimple": "2.10",
+  "versionMovilSimple": "2.11",
   "duenoLabel": "Firma",
   "duenoObligatorio": false,
   "textoSinAsignar": "(sin firma)",
