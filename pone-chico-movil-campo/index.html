@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-SvJwFEP548fxtXVj55vxSzGVvdGsRbIoioJxQ9Hb+fg=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-5alYYiGRbTQKyP/BV+XILrzk8F+8jf0QdfnOIMj6iqo=' 'sha256-0tpgLhJXuB/XNkL08D90Qa1a1k1p1AnHOCfyCo543+0=' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://server.arcgisonline.com https://cdnjs.cloudflare.com https://skkknfjpwcstefcroqjt.supabase.co; connect-src 'self' https://skkknfjpwcstefcroqjt.supabase.co wss://skkknfjpwcstefcroqjt.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pone Chico — Mapa de Potreros</title>
 <link rel="manifest" href="manifest.json">
@@ -694,7 +694,7 @@
     <div class="brand">
       <div>
         <h1>Pone Chico <span style="font-weight:400;font-size:15px;color:#cfd8bd;">— Potreros</span></h1>
-        <div class="sub">v2.12</div>
+        <div class="sub">v2.13</div>
         <div id="estado-conexion" style="font-size:11px;margin-top:2px;font-weight:600;"></div>
       </div>
     </div>
@@ -1169,7 +1169,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 <script>
-const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.13","manejo":false,"versionMovil":"3.12","simpleHabilitado":true,"versionMovilSimple":"2.12","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
+const CONFIG = {"establecimiento":"pone_chico","storageKey":"pone_chico_potreros_v1","potrerosGeo":[],"potrerosDobles":{},"puntosSeed":[],"duenos":["Chico","Pablo","Kelbi"],"cargaInicialSeed":{},"nombresViejosPotrero":{},"vacasPrenadasTemporada":0,"ovejasEncarneradasTemporada":0,"titulo":"Pone Chico — Mapa de Potreros","themeColor":"#1d4fa8","nombre":"Pone Chico","subtitulo":"Gestión de hacienda por potrero y dueño","versionPc":"3.14","manejo":false,"versionMovil":"3.13","simpleHabilitado":true,"versionMovilSimple":"2.13","duenoLabel":"Dueño","duenoObligatorio":true,"textoSinAsignar":"(sin dueño)","mapLabels":true,"usaExcelBridge":false,"tablaSanidad":"sanidad_carga_pone_chico","stockSupabase":true,"colaOrdenada":true,"claveCampo":true,"insumos":false,"bano":false,"caravanasHabilitado":false,"propietarioSnig":false,"fixFechaIngreso":null,"mapaFallback":[-31.385,-55.426]};
 /* ======================= DATOS DE POTREROS (del KML) ======================= */
 const POTREROS_GEO = CONFIG.potrerosGeo;
 /* Potreros dobles (4/11/2026, a pedido de Pedro): dos potreros que a veces se usan unidos con la portera abierta
@@ -1965,7 +1965,7 @@ function uuidDerivado(base, sufijo){
 /* Fase 3, paso 4, parte B (11/10/2026): cada evento lleva en el detalle `v` = "<variante>-<versión>" de la app que
    lo escribió (pc-2.07, movil-2.06, campo-1.49). Es solo diagnóstico, para saber qué versión mandó un evento raro;
    ninguna pantalla lo muestra y ningún lector lo necesita. */
-const VERSION_APP = 'campo-2.12';
+const VERSION_APP = 'campo-2.13';
 /* 31/10/2026, a pedido de Pedro: copia del padrón de caravanas en el celular para "🔎 Buscar caravana" sin señal (ver
    "PADRÓN SIN SEÑAL" en BUSCAR CARAVANA). Solo móvil y Campo con CONFIG.padronOffline (La Vuelta y María Laura); la PC no guarda copia. */
 const PADRON_OFFLINE = !!CONFIG.padronOffline && !!CONFIG.caravanasHabilitado;
@@ -5671,6 +5671,7 @@ function renderLista(filtro=''){
       <div class="ocupacion-badge ocupacion-${ocup.tipo}">${ocup.tipo==='ocupado' ? '🟢' : ocup.tipo==='descanso' ? '⚪' : '▫️'} ${ocup.texto}</div>
       ${esDoble(nombre) ? `<div class="nota-doble">🔗 ${total !== 0 ? esc((POTREROS_DOBLES[nombre]||[]).join(' y ')) + ' unidos' : 'Para usar ' + esc((POTREROS_DOBLES[nombre]||[]).join(' y ')) + ' juntos'}</div>` : (parteTapada(nombre) ? `<div class="nota-doble">🔗 Unido en ${esc(parteTapada(nombre))}</div>` : '')}
       ${catsConAnimales.length ? `<div class="mini-cats">${catsConAnimales.map(([k,v])=>`<span${v<0?' style="color:#d32f2f;font-weight:700;"':''}>${esc(k)}: ${v}</span>`).join('')}</div>` : ''}
+      ${lineaSnigPotreroHTML(nombre)}
     `;
     if(casosPotrero.length){
       card.style.borderLeft = '4px solid #c68a3b';
@@ -5886,6 +5887,7 @@ async function cargarSnigEnDetalleDueno(nombre){
   if(!el()) return;
   el().innerHTML = '<p style="font-size:12.5px;color:var(--texto-suave);">Cargando…</p>';
   const r = await padronParaStockSnig();
+  if(r && !r.error) guardarPadronSnigPotreros(r.filas);
   if(req !== _snigDetalleReq || !el()) return;
   el().innerHTML = htmlSnigDetalleDueno(nombre, r);
 }
@@ -5911,9 +5913,11 @@ function resumenSnigPotrero(padron, nombre){
     if(!a || a.estado_vida !== 'ACTIVO' || !a.ultima_lectura || a.en_snig !== true) return;
     if(!a.potrero || normNombrePotreroSnig(a.potrero) !== clave) return;
     if(a.campo_snig && a.campo_snig !== ESTABLECIMIENTO) return;
+    const s = propietarioSnigDe(a);
+    if(!s || s.sinNombre) return;   // 25/11/2026: sin nombre en el SNIG = no se sabe: queda en "Sin SNIG o sin lectura"
     const fam = familiaCategoriaSnig(a.categoria);
     if(FAMILIAS_SNIG.indexOf(fam) < 0){ noComparables++; return; }
-    const dueno = propietarioSnigDe(a).texto;
+    const dueno = s.texto;
     porDueno[dueno] = porDueno[dueno] || {};
     porDueno[dueno][fam] = (porDueno[dueno][fam] || 0) + 1;
     cubiertos[fam] = (cubiertos[fam] || 0) + 1;
@@ -9008,8 +9012,10 @@ function resumenPorPropietarioSnig(padron){
     }
     if(!vivo || a.en_snig !== true || campoAjeno) return;
     if(!leida){ soloSnig++; return; }
+    const sp = propietarioSnigDe(a);
+    if(sp.sinNombre) return;   // 25/11/2026: sin nombre en el SNIG = no se sabe: queda en "Sin SNIG" de su categoría
     const fam = familiaCategoriaSnig(a.categoria);
-    const dueno = propietarioSnigDe(a).texto;
+    const dueno = sp.texto;
     const bolsa = FAMILIAS_SNIG.indexOf(fam) >= 0 ? snig : noComparable;
     bolsa[fam] = bolsa[fam] || {};
     bolsa[fam][dueno] = (bolsa[fam][dueno] || 0) + 1;
@@ -9035,7 +9041,43 @@ function resumenPorPropietarioSnig(padron){
     .sort((x, y)=> (y.total - x.total) || x.dueno.localeCompare(y.dueno, 'es'));
   const cuentaTotal = cuentaPorDueno.reduce((t, c)=> ({leidos: t.leidos + c.leidos, sinLectura: t.sinLectura + c.sinLectura,
     bajaAca: t.bajaAca + c.bajaAca, total: t.total + c.total}), {leidos: 0, sinLectura: 0, bajaAca: 0, total: 0});
-  return {filas, sinComparable, soloSnig, otroCampo, cuenta: {porDueno: cuentaPorDueno, total: cuentaTotal, otroCampo}};
+  return {filas, sinComparable, soloSnig, otroCampo, cuenta: {porDueno: cuentaPorDueno, total: cuentaTotal, otroCampo},
+    asociacion: asociacionDuenosSnig(padron)};
+}
+/* 25/11/2026 (a pedido de Pedro): tabla que se completa sola, propietario del SNIG ↔ dueño de la app. Cuenta los animales
+   vivos que el SNIG tiene en este campo. "Qué dice el bastón" es la firma que más se leyó: es solo una PISTA, nunca se
+   aplica (para aplicarla, Pedro la confirma y se agrega a mapaDuenos del config). Solo lee. */
+function asociacionDuenosSnig(padron){
+  const grupos = {};
+  (padron || []).forEach(a=>{
+    if(!a || a.estado_vida !== 'ACTIVO' || a.en_snig !== true) return;
+    if(a.campo_snig && a.campo_snig !== ESTABLECIMIENTO) return;
+    const nombre = String(a.propietario_snig || '').trim();
+    const g = grupos[nombre] = grupos[nombre] || {snig: nombre, n: 0, baston: {}};
+    g.n++;
+    const firma = String(a.propietario || '').trim().toUpperCase();
+    if(firma) g.baston[firma] = (g.baston[firma] || 0) + 1;
+  });
+  return Object.values(grupos).map(g=>{
+    const asoc = g.snig ? duenoAppDeSnig(g.snig) : {texto: '', como: 'sindato'};
+    const bast = Object.entries(g.baston).sort((x, y)=> (y[1] - x[1]) || x[0].localeCompare(y[0], 'es'));
+    return {snig: g.snig || 'Sin dato en el SNIG', dueno: (asoc.como === 'confirmado' || asoc.como === 'mismo') ? asoc.texto : '',
+      como: asoc.como, n: g.n, pista: bast.length ? {firma: bast[0][0], n: bast[0][1]} : null};
+  }).sort((x, y)=> ((x.como === 'sindato') - (y.como === 'sindato')) || (y.n - x.n) || x.snig.localeCompare(y.snig, 'es'));
+}
+function htmlAsociacionDuenosSnig(filas){
+  if(!filas || !filas.length) return '';
+  const como = f => f.como === 'confirmado' ? 'Confirmado por Pedro' : f.como === 'mismo' ? 'Mismo nombre'
+    : '<span style="color:#8f5f12;">Sin asociar</span>';
+  let h = '<div class="snig-asociacion" style="margin-bottom:14px;"><table class="tabla-animales"><thead><tr><th>Propietario (SNIG)</th>'
+    + '<th>Dueño en la app</th><th>Cómo</th><th style="text-align:right;">Animales</th><th>Qué dice el bastón</th></tr></thead><tbody>';
+  h += filas.map(f=> `<tr><td>${esc(f.snig)}</td><td>${f.dueno ? esc(f.dueno) : '—'}</td><td>${como(f)}</td>`
+    + `<td class="num">${f.n}</td><td>${f.pista ? esc(`${f.pista.firma} en ${f.pista.n} de ${f.n}`) : '—'}</td></tr>`).join('');
+  h += '</tbody></table>';
+  h += '<div style="font-size:12px;color:var(--texto-suave);margin-top:4px;">Dueño de la app y propietario del SNIG. '
+    + '"Sin asociar": la app no inventa el dueño y muestra lo que dice el SNIG. Lo del bastón es solo una pista: para usarla, '
+    + 'hay que confirmarla y se agrega a la app.</div></div>';
+  return h;
 }
 /* 9/11/2026 (Pedro): el enlace "Sin lectura" a 🧾 SNIG sin lectura solo existe en la PC (btn-snig-sin-lectura, visible). */
 function snigBotonSinLecturaVisible(){
@@ -9061,6 +9103,7 @@ function htmlCuentaCompletaSnig(c){
 }
 function htmlPorPropietarioSnig(d){
   let h = '<p style="font-size:12.5px;color:var(--texto-suave);margin:0 0 10px;">Por tipo de animal, según el SNIG y la última lectura del bastón. Solo lectura: no cambia el stock.</p>';
+  if(d.asociacion && d.asociacion.length) h += htmlAsociacionDuenosSnig(d.asociacion);
   if(d.cuenta && d.cuenta.porDueno.length) h += htmlCuentaCompletaSnig(d.cuenta);
   if(!d.filas.length && !d.sinComparable.length) h += '<p style="font-size:12.5px;color:var(--texto-suave);">Ningún animal con stock cargado.</p>';
   h += d.filas.map(f=> f.comparable ? `<div style="margin-bottom:14px;">
@@ -9101,6 +9144,7 @@ async function cargarPanelPropietarioSnig(){
     el.innerHTML = `<p style="font-size:12.5px;color:#96601a;">No se pudo consultar el SNIG (${esc(String(r.error).slice(0, 120))}). Necesitás señal para ver esta pestaña; el resto del Stock total no cambia.</p>`;
     return;
   }
+  guardarPadronSnigPotreros(r.filas);
   el.innerHTML = (r.deCache ? avisoCopiaPadronHTML({fechaCache: r.fechaCache}) : '') + htmlPorPropietarioSnig(resumenPorPropietarioSnig(r.filas));
   el.querySelectorAll('[data-snig-abrir-sl]').forEach(a=> a.addEventListener('click', e=>{
     e.preventDefault();
@@ -9114,14 +9158,27 @@ async function cargarPanelPropietarioSnig(){
    y campo_snig (slug del campo donde el SNIG la ubica). La app SOLO LEE. La alerta de campo nunca bloquea nada.
    Sin CONFIG.propietarioSnig (Pone Chico, apagado) no sale ninguna línea. */
 const CAMPOS_SNIG_LEGIBLES = {la_vuelta: 'La Vuelta', maria_laura: 'María Laura', pone_chico: 'Pone Chico'};
+/* 25/11/2026 (a pedido de Pedro): el dueño de la app se ASOCIA con el propietario del SNIG sin inventar. Confirmado =
+   está en CONFIG.propietarioSnig.mapaDuenos (lo confirmó Pedro). Mismo nombre = coincide, sin acentos ni mayúsculas, con
+   uno de CONFIG.duenos. Si no, queda "sin asociar" y se muestra el nombre del SNIG tal cual (nunca una pista del bastón). */
+function normNombreDuenoSnig(s){ return quitarAcentosSnig(String(s == null ? '' : s).trim().toLowerCase()).replace(/\s+/g, ' '); }
+function duenoAppDeSnig(nombre){
+  const mapa = (CONFIG.propietarioSnig && CONFIG.propietarioSnig.mapaDuenos) || {};
+  if(Object.prototype.hasOwnProperty.call(mapa, nombre)) return {texto: mapa[nombre], como: 'confirmado'};
+  const n = normNombreDuenoSnig(nombre);
+  const igual = (CONFIG.duenos || []).find(d => normNombreDuenoSnig(d) === n);
+  if(igual) return {texto: igual, como: 'mismo'};
+  return {texto: nombre, como: 'sin'};
+}
 function propietarioSnigDe(a){
   if(!CONFIG.propietarioSnig || !a || a.en_snig == null) return null;
-  let texto;
+  let texto, sinNombre = false;
   if(a.en_snig === true){
-    const mapa = CONFIG.propietarioSnig.mapaDuenos || {};
-    const nombre = a.propietario_snig || '';
-    if(!nombre) texto = 'Propietario sin nombre en el SNIG';
-    else texto = Object.prototype.hasOwnProperty.call(mapa, nombre) ? mapa[nombre] : nombre;
+    const nombre = String(a.propietario_snig || '').trim();
+    /* 25/11/2026 (Pedro: "si no sabe, no inventar"): el SNIG lo tiene pero sin nombre de propietario = "Sin dato".
+       No cuenta como un propietario en ninguna vista: va con lo que no se sabe. */
+    if(!nombre){ texto = 'Sin dato'; sinNombre = true; }
+    else texto = duenoAppDeSnig(nombre).texto;
   }else{
     texto = 'Sin SNIG — firma: ' + textoFirma(a.propietario);
   }
@@ -9139,7 +9196,7 @@ function propietarioSnigDe(a){
       if(lectura && ingreso > lectura) alerta += ' (después de la última lectura del bastón)';
     }
   }
-  return {texto, alerta, campoOtro};
+  return {texto, alerta, campoOtro, sinNombre};
 }
 function propietarioSnigAusente(){
   return CONFIG.propietarioSnig ? '⚠ No figura en el padrón ni en el SNIG de este campo' : '';
@@ -9162,6 +9219,68 @@ function snigEstadoSinLectura(a){
   if(dias != null && dias <= SNIG_SIN_LECTURA_DIAS) return {estado: 'pendiente', texto: '🆕 PENDIENTE DE PRIMERA LECTURA', dias};
   return {estado: 'vivo_sin_registro', texto: '❓ VIVO SIN REGISTRO EN EL PREDIO', dias};
 }
+/* ---------- PROPIETARIO SNIG EN EL POTRERO (25/11/2026, a pedido de Pedro; solo con CONFIG.propietarioSnig) ----------
+   En la tarjeta del potrero y en el cartelito del mapa de la PC: de quién son los VACUNOS del potrero según el SNIG, por la
+   ÚLTIMA LECTURA del bastón (potrero del padrón). "Sin dato" = vacunos del potrero (eventos) menos los que el SNIG nombra:
+   no se inventa nada. Solo muestra: no toca el stock, los eventos ni los movimientos, y no frena nada. Sin padrón (sin
+   señal y sin copia, o la copia de prueba) no sale la línea. `var` a propósito: renderLista puede correr antes de esta
+   línea al arrancar y un `let` daría error (regla 5). */
+var _padronSnigPotreros = null;
+var _padronSnigCargando = false;
+function guardarPadronSnigPotreros(filas){
+  if(!CONFIG.propietarioSnig || !Array.isArray(filas)) return;
+  _padronSnigPotreros = filas;
+  try{ renderLista(document.getElementById('buscador').value); }catch(e){}
+}
+async function cargarPadronSnigPotreros(){
+  if(!CONFIG.propietarioSnig || _padronSnigCargando) return;
+  _padronSnigCargando = true;
+  try{
+    const r = await padronParaStockSnig();
+    if(r && !r.error) guardarPadronSnigPotreros(r.filas);
+  }catch(e){
+  }finally{
+    _padronSnigCargando = false;
+  }
+}
+function lineaSnigPotreroDatos(nombre, padron){
+  if(!CONFIG.propietarioSnig || !Array.isArray(padron) || !estado.potreros[nombre]) return null;
+  let vacunos = 0;
+  detalleAnimales(estado.potreros[nombre].animales).forEach(x=>{
+    if(CATEGORIA_ESPECIE[x.cat] === 'bovino') vacunos += x.cant;
+  });
+  if(vacunos <= 0) return null;
+  // Un potrero doble en uso (1+2, 19+20) junta las lecturas de sus partes.
+  const claves = [nombre].concat(POTREROS_DOBLES[nombre] || []).map(normNombrePotreroSnig);
+  const cont = {};
+  let vistos = 0, nombrados = 0;
+  padron.forEach(a=>{
+    if(!a || a.estado_vida !== 'ACTIVO' || !a.ultima_lectura || a.en_snig !== true) return;
+    if(!a.potrero || claves.indexOf(normNombrePotreroSnig(a.potrero)) < 0) return;
+    if(a.campo_snig && a.campo_snig !== ESTABLECIMIENTO) return;
+    vistos++;
+    const s = propietarioSnigDe(a);
+    if(!s || s.sinNombre) return;
+    cont[s.texto] = (cont[s.texto] || 0) + 1;
+    nombrados++;
+  });
+  if(!vistos) return null;
+  const porDueno = Object.keys(cont).sort((x, y)=> (cont[y] - cont[x]) || x.localeCompare(y, 'es'))
+    .map(n=> ({dueno: n, n: cont[n]}));
+  return {porDueno, sinDato: Math.max(0, vacunos - nombrados), exceso: Math.max(0, vistos - vacunos), vacunos};
+}
+function lineaSnigPotreroTexto(d){
+  const partes = d.porDueno.map(x=> `${x.dueno} ${x.n}`);
+  if(d.sinDato) partes.push(`Sin dato ${d.sinDato}`);
+  return 'Vacunos según SNIG (última lectura): ' + partes.join(' · ');
+}
+function lineaSnigPotreroHTML(nombre){
+  const d = lineaSnigPotreroDatos(nombre, _padronSnigPotreros);
+  if(!d) return '';
+  return `<div class="snig-potrero" style="font-size:12px;color:#2f5d8a;margin-top:4px;">${esc(lineaSnigPotreroTexto(d))}</div>`
+    + (d.exceso ? `<div class="snig-potrero-exceso" style="font-size:12px;color:#8f5f12;">⚠ La última lectura tiene ${d.exceso} más que el stock</div>` : '');
+}
+
 /* Líneas del propietario según el SNIG (texto ya traducido por mapaDuenos; el dueño del bastón pasa por textoFirma). */
 function snigBloqueHTML(a){
   const s = propietarioSnigDe(a);
@@ -11152,6 +11271,12 @@ function actualizarEstadoConexion(estabaOffline){
 window.addEventListener('online', ()=> actualizarEstadoConexion(true));
 window.addEventListener('offline', ()=> actualizarEstadoConexion(false));
 actualizarEstadoConexion(false);
+/* 25/11/2026: el padrón para la línea "Vacunos según SNIG" de cada potrero se trae una vez al arrancar, sin esperar
+   (no frena la carga de la app), y otra vez cuando vuelve la señal. */
+if(CONFIG.propietarioSnig){
+  setTimeout(cargarPadronSnigPotreros, 1500);
+  window.addEventListener('online', ()=> setTimeout(cargarPadronSnigPotreros, 1500));
+}
 
 document.getElementById('btn-sincronizar').addEventListener('click', ()=>{
   if(!navigator.onLine){ toast('Sin conexión — no se puede sincronizar ahora'); return; }
