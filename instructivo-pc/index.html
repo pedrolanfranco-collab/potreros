@@ -114,9 +114,9 @@
 <div class="caja">
   <h2>Actualizado para</h2>
   <ul class="versiones">
-    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.12</span></li>
-    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">4.10</span></li>
-    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">3.11</span></li>
+    <li><b>La Vuelta</b>: PC <span class="ver" data-version="la-vuelta">4.13</span></li>
+    <li><b>María Laura</b>: PC <span class="ver" data-version="maria-laura">4.11</span></li>
+    <li><b>Pone Chico</b>: PC <span class="ver" data-version="pone-chico">3.12</span></li>
   </ul>
   <p class="nota">La versión de tu PC está arriba, al final de la línea que hay debajo del nombre del campo (por ejemplo <b>v3.81 (completa)</b>). Si tu número es más viejo, abrí la app con conexión y esperá un momento: se actualiza sola.</p>
 </div>
@@ -124,6 +124,7 @@
 <div class="caja novedades" id="novedades">
   <h2>Novedades de esta versión</h2>
   <ul>
+    <li><b>🏥 Sanidad agrupada por potrero</b>: en <b>Últimos tratamientos</b>, <b>🚫 No aptos</b> y <b>🔁 Próximos tratamientos</b> ahora sale <b>una tarjeta por potrero y día</b>, no una por cada categoría. Adentro hay una línea por producto con el total de animales, cuántos de cada categoría y desde cuándo están aptos. <b>ver N filas</b> muestra los registros sueltos (y ahí siguen ✏️ y 🗑 de cada uno). En Próximos, <span class="b">✓ Hecho, ya se trató</span> marca todo el grupo junto. Ver <a href="#sanidad">🏥 Sanidad</a>.</li>
     <li><b>📊 Ranking de pasto</b> <span class="campo">(solo La Vuelta, PC)</span>: ventana nueva en Herramientas › Mapa y potreros (y en 🌾 Potreros del menú de la izquierda). Ordena los potreros de iPasto por cuánto creció el pasto: el último mes medido (con el % de un mes normal, en rojo si es menos de 80 %) o los últimos 12 meses. Ver <a href="#ranking-pasto">📊 Ranking de pasto</a>.</li>
     <li><b>🌱 Pasto de iPasto</b> <span class="campo">(solo La Vuelta, PC)</span>: en el cartelito de cada potrero aparece el renglón <b>“Pasto de &lt;mes&gt;…”</b> con cuánto creció el pasto y cuánto de lo que comen los animales cubre. Y en <span class="b">Pintar por</span> hay una opción nueva, <span class="b">Pasto (iPasto)</span>. Ver <a href="#mapa-pasto">Pasto (iPasto)</a>.</li>
     <li><b>✂️ Esquila y limpieza</b>: botón nuevo en 🌧 Lluvias y eventos, para anotar una esquila o una limpieza de majada (desoje y descole) con las categorías ovinas, la lana por tipo, la comparsa y el precio por lata. No cambia el stock. Ver <a href="#lluvias">🌧 Lluvias y otros eventos</a>.</li>
@@ -485,7 +486,7 @@
     <li>Sin producto, sin dosis o sin caravana (ni el tilde de “no tiene”) no guarda y avisa.</li>
     <li>En el individual, al escribir la caravana la app busca de qué animal es: si está <b>NO APTO</b> hasta una fecha o <b>YA NO ESTÁ EN EL CAMPO</b>, lo avisa. <b>Avisa pero deja guardar</b>: revisá que el número esté bien.</li>
   </ul>
-  <p>Más abajo, la misma ventana tiene tres listas plegadas: <b>Últimos tratamientos</b>, <b>🚫 No aptos</b> (animales que todavía no pueden ir a faena) y <b>🔁 Próximos tratamientos (garrapaticidas)</b>. En esta última, <span class="b">✓ Hecho, ya se trató</span> saca el aviso de la lista en todos los equipos (pide confirmar y no se puede deshacer). Las listas necesitan conexión; sin conexión se ve lo último que se bajó.</p>
+  <p>Más abajo, la misma ventana tiene tres listas plegadas: <b>Últimos tratamientos</b>, <b>🚫 No aptos</b> (animales que todavía no pueden ir a faena) y <b>🔁 Próximos tratamientos (garrapaticidas)</b>. Cada tarjeta junta un potrero en un día: una línea por producto, con el total, cuántos de cada categoría y desde cuándo están aptos; <b>ver N filas</b> muestra los registros sueltos. En esta última, <span class="b">✓ Hecho, ya se trató</span> saca el aviso de la lista en todos los equipos (pide confirmar y no se puede deshacer). Las listas necesitan conexión; sin conexión se ve lo último que se bajó.</p>
   <p><b>Corregir un tratamiento</b>: cada tarjeta tiene <b>✏️</b> (abre el formulario con los datos y el botón pasa a “Guardar corrección”) y <b>🗑</b> (pide confirmar). Para cambiar o borrar uno que ya subió hace falta conexión; los que dicen “📴 sin señal, en tu dispositivo” se cambian en la PC. <span class="campo">En La Vuelta</span>, lo que el Excel de respaldo ya importó no tiene botones: se corrige en el Excel. Si la base lo rechaza, la app avisa “No se pudo”.</p>
   <p><span class="campo">Solo en La Vuelta</span>, <b>Mis cargas recientes</b> (plegado) muestra lo que cargaste desde esta PC y en qué paso va: <b>📴 sin señal, en tu dispositivo</b>, <b>⏳ esperando el respaldo</b>, <b>✅ en el respaldo (Excel)</b> o <b>✓ cargado</b>.</p>
 </div>
